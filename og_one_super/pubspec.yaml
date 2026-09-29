@@ -1,0 +1,48 @@
+name: og_one_super
+description: OG ONE GROUP Super App - Mini Apps Launcher
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  google_fonts: ^6.3.3
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+
+  # Required to host the Fundi App SDK.
+  firebase_core: ^4.15.0
+
+  # The Fundi App SDK (local package, sibling under ../packages/).
+  fundiapp_sdk:
+    path: ../packages/fundiapp
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/homeimg.png"
+  adaptive_icon_background: "#001D45"
+  adaptive_icon_foreground: "assets/images/homeimg.png"
+
+flutter:
+  generate: true
+  uses-material-design: true
+  assets:
+    - assets/images/
+dependency_overrides:
+  file_picker: ">=8.1.2 <9.0.0"
+  flutter_local_notifications: ">=19.0.0 <20.0.0"
+  record_linux: ^1.2.0
+  record_platform_interface: ^1.2.0

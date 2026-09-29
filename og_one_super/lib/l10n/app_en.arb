@@ -1,0 +1,41 @@
+{
+  "@@locale": "en",
+  "appName": "OG ONE GROUP",
+  "miniApps": "Mini Apps",
+  "settings": "Settings",
+
+  "chooseService": "Choose the service you want and continue",
+  "services": "Services",
+  "continueText": "Continue",
+  "comingSoonMessage": "This service is coming soon 🚀",
+  "soon": "Soon",
+  "opening": "Opening {name}...",
+  "@opening": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "nearbyFundi": "NearbyFundi",
+  "fundiApp": "Fundi App",
+  "msosi": "Msosi Chap Chap",
+  "nearbyHealth": "Nearby Health",
+  "nearbyHotel": "Nearby Hotel",
+  "laundry": "Laundry",
+  "comingSoon": "Coming Soon",
+
+  "appearance": "Appearance",
+  "system": "System",
+  "followDevice": "Follow device setting",
+  "light": "Light",
+  "lightMode": "Light mode",
+  "dark": "Dark",
+  "darkMode": "Dark mode",
+  "about": "About",
+  "version": "Version",
+
+  "welcome": "Welcome",
+  "searchHint": "Search services",
+  "bannerTitle": "All your services, one app",
+  "bannerSubtitle": "Fundis, food, health, hotels and laundry",
+  "allServices": "All services",
+  "noResults": "No services found"
+}

@@ -1,0 +1,41 @@
+{
+  "@@locale": "sw",
+  "appName": "OG ONE GROUP",
+  "miniApps": "Programu Ndogo",
+  "settings": "Mipangilio",
+
+  "chooseService": "Chagua huduma unayotaka kuendelea",
+  "services": "Huduma",
+  "continueText": "Endelea",
+  "comingSoonMessage": "Huduma hii inakuja hivi karibuni 🚀",
+  "soon": "Inakuja",
+  "opening": "Inafungua {name}...",
+  "@opening": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "nearbyFundi": "NearbyFundi",
+  "fundiApp": "Fundi App",
+  "msosi": "Msosi Chap Chap",
+  "nearbyHealth": "Afya Karibu",
+  "nearbyHotel": "Hoteli Karibu",
+  "laundry": "Mfua Nguo",
+  "comingSoon": "Inakuja",
+
+  "appearance": "Muonekano",
+  "system": "Mfumo",
+  "followDevice": "Fuata mipangilio ya simu",
+  "light": "Mwanga",
+  "lightMode": "Hali ya mwanga",
+  "dark": "Giza",
+  "darkMode": "Hali ya giza",
+  "about": "Kuhusu",
+  "version": "Toleo",
+
+  "welcome": "Karibu",
+  "searchHint": "Tafuta huduma",
+  "bannerTitle": "Huduma zako zote, programu moja",
+  "bannerSubtitle": "Mafundi, chakula, afya, hoteli na ufuaji",
+  "allServices": "Huduma zote",
+  "noResults": "Hakuna huduma iliyopatikana"
+}

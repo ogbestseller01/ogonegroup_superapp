@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+
+<plist version="1.0">
+<dict>
+
+    <!-- ============================================================
+         PERFORMANCE
+         ============================================================ -->
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+
+    <!-- ============================================================
+         APP INFORMATION
+         ============================================================ -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>Og One Super</string>
+
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleName</key>
+    <string>og_one_super</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+
+    <!-- ============================================================
+         CAMERA
+         Required for camera/scanner functionality
+         ============================================================ -->
+    <key>NSCameraUsageDescription</key>
+    <string>Og One Super needs access to your camera to scan products, capture images, and perform related services.</string>
+
+    <!-- ============================================================
+         LOCATION
+         Required for location and nearby services
+         ============================================================ -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Og One Super uses your location to provide nearby services and location-based features.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Og One Super may use your location to provide location-based services when needed.</string>
+
+    <!-- ============================================================
+         MICROPHONE / AUDIO
+         Required for audio functionality
+         ============================================================ -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Og One Super needs access to your microphone for audio features.</string>
+
+    <!-- ============================================================
+         PHOTO LIBRARY
+         Required when selecting or saving images
+         ============================================================ -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Og One Super needs access to your photos so you can select images for the application.</string>
+
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Og One Super needs permission to save images to your photo library.</string>
+
+    <!-- ============================================================
+         NOTIFICATIONS
+         ============================================================ -->
+    <key>NSUserNotificationsUsageDescription</key>
+    <string>Og One Super uses notifications to keep you updated about important activities and requests.</string>
+
+    <!-- ============================================================
+         NETWORK / CONNECTIVITY
+         ============================================================ -->
+
+    <!-- Allow HTTP connections if your API uses HTTP -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+
+    <!-- ============================================================
+         URL / LINK HANDLING
+         ============================================================ -->
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+        <string>http</string>
+        <string>https</string>
+        <string>tel</string>
+        <string>sms</string>
+        <string>mailto</string>
+    </array>
+
+    <!-- ============================================================
+         IOS SCENE CONFIGURATION
+         ============================================================ -->
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+
+        <key>UISceneConfigurations</key>
+        <dict>
+
+            <key>UIWindowSceneSessionRoleApplication</key>
+            <array>
+
+                <dict>
+
+                    <key>UISceneClassName</key>
+                    <string>UIWindowScene</string>
+
+                    <key>UISceneConfigurationName</key>
+                    <string>flutter</string>
+
+                    <key>UISceneDelegateClassName</key>
+                    <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+
+                    <key>UISceneStoryboardFile</key>
+                    <string>Main</string>
+
+                </dict>
+
+            </array>
+
+        </dict>
+
+    </dict>
+
+    <!-- ============================================================
+         INDIRECT INPUT
+         ============================================================ -->
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+
+    <!-- ============================================================
+         LAUNCH SCREEN
+         ============================================================ -->
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+
+    <!-- ============================================================
+         IPHONE ORIENTATIONS
+         ============================================================ -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ============================================================
+         IPAD ORIENTATIONS
+         ============================================================ -->
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+</dict>
+</plist>
