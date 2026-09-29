@@ -32,6 +32,11 @@
   "about": "About",
   "version": "Version",
 
+  "contactUs": "Contact Us",
+  "termsConditions": "Terms & Conditions",
+  "rateApp": "Rate App",
+  "others": "Others",
+
   "welcome": "Welcome",
   "searchHint": "Search services",
   "bannerTitle": "All your services, one app",

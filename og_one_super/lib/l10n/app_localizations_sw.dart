@@ -86,6 +86,18 @@ class AppLocalizationsSw extends AppLocalizations {
   String get version => 'Toleo';
 
   @override
+  String get contactUs => 'Wasiliana Nasi';
+
+  @override
+  String get termsConditions => 'Vigezo na Masharti';
+
+  @override
+  String get rateApp => 'Kadiria Programu';
+
+  @override
+  String get others => 'Nyinginezo';
+
+  @override
   String get welcome => 'Karibu';
 
   @override

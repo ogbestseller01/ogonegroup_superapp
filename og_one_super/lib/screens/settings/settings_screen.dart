@@ -5,6 +5,11 @@ import 'package:provider/provider.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
 import '../../providers/settings_provider.dart';
+// Import the new static pages
+import 'staticpages/about_screen.dart';
+import 'staticpages/contact_screen.dart';
+import 'staticpages/terms_screen.dart';
+import 'staticpages/coming_soon_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -71,11 +76,12 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // ========== ABOUT ==========
-          _SectionTitle(title: t.about),
+          // ========== ABOUT & SUPPORT ==========
+          _SectionTitle(title: t.about), // Or use t.support if you add it
           const SizedBox(height: 12),
           _SettingsCard(
             children: [
+              // Version Info
               Padding(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -114,6 +120,55 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const _Divider(),
+
+              // --- NEW STATIC PAGES MENU ITEMS ---
+              _SettingsAction(
+                title: t.about, // Assuming t.about exists, or use 'About Us'
+                icon: Icons.info_outline_rounded,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                ),
+              ),
+              const _Divider(),
+              _SettingsAction(
+                title: t.contactUs, // Add to AppStrings
+                icon: Icons.contact_support_rounded,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ContactScreen()),
+                ),
+              ),
+              const _Divider(),
+              _SettingsAction(
+                title: t.termsConditions, // Add to AppStrings
+                icon: Icons.description_outlined,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TermsScreen()),
+                ),
+              ),
+              const _Divider(),
+              _SettingsAction(
+                title: t.rateApp, // Add to AppStrings
+                icon: Icons.star_outline_rounded,
+                onTap: () {
+                  // Handle rate app logic here (e.g., show dialog or open store)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Rate App feature coming soon!')),
+                  );
+                },
+              ),
+              const _Divider(),
+              _SettingsAction(
+                title: t.comingSoon, // Add to AppStrings
+                icon: Icons.hourglass_empty_rounded,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ComingSoonScreen()),
+                ),
+              ),
             ],
           ),
         ],
@@ -121,6 +176,8 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
+
+// ========== EXISTING WIDGETS ==========
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -258,6 +315,69 @@ class _ThemeOption extends StatelessWidget {
             ),
             if (selected)
               Icon(Icons.check_circle_rounded, color: accent, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ========== NEW REUSABLE WIDGET FOR STATIC PAGES ==========
+
+class _SettingsAction extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SettingsAction({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? AppTheme.secondary : AppTheme.primary;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: 22,
+                color: isDark ? Colors.white : Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: isDark ? Colors.white : AppTheme.primary,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: isDark ? Colors.white54 : Colors.grey.shade400,
+            ),
           ],
         ),
       ),

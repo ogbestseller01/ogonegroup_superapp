@@ -86,6 +86,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
+  String get contactUs => 'Contact Us';
+
+  @override
+  String get termsConditions => 'Terms & Conditions';
+
+  @override
+  String get rateApp => 'Rate App';
+
+  @override
+  String get others => 'Others';
+
+  @override
   String get welcome => 'Welcome';
 
   @override
