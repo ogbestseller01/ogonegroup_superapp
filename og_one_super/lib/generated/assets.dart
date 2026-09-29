@@ -5,14 +5,28 @@ import 'package:flutter/widgets.dart';
 class Assets {
   Assets._();
 
-  static const $AssetsImagesGen images = $AssetsImagesGen();
+  static const AssetGenImage englishflug =
+      AssetGenImage('assets/images/englishflug.png');
+  static const AssetGenImage homeimg =
+      AssetGenImage('assets/images/homeimg.png');
+  static const AssetGenImage tzflug = AssetGenImage('assets/images/tzflug.png');
+  static const $AssetsAssetsGen assets = $AssetsAssetsGen();
+}
+
+class $AssetsAssetsGen {
+  const $AssetsAssetsGen();
+
+  final $AssetsImagesGen images = const $AssetsImagesGen();
 }
 
 class $AssetsImagesGen {
   const $AssetsImagesGen();
 
+  final AssetGenImage englishflug =
+      const AssetGenImage('assets/images/englishflug.png');
   final AssetGenImage homeimg =
       const AssetGenImage('assets/images/homeimg.png');
+  final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');
 }
 
 class AssetGenImage {

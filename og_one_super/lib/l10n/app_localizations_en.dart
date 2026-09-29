@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'OG ONE GROUP';
 
   @override
-  String get miniApps => 'Mini Apps';
+  String get superApps => 'Super App';
 
   @override
   String get settings => 'Settings';

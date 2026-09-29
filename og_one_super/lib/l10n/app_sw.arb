@@ -1,7 +1,7 @@
 {
   "@@locale": "sw",
   "appName": "OG ONE GROUP",
-  "miniApps": "Programu Ndogo",
+  "superApps": "Programu Kuu",
   "settings": "Mipangilio",
 
   "chooseService": "Chagua huduma unayotaka kuendelea",

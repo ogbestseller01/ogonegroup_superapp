@@ -104,11 +104,11 @@ abstract class AppLocalizations {
   /// **'OG ONE GROUP'**
   String get appName;
 
-  /// No description provided for @miniApps.
+  /// No description provided for @superApps.
   ///
   /// In en, this message translates to:
-  /// **'Mini Apps'**
-  String get miniApps;
+  /// **'Super App'**
+  String get superApps;
 
   /// No description provided for @settings.
   ///

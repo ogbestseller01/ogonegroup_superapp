@@ -12,7 +12,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get appName => 'OG ONE GROUP';
 
   @override
-  String get miniApps => 'Programu Ndogo';
+  String get superApps => 'Programu Kuu';
 
   @override
   String get settings => 'Mipangilio';

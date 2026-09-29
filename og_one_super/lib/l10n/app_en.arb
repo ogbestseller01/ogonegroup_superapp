@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
   "appName": "OG ONE GROUP",
-  "miniApps": "Mini Apps",
+  "superApps": "Super App",
   "settings": "Settings",
 
   "chooseService": "Choose the service you want and continue",
