@@ -1,0 +1,9 @@
+**/build/
+**/.dart_tool/
+**/ios/Pods/
+**/.idea/
+*.iml
+**/.flutter-plugins*
+**/*.jks
+**/key.properties
+.DS_Store
