@@ -2,6 +2,41 @@
 import 'package:flutter/material.dart';
 import '../models/country.dart';
 
+// ============================================================
+//  FLAG HELPERS
+// ============================================================
+// Note: Your actual files are named 'tzflug.png' and 'englishflug.png'
+String? _getFlagAssetPath(String countryName) {
+  switch (countryName.toLowerCase()) {
+    case 'tanzania':
+      return 'assets/images/tzflug.png';
+    case 'english':
+    case 'united kingdom':
+      return 'assets/images/englishflug.png';
+    default:
+      return null; // Fallback to emoji if no PNG is found
+  }
+}
+
+Widget _buildFlagWidget(String name, String emoji, double height) {
+  final assetPath = _getFlagAssetPath(name);
+  if (assetPath != null) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(3),
+      child: Image.asset(
+        assetPath,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // If the image fails to load, fallback to the emoji
+          return Text(emoji, style: TextStyle(fontSize: height));
+        },
+      ),
+    );
+  }
+  return Text(emoji, style: TextStyle(fontSize: height));
+}
+
 class CountryPicker extends StatefulWidget {
   final Country selectedCountry;
   final ValueChanged<Country> onChanged;
@@ -87,7 +122,8 @@ class _CountryPickerState extends State<CountryPicker> {
                       itemBuilder: (context, index) {
                         final country = _filtered[index];
                         return ListTile(
-                          leading: Text(country.flag, style: const TextStyle(fontSize: 28)),
+                          // FIXED: Now uses the PNG flag helper
+                          leading: _buildFlagWidget(country.name, country.flag, 28),
                           title: Text(country.name),
                           trailing: Text(country.dialCode),
                           onTap: () {
@@ -121,7 +157,8 @@ class _CountryPickerState extends State<CountryPicker> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.selectedCountry.flag, style: const TextStyle(fontSize: 24)),
+            // FIXED: Now uses the PNG flag helper
+            _buildFlagWidget(widget.selectedCountry.name, widget.selectedCountry.flag, 24),
             const SizedBox(width: 8),
             Text(
               widget.selectedCountry.dialCode,

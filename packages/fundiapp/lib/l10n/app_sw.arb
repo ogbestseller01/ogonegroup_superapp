@@ -243,6 +243,9 @@
   "paymentProofFormats": "JPG, PNG, au PDF",
   "paymentInstructions": "Maelekezo ya Malipo",
   "sendAmountTo": "Tuma {amount} kwa:",
+  "@sendAmountTo": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
   "account": "Akaunti",
   "submitSubscription": "Wasilisha Usajili",
   "subscriptionCreated": "Usajili Umeundwa!",
@@ -256,11 +259,23 @@
   "subscriptionActive": "Inatumika",
   "subscriptionInactive": "Haijatumika",
   "daysRemaining": "{days} siku zimesalia",
+  "@daysRemaining": {
+    "placeholders": { "days": { "type": "int" } }
+  },
   "expiresOn": "Inaisha: {date}",
+  "@expiresOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "validUntil": "Inatumika hadi: {date}",
+  "@validUntil": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "noSubscriptions": "Bado hakuna usajili",
   "noInvoices": "Hakuna ankara zinazopatikana",
   "invoiceNumber": "Ankara #{number}",
+  "@invoiceNumber": {
+    "placeholders": { "number": { "type": "String" } }
+  },
   "invoiceStatus": "Hali",
   "viewInvoice": "Tazama Ankara",
   "downloadPdf": "Pakua PDF",
@@ -294,22 +309,40 @@
   "invoices": "Ankara",
   "certificate": "Cheti",
   "approvedOn": "Ilioidhinishwa tarehe {date}",
+  "@approvedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "startedOn": "Imeanza: {date}",
+  "@startedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "createdOn": "Imeundwa: {date}",
+  "@createdOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "paidOn": "Imelipwa: {date}",
+  "@paidOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "dueOn": "Inatarajiwa: {date}",
+  "@dueOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "subscriptionReference": "Usajili #{id}",
+  "@subscriptionReference": {
+    "placeholders": { "id": { "type": "String" } }
+  },
   "plan": "Mpango",
   "status": "Hali",
   "download": "Pakua",
   "share": "Shiriki",
   "openPdf": "Fungua PDF",
 
-    "privacyPolicy": "Sera ya Faragha",
-    "tapToChangePhoto": "Gonga kamera kubadilisha picha",
-    "nidaNumber": "Namba ya NIDA",
-    "typeArea": "Andika eneo",
-    "pickOnMap": "Chagua kwenye ramani",
-    "typeAreaOrPickOnMap": "Andika eneo au chagua kwenye ramani",
-    "oops": "Samahani!"
+  "privacyPolicy": "Sera ya Faragha",
+  "tapToChangePhoto": "Gonga kamera kubadilisha picha",
+  "nidaNumber": "Namba ya NIDA",
+  "typeArea": "Andika eneo",
+  "pickOnMap": "Chagua kwenye ramani",
+  "typeAreaOrPickOnMap": "Andika eneo au chagua kwenye ramani",
+  "oops": "Samahani!"
 }

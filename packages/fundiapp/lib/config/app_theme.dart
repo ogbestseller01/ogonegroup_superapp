@@ -1,4 +1,4 @@
-// lib/config/app_theme.dart
+// packages/fundiapp/lib/config/app_theme.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -71,6 +71,16 @@ class AppTheme {
   static Color get border => darkBorder;
   static Color get cardColor => darkCard;
 
+  // ===== EMOJI FALLBACK =====
+  /// Used across both themes so any emoji (flags, ☀️/🌙, 🎉…) renders
+  /// through the OS font even when a Google Font is active.
+  static const List<String> emojiFontFallback = [
+    'Apple Color Emoji',   // iOS / macOS
+    'Noto Color Emoji',    // Android
+    'Segoe UI Emoji',      // Windows
+  ];
+
+  // ===== CARD DECORATIONS =====
   static BoxDecoration cardDecoration({double radius = 16}) {
     return BoxDecoration(
       color: light,
@@ -101,160 +111,61 @@ class AppTheme {
     );
   }
 
-  /// Shared text theme builder — always inherit: true so theme switches can lerp.
+  // ===== TEXT THEME BUILDER =====
+  /// Shared text theme builder — always `inherit: true` so theme switches
+  /// can lerp between values.
   static TextTheme _buildTextTheme(Color primaryText, Color secondaryText) {
     final base = GoogleFonts.nunitoTextTheme();
+
+    TextStyle _s(TextStyle? b, {
+      required double size,
+      FontWeight? weight,
+      required Color color,
+      double? height,
+      double? letterSpacing,
+    }) =>
+        (b ?? const TextStyle()).copyWith(
+          inherit: true,
+          fontSize: size,
+          fontWeight: weight,
+          color: color,
+          height: height,
+          letterSpacing: letterSpacing,
+        );
+
     return base.copyWith(
-      displayLarge: base.displayLarge?.copyWith(
-        inherit: true,
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
-        color: primaryText,
-        letterSpacing: -0.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 32,
-            fontWeight: FontWeight.w800,
-            color: primaryText,
-            letterSpacing: -0.5,
-          ),
-      displayMedium: base.displayMedium?.copyWith(
-        inherit: true,
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: primaryText,
-        letterSpacing: -0.3,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: primaryText,
-            letterSpacing: -0.3,
-          ),
-      headlineMedium: base.headlineMedium?.copyWith(
-        inherit: true,
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: primaryText,
-          ),
-      titleLarge: base.titleLarge?.copyWith(
-        inherit: true,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      titleMedium: base.titleMedium?.copyWith(
-        inherit: true,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      titleSmall: base.titleSmall?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      bodyLarge: base.bodyLarge?.copyWith(
-        inherit: true,
-        fontSize: 16,
-        color: primaryText,
-        height: 1.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 16,
-            color: primaryText,
-            height: 1.5,
-          ),
-      bodyMedium: base.bodyMedium?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        color: secondaryText,
-        height: 1.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            color: secondaryText,
-            height: 1.5,
-          ),
-      bodySmall: base.bodySmall?.copyWith(
-        inherit: true,
-        fontSize: 12,
-        color: secondaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 12,
-            color: secondaryText,
-          ),
-      labelLarge: base.labelLarge?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      labelMedium: base.labelMedium?.copyWith(
-        inherit: true,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: primaryText,
-          ),
-      labelSmall: base.labelSmall?.copyWith(
-        inherit: true,
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: secondaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: secondaryText,
-          ),
+      displayLarge: _s(base.displayLarge,
+          size: 32, weight: FontWeight.w800, color: primaryText,
+          letterSpacing: -0.5),
+      displayMedium: _s(base.displayMedium,
+          size: 28, weight: FontWeight.w700, color: primaryText,
+          letterSpacing: -0.3),
+      headlineMedium: _s(base.headlineMedium,
+          size: 24, weight: FontWeight.w700, color: primaryText),
+      titleLarge: _s(base.titleLarge,
+          size: 20, weight: FontWeight.w600, color: primaryText),
+      titleMedium: _s(base.titleMedium,
+          size: 16, weight: FontWeight.w600, color: primaryText),
+      titleSmall: _s(base.titleSmall,
+          size: 14, weight: FontWeight.w600, color: primaryText),
+      bodyLarge: _s(base.bodyLarge,
+          size: 16, color: primaryText, height: 1.5),
+      bodyMedium: _s(base.bodyMedium,
+          size: 14, color: secondaryText, height: 1.5),
+      bodySmall: _s(base.bodySmall,
+          size: 12, color: secondaryText),
+      labelLarge: _s(base.labelLarge,
+          size: 14, weight: FontWeight.w600, color: primaryText),
+      labelMedium: _s(base.labelMedium,
+          size: 12, weight: FontWeight.w500, color: primaryText),
+      labelSmall: _s(base.labelSmall,
+          size: 11, weight: FontWeight.w500, color: secondaryText),
     );
   }
 
-  // ===== LIGHT THEME =====
+  // ============================================================
+  //  LIGHT THEME
+  // ============================================================
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primaryColor: primary,
@@ -268,10 +179,10 @@ class AppTheme {
       onPrimary: Colors.white,
       onSecondary: primary,
       onSurface: primary,
-      onBackground: primary,
     ),
     dividerColor: dividerColor,
     fontFamily: GoogleFonts.nunito().fontFamily,
+    fontFamilyFallback: emojiFontFallback,          // ← emoji everywhere
     textTheme: _buildTextTheme(primary, greyText),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.white,
@@ -373,12 +284,13 @@ class AppTheme {
       elevation: 8,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>(
-            (states) =>
-        states.contains(MaterialState.selected) ? primary : Colors.grey.shade400,
+      thumbColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
+            ? primary
+            : Colors.grey.shade400,
       ),
-      trackColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      trackColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? primary.withOpacity(0.5)
             : Colors.grey.shade300,
       ),
@@ -414,7 +326,9 @@ class AppTheme {
     ),
   );
 
-  // ===== DARK THEME =====
+  // ============================================================
+  //  DARK THEME
+  // ============================================================
   static ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: primary,
@@ -425,14 +339,13 @@ class AppTheme {
       tertiary: accent,
       error: error,
       surface: darkSurface,
-      background: darkBackground,
       onPrimary: Colors.white,
       onSecondary: primary,
       onSurface: Colors.white,
-      onBackground: Colors.white,
     ),
     dividerColor: darkBorder,
     fontFamily: GoogleFonts.nunito().fontFamily,
+    fontFamilyFallback: emojiFontFallback,          // ← emoji everywhere
     textTheme: _buildTextTheme(Colors.white, darkTextSecondary),
     appBarTheme: AppBarTheme(
       backgroundColor: darkSurface,
@@ -535,13 +448,13 @@ class AppTheme {
       elevation: 8,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      thumbColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? secondary
             : Colors.grey.shade600,
       ),
-      trackColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      trackColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? secondary.withOpacity(0.5)
             : Colors.grey.shade700,
       ),

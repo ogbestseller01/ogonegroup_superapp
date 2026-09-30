@@ -1,15 +1,26 @@
+// lib/main.dart
+// ============================================================
+//  FundiApp SDK — root entry point.
+//
+//  Runs two ways:
+//    1. Standalone  — this main() boots the whole app.
+//    2. Embedded    — host super-app owns Firebase/root MaterialApp,
+//                     and mounts `FundiAppMiniApp` instead of this.
+// ============================================================
+
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kDebugMode, kProfileMode, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 
+// ── Local: core ──────────────────────────────────────────────
 import 'app_navigator.dart';
 import 'config/app_routes.dart';
 import 'config/app_theme.dart';
@@ -17,73 +28,71 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'models/chat_conversation.dart';
 
+// ── Local: providers ─────────────────────────────────────────
 import 'providers/auth_provider.dart';
+import 'providers/chat_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/portfolio_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/request_provider.dart';
-import 'providers/portfolio_provider.dart';
-import 'providers/technician_provider.dart';
 import 'providers/service_provider.dart';
-import 'providers/notification_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/static_page_provider.dart';
-import 'providers/theme_provider.dart';
-import 'providers/chat_provider.dart';
 import 'providers/subscription_provider.dart';
+import 'providers/technician_provider.dart';
+import 'providers/theme_provider.dart';
 
+// ── Local: services ──────────────────────────────────────────
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
-import 'screens/splash_screen.dart';
-import 'screens/onboarding_screen.dart';
+// ── Local: screens ───────────────────────────────────────────
+import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
-import 'screens/auth/forgot_password_screen.dart';
-import 'screens/auth/reset_password_screen.dart';
-
+import 'screens/auth/register_flow/register_review_screen.dart';
 import 'screens/auth/register_flow/register_step1_screen.dart';
 import 'screens/auth/register_flow/register_step2_screen.dart';
 import 'screens/auth/register_flow/register_step3_screen.dart';
 import 'screens/auth/register_flow/register_step4_screen.dart';
-import 'screens/auth/register_flow/register_review_screen.dart';
-
+import 'screens/auth/reset_password_screen.dart';
+import 'screens/chat/chat_list_screen.dart';
+import 'screens/chat/chat_screen.dart';
+import 'screens/chat/video_call_screen.dart';
+import 'screens/chat/voice_call_screen.dart';
 import 'screens/fundi/fundi_home_screen.dart';
-import 'screens/fundi/fundi_posts_screen.dart';
 import 'screens/fundi/fundi_portfolio_screen.dart';
+import 'screens/fundi/fundi_posts_screen.dart';
 import 'screens/fundi/fundi_requests_screen.dart';
 import 'screens/fundi/profile/edit_profile_screen.dart';
 import 'screens/fundi/profile/fundi_profile_screen.dart';
 import 'screens/fundi/profile/fundi_settings_screen.dart';
-
+import 'screens/onboarding_screen.dart';
+import 'screens/splash_screen.dart'; // ← the ONLY splash. Delete splash_screen_fixed.dart.
 import 'screens/static/about_screen.dart';
-import 'screens/static/terms_screen.dart';
-import 'screens/static/faq_screen.dart';
 import 'screens/static/contact_us_screen.dart';
+import 'screens/static/faq_screen.dart';
 import 'screens/static/privacy_policy_screen.dart';
-
-import 'screens/chat/chat_list_screen.dart';
-import 'screens/chat/chat_screen.dart';
-import 'screens/chat/voice_call_screen.dart';
-import 'screens/chat/video_call_screen.dart';
-
-import 'screens/subscription/rate_cards_screen.dart';
-import 'screens/subscription/payment_methods_screen.dart';
-import 'screens/subscription/my_subscriptions_screen.dart';
+import 'screens/static/terms_screen.dart';
 import 'screens/subscription/downloads_screen.dart';
+import 'screens/subscription/my_subscriptions_screen.dart';
+import 'screens/subscription/payment_methods_screen.dart';
+import 'screens/subscription/rate_cards_screen.dart';
 
 // ============================================================
-// BOOT DEBUG HELPERS
+//  BOOT DEBUG HELPERS
 // ============================================================
 
 final Stopwatch _bootClock = Stopwatch();
 
-/// Prints a boot step with elapsed milliseconds since main() started.
+/// Prints a boot step with elapsed ms since main() started.
 /// Filter your console with "[BOOT]" to follow the startup sequence.
 void _log(String message) {
   debugPrint('[BOOT +${_bootClock.elapsedMilliseconds}ms] $message');
 }
 
-/// Logs before/after creating a provider so a crashing constructor is easy to find.
-/// Note: providers are lazy, so these logs appear the first time each is read.
+/// Wraps a provider constructor so a crash is easy to locate.
+/// Providers are lazy, so these logs appear on first read.
 T _timed<T>(String name, T Function() build) {
   _log('⏳ Creating $name');
   try {
@@ -97,18 +106,28 @@ T _timed<T>(String name, T Function() build) {
   }
 }
 
+// ============================================================
+//  FCM BACKGROUND HANDLER  (must be top-level + vm:entry-point)
+// ============================================================
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('📩 BG handler start: ${message.messageId}');
-  // Only initialize if this isolate hasn't already done so.
-  // When embedded in the super-app, the host app owns Firebase init.
+
+  // Host super-app may have already initialized Firebase; only init
+  // here if this isolate is completely cold.
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   }
-  debugPrint('📩 BG message: ${message.messageId}');
+
+  debugPrint('📩 BG message handled: ${message.messageId}');
 }
+
+// ============================================================
+//  MAIN
+// ============================================================
 
 Future<void> main() async {
   _bootClock.start();
@@ -119,9 +138,7 @@ Future<void> main() async {
   _log('ℹ️ Platform: $defaultTargetPlatform | '
       'debug=$kDebugMode profile=$kProfileMode release=$kReleaseMode');
 
-  // ----------------------------------------------------------
-  // Global error hooks: catch anything that would otherwise be silent
-  // ----------------------------------------------------------
+  // ── Global error hooks ────────────────────────────────────
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('🔥 [FlutterError] ${details.exceptionAsString()}');
@@ -135,61 +152,45 @@ Future<void> main() async {
   };
   _log('✅ Global error handlers installed');
 
-  // ----------------------------------------------------------
-  // 1. Firebase
-  //
-  // Standalone (fundiapp as the root app): this initializes Firebase.
-  // Embedded (super-app owns the root): Firebase.apps is non-empty,
-  // so we skip re-init — the host already did it.
-  // ----------------------------------------------------------
+  // ── 1/5  Firebase ─────────────────────────────────────────
   if (Firebase.apps.isEmpty) {
     try {
-      _log('⏳ [1/4] Firebase.initializeApp starting');
-      _log('ℹ️ Firebase apps already registered (native): '
-          '${Firebase.apps.map((a) => a.name).toList()}');
+      _log('⏳ [1/5] Firebase.initializeApp starting');
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      debugPrint('✅ Firebase initialized successfully');
       final opts = Firebase.app().options;
-      _log('ℹ️ Firebase app: ${Firebase.app().name} | appId=${opts.appId} | '
-          'project=${opts.projectId} | bundle=${opts.iosBundleId}');
+      _log('✅ [1/5] Firebase ready | app=${Firebase.app().name} '
+          '| project=${opts.projectId} | appId=${opts.appId}');
     } catch (e, stackTrace) {
       debugPrint('❌ Firebase initialization failed: $e');
       debugPrint('$stackTrace');
     }
   } else {
-    _log('ℹ️ Firebase already initialized by host — skipping');
+    _log('ℹ️ [1/5] Firebase already initialized by host — skipping');
   }
 
-  // Top-level background handler (required)
   _log('⏳ Registering FirebaseMessaging background handler');
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   _log('✅ Background handler registered');
 
-  // ----------------------------------------------------------
-  // 3. Secure screen
-  // ----------------------------------------------------------
+  // ── 2/5  Secure screen ────────────────────────────────────
   try {
-    _log('⏳ [2/4] SecurityService.enableSecureScreen starting');
+    _log('⏳ [2/5] SecurityService.enableSecureScreen starting');
     await SecurityService.enableSecureScreen();
-    debugPrint('✅ Secure screen initialized successfully');
-    _log('✅ [2/4] SecurityService.enableSecureScreen finished');
+    _log('✅ [2/5] Secure screen enabled');
   } catch (e, stackTrace) {
     debugPrint('❌ Secure screen initialization failed: $e');
     debugPrint('$stackTrace');
   }
 
-  // ----------------------------------------------------------
-  // 4. System UI
-  // ----------------------------------------------------------
+  // ── 3/5  System UI ────────────────────────────────────────
   try {
-    _log('⏳ [3/4] System UI configuration starting');
+    _log('⏳ [3/5] System UI configuration starting');
     await SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    _log('✅ Preferred orientations set');
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -198,22 +199,20 @@ Future<void> main() async {
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );
-    _log('✅ [3/4] System UI overlay style set');
+    _log('✅ [3/5] System UI configured');
   } catch (e, stackTrace) {
     debugPrint('⚠️ System UI configuration failed: $e');
     debugPrint('$stackTrace');
   }
 
-  // ----------------------------------------------------------
-  // 5. AuthProvider + runApp
-  // ----------------------------------------------------------
-  _log('⏳ [4/4] Creating AuthProvider');
+  // ── 4/5  AuthProvider (eager — mini-app + FCM need it) ────
+  _log('⏳ [4/5] Creating AuthProvider');
   final authProvider = AuthProvider(navigatorKey: navigatorKey);
-  _log('✅ AuthProvider created');
   ProviderRegistry.registerAuthProvider(authProvider);
-  _log('✅ AuthProvider registered in ProviderRegistry');
+  _log('✅ [4/5] AuthProvider ready & registered');
 
-  _log('⏳ Calling runApp()');
+  // ── 5/5  runApp ───────────────────────────────────────────
+  _log('⏳ [5/5] Calling runApp()');
   runApp(
     MultiProvider(
       providers: [
@@ -221,7 +220,8 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (_) => _timed('PostProvider', () => PostProvider())),
         ChangeNotifierProvider(
-            create: (_) => _timed('RequestProvider', () => RequestProvider())),
+            create: (_) =>
+                _timed('RequestProvider', () => RequestProvider())),
         ChangeNotifierProvider(
             create: (_) =>
                 _timed('PortfolioProvider', () => PortfolioProvider())),
@@ -256,15 +256,11 @@ Future<void> main() async {
     _log('🎉 First Flutter frame rendered');
   });
 
-  // ----------------------------------------------------------
-  // FCM: runs in the background so the splash shows immediately.
-  // On iOS it waits for the notification permission dialog.
-  // ----------------------------------------------------------
+  // ── FCM (background, so the splash shows immediately) ─────
   unawaited(() async {
     try {
       _log('⏳ FcmService.init starting (background)');
       await FcmService.init();
-      debugPrint('✅ FCM initialized successfully');
       _log('✅ FcmService.init finished');
     } catch (e, stackTrace) {
       debugPrint('❌ FCM initialization failed: $e');
@@ -272,6 +268,10 @@ Future<void> main() async {
     }
   }());
 }
+
+// ============================================================
+//  ROOT WIDGET
+// ============================================================
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -281,7 +281,8 @@ class MyApp extends StatelessWidget {
     _log('🧱 MyApp.build()');
     return Consumer2<ThemeProvider, SettingsProvider>(
       builder: (context, themeProvider, settings, _) {
-        debugPrint('🧱 MaterialApp rebuild | themeMode=${themeProvider.themeMode} '
+        debugPrint('🧱 MaterialApp rebuild | '
+            'themeMode=${themeProvider.themeMode} '
             '| locale=${settings.currentLocale}');
         return MaterialApp(
           title: 'NETSAF FUNDI APP',
@@ -291,15 +292,15 @@ class MyApp extends StatelessWidget {
           themeMode: themeProvider.themeMode,
           navigatorKey: navigatorKey,
           locale: settings.currentLocale,
+          supportedLocales: const [
+            Locale('en'),
+            Locale('sw'),
+          ],
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('sw'),
           ],
           initialRoute: AppRoutes.splash,
           onGenerateRoute: generateFundiAppRoute,
@@ -320,234 +321,126 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// ============================================================
+//  ROUTING  (exported for use by FundiAppMiniApp)
+// ============================================================
+
 Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
   final Object? args = settings.arguments;
   debugPrint('🧭 Route requested: ${settings.name} | '
       'args type: ${args?.runtimeType}');
 
+  MaterialPageRoute<dynamic> route(Widget page) => MaterialPageRoute(
+    builder: (_) => page,
+    settings: settings,
+  );
+
   switch (settings.name) {
     case AppRoutes.splash:
-      return MaterialPageRoute(
-        builder: (_) => const SplashScreen(),
-        settings: settings,
-      );
+      return route(const SplashScreen());
     case AppRoutes.onboarding:
-      return MaterialPageRoute(
-        builder: (_) => const OnboardingScreen(),
-        settings: settings,
-      );
+      return route(const OnboardingScreen());
     case AppRoutes.login:
-      return MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
-        settings: settings,
-      );
+      return route(const LoginScreen());
     case AppRoutes.registerStep1:
-      return MaterialPageRoute(
-        builder: (_) => const RegisterStep1Screen(),
-        settings: settings,
-      );
+      return route(const RegisterStep1Screen());
     case AppRoutes.registerStep2:
-      return MaterialPageRoute(
-        builder: (_) => RegisterStep2Screen(
-          technicianId: _getIntArgument(args),
-        ),
-        settings: settings,
-      );
+      return route(RegisterStep2Screen(technicianId: _getIntArgument(args)));
     case AppRoutes.registerStep3:
-      return MaterialPageRoute(
-        builder: (_) => RegisterStep3Screen(
-          technicianId: _getIntArgument(args),
-        ),
-        settings: settings,
-      );
+      return route(RegisterStep3Screen(technicianId: _getIntArgument(args)));
     case AppRoutes.registerStep4:
-      return MaterialPageRoute(
-        builder: (_) => RegisterStep4Screen(
-          technicianId: _getIntArgument(args),
-        ),
-        settings: settings,
-      );
+      return route(RegisterStep4Screen(technicianId: _getIntArgument(args)));
     case AppRoutes.registerReview:
       if (args is Map<String, dynamic>) {
-        return MaterialPageRoute(
-          builder: (_) => RegisterReviewScreen(registrationData: args),
-          settings: settings,
-        );
+        return route(RegisterReviewScreen(registrationData: args));
       }
       debugPrint('⚠️ registerReview called without Map args → RegisterStep1');
-      return MaterialPageRoute(
-        builder: (_) => const RegisterStep1Screen(),
-        settings: settings,
-      );
+      return route(const RegisterStep1Screen());
     case AppRoutes.otp:
       if (args is Map<String, dynamic>) {
-        return MaterialPageRoute(
-          builder: (_) => OtpVerificationScreen(
-            email: args['email']?.toString() ?? '',
-            redirectToStep2: args['redirectToStep2'] == true,
-            technicianId: _nullableInt(args['technicianId']),
-          ),
-          settings: settings,
-        );
+        return route(OtpVerificationScreen(
+          email: args['email']?.toString() ?? '',
+          redirectToStep2: args['redirectToStep2'] == true,
+          technicianId: _nullableInt(args['technicianId']),
+        ));
       }
-      return MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          email: args?.toString() ?? '',
-        ),
-        settings: settings,
-      );
+      return route(OtpVerificationScreen(email: args?.toString() ?? ''));
     case AppRoutes.forgot:
-      return MaterialPageRoute(
-        builder: (_) => const ForgotPasswordScreen(),
-        settings: settings,
-      );
+      return route(const ForgotPasswordScreen());
     case AppRoutes.reset:
-      return MaterialPageRoute(
-        builder: (_) => ResetPasswordScreen(
-          email: args?.toString() ?? '',
-        ),
-        settings: settings,
-      );
+      return route(ResetPasswordScreen(email: args?.toString() ?? ''));
     case AppRoutes.home:
-      return MaterialPageRoute(
-        builder: (_) => const FundiHomeScreen(),
-        settings: settings,
-      );
+      return route(const FundiHomeScreen());
     case AppRoutes.posts:
     case AppRoutes.blog:
     case AppRoutes.createPost:
     case AppRoutes.editPost:
-      return MaterialPageRoute(
-        builder: (_) => const FundiPostsScreen(),
-        settings: settings,
-      );
+      return route(const FundiPostsScreen());
     case AppRoutes.portfolio:
     case AppRoutes.addPortfolio:
     case AppRoutes.editPortfolio:
-      return MaterialPageRoute(
-        builder: (_) => const FundiPortfolioScreen(),
-        settings: settings,
-      );
+      return route(const FundiPortfolioScreen());
     case AppRoutes.requests:
-      return MaterialPageRoute(
-        builder: (_) => const FundiRequestsScreen(),
-        settings: settings,
-      );
+      return route(const FundiRequestsScreen());
     case AppRoutes.notifications:
-    // TODO: use NotificationsScreen when available
-      return MaterialPageRoute(
-        builder: (_) => const FundiHomeScreen(),
-        settings: settings,
-      );
+    // TODO: swap to a dedicated NotificationsScreen when available.
+      return route(const FundiHomeScreen());
     case AppRoutes.profile:
-      return MaterialPageRoute(
-        builder: (_) => const FundiProfileScreen(),
-        settings: settings,
-      );
+      return route(const FundiProfileScreen());
     case AppRoutes.editProfile:
-      return MaterialPageRoute(
-        builder: (_) => const EditProfileScreen(),
-        settings: settings,
-      );
+      return route(const EditProfileScreen());
     case AppRoutes.settings:
-      return MaterialPageRoute(
-        builder: (_) => const FundiSettingsScreen(),
-        settings: settings,
-      );
+      return route(const FundiSettingsScreen());
     case AppRoutes.chatList:
-      return MaterialPageRoute(
-        builder: (_) => const ChatListScreen(),
-        settings: settings,
-      );
+      return route(const ChatListScreen());
     case AppRoutes.chat:
       if (args is ChatConversation) {
-        return MaterialPageRoute(
-          builder: (_) => ChatScreen(conversation: args),
-          settings: settings,
-        );
+        return route(ChatScreen(conversation: args));
       }
       debugPrint('⚠️ chat route called without ChatConversation '
           '(got ${args?.runtimeType}) → ChatListScreen');
-      return MaterialPageRoute(
-        builder: (_) => const ChatListScreen(),
-        settings: settings,
-      );
+      return route(const ChatListScreen());
     case AppRoutes.voiceCall:
-      final voiceArgs = _getMapArgument(args);
-      return MaterialPageRoute(
-        builder: (_) => VoiceCallScreen(
-          userName: voiceArgs?['userName']?.toString() ?? 'Unknown',
-          userId: voiceArgs?['userId']?.toString() ?? '',
-        ),
-        settings: settings,
-      );
+      final a = _getMapArgument(args);
+      return route(VoiceCallScreen(
+        userName: a?['userName']?.toString() ?? 'Unknown',
+        userId: a?['userId']?.toString() ?? '',
+      ));
     case AppRoutes.videoCall:
-      final videoArgs = _getMapArgument(args);
-      return MaterialPageRoute(
-        builder: (_) => VideoCallScreen(
-          userName: videoArgs?['userName']?.toString() ?? 'Unknown',
-          userId: videoArgs?['userId']?.toString() ?? '',
-        ),
-        settings: settings,
-      );
+      final a = _getMapArgument(args);
+      return route(VideoCallScreen(
+        userName: a?['userName']?.toString() ?? 'Unknown',
+        userId: a?['userId']?.toString() ?? '',
+      ));
     case AppRoutes.about:
-      return MaterialPageRoute(
-        builder: (_) => const AboutScreen(),
-        settings: settings,
-      );
+      return route(const AboutScreen());
     case AppRoutes.terms:
-      return MaterialPageRoute(
-        builder: (_) => const TermsScreen(),
-        settings: settings,
-      );
+      return route(const TermsScreen());
     case AppRoutes.faq:
-      return MaterialPageRoute(
-        builder: (_) => const FaqScreen(),
-        settings: settings,
-      );
+      return route(const FaqScreen());
     case AppRoutes.contactUs:
-      return MaterialPageRoute(
-        builder: (_) => const ContactUsScreen(),
-        settings: settings,
-      );
+      return route(const ContactUsScreen());
     case AppRoutes.privacy:
-      return MaterialPageRoute(
-        builder: (_) => const PrivacyPolicyScreen(),
-        settings: settings,
-      );
+      return route(const PrivacyPolicyScreen());
     case AppRoutes.rateCards:
-      return MaterialPageRoute(
-        builder: (_) => const RateCardsScreen(),
-        settings: settings,
-      );
+      return route(const RateCardsScreen());
     case AppRoutes.paymentMethods:
-      return MaterialPageRoute(
-        builder: (_) => const PaymentMethodsScreen(),
-        settings: settings,
-      );
+      return route(const PaymentMethodsScreen());
     case AppRoutes.subscriptions:
-      return MaterialPageRoute(
-        builder: (_) => const MySubscriptionsScreen(),
-        settings: settings,
-      );
+      return route(const MySubscriptionsScreen());
     case AppRoutes.createSubscription:
-      return MaterialPageRoute(
-        builder: (_) => const RateCardsScreen(),
-        settings: settings,
-      );
+      return route(const RateCardsScreen());
     case AppRoutes.downloads:
-      return MaterialPageRoute(
-        builder: (_) => const DownloadsScreen(),
-        settings: settings,
-      );
+      return route(const DownloadsScreen());
     default:
       debugPrint('⚠️ Unknown route: ${settings.name}');
-      return MaterialPageRoute(
-        builder: (_) => const SplashScreen(),
-        settings: settings,
-      );
+      return route(const SplashScreen());
   }
 }
+
+// ============================================================
+//  ROUTE ARG HELPERS
+// ============================================================
 
 int _getIntArgument(Object? args) {
   if (args is int) return args;
@@ -571,7 +464,22 @@ Map<String, dynamic>? _getMapArgument(Object? args) {
   return null;
 }
 
+// ============================================================
+//  PROVIDER REGISTRY  (legacy access point)
+//
+//  Only useful for code that runs *outside* the widget tree — e.g.
+//  a background isolate, FCM tap handler before runApp, or a native
+//  MethodChannel callback. Inside widgets, prefer:
+//
+//      context.read<AuthProvider>()
+//
+//  If nothing in your codebase reads `ProviderRegistry.authProvider`,
+//  delete this class entirely.
+// ============================================================
+
 class ProviderRegistry {
+  ProviderRegistry._();
+
   static AuthProvider? _authProvider;
 
   static void registerAuthProvider(AuthProvider provider) {

@@ -1,15 +1,25 @@
-import 'dart:io';
+// lib/screens/subscription/my_subscriptions_screen.dart
+// ============================================================
+//  My Subscriptions + Invoices
+//
+//  Fixes vs previous version:
+//    • Removed unused imports (dart:io, share_plus)
+//    • Wrapped DateTime args in _formatDateOnly(...) so they
+//      match the ARB placeholder type ("date": "String")
+//    • Added _formatDateOnly() — no more stray "HH:MM" in
+//      labels like "Expires: 31/12/2025"
+// ============================================================
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
-import '../../config/app_theme.dart';
+import 'package:provider/provider.dart';
+
 import '../../config/app_routes.dart';
-import '../../providers/subscription_provider.dart';
-import '../../models/subscription.dart';
-import '../../models/invoice.dart';
-import '../../widgets/custom_button.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/invoice.dart';
+import '../../models/subscription.dart';
+import '../../providers/subscription_provider.dart';
+import '../../widgets/custom_button.dart';
 
 class MySubscriptionsScreen extends StatefulWidget {
   const MySubscriptionsScreen({super.key});
@@ -72,14 +82,16 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
 
               Text(
                 l10n.subscriptionHistory,
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               if (provider.subscriptions.isEmpty)
                 _buildEmptyState(context, l10n)
               else
                 ...provider.subscriptions.map(
-                      (sub) => _buildSubscriptionItem(context, sub, provider, l10n),
+                      (sub) =>
+                      _buildSubscriptionItem(context, sub, provider, l10n),
                 ),
 
               const SizedBox(height: 32),
@@ -87,7 +99,8 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               if (provider.isLocked || provider.isPending)
                 CustomButton(
                   text: l10n.subscribeNow,
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.rateCards),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.rateCards),
                 ),
 
               if (isDownloading)
@@ -102,12 +115,17 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                     ),
                     child: Row(
                       children: [
-                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             provider.downloadProgress ?? 'Downloading...',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.blue.shade700),
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: Colors.blue.shade700),
                           ),
                         ),
                       ],
@@ -124,7 +142,11 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   // ============================================================
   // STATUS CARD
   // ============================================================
-  Widget _buildStatusCard(BuildContext context, SubscriptionProvider provider, AppLocalizations l10n) {
+  Widget _buildStatusCard(
+      BuildContext context,
+      SubscriptionProvider provider,
+      AppLocalizations l10n,
+      ) {
     final theme = Theme.of(context);
     final isActive = provider.hasActiveSubscription;
     final daysLeft = provider.daysRemaining;
@@ -155,7 +177,10 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [statusColor.withOpacity(0.1), statusColor.withOpacity(0.05)],
+          colors: [
+            statusColor.withOpacity(0.1),
+            statusColor.withOpacity(0.05),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -166,7 +191,10 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: statusColor.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
             child: Icon(statusIcon, color: statusColor, size: 32),
           ),
           const SizedBox(width: 16),
@@ -174,14 +202,32 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l10n.subscriptionStatus, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
-                Text(statusText, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: statusColor)),
+                Text(
+                  l10n.subscriptionStatus,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.hintColor),
+                ),
+                Text(
+                  statusText,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
                 if (isActive && daysLeft != null)
-                  Text(l10n.daysRemaining(daysLeft), style: theme.textTheme.bodyMedium?.copyWith(
-                    color: daysLeft < 7 ? Colors.orange : Colors.green,
-                  )),
+                  Text(
+                    l10n.daysRemaining(daysLeft),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: daysLeft < 7 ? Colors.orange : Colors.green,
+                    ),
+                  ),
+                // ✅ FIX #1 — pass a String, not a DateTime
                 if (provider.expiryDate != null && isActive)
-                  Text(l10n.expiresOn(provider.expiryDate!), style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                  Text(
+                    l10n.expiresOn(_formatDateOnly(provider.expiryDate)),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor),
+                  ),
               ],
             ),
           ),
@@ -193,17 +239,17 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   // ============================================================
   // ACTIVE SUBSCRIPTION
   // ============================================================
-  Widget _buildActiveSubscription(BuildContext context, SubscriptionProvider provider, AppLocalizations l10n) {
+  Widget _buildActiveSubscription(
+      BuildContext context,
+      SubscriptionProvider provider,
+      AppLocalizations l10n,
+      ) {
     final theme = Theme.of(context);
 
     Subscription? activeSub;
     try {
       activeSub = provider.subscriptions.firstWhere((s) => s.isActive);
-    } catch (e) {
-      return const SizedBox.shrink();
-    }
-
-    if (activeSub == null) {
+    } catch (_) {
       return const SizedBox.shrink();
     }
 
@@ -221,31 +267,49 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             children: [
               const Icon(Icons.verified, color: Colors.green),
               const SizedBox(width: 8),
-              Text(l10n.activePlan, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.green)),
+              Text(
+                l10n.activePlan,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(activeSub.rateCard?.name ?? 'Unknown Plan', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-          Text(activeSub.rateCard?.formattedPrice ?? '', style: theme.textTheme.titleMedium?.copyWith(color: theme.primaryColor)),
+          Text(
+            activeSub.rateCard?.name ?? 'Unknown Plan',
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            activeSub.rateCard?.formattedPrice ?? '',
+            style: theme.textTheme.titleMedium
+                ?.copyWith(color: theme.primaryColor),
+          ),
           if (activeSub.startDate != null)
             Row(
               children: [
-                Icon(Icons.play_circle_outline, size: 14, color: theme.hintColor),
+                Icon(Icons.play_circle_outline,
+                    size: 14, color: theme.hintColor),
                 const SizedBox(width: 4),
                 Text(
-                  'Started: ${_formatDate(activeSub.startDate!)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                  l10n.startedOn(_formatDateOnly(activeSub.startDate)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor),
                 ),
               ],
             ),
+          // ✅ FIX #2 — pass a String, not a DateTime
           if (activeSub.expiryDate != null)
             Row(
               children: [
                 Icon(Icons.event, size: 14, color: theme.hintColor),
                 const SizedBox(width: 4),
                 Text(
-                  l10n.validUntil(activeSub.expiryDate!),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+                  l10n.validUntil(_formatDateOnly(activeSub.expiryDate)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor),
                 ),
               ],
             ),
@@ -255,7 +319,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   }
 
   // ============================================================
-  // SUBSCRIPTION ITEM (now has "View Invoices" action)
+  // SUBSCRIPTION ITEM
   // ============================================================
   Widget _buildSubscriptionItem(
       BuildContext context,
@@ -287,7 +351,6 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
       statusText = sub.statusLabel;
     }
 
-    // Count invoices belonging to this subscription (safe lookup)
     final invoiceCount = _invoicesForSubscription(provider, sub).length;
 
     return Card(
@@ -298,28 +361,58 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
             leading: Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-              child: Icon(isActive ? Icons.check_circle : Icons.history, color: statusColor, size: 24),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                isActive ? Icons.check_circle : Icons.history,
+                color: statusColor,
+                size: 24,
+              ),
             ),
-            title: Text(sub.rateCard?.name ?? 'Subscription', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+            title: Text(
+              sub.rateCard?.name ?? 'Subscription',
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('${l10n.amountPaid}: ${sub.amountPaid}'),
                 if (sub.startDate != null)
-                  Text('Created: ${_formatDate(sub.startDate!)}', style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                  Text(
+                    l10n.createdOn(_formatDateOnly(sub.startDate)),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor),
+                  ),
+                // ✅ FIX #3 — pass a String, not a DateTime
                 if (sub.expiryDate != null)
-                  Text(l10n.expiresOn(sub.expiryDate!), style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                  Text(
+                    l10n.expiresOn(_formatDateOnly(sub.expiryDate)),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor),
+                  ),
               ],
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-              child: Text(statusText, style: theme.textTheme.bodySmall?.copyWith(color: statusColor, fontWeight: FontWeight.w600)),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                statusText,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             isThreeLine: true,
           ),
-          // Certificate/Approval Details (if approved)
+
+          // Approval banner
           if (sub.approvedAt != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -332,31 +425,38 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.verified_rounded, color: Colors.blue.shade700, size: 16),
+                    Icon(Icons.verified_rounded,
+                        color: Colors.blue.shade700, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Approved on ${_formatDate(sub.approvedAt!)}',
-                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.blue.shade700),
+                        l10n.approvedOn(_formatDateOnly(sub.approvedAt)),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: Colors.blue.shade700),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-          // View Invoices button (per subscription)
+
+          // View Invoices button
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () => _showInvoicesModal(context, provider, sub, l10n),
+                onPressed: () =>
+                    _showInvoicesModal(context, provider, sub, l10n),
                 icon: const Icon(Icons.receipt_long_rounded, size: 18),
                 label: Text(
-                  invoiceCount > 0 ? '${l10n.invoices} ($invoiceCount)' : l10n.invoices,
+                  invoiceCount > 0
+                      ? '${l10n.invoices} ($invoiceCount)'
+                      : l10n.invoices,
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   visualDensity: VisualDensity.compact,
                 ),
               ),
@@ -368,7 +468,7 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   }
 
   // ============================================================
-  // INVOICES MODAL (bottom sheet) — shows invoices for ONE subscription
+  // INVOICES MODAL (bottom sheet)
   // ============================================================
   void _showInvoicesModal(
       BuildContext context,
@@ -383,68 +483,70 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.6,
-              minChildSize: 0.3,
-              maxChildSize: 0.9,
-              expand: false,
-              builder: (context, scrollController) {
-                final invoices = _invoicesForSubscription(provider, sub);
-                final theme = Theme.of(context);
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            final invoices = _invoicesForSubscription(provider, sub);
+            final theme = Theme.of(context);
 
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  Row(
                     children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${l10n.invoices} · ${sub.rateCard?.name ?? 'Subscription'}',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       Expanded(
-                        child: invoices.isEmpty
-                            ? Center(
-                          child: Text(
-                            l10n.noInvoices,
-                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
-                          ),
-                        )
-                            : ListView.builder(
-                          controller: scrollController,
-                          itemCount: invoices.length,
-                          itemBuilder: (context, index) {
-                            return _buildInvoiceItem(context, invoices[index], provider, l10n);
-                          },
+                        child: Text(
+                          '${l10n.invoices} · '
+                              '${sub.rateCard?.name ?? 'Subscription'}',
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                );
-              },
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: invoices.isEmpty
+                        ? Center(
+                      child: Text(
+                        l10n.noInvoices,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: theme.hintColor),
+                      ),
+                    )
+                        : ListView.builder(
+                      controller: scrollController,
+                      itemCount: invoices.length,
+                      itemBuilder: (context, index) => _buildInvoiceItem(
+                        context,
+                        invoices[index],
+                        provider,
+                        l10n,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         );
@@ -453,18 +555,26 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   }
 
   // ============================================================
-  // Helper: get invoices belonging to [sub]
+  // Helper: invoices belonging to [sub]
   // ============================================================
-  List<Invoice> _invoicesForSubscription(SubscriptionProvider provider, Subscription sub) {
+  List<Invoice> _invoicesForSubscription(
+      SubscriptionProvider provider, Subscription sub) {
     final linkedId = sub.invoice?.id;
-    if (linkedId == null) return [];
-    return provider.invoices.where((invoice) => invoice.id == linkedId).toList();
+    if (linkedId == null) return const [];
+    return provider.invoices
+        .where((invoice) => invoice.id == linkedId)
+        .toList();
   }
 
   // ============================================================
-  // INVOICE ITEM (used inside the per-subscription modal)
+  // INVOICE ITEM
   // ============================================================
-  Widget _buildInvoiceItem(BuildContext context, Invoice invoice, SubscriptionProvider provider, AppLocalizations l10n) {
+  Widget _buildInvoiceItem(
+      BuildContext context,
+      Invoice invoice,
+      SubscriptionProvider provider,
+      AppLocalizations l10n,
+      ) {
     final theme = Theme.of(context);
 
     final bool isPaid = invoice.isPaid;
@@ -482,12 +592,24 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isPaid ? Colors.green.withOpacity(0.15) : isPending ? Colors.orange.withOpacity(0.15) : Colors.grey.withOpacity(0.15),
+                color: isPaid
+                    ? Colors.green.withOpacity(0.15)
+                    : isPending
+                    ? Colors.orange.withOpacity(0.15)
+                    : Colors.grey.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                isPaid ? Icons.paid_rounded : isPending ? Icons.pending_rounded : Icons.cancel_rounded,
-                color: isPaid ? Colors.green : isPending ? Colors.orange : Colors.grey,
+                isPaid
+                    ? Icons.paid_rounded
+                    : isPending
+                    ? Icons.pending_rounded
+                    : Icons.cancel_rounded,
+                color: isPaid
+                    ? Colors.green
+                    : isPending
+                    ? Colors.orange
+                    : Colors.grey,
                 size: 24,
               ),
             ),
@@ -497,24 +619,28 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Invoice #${invoice.invoiceNumber}',
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                    l10n.invoiceNumber(invoice.invoiceNumber ?? ''),
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
                   Text('${l10n.amountPaid}: ${invoice.amount}'),
                   Text(
-                    'Created: ${_formatDate(invoice.createdAt)}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                    l10n.createdOn(_formatDateOnly(invoice.createdAt)),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor),
                   ),
                   if (invoice.paidAt != null && isPaid)
                     Text(
-                      'Paid: ${_formatDate(invoice.paidAt)}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.green),
+                      l10n.paidOn(_formatDateOnly(invoice.paidAt)),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.green),
                     ),
                   if (invoice.dueDate != null && !isPaid)
                     Text(
-                      'Due: ${_formatDate(invoice.dueDate)}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange),
+                      l10n.dueOn(_formatDateOnly(invoice.dueDate)),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.orange),
                     ),
                 ],
               ),
@@ -525,15 +651,28 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: isPaid ? Colors.green.withOpacity(0.15) : isPending ? Colors.orange.withOpacity(0.15) : Colors.grey.withOpacity(0.15),
+                    color: isPaid
+                        ? Colors.green.withOpacity(0.15)
+                        : isPending
+                        ? Colors.orange.withOpacity(0.15)
+                        : Colors.grey.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    isPaid ? l10n.paid : isPending ? l10n.pending : 'Cancelled',
+                    isPaid
+                        ? l10n.paid
+                        : isPending
+                        ? l10n.pending
+                        : l10n.cancelled,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: isPaid ? Colors.green : isPending ? Colors.orange : Colors.grey,
+                      color: isPaid
+                          ? Colors.green
+                          : isPending
+                          ? Colors.orange
+                          : Colors.grey,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -542,22 +681,60 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
                   icon: Icon(
-                    hasPdf ? Icons.download_rounded : Icons.file_download_outlined,
+                    hasPdf
+                        ? Icons.download_rounded
+                        : Icons.file_download_outlined,
                     color: hasPdf ? theme.primaryColor : Colors.grey,
                     size: 20,
                   ),
                   enabled: hasPdf,
                   onSelected: (value) {
                     switch (value) {
-                      case 'download': _downloadInvoice(context, invoice, provider); break;
-                      case 'share': _shareInvoice(context, invoice, provider); break;
-                      case 'open': _openInvoice(context, invoice, provider); break;
+                      case 'download':
+                        _downloadInvoice(context, invoice, provider);
+                        break;
+                      case 'share':
+                        _shareInvoice(context, invoice, provider);
+                        break;
+                      case 'open':
+                        _openInvoice(context, invoice, provider);
+                        break;
                     }
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'download', child: Row(children: [Icon(Icons.download_rounded, color: Colors.blue), SizedBox(width: 12), Text('Download PDF')])),
-                    PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_rounded, color: Colors.green), SizedBox(width: 12), Text('Share PDF')])),
-                    PopupMenuItem(value: 'open', child: Row(children: [Icon(Icons.visibility_rounded, color: Colors.purple), SizedBox(width: 12), Text('Open PDF')])),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'download',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.download_rounded,
+                              color: Colors.blue),
+                          const SizedBox(width: 12),
+                          Text(l10n.downloadPdf),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'share',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.share_rounded,
+                              color: Colors.green),
+                          const SizedBox(width: 12),
+                          Text(l10n.share),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'open',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.visibility_rounded,
+                              color: Colors.purple),
+                          const SizedBox(width: 12),
+                          Text(l10n.openPdf),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -571,24 +748,33 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   // ============================================================
   // INVOICE ACTIONS
   // ============================================================
-  Future<void> _downloadInvoice(BuildContext context, Invoice invoice, SubscriptionProvider provider) async {
+  Future<void> _downloadInvoice(
+      BuildContext context,
+      Invoice invoice,
+      SubscriptionProvider provider,
+      ) async {
     try {
       final result = await provider.downloadInvoice(invoice.id);
-      if (result != null) {
+      if (result != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Expanded(child: Text('Invoice downloaded successfully!'))
-            ]),
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Expanded(child: Text('Invoice downloaded successfully!')),
+              ],
+            ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -599,10 +785,15 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
     }
   }
 
-  Future<void> _shareInvoice(BuildContext context, Invoice invoice, SubscriptionProvider provider) async {
+  Future<void> _shareInvoice(
+      BuildContext context,
+      Invoice invoice,
+      SubscriptionProvider provider,
+      ) async {
     try {
       await provider.shareInvoice(invoice.id);
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error sharing: $e'),
@@ -613,13 +804,18 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
     }
   }
 
-  Future<void> _openInvoice(BuildContext context, Invoice invoice, SubscriptionProvider provider) async {
+  Future<void> _openInvoice(
+      BuildContext context,
+      Invoice invoice,
+      SubscriptionProvider provider,
+      ) async {
     try {
       final pdfPath = await provider.downloadInvoice(invoice.id);
       if (pdfPath != null) {
         await OpenFile.open(pdfPath);
       }
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error opening: $e'),
@@ -633,17 +829,36 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
   // ============================================================
   // HELPERS
   // ============================================================
-  String _formatDate(DateTime? date) {
+
+  /// Full date + time — used where you want precision.
+  /// Kept for future use (e.g. timestamps in tooltips).
+  // ignore: unused_element
+  String _formatDateTime(DateTime? date) {
     if (date == null) return 'N/A';
     try {
-      return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
+      final hh = date.hour.toString().padLeft(2, '0');
+      final mm = date.minute.toString().padLeft(2, '0');
+      return '${date.day}/${date.month}/${date.year} $hh:$mm';
+    } catch (_) {
+      return 'Invalid date';
+    }
+  }
+
+  /// Date-only string — matches the "date": "String" ARB placeholder.
+  /// Example output: 31/12/2025
+  String _formatDateOnly(DateTime? date) {
+    if (date == null) return '—';
+    try {
+      return '${date.day.toString().padLeft(2, '0')}/'
+          '${date.month.toString().padLeft(2, '0')}/'
+          '${date.year}';
+    } catch (_) {
       return 'Invalid date';
     }
   }
 
   // ============================================================
-  // EMPTY STATES
+  // EMPTY STATE
   // ============================================================
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
@@ -652,9 +867,14 @@ class _MySubscriptionsScreenState extends State<MySubscriptionsScreen> {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(Icons.subscriptions_outlined, size: 48, color: theme.hintColor),
+            Icon(Icons.subscriptions_outlined,
+                size: 48, color: theme.hintColor),
             const SizedBox(height: 8),
-            Text(l10n.noSubscriptions, style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor)),
+            Text(
+              l10n.noSubscriptions,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.hintColor),
+            ),
           ],
         ),
       ),

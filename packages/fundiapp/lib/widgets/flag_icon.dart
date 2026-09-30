@@ -2,50 +2,56 @@
 import 'package:country_flags/country_flags.dart';
 import 'package:flutter/material.dart';
 
-/// Converts a flag emoji like 🇹🇿 into its ISO code ("TZ").
-/// A flag emoji is two "regional indicator" characters (A-Z shifted to 0x1F1E6+).
-String? isoFromFlagEmoji(String flag) {
-  final runes = flag.runes.toList();
-  if (runes.length != 2) return null;
-  const base = 0x1F1E6;
-  final a = runes[0] - base;
-  final b = runes[1] - base;
-  if (a < 0 || a > 25 || b < 0 || b > 25) return null;
-  return String.fromCharCodes([65 + a, 65 + b]);
-}
-
-/// Renders a country flag as an SVG image, so it never depends on the
-/// device's emoji font. Pass the emoji string you already store in `Country.flag`.
 class FlagIcon extends StatelessWidget {
+  /// Flag emoji like '🇹🇿' or '🇰🇪'. ISO-2 code is derived from it.
   final String emoji;
   final double height;
+  final double? width;
 
   const FlagIcon({
     super.key,
     required this.emoji,
     this.height = 24,
+    this.width,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iso = isoFromFlagEmoji(emoji);
-    final width = height * 4 / 3;
+    final w = width ?? height * 4 / 3;
+    final code = _isoCodeFromEmoji(emoji);
 
-    if (iso == null) {
+    if (code != null) {
       return SizedBox(
-        width: width,
+        width: w,
         height: height,
-        child: Icon(Icons.flag_outlined, size: height * 0.8),
+        child: CountryFlag.fromCountryCode(code),
       );
     }
 
-    return CountryFlag.fromCountryCode(
-      iso,
-      theme: ImageTheme(
-        width: width,
-        height: height,
-        shape: const RoundedRectangle(4),
+    // Unknown emoji → neutral grey placeholder
+    return Container(
+      width: w,
+      height: height,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Icon(
+        Icons.flag_rounded,
+        size: height * 0.7,
+        color: Colors.grey.shade600,
       ),
     );
+  }
+
+  static String? _isoCodeFromEmoji(String input) {
+    final runes = input.runes.toList();
+    if (runes.length < 2) return null;
+    if (runes[0] < 0x1F1E6 || runes[0] > 0x1F1FF) return null;
+    if (runes[1] < 0x1F1E6 || runes[1] > 0x1F1FF) return null;
+    final a = String.fromCharCode(runes[0] - 0x1F1E6 + 0x41);
+    final b = String.fromCharCode(runes[1] - 0x1F1E6 + 0x41);
+    return (a + b).toLowerCase();
   }
 }

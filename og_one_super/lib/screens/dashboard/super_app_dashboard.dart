@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fundiapp_sdk/fundi_app_mini.dart';
+import 'package:nearbyfundi_sdk/nearby_fundi_mini.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
@@ -70,8 +71,15 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           MaterialPageRoute(builder: (_) => const FundiAppMiniApp()),
         );
         break;
-    // Add future mini-apps here:
-    // case 'nearbyfundi': ...
+      case 'nearbyfundi':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const NearbyFundiMiniApp()),
+        );
+        break;
+    // Future partners — just add a case + import
+    // case 'partner_xyz':
+    //   Navigator.of(context).push(...);
+    //   break;
       default:
         _snack(t.opening(t.serviceTitle(app.slug)));
     }
@@ -83,8 +91,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final settings = context.watch<SettingsProvider>();
     final t = context.t;
     final width = MediaQuery.sizeOf(context).width;
-    // Content capped at ~760px and centered on tablets/landscape.
-    final hPad = width > 800 ? (width - 760) / 2 : 16.0;
+    final hPad = width > 800 ? (width - 760) / 2 : 20.0;
 
     final q = _query.trim().toLowerCase();
     final searching = q.isNotEmpty;
@@ -97,10 +104,11 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor:
-        isDark ? AppTheme.darkBackground : const Color(0xFFF4F7FC),
+        isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
+            // ── Header ──────────────────────────────────────
             SliverToBoxAdapter(
               child: _Header(
                 t: t,
@@ -112,9 +120,11 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                 onSearch: (v) => setState(() => _query = v),
               ),
             ),
+
+            // ── Promo (only when not searching) ─────────────
             if (!searching)
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
+                padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 0),
                 sliver: SliverToBoxAdapter(
                   child: _Reveal(
                     index: 0,
@@ -125,8 +135,10 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                   ),
                 ),
               ),
+
+            // ── Section title ───────────────────────────────
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(hPad + 4, 24, hPad + 4, 12),
+              padding: EdgeInsets.fromLTRB(hPad, 28, hPad, 14),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
@@ -138,30 +150,33 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         t.allServices,
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
                           color: isDark ? Colors.white : AppTheme.primary,
                         ),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
+                          horizontal: 11, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.secondary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppTheme.secondary.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${apps.length}',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                          color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                          fontSize: 13,
+                          color: isDark
+                              ? AppTheme.secondary
+                              : AppTheme.gold600,
                         ),
                       ),
                     ),
@@ -169,22 +184,27 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                 ),
               ),
             ),
+
+            // ── Empty / Grid ────────────────────────────────
             if (apps.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  padding: const EdgeInsets.symmetric(vertical: 56),
                   child: Column(
                     children: [
-                      Icon(Icons.search_off_rounded,
-                          size: 44,
-                          color:
-                          isDark ? Colors.white38 : Colors.grey.shade400),
-                      const SizedBox(height: 10),
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 48,
+                        color: isDark ? Colors.white30 : Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         t.noResults,
                         style: TextStyle(
-                          color:
-                          isDark ? Colors.white60 : Colors.grey.shade600,
+                          fontSize: 15,
+                          color: isDark
+                              ? Colors.white54
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -193,15 +213,14 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               )
             else
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 32),
+                padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 40),
                 sliver: SliverGrid(
-                  // 3 columns on phones, more on tablets.
                   gridDelegate:
                   const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 150,
-                    mainAxisExtent: 132,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                    maxCrossAxisExtent: 160,
+                    mainAxisExtent: 148,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
                   ),
                   delegate: SliverChildBuilderDelegate(
                         (context, i) {
@@ -239,11 +258,11 @@ class _Reveal extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 380 + index.clamp(0, 8) * 70),
+      duration: Duration(milliseconds: 360 + index.clamp(0, 10) * 60),
       curve: Curves.easeOutCubic,
       builder: (_, v, c) => Opacity(
         opacity: v,
-        child: Transform.translate(offset: Offset(0, 18 * (1 - v)), child: c),
+        child: Transform.translate(offset: Offset(0, 16 * (1 - v)), child: c),
       ),
       child: child,
     );
@@ -251,7 +270,7 @@ class _Reveal extends StatelessWidget {
 }
 
 // ============================================================
-// HEADER (navy) with search bar floating over its bottom edge
+// HEADER
 // ============================================================
 class _Header extends StatelessWidget {
   final AppLocalizations t;
@@ -261,8 +280,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onSettings;
   final ValueChanged<String> onSearch;
 
-  static const double _searchHeight = 52;
-  static const double _overlap = 26;
+  static const double _searchHeight = 54;
+  static const double _overlap = 28;
 
   const _Header({
     required this.t,
@@ -277,7 +296,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Navy background
+        // Navy gradient background
         Padding(
           padding: const EdgeInsets.only(bottom: _searchHeight - _overlap),
           child: Container(
@@ -285,42 +304,47 @@ class _Header extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF00102B), Color(0xFF001D45), Color(0xFF0A3670)],
+                colors: [
+                  Color(0xFF000C1F),
+                  Color(0xFF001D45),
+                  Color(0xFF0A3670),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius:
-              BorderRadius.vertical(bottom: Radius.circular(32)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
             ),
             child: Stack(
               children: [
                 Positioned(
-                  top: -70,
-                  right: -50,
+                  top: -80,
+                  right: -40,
                   child: _Blob(
-                      size: 200,
-                      color: AppTheme.secondary.withValues(alpha: 0.14)),
+                      size: 220,
+                      color: AppTheme.secondary.withValues(alpha: 0.12)),
                 ),
                 Positioned(
-                  bottom: -60,
-                  left: -40,
+                  bottom: -50,
+                  left: -30,
                   child: _Blob(
-                      size: 150, color: Colors.white.withValues(alpha: 0.06)),
+                      size: 160,
+                      color: Colors.white.withValues(alpha: 0.05)),
                 ),
                 SafeArea(
                   bottom: false,
                   child: Padding(
                     padding:
-                    EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 22),
+                    EdgeInsets.fromLTRB(hPad, 14, hPad, _overlap + 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Top bar
                         Row(
                           children: [
                             Container(
-                              width: 42,
-                              height: 42,
-                              padding: const EdgeInsets.all(5),
+                              width: 44,
+                              height: 44,
+                              padding: const EdgeInsets.all(6),
                               decoration: const BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
@@ -332,12 +356,12 @@ class _Header extends StatelessWidget {
                                   errorBuilder: (_, __, ___) => const Icon(
                                     Icons.apps_rounded,
                                     color: AppTheme.primary,
-                                    size: 20,
+                                    size: 22,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 t.appName,
@@ -345,9 +369,9 @@ class _Header extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 16.5,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
+                                  letterSpacing: 0.4,
                                 ),
                               ),
                             ),
@@ -357,28 +381,29 @@ class _Header extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Material(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(14),
                               child: InkWell(
                                 onTap: onSettings,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(9),
+                                  padding: EdgeInsets.all(10),
                                   child: Icon(Icons.settings_rounded,
-                                      color: Colors.white, size: 19),
+                                      color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 26),
+                        const SizedBox(height: 28),
                         Text(
                           t.welcome,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 30,
+                            fontSize: 32,
                             fontWeight: FontWeight.w800,
                             height: 1.1,
+                            letterSpacing: -0.6,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -386,7 +411,7 @@ class _Header extends StatelessWidget {
                           t.chooseService,
                           style: TextStyle(
                             color: AppTheme.secondary.withValues(alpha: 0.95),
-                            fontSize: 13.5,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -399,7 +424,7 @@ class _Header extends StatelessWidget {
           ),
         ),
 
-        // Floating search bar overlapping the header edge
+        // Floating search bar
         Positioned(
           left: hPad,
           right: hPad,
@@ -408,12 +433,12 @@ class _Header extends StatelessWidget {
             height: _searchHeight,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: AppTheme.primary.withValues(alpha: 0.16),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -422,7 +447,7 @@ class _Header extends StatelessWidget {
               cursorColor: AppTheme.primary,
               style: const TextStyle(
                 color: AppTheme.primary,
-                fontSize: 14.5,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
               decoration: InputDecoration(
@@ -437,7 +462,7 @@ class _Header extends StatelessWidget {
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
@@ -461,7 +486,7 @@ class _Blob extends StatelessWidget {
 }
 
 // ============================================================
-// PROMO STRIP (gold)
+// PROMO BANNER
 // ============================================================
 class _Promo extends StatelessWidget {
   final String title;
@@ -471,19 +496,19 @@ class _Promo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFFC61F), Color(0xFFF5C30E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.secondary.withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: AppTheme.secondary.withValues(alpha: 0.32),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -497,17 +522,17 @@ class _Promo extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: AppTheme.primary,
-                    fontSize: 15.5,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    height: 1.2,
+                    height: 1.25,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: AppTheme.primary.withValues(alpha: 0.75),
-                    fontSize: 12,
+                    color: AppTheme.primary.withValues(alpha: 0.72),
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     height: 1.3,
                   ),
@@ -517,14 +542,14 @@ class _Promo extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Container(
-            width: 46,
-            height: 46,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: AppTheme.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.grid_view_rounded,
-                color: AppTheme.primary, size: 23),
+                color: AppTheme.primary, size: 24),
           ),
         ],
       ),
@@ -533,7 +558,7 @@ class _Promo extends StatelessWidget {
 }
 
 // ============================================================
-// SERVICE CARD (grid)
+// SERVICE CARD — modern, partnership-ready
 // ============================================================
 class _ServiceCard extends StatelessWidget {
   final MiniApp app;
@@ -554,43 +579,47 @@ class _ServiceCard extends StatelessWidget {
     final color = _hex(app.color);
     final iconColor = app.isComingSoon ? AppTheme.gold600 : color;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkSurface : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? AppTheme.darkBorder : const Color(0xFFE6ECF5),
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.darkSurface : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark ? AppTheme.darkBorder : const Color(0xFFE8EEF5),
+            ),
+            boxShadow: isDark
+                ? null
+                : [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Icon container
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(17),
-                    color: isDark ? Colors.white : color.withValues(alpha: 0.11),
+                    borderRadius: BorderRadius.circular(18),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : color.withValues(alpha: 0.12),
                   ),
-                  child: Icon(_iconFor(app.icon), size: 27, color: iconColor),
+                  child: Icon(_iconFor(app.icon), size: 28, color: iconColor),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+                // Title
                 Text(
                   title,
                   textAlign: TextAlign.center,
@@ -598,26 +627,29 @@ class _ServiceCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                    height: 1.2,
+                    fontSize: 12.5,
+                    height: 1.25,
                     color: isDark ? Colors.white : AppTheme.primary,
                   ),
                 ),
+                // Coming soon badge
                 if (app.isComingSoon) ...[
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 9, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppTheme.secondary.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppTheme.secondary.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       soonLabel,
                       style: TextStyle(
-                        fontSize: 9.5,
+                        fontSize: 10,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                        color: isDark
+                            ? AppTheme.secondary
+                            : AppTheme.gold600,
                       ),
                     ),
                   ),

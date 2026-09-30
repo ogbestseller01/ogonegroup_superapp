@@ -684,7 +684,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentInstructions => 'Payment Instructions';
 
   @override
-  String sendAmountTo(Object amount) {
+  String sendAmountTo(String amount) {
     return 'Send $amount to:';
   }
 
@@ -725,17 +725,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionInactive => 'Inactive';
 
   @override
-  String daysRemaining(Object days) {
+  String daysRemaining(int days) {
     return '$days days remaining';
   }
 
   @override
-  String expiresOn(Object date) {
+  String expiresOn(String date) {
     return 'Expires: $date';
   }
 
   @override
-  String validUntil(Object date) {
+  String validUntil(String date) {
     return 'Valid until: $date';
   }
 
@@ -746,7 +746,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noInvoices => 'No invoices available';
 
   @override
-  String invoiceNumber(Object number) {
+  String invoiceNumber(String number) {
     return 'Invoice #$number';
   }
 
@@ -841,32 +841,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get certificate => 'Certificate';
 
   @override
-  String approvedOn(Object date) {
+  String approvedOn(String date) {
     return 'Approved on $date';
   }
 
   @override
-  String startedOn(Object date) {
+  String startedOn(String date) {
     return 'Started: $date';
   }
 
   @override
-  String createdOn(Object date) {
+  String createdOn(String date) {
     return 'Created: $date';
   }
 
   @override
-  String paidOn(Object date) {
+  String paidOn(String date) {
     return 'Paid: $date';
   }
 
   @override
-  String dueOn(Object date) {
+  String dueOn(String date) {
     return 'Due: $date';
   }
 
   @override
-  String subscriptionReference(Object id) {
+  String subscriptionReference(String id) {
     return 'Subscription #$id';
   }
 

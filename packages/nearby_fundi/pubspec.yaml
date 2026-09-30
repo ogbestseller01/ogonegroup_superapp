@@ -1,0 +1,110 @@
+name: nearbyfundi_sdk
+description: "Customer app for NearbyFundi – request services, see fundi posts with embedded video support."
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ============================================================
+  # UI & Styling
+  # ============================================================
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_spinkit: ^5.2.0
+  toastification: ^2.1.0
+  flutter_svg: ^2.0.9
+  font_awesome_flutter: ^11.0.0
+
+  # ============================================================
+  # Realtime
+  # ============================================================
+  pusher_channels_flutter: ^2.6.0
+
+  # ============================================================
+  # Maps & Location
+  # ============================================================
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
+  country_flags: ^4.1.2
+  permission_handler: ^12.0.3
+
+  # ============================================================
+  # State Management & Networking
+  # ============================================================
+  provider: ^6.1.2
+  dio: ^5.7.0
+  logger: ^2.4.0
+  web_socket_channel: ^3.0.2
+  connectivity_plus: ^7.2.0
+
+  # ============================================================
+  # Storage & Localization
+  # ============================================================
+  shared_preferences: ^2.3.5
+  path_provider: ^2.1.6
+  intl: ^0.20.2
+  flutter_cache_manager: ^3.4.1
+
+  # ============================================================
+  # Media & Files
+  # ============================================================
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.1
+  flutter_image_compress: ^2.4.0
+  file_picker: ^10.3.10
+  open_file: ^4.0.0
+  gallery_saver_plus: ^3.2.9
+  pdf: ^3.10.7
+  printing: ^5.11.0
+  share_plus: ^11.0.0
+
+  # ============================================================
+  # Audio / Video
+  # ============================================================
+  record: ^7.1.1
+  audioplayers: ^6.8.1
+  emoji_picker_flutter: ^4.4.0
+  youtube_player_flutter: ^9.1.1
+  url_launcher: ^6.3.0
+
+  # ============================================================
+  # Firebase & Notifications
+  # ============================================================
+  firebase_core: ^4.10.0
+  firebase_messaging: ^16.3.0
+  flutter_local_notifications: ^19.4.1
+  google_sign_in: ^6.1.5
+
+  # ============================================================
+  # Badge
+  # ============================================================
+  flutter_app_badger_plus: ^1.0.0
+
+  # ============================================================
+  # Chat
+  # ============================================================
+  socket_io_client: ^3.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/nearbylogo.png
+    - assets/icons/app_icon.png
+    - assets/icons/chat/chat_icon.svg
+    - assets/icons/chat/audio_icon.svg

@@ -684,7 +684,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get paymentInstructions => 'Maelekezo ya Malipo';
 
   @override
-  String sendAmountTo(Object amount) {
+  String sendAmountTo(String amount) {
     return 'Tuma $amount kwa:';
   }
 
@@ -725,17 +725,17 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscriptionInactive => 'Haijatumika';
 
   @override
-  String daysRemaining(Object days) {
+  String daysRemaining(int days) {
     return '$days siku zimesalia';
   }
 
   @override
-  String expiresOn(Object date) {
+  String expiresOn(String date) {
     return 'Inaisha: $date';
   }
 
   @override
-  String validUntil(Object date) {
+  String validUntil(String date) {
     return 'Inatumika hadi: $date';
   }
 
@@ -746,7 +746,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noInvoices => 'Hakuna ankara zinazopatikana';
 
   @override
-  String invoiceNumber(Object number) {
+  String invoiceNumber(String number) {
     return 'Ankara #$number';
   }
 
@@ -841,32 +841,32 @@ class AppLocalizationsSw extends AppLocalizations {
   String get certificate => 'Cheti';
 
   @override
-  String approvedOn(Object date) {
+  String approvedOn(String date) {
     return 'Ilioidhinishwa tarehe $date';
   }
 
   @override
-  String startedOn(Object date) {
+  String startedOn(String date) {
     return 'Imeanza: $date';
   }
 
   @override
-  String createdOn(Object date) {
+  String createdOn(String date) {
     return 'Imeundwa: $date';
   }
 
   @override
-  String paidOn(Object date) {
+  String paidOn(String date) {
     return 'Imelipwa: $date';
   }
 
   @override
-  String dueOn(Object date) {
+  String dueOn(String date) {
     return 'Inatarajiwa: $date';
   }
 
   @override
-  String subscriptionReference(Object id) {
+  String subscriptionReference(String id) {
     return 'Usajili #$id';
   }
 

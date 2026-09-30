@@ -243,6 +243,9 @@
   "paymentProofFormats": "JPG, PNG, or PDF",
   "paymentInstructions": "Payment Instructions",
   "sendAmountTo": "Send {amount} to:",
+  "@sendAmountTo": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
   "account": "Account",
   "submitSubscription": "Submit Subscription",
   "subscriptionCreated": "Subscription Created!",
@@ -256,11 +259,23 @@
   "subscriptionActive": "Active",
   "subscriptionInactive": "Inactive",
   "daysRemaining": "{days} days remaining",
+  "@daysRemaining": {
+    "placeholders": { "days": { "type": "int" } }
+  },
   "expiresOn": "Expires: {date}",
+  "@expiresOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "validUntil": "Valid until: {date}",
+  "@validUntil": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "noSubscriptions": "No subscriptions yet",
   "noInvoices": "No invoices available",
   "invoiceNumber": "Invoice #{number}",
+  "@invoiceNumber": {
+    "placeholders": { "number": { "type": "String" } }
+  },
   "invoiceStatus": "Status",
   "viewInvoice": "View Invoice",
   "downloadPdf": "Download PDF",
@@ -294,11 +309,29 @@
   "invoices": "Invoices",
   "certificate": "Certificate",
   "approvedOn": "Approved on {date}",
+  "@approvedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "startedOn": "Started: {date}",
+  "@startedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "createdOn": "Created: {date}",
+  "@createdOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "paidOn": "Paid: {date}",
+  "@paidOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "dueOn": "Due: {date}",
+  "@dueOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "subscriptionReference": "Subscription #{id}",
+  "@subscriptionReference": {
+    "placeholders": { "id": { "type": "String" } }
+  },
   "plan": "Plan",
   "status": "Status",
   "download": "Download",
@@ -306,10 +339,10 @@
   "openPdf": "Open PDF",
 
   "privacyPolicy": "Privacy Policy",
-    "tapToChangePhoto": "Tap camera to change photo",
-    "nidaNumber": "NIDA Number",
-    "typeArea": "Type area",
-    "pickOnMap": "Pick on map",
-    "typeAreaOrPickOnMap": "Type area or pick on map",
-    "oops": "Oops!"
+  "tapToChangePhoto": "Tap camera to change photo",
+  "nidaNumber": "NIDA Number",
+  "typeArea": "Type area",
+  "pickOnMap": "Pick on map",
+  "typeAreaOrPickOnMap": "Type area or pick on map",
+  "oops": "Oops!"
 }

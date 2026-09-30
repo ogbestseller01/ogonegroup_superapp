@@ -1449,7 +1449,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Send {amount} to:'**
-  String sendAmountTo(Object amount);
+  String sendAmountTo(String amount);
 
   /// No description provided for @account.
   ///
@@ -1527,19 +1527,19 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{days} days remaining'**
-  String daysRemaining(Object days);
+  String daysRemaining(int days);
 
   /// No description provided for @expiresOn.
   ///
   /// In en, this message translates to:
   /// **'Expires: {date}'**
-  String expiresOn(Object date);
+  String expiresOn(String date);
 
   /// No description provided for @validUntil.
   ///
   /// In en, this message translates to:
   /// **'Valid until: {date}'**
-  String validUntil(Object date);
+  String validUntil(String date);
 
   /// No description provided for @noSubscriptions.
   ///
@@ -1557,7 +1557,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Invoice #{number}'**
-  String invoiceNumber(Object number);
+  String invoiceNumber(String number);
 
   /// No description provided for @invoiceStatus.
   ///
@@ -1743,37 +1743,37 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Approved on {date}'**
-  String approvedOn(Object date);
+  String approvedOn(String date);
 
   /// No description provided for @startedOn.
   ///
   /// In en, this message translates to:
   /// **'Started: {date}'**
-  String startedOn(Object date);
+  String startedOn(String date);
 
   /// No description provided for @createdOn.
   ///
   /// In en, this message translates to:
   /// **'Created: {date}'**
-  String createdOn(Object date);
+  String createdOn(String date);
 
   /// No description provided for @paidOn.
   ///
   /// In en, this message translates to:
   /// **'Paid: {date}'**
-  String paidOn(Object date);
+  String paidOn(String date);
 
   /// No description provided for @dueOn.
   ///
   /// In en, this message translates to:
   /// **'Due: {date}'**
-  String dueOn(Object date);
+  String dueOn(String date);
 
   /// No description provided for @subscriptionReference.
   ///
   /// In en, this message translates to:
   /// **'Subscription #{id}'**
-  String subscriptionReference(Object id);
+  String subscriptionReference(String id);
 
   /// No description provided for @plan.
   ///

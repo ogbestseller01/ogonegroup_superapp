@@ -13,6 +13,8 @@ class $AssetsIconsGen {
   const $AssetsIconsGen();
 
   final AssetGenImage airtel = const AssetGenImage('assets/icons/airtel.png');
+  final AssetGenImage appIcon =
+      const AssetGenImage('assets/icons/app_icon.png');
   final AssetGenImage mixxByYas =
       const AssetGenImage('assets/icons/mixx_by_yas.png');
   final AssetGenImage mpesa = const AssetGenImage('assets/icons/mpesa.png');
@@ -21,8 +23,6 @@ class $AssetsIconsGen {
       const AssetGenImage('assets/icons/nearbyfundi-logov1.png');
   final AssetGenImage nearbyfundiLogov2 =
       const AssetGenImage('assets/icons/nearbyfundi-logov2.png');
-  final AssetGenImage nearbyfundiLogov3 =
-      const AssetGenImage('assets/icons/app_icon.png');
   final AssetGenImage nearbylogo =
       const AssetGenImage('assets/icons/nearbylogo.png');
 }
@@ -32,9 +32,12 @@ class $AssetsImagesGen {
 
   final AssetGenImage backimg =
       const AssetGenImage('assets/images/backimg.jpg');
+  final AssetGenImage englishflug =
+      const AssetGenImage('assets/images/englishflug.png');
   final AssetGenImage home = const AssetGenImage('assets/images/home.jpg');
   final AssetGenImage nearbyfundiLogov1 =
       const AssetGenImage('assets/images/nearbyfundi-logov1.png');
+  final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');
 }
 
 class AssetGenImage {
