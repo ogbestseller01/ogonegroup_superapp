@@ -76,10 +76,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           MaterialPageRoute(builder: (_) => const NearbyFundiMiniApp()),
         );
         break;
-    // Future partners — just add a case + import
-    // case 'partner_xyz':
-    //   Navigator.of(context).push(...);
-    //   break;
       default:
         _snack(t.opening(t.serviceTitle(app.slug)));
     }
@@ -124,7 +120,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
             // ── Promo (only when not searching) ─────────────
             if (!searching)
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 0),
+                padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
                 sliver: SliverToBoxAdapter(
                   child: _Reveal(
                     index: 0,
@@ -138,7 +134,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
             // ── Section title ───────────────────────────────
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(hPad, 28, hPad, 14),
+              padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
@@ -217,10 +213,10 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                 sliver: SliverGrid(
                   gridDelegate:
                   const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 160,
-                    mainAxisExtent: 148,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
+                    maxCrossAxisExtent: 100, // compact circular tiles
+                    mainAxisExtent: 118,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
                   ),
                   delegate: SliverChildBuilderDelegate(
                         (context, i) {
@@ -296,7 +292,6 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Navy gradient background
         Padding(
           padding: const EdgeInsets.only(bottom: _searchHeight - _overlap),
           child: Container(
@@ -338,7 +333,6 @@ class _Header extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top bar
                         Row(
                           children: [
                             Container(
@@ -423,8 +417,6 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
-
-        // Floating search bar
         Positioned(
           left: hPad,
           right: hPad,
@@ -558,7 +550,7 @@ class _Promo extends StatelessWidget {
 }
 
 // ============================================================
-// SERVICE CARD — modern, partnership-ready
+// SERVICE CARD — circular, compact mini-app tile
 // ============================================================
 class _ServiceCard extends StatelessWidget {
   final MiniApp app;
@@ -583,80 +575,72 @@ class _ServiceCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppTheme.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: isDark ? AppTheme.darkBorder : const Color(0xFFE8EEF5),
-            ),
-            boxShadow: isDark
-                ? null
-                : [
-              BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Icon container
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : color.withValues(alpha: 0.12),
-                  ),
-                  child: Icon(_iconFor(app.icon), size: 28, color: iconColor),
+        borderRadius: BorderRadius.circular(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Circular icon container
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : color.withValues(alpha: 0.12),
+                border: Border.all(
+                  color: isDark
+                      ? AppTheme.darkBorder
+                      : color.withValues(alpha: 0.18),
+                  width: 1.2,
                 ),
-                const SizedBox(height: 12),
-                // Title
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
-                    height: 1.25,
-                    color: isDark ? Colors.white : AppTheme.primary,
-                  ),
-                ),
-                // Coming soon badge
-                if (app.isComingSoon) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppTheme.secondary.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      soonLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? AppTheme.secondary
-                            : AppTheme.gold600,
-                      ),
-                    ),
+                boxShadow: isDark
+                    ? null
+                    : [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.12),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
-              ],
+              ),
+              child: Icon(_iconFor(app.icon), size: 28, color: iconColor),
             ),
-          ),
+            const SizedBox(height: 8),
+            // Title
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 11.5,
+                height: 1.2,
+                color: isDark ? Colors.white : AppTheme.primary,
+              ),
+            ),
+            // Coming soon badge
+            if (app.isComingSoon) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  soonLabel,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
