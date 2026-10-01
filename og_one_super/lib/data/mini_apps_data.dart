@@ -30,7 +30,7 @@ const List<MiniApp> miniApps = [
   MiniApp(
     id: 4,
     slug: 'health',
-    name: 'Nearby Health',
+    name: 'Nearby Health Facility',
     subtitle: 'Find health facilities',
     icon: 'local_hospital',
     color: '#0A8A6D',

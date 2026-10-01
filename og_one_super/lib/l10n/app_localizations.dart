@@ -173,7 +173,7 @@ abstract class AppLocalizations {
   /// No description provided for @nearbyHealth.
   ///
   /// In en, this message translates to:
-  /// **'Nearby Health'**
+  /// **'Nearby Health Facility'**
   String get nearbyHealth;
 
   /// No description provided for @nearbyHotel.

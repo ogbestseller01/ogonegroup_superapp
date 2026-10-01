@@ -648,16 +648,15 @@ packages:
   font_awesome_flutter:
     dependency: "direct overridden"
     description:
-      path: "."
-      ref: master
-      resolved-ref: ace115c0ad386a5e5333421685c2f8f96f7d73af
-      url: "https://github.com/fluttercommunity/font_awesome_flutter.git"
-    source: git
-    version: "11.0.0"
+      name: font_awesome_flutter
+      sha256: b9011df3a1fa02993630b8fb83526368cf2206a711259830325bab2f1d2a4eb0
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.12.0"
   fundiapp_sdk:
     dependency: "direct main"
     description:
-      path: "../packages/fundiapp"
+      path: "packages/fundiapp"
       relative: true
     source: path
     version: "1.0.0+1"
@@ -1048,7 +1047,7 @@ packages:
   nearbyfundi_sdk:
     dependency: "direct main"
     description:
-      path: "../packages/nearby_fundi"
+      path: "packages/nearby_fundi"
       relative: true
     source: path
     version: "1.0.0+1"

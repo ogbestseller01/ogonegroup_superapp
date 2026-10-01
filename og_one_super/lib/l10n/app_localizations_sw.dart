@@ -47,7 +47,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get msosi => 'Msosi Chap Chap';
 
   @override
-  String get nearbyHealth => 'Afya Karibu';
+  String get nearbyHealth => 'Kituo cha Afya Kilicho Karibu';
 
   @override
   String get nearbyHotel => 'Hoteli Karibu';

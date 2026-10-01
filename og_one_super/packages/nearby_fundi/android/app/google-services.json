@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "217153819583",
+    "project_id": "nearbyfundi-8032f",
+    "storage_bucket": "nearbyfundi-8032f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:217153819583:android:76772644eb984f5311c70a",
+        "android_client_info": {
+          "package_name": "com.example.nearbyfundi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAI8DIC73GaDmuLhyMa-V9LKUV9JowpTXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
