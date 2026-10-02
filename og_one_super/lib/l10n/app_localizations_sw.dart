@@ -125,7 +125,8 @@ class AppLocalizationsSw extends AppLocalizations {
   String get bannerTitle => 'Huduma zako zote, programu moja';
 
   @override
-  String get bannerSubtitle => 'Mafundi, chakula, afya, ufuaji na mengine';
+  String get bannerSubtitle =>
+      'Mafundi, Hamisha Chap Chap, Osha Papo Hapo, Fua Nguo na Huduma Nyinginezo';
 
   @override
   String get allServices => 'Huduma zote';

@@ -125,7 +125,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bannerTitle => 'All your services, one app';
 
   @override
-  String get bannerSubtitle => 'Fundis, food, health, laundry and more';
+  String get bannerSubtitle =>
+      'Fundis,hama chap chap, osha papo hapo, laundry and more';
 
   @override
   String get allServices => 'All services';

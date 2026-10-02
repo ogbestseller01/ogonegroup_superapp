@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @bannerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Fundis, food, health, laundry and more'**
+  /// **'Fundis,hama chap chap, osha papo hapo, laundry and more'**
   String get bannerSubtitle;
 
   /// No description provided for @allServices.
