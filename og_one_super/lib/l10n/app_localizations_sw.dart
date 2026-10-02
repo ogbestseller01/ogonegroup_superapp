@@ -18,6 +18,18 @@ class AppLocalizationsSw extends AppLocalizations {
   String get settings => 'Mipangilio';
 
   @override
+  String get language => 'Lugha';
+
+  @override
+  String get selectLanguage => 'Chagua lugha';
+
+  @override
+  String get english => 'Kiingereza';
+
+  @override
+  String get swahili => 'Kiswahili';
+
+  @override
   String get chooseService => 'Chagua huduma unayotaka kuendelea';
 
   @override
@@ -50,10 +62,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get nearbyHealth => 'Kituo cha Afya Kilicho Karibu';
 
   @override
-  String get nearbyHotel => 'Hoteli Karibu';
+  String get laundry => 'Mfua Nguo';
 
   @override
-  String get laundry => 'Mfua Nguo';
+  String get osha => 'Osha Papo Hapo';
+
+  @override
+  String get hama => 'Hama Chap Chap';
+
+  @override
+  String get checkspace => 'CheckSpace App';
 
   @override
   String get comingSoon => 'Inakuja';
@@ -107,11 +125,32 @@ class AppLocalizationsSw extends AppLocalizations {
   String get bannerTitle => 'Huduma zako zote, programu moja';
 
   @override
-  String get bannerSubtitle => 'Mafundi, chakula, afya, hoteli na ufuaji';
+  String get bannerSubtitle => 'Mafundi, chakula, afya, ufuaji na mengine';
 
   @override
   String get allServices => 'Huduma zote';
 
   @override
   String get noResults => 'Hakuna huduma iliyopatikana';
+
+  @override
+  String get ok => 'Sawa';
+
+  @override
+  String get cancel => 'Ghairi';
+
+  @override
+  String get close => 'Funga';
+
+  @override
+  String get save => 'Hifadhi';
+
+  @override
+  String get retry => 'Jaribu tena';
+
+  @override
+  String get loading => 'Inapakia...';
+
+  @override
+  String get error => 'Kuna hitilafu imetokea';
 }

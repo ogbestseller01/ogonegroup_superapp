@@ -26,10 +26,14 @@ IconData _iconFor(String name) {
       return Icons.fastfood_rounded;
     case 'local_hospital':
       return Icons.local_hospital_rounded;
-    case 'hotel':
-      return Icons.hotel_rounded;
     case 'local_laundry_service':
       return Icons.local_laundry_service_rounded;
+    case 'local_car_wash':
+      return Icons.local_car_wash_rounded;
+    case 'local_shipping':
+      return Icons.local_shipping_rounded;
+    case 'meeting_room':
+      return Icons.meeting_room_rounded;
     default:
       return Icons.apps_rounded;
   }
@@ -53,7 +57,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           content: Text(message),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -322,8 +327,7 @@ class _Header extends StatelessWidget {
                   bottom: -50,
                   left: -30,
                   child: _Blob(
-                      size: 160,
-                      color: Colors.white.withValues(alpha: 0.05)),
+                      size: 160, color: Colors.white.withValues(alpha: 0.05)),
                 ),
                 SafeArea(
                   bottom: false,

@@ -116,6 +116,30 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @selectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select language'**
+  String get selectLanguage;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @swahili.
+  ///
+  /// In en, this message translates to:
+  /// **'Swahili'**
+  String get swahili;
+
   /// No description provided for @chooseService.
   ///
   /// In en, this message translates to:
@@ -176,17 +200,29 @@ abstract class AppLocalizations {
   /// **'Nearby Health Facility'**
   String get nearbyHealth;
 
-  /// No description provided for @nearbyHotel.
-  ///
-  /// In en, this message translates to:
-  /// **'Nearby Hotel'**
-  String get nearbyHotel;
-
   /// No description provided for @laundry.
   ///
   /// In en, this message translates to:
   /// **'Laundry'**
   String get laundry;
+
+  /// No description provided for @osha.
+  ///
+  /// In en, this message translates to:
+  /// **'Osha Papo Hapo'**
+  String get osha;
+
+  /// No description provided for @hama.
+  ///
+  /// In en, this message translates to:
+  /// **'Hama Chap Chap'**
+  String get hama;
+
+  /// No description provided for @checkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'CheckSpace App'**
+  String get checkspace;
 
   /// No description provided for @comingSoon.
   ///
@@ -293,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @bannerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Fundis, food, health, hotels and laundry'**
+  /// **'Fundis, food, health, laundry and more'**
   String get bannerSubtitle;
 
   /// No description provided for @allServices.
@@ -307,6 +343,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No services found'**
   String get noResults;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get error;
 }
 
 class _AppLocalizationsDelegate

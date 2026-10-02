@@ -18,6 +18,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get language => 'Language';
+
+  @override
+  String get selectLanguage => 'Select language';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get swahili => 'Swahili';
+
+  @override
   String get chooseService => 'Choose the service you want and continue';
 
   @override
@@ -50,10 +62,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nearbyHealth => 'Nearby Health Facility';
 
   @override
-  String get nearbyHotel => 'Nearby Hotel';
+  String get laundry => 'Laundry';
 
   @override
-  String get laundry => 'Laundry';
+  String get osha => 'Osha Papo Hapo';
+
+  @override
+  String get hama => 'Hama Chap Chap';
+
+  @override
+  String get checkspace => 'CheckSpace App';
 
   @override
   String get comingSoon => 'Coming Soon';
@@ -107,11 +125,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bannerTitle => 'All your services, one app';
 
   @override
-  String get bannerSubtitle => 'Fundis, food, health, hotels and laundry';
+  String get bannerSubtitle => 'Fundis, food, health, laundry and more';
 
   @override
   String get allServices => 'All services';
 
   @override
   String get noResults => 'No services found';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get loading => 'Loading...';
+
+  @override
+  String get error => 'Something went wrong';
 }

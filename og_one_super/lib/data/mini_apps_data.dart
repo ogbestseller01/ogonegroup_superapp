@@ -1,5 +1,3 @@
-// lib/data/mini_apps_data.dart
-
 import '../models/mini_app.dart';
 
 const List<MiniApp> miniApps = [
@@ -28,6 +26,38 @@ const List<MiniApp> miniApps = [
     color: '#E65100',
   ),
   MiniApp(
+    id: 5,
+    slug: 'laundry',
+    name: 'Mfua Nguo',
+    subtitle: 'Laundry near you',
+    icon: 'local_laundry_service',
+    color: '#0277BD',
+  ),
+  MiniApp(
+    id: 6,
+    slug: 'osha',
+    name: 'Osha Papo Hapo',
+    subtitle: 'Car wash at your spot',
+    icon: 'local_car_wash',
+    color: '#00897B',
+  ),
+  MiniApp(
+    id: 7,
+    slug: 'hama',
+    name: 'Hama Chap Chap',
+    subtitle: 'Moving & relocation fast',
+    icon: 'local_shipping',
+    color: '#5E35B1',
+  ),
+  MiniApp(
+    id: 8,
+    slug: 'checkspace',
+    name: 'CheckSpace App',
+    subtitle: 'Find & book spaces',
+    icon: 'meeting_room',
+    color: '#C2185B',
+  ),
+  MiniApp(
     id: 4,
     slug: 'health',
     name: 'Nearby Health Facility',
@@ -36,23 +66,7 @@ const List<MiniApp> miniApps = [
     color: '#0A8A6D',
   ),
   MiniApp(
-    id: 5,
-    slug: 'hotel',
-    name: 'Nearby Hotel',
-    subtitle: 'Hotels & lodges nearby',
-    icon: 'hotel',
-    color: '#6A1B9A',
-  ),
-  MiniApp(
-    id: 6,
-    slug: 'laundry',
-    name: 'Mfua Nguo',
-    subtitle: 'Laundry near you',
-    icon: 'local_laundry_service',
-    color: '#0277BD',
-  ),
-  MiniApp(
-    id: 7,
+    id: 9,
     slug: 'coming_soon',
     name: 'Coming Soon',
     subtitle: 'More apps coming',

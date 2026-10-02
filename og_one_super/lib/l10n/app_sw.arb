@@ -4,6 +4,11 @@
   "superApps": "Programu Kuu",
   "settings": "Mipangilio",
 
+  "language": "Lugha",
+  "selectLanguage": "Chagua lugha",
+  "english": "Kiingereza",
+  "swahili": "Kiswahili",
+
   "chooseService": "Chagua huduma unayotaka kuendelea",
   "services": "Huduma",
   "continueText": "Endelea",
@@ -18,8 +23,10 @@
   "fundiApp": "Fundi App",
   "msosi": "Msosi Chap Chap",
   "nearbyHealth": "Kituo cha Afya Kilicho Karibu",
-  "nearbyHotel": "Hoteli Karibu",
   "laundry": "Mfua Nguo",
+  "osha": "Osha Papo Hapo",
+  "hama": "Hama Chap Chap",
+  "checkspace": "CheckSpace App",
   "comingSoon": "Inakuja",
 
   "appearance": "Muonekano",
@@ -40,7 +47,15 @@
   "welcome": "Karibu",
   "searchHint": "Tafuta huduma",
   "bannerTitle": "Huduma zako zote, programu moja",
-  "bannerSubtitle": "Mafundi, chakula, afya, hoteli na ufuaji",
+  "bannerSubtitle": "Mafundi, chakula, afya, ufuaji na mengine",
   "allServices": "Huduma zote",
-  "noResults": "Hakuna huduma iliyopatikana"
+  "noResults": "Hakuna huduma iliyopatikana",
+
+  "ok": "Sawa",
+  "cancel": "Ghairi",
+  "close": "Funga",
+  "save": "Hifadhi",
+  "retry": "Jaribu tena",
+  "loading": "Inapakia...",
+  "error": "Kuna hitilafu imetokea"
 }

@@ -4,6 +4,11 @@
   "superApps": "Super App",
   "settings": "Settings",
 
+  "language": "Language",
+  "selectLanguage": "Select language",
+  "english": "English",
+  "swahili": "Swahili",
+
   "chooseService": "Choose the service you want and continue",
   "services": "Services",
   "continueText": "Continue",
@@ -18,8 +23,10 @@
   "fundiApp": "Fundi App",
   "msosi": "Msosi Chap Chap",
   "nearbyHealth": "Nearby Health Facility",
-  "nearbyHotel": "Nearby Hotel",
   "laundry": "Laundry",
+  "osha": "Osha Papo Hapo",
+  "hama": "Hama Chap Chap",
+  "checkspace": "CheckSpace App",
   "comingSoon": "Coming Soon",
 
   "appearance": "Appearance",
@@ -40,7 +47,15 @@
   "welcome": "Welcome",
   "searchHint": "Search services",
   "bannerTitle": "All your services, one app",
-  "bannerSubtitle": "Fundis, food, health, hotels and laundry",
+  "bannerSubtitle": "Fundis, food, health, laundry and more",
   "allServices": "All services",
-  "noResults": "No services found"
+  "noResults": "No services found",
+
+  "ok": "OK",
+  "cancel": "Cancel",
+  "close": "Close",
+  "save": "Save",
+  "retry": "Retry",
+  "loading": "Loading...",
+  "error": "Something went wrong"
 }
