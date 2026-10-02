@@ -1,3 +1,5 @@
+// lib/data/mini_apps_data.dart
+
 import '../models/mini_app.dart';
 
 const List<MiniApp> miniApps = [
