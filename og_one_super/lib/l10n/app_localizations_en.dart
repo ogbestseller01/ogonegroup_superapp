@@ -126,7 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bannerSubtitle =>
-      'Fundis,hama chap chap, osha papo hapo, laundry and more';
+      'Fundis, hama chap chap, osha papo hapo, laundry and more';
 
   @override
   String get allServices => 'All services';
@@ -154,4 +154,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get error => 'Something went wrong';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get pushNotifications => 'Push Notifications';
+
+  @override
+  String get receivePushNotifications => 'Receive push notifications';
+
+  @override
+  String get orderUpdates => 'Order Updates';
+
+  @override
+  String get orderUpdatesDesc => 'Get notified about your orders and bookings';
+
+  @override
+  String get promotions => 'Promotions & Offers';
+
+  @override
+  String get promotionsDesc => 'Receive special offers and discounts';
+
+  @override
+  String get systemUpdates => 'System Updates';
+
+  @override
+  String get systemUpdatesDesc => 'Important app updates and announcements';
+
+  @override
+  String get privacyData => 'Privacy & Data';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get clearCache => 'Clear Cache';
+
+  @override
+  String get clearCacheConfirm =>
+      'This will clear temporary files and free up space. Continue?';
+
+  @override
+  String get cacheCleared => 'Cache cleared successfully';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get helpFeedback => 'Help & Feedback';
+
+  @override
+  String get helpCenter => 'Help Center';
+
+  @override
+  String get sendFeedback => 'Send Feedback';
 }

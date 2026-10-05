@@ -36,9 +36,9 @@
   "lightMode": "Light mode",
   "dark": "Dark",
   "darkMode": "Dark mode",
+
   "about": "About",
   "version": "Version",
-
   "contactUs": "Contact Us",
   "termsConditions": "Terms & Conditions",
   "rateApp": "Rate App",
@@ -47,7 +47,7 @@
   "welcome": "Welcome",
   "searchHint": "Search services",
   "bannerTitle": "All your services, one app",
-  "bannerSubtitle": "Fundis,hama chap chap, osha papo hapo, laundry and more",
+  "bannerSubtitle": "Fundis, hama chap chap, osha papo hapo, laundry and more",
   "allServices": "All services",
   "noResults": "No services found",
 
@@ -57,5 +57,26 @@
   "save": "Save",
   "retry": "Retry",
   "loading": "Loading...",
-  "error": "Something went wrong"
+  "error": "Something went wrong",
+
+  "notifications": "Notifications",
+  "pushNotifications": "Push Notifications",
+  "receivePushNotifications": "Receive push notifications",
+  "orderUpdates": "Order Updates",
+  "orderUpdatesDesc": "Get notified about your orders and bookings",
+  "promotions": "Promotions & Offers",
+  "promotionsDesc": "Receive special offers and discounts",
+  "systemUpdates": "System Updates",
+  "systemUpdatesDesc": "Important app updates and announcements",
+
+  "privacyData": "Privacy & Data",
+  "privacyPolicy": "Privacy Policy",
+  "clearCache": "Clear Cache",
+  "clearCacheConfirm": "This will clear temporary files and free up space. Continue?",
+  "cacheCleared": "Cache cleared successfully",
+  "clear": "Clear",
+
+  "helpFeedback": "Help & Feedback",
+  "helpCenter": "Help Center",
+  "sendFeedback": "Send Feedback"
 }

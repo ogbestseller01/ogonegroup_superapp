@@ -154,4 +154,59 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get error => 'Kuna hitilafu imetokea';
+
+  @override
+  String get notifications => 'Arifa';
+
+  @override
+  String get pushNotifications => 'Arifa za Push';
+
+  @override
+  String get receivePushNotifications => 'Pokea arifa za push';
+
+  @override
+  String get orderUpdates => 'Masasisho ya Oda';
+
+  @override
+  String get orderUpdatesDesc => 'Pata arifa kuhusu oda na uhifadhi wako';
+
+  @override
+  String get promotions => 'Matangazo na Ofersi';
+
+  @override
+  String get promotionsDesc => 'Pokea ofa maalum na punguzo';
+
+  @override
+  String get systemUpdates => 'Masasisho ya Mfumo';
+
+  @override
+  String get systemUpdatesDesc => 'Masasisho muhimu ya programu na matangazo';
+
+  @override
+  String get privacyData => 'Faragha na Data';
+
+  @override
+  String get privacyPolicy => 'Sera ya Faragha';
+
+  @override
+  String get clearCache => 'Futa Cache';
+
+  @override
+  String get clearCacheConfirm =>
+      'Hii itafuta faili za muda na kutoa nafasi. Endelea?';
+
+  @override
+  String get cacheCleared => 'Cache imefutwa kwa mafanikio';
+
+  @override
+  String get clear => 'Futa';
+
+  @override
+  String get helpFeedback => 'Msaada na Maoni';
+
+  @override
+  String get helpCenter => 'Kituo cha Msaada';
+
+  @override
+  String get sendFeedback => 'Tuma Maoni';
 }

@@ -1,5 +1,3 @@
-// lib/screens/dashboard/super_app_dashboard.dart
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -41,13 +39,13 @@ IconData _iconFor(String name) {
   }
 }
 
-/// Slide shown in the banner slideshow.
 class _Slide {
   final String title;
   final String subtitle;
   final List<Color> colors;
   final Color ink;
   final IconData icon;
+
   const _Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
 }
 
@@ -60,9 +58,8 @@ class SuperAppDashboard extends StatefulWidget {
 
 class _SuperAppDashboardState extends State<SuperAppDashboard> {
   String _query = '';
-
-  /// 'all' or the slug of the selected app.
   String _selected = 'all';
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _snack(String message) {
     ScaffoldMessenger.of(context)
@@ -72,8 +69,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           content: Text(message),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -112,7 +108,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final q = _query.trim().toLowerCase();
     final searching = q.isNotEmpty;
 
-    // Search wins; otherwise filter by the selected app chip.
     final apps = miniApps.where((a) {
       if (searching) {
         final title = t.serviceTitle(a.slug).toLowerCase();
@@ -123,7 +118,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       return _selected == 'all' || a.slug == _selected;
     }).toList();
 
-    // Chips: "All" + every live app, by app name.
     final chipApps = miniApps.where((a) => !a.isComingSoon).toList();
 
     final slides = <_Slide>[
@@ -153,8 +147,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor:
-        isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
+        key: _scaffoldKey,
+        backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
+        drawer: _AppDrawer(t: t),
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -165,13 +160,13 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                 hPad: hPad,
                 languageCode: settings.locale.languageCode,
                 onLanguage: (code) => settings.setLocale(Locale(code)),
-                onSettings: () =>
-                    Navigator.pushNamed(context, AppRoutes.settings),
+                onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                onSettings: () => Navigator.pushNamed(context, AppRoutes.settings),
                 onSearch: (v) => setState(() => _query = v),
               ),
             ),
 
-            // ── Slideshow banner (only when not searching) ─
+            // ── Slideshow banner ────────────────────────────
             if (!searching)
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
@@ -185,7 +180,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
             // ── Section title ───────────────────────────────
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
+              padding: EdgeInsets.fromLTRB(hPad, 28, hPad, 14),
               sliver: SliverToBoxAdapter(
                 child: Row(
                   children: [
@@ -210,10 +205,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 11, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.secondary.withValues(alpha: 0.18),
+                        color: AppTheme.secondary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -221,8 +215,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
-                          color:
-                          isDark ? AppTheme.secondary : AppTheme.gold600,
+                          color: isDark ? AppTheme.secondary : AppTheme.gold600,
                         ),
                       ),
                     ),
@@ -231,17 +224,17 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               ),
             ),
 
-            // ── App-name chips (All + each app) ─────────────
+            // ── Chips ───────────────────────────────────────
             if (!searching)
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 42,
+                  height: 44,
                   child: ListView.separated(
                     padding: EdgeInsets.symmetric(horizontal: hPad),
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     itemCount: chipApps.length + 1,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (_, i) {
                       if (i == 0) {
                         return _AppChip(
@@ -269,21 +262,20 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
             if (apps.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 56),
+                  padding: const EdgeInsets.symmetric(vertical: 60),
                   child: Column(
                     children: [
                       Icon(
                         Icons.search_off_rounded,
-                        size: 48,
-                        color: isDark ? Colors.white30 : Colors.grey.shade400,
+                        size: 52,
+                        color: isDark ? Colors.white24 : Colors.grey.shade400,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Text(
                         t.noResults,
                         style: TextStyle(
                           fontSize: 15,
-                          color:
-                          isDark ? Colors.white54 : Colors.grey.shade600,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -292,14 +284,13 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               )
             else
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 40),
+                padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 40),
                 sliver: SliverGrid(
-                  gridDelegate:
-                  const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 100, // compact circular tiles
-                    mainAxisExtent: 118,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 110,
+                    mainAxisExtent: 128,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
                   ),
                   delegate: SliverChildBuilderDelegate(
                         (context, i) {
@@ -327,22 +318,115 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 }
 
 // ============================================================
+// DRAWER – HEADER ONLY
+// ============================================================
+class _AppDrawer extends StatelessWidget {
+  final AppLocalizations t;
+
+  const _AppDrawer({required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkSurface
+          : Colors.white,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header only
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF000C1F),
+                    Color(0xFF001D45),
+                    Color(0xFF0A3670),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/homeimg.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.apps_rounded,
+                              color: AppTheme.primary,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          t.appName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Partnerships & Integrations',
+                    style: TextStyle(
+                      color: AppTheme.secondary.withValues(alpha: 0.95),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Everything below is empty
+            const Expanded(child: SizedBox.shrink()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
 // ENTRANCE ANIMATION
 // ============================================================
 class _Reveal extends StatelessWidget {
   final int index;
   final Widget child;
+
   const _Reveal({super.key, required this.index, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 360 + index.clamp(0, 10) * 60),
+      duration: Duration(milliseconds: 340 + index.clamp(0, 10) * 50),
       curve: Curves.easeOutCubic,
       builder: (_, v, c) => Opacity(
         opacity: v,
-        child: Transform.translate(offset: Offset(0, 16 * (1 - v)), child: c),
+        child: Transform.translate(offset: Offset(0, 14 * (1 - v)), child: c),
       ),
       child: child,
     );
@@ -350,24 +434,26 @@ class _Reveal extends StatelessWidget {
 }
 
 // ============================================================
-// HEADER (unchanged)
+// HEADER (logo removed from dashboard)
 // ============================================================
 class _Header extends StatelessWidget {
   final AppLocalizations t;
   final double hPad;
   final String languageCode;
   final ValueChanged<String> onLanguage;
+  final VoidCallback onMenu;
   final VoidCallback onSettings;
   final ValueChanged<String> onSearch;
 
-  static const double _searchHeight = 54;
-  static const double _overlap = 28;
+  static const double _searchHeight = 52;
+  static const double _overlap = 26;
 
   const _Header({
     required this.t,
     required this.hPad,
     required this.languageCode,
     required this.onLanguage,
+    required this.onMenu,
     required this.onSettings,
     required this.onSearch,
   });
@@ -391,48 +477,47 @@ class _Header extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
             ),
             child: Stack(
               children: [
                 Positioned(
-                  top: -80,
-                  right: -40,
+                  top: -70,
+                  right: -30,
                   child: _Blob(
-                      size: 220,
-                      color: AppTheme.secondary.withValues(alpha: 0.12)),
+                    size: 200,
+                    color: AppTheme.secondary.withValues(alpha: 0.10),
+                  ),
                 ),
                 Positioned(
-                  bottom: -50,
-                  left: -30,
+                  bottom: -40,
+                  left: -20,
                   child: _Blob(
-                      size: 160, color: Colors.white.withValues(alpha: 0.05)),
+                    size: 140,
+                    color: Colors.white.withValues(alpha: 0.04),
+                  ),
                 ),
                 SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding:
-                    EdgeInsets.fromLTRB(hPad, 14, hPad, _overlap + 24),
+                    padding: EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Top row (no logo)
                         Row(
                           children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: ClipOval(
-                                child: Image.asset(
-                                  'assets/images/homeimg.png',
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Icon(
-                                    Icons.apps_rounded,
-                                    color: AppTheme.primary,
+                            Material(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              child: InkWell(
+                                onTap: onMenu,
+                                borderRadius: BorderRadius.circular(12),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(9),
+                                  child: Icon(
+                                    Icons.menu_rounded,
+                                    color: Colors.white,
                                     size: 22,
                                   ),
                                 ),
@@ -446,9 +531,9 @@ class _Header extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16.5,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.4,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                             ),
@@ -458,29 +543,34 @@ class _Header extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Material(
-                              color: Colors.white.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(14),
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
                               child: InkWell(
                                 onTap: onSettings,
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(12),
                                 child: const Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Icon(Icons.settings_rounded,
-                                      color: Colors.white, size: 20),
+                                  padding: EdgeInsets.all(9),
+                                  child: Icon(
+                                    Icons.settings_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 28),
+
+                        const SizedBox(height: 26),
+
                         Text(
                           t.welcome,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 32,
+                            fontSize: 30,
                             fontWeight: FontWeight.w800,
                             height: 1.1,
-                            letterSpacing: -0.6,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -488,7 +578,7 @@ class _Header extends StatelessWidget {
                           t.chooseService,
                           style: TextStyle(
                             color: AppTheme.secondary.withValues(alpha: 0.95),
-                            fontSize: 14,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -500,6 +590,8 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
+
+        // Floating Search
         Positioned(
           left: hPad,
           right: hPad,
@@ -508,10 +600,10 @@ class _Header extends StatelessWidget {
             height: _searchHeight,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(26),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.16),
+                  color: AppTheme.primary.withValues(alpha: 0.12),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -531,13 +623,16 @@ class _Header extends StatelessWidget {
                   color: Colors.grey.shade500,
                   fontWeight: FontWeight.w500,
                 ),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: AppTheme.primary, size: 22),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppTheme.primary,
+                  size: 22,
+                ),
                 filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15),
               ),
             ),
           ),
@@ -550,6 +645,7 @@ class _Header extends StatelessWidget {
 class _Blob extends StatelessWidget {
   final double size;
   final Color color;
+
   const _Blob({required this.size, required this.color});
 
   @override
@@ -561,10 +657,11 @@ class _Blob extends StatelessWidget {
 }
 
 // ============================================================
-// SLIDESHOW — auto-advancing banner cards
+// SLIDESHOW
 // ============================================================
 class _Slideshow extends StatefulWidget {
   final List<_Slide> slides;
+
   const _Slideshow({required this.slides});
 
   @override
@@ -579,7 +676,7 @@ class _SlideshowState extends State<_Slideshow> {
   @override
   void initState() {
     super.initState();
-    _ctrl = PageController(viewportFraction: 0.92);
+    _ctrl = PageController(viewportFraction: 0.93);
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!_ctrl.hasClients) return;
       final next = (_page + 1) % widget.slides.length;
@@ -604,7 +701,7 @@ class _SlideshowState extends State<_Slideshow> {
     return Column(
       children: [
         SizedBox(
-          height: 118,
+          height: 122,
           child: PageView.builder(
             controller: _ctrl,
             itemCount: widget.slides.length,
@@ -612,7 +709,7 @@ class _SlideshowState extends State<_Slideshow> {
             itemBuilder: (_, i) {
               final s = widget.slides[i];
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
                   decoration: BoxDecoration(
@@ -621,12 +718,12 @@ class _SlideshowState extends State<_Slideshow> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: s.colors.last.withValues(alpha: 0.30),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
+                        color: s.colors.last.withValues(alpha: 0.28),
+                        blurRadius: 16,
+                        offset: const Offset(0, 7),
                       ),
                     ],
                   ),
@@ -643,9 +740,9 @@ class _SlideshowState extends State<_Slideshow> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: s.ink,
-                                fontSize: 17,
+                                fontSize: 16.5,
                                 fontWeight: FontWeight.w800,
-                                height: 1.2,
+                                height: 1.25,
                                 letterSpacing: -0.2,
                               ),
                             ),
@@ -655,7 +752,7 @@ class _SlideshowState extends State<_Slideshow> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: s.ink.withValues(alpha: 0.78),
+                                color: s.ink.withValues(alpha: 0.80),
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                                 height: 1.3,
@@ -665,15 +762,14 @@ class _SlideshowState extends State<_Slideshow> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Circular icon badge on the right
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: s.ink.withValues(alpha: 0.12),
+                          color: s.ink.withValues(alpha: 0.13),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(s.icon, size: 28, color: s.ink),
+                        child: Icon(s.icon, size: 26, color: s.ink),
                       ),
                     ],
                   ),
@@ -682,7 +778,7 @@ class _SlideshowState extends State<_Slideshow> {
             },
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(widget.slides.length, (i) {
@@ -690,7 +786,7 @@ class _SlideshowState extends State<_Slideshow> {
             return AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: on ? 20 : 6,
+              width: on ? 18 : 6,
               height: 6,
               decoration: BoxDecoration(
                 color: on
@@ -707,7 +803,7 @@ class _SlideshowState extends State<_Slideshow> {
 }
 
 // ============================================================
-// APP-NAME CHIP
+// CHIP
 // ============================================================
 class _AppChip extends StatelessWidget {
   final String label;
@@ -728,7 +824,7 @@ class _AppChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = selected
         ? AppTheme.primary
-        : (isDark ? Colors.white.withValues(alpha: 0.07) : Colors.white);
+        : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white);
     final fg = selected
         ? Colors.white
         : (isDark ? Colors.white70 : AppTheme.primary);
@@ -737,17 +833,28 @@ class _AppChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(21),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: selected
                 ? AppTheme.primary
                 : (isDark ? AppTheme.darkBorder : const Color(0xFFE3E8F1)),
           ),
+          boxShadow: selected
+              ? null
+              : [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+          ],
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: selected ? AppTheme.secondary : fg),
             const SizedBox(width: 6),
@@ -767,7 +874,7 @@ class _AppChip extends StatelessWidget {
 }
 
 // ============================================================
-// SERVICE CARD — circular, compact mini-app tile (unchanged)
+// SERVICE CARD
 // ============================================================
 class _ServiceCard extends StatelessWidget {
   final MiniApp app;
@@ -792,17 +899,17 @@ class _ServiceCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(40),
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 68,
+              height: 68,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
+                    ? Colors.white.withValues(alpha: 0.07)
                     : color.withValues(alpha: 0.12),
                 border: Border.all(
                   color: isDark
@@ -815,14 +922,14 @@ class _ServiceCard extends StatelessWidget {
                     : [
                   BoxShadow(
                     color: color.withValues(alpha: 0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Icon(_iconFor(app.icon), size: 28, color: iconColor),
+              child: Icon(_iconFor(app.icon), size: 30, color: iconColor),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               title,
               textAlign: TextAlign.center,
@@ -830,24 +937,23 @@ class _ServiceCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 11.5,
-                height: 1.2,
+                fontSize: 12,
+                height: 1.25,
                 color: isDark ? Colors.white : AppTheme.primary,
               ),
             ),
             if (app.isComingSoon) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.secondary.withValues(alpha: 0.18),
+                  color: AppTheme.secondary.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   soonLabel,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w800,
                     color: isDark ? AppTheme.secondary : AppTheme.gold600,
                   ),

@@ -329,7 +329,7 @@ abstract class AppLocalizations {
   /// No description provided for @bannerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Fundis,hama chap chap, osha papo hapo, laundry and more'**
+  /// **'Fundis, hama chap chap, osha papo hapo, laundry and more'**
   String get bannerSubtitle;
 
   /// No description provided for @allServices.
@@ -385,6 +385,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong'**
   String get error;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @receivePushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive push notifications'**
+  String get receivePushNotifications;
+
+  /// No description provided for @orderUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Updates'**
+  String get orderUpdates;
+
+  /// No description provided for @orderUpdatesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified about your orders and bookings'**
+  String get orderUpdatesDesc;
+
+  /// No description provided for @promotions.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotions & Offers'**
+  String get promotions;
+
+  /// No description provided for @promotionsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive special offers and discounts'**
+  String get promotionsDesc;
+
+  /// No description provided for @systemUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'System Updates'**
+  String get systemUpdates;
+
+  /// No description provided for @systemUpdatesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Important app updates and announcements'**
+  String get systemUpdatesDesc;
+
+  /// No description provided for @privacyData.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Data'**
+  String get privacyData;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @clearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Cache'**
+  String get clearCache;
+
+  /// No description provided for @clearCacheConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This will clear temporary files and free up space. Continue?'**
+  String get clearCacheConfirm;
+
+  /// No description provided for @cacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared successfully'**
+  String get cacheCleared;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @helpFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Feedback'**
+  String get helpFeedback;
+
+  /// No description provided for @helpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Center'**
+  String get helpCenter;
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get sendFeedback;
 }
 
 class _AppLocalizationsDelegate

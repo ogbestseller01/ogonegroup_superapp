@@ -36,9 +36,9 @@
   "lightMode": "Hali ya mwanga",
   "dark": "Giza",
   "darkMode": "Hali ya giza",
+
   "about": "Kuhusu",
   "version": "Toleo",
-
   "contactUs": "Wasiliana Nasi",
   "termsConditions": "Vigezo na Masharti",
   "rateApp": "Kadiria Programu",
@@ -57,5 +57,26 @@
   "save": "Hifadhi",
   "retry": "Jaribu tena",
   "loading": "Inapakia...",
-  "error": "Kuna hitilafu imetokea"
+  "error": "Kuna hitilafu imetokea",
+
+  "notifications": "Arifa",
+  "pushNotifications": "Arifa za Push",
+  "receivePushNotifications": "Pokea arifa za push",
+  "orderUpdates": "Masasisho ya Oda",
+  "orderUpdatesDesc": "Pata arifa kuhusu oda na uhifadhi wako",
+  "promotions": "Matangazo na Ofersi",
+  "promotionsDesc": "Pokea ofa maalum na punguzo",
+  "systemUpdates": "Masasisho ya Mfumo",
+  "systemUpdatesDesc": "Masasisho muhimu ya programu na matangazo",
+
+  "privacyData": "Faragha na Data",
+  "privacyPolicy": "Sera ya Faragha",
+  "clearCache": "Futa Cache",
+  "clearCacheConfirm": "Hii itafuta faili za muda na kutoa nafasi. Endelea?",
+  "cacheCleared": "Cache imefutwa kwa mafanikio",
+  "clear": "Futa",
+
+  "helpFeedback": "Msaada na Maoni",
+  "helpCenter": "Kituo cha Msaada",
+  "sendFeedback": "Tuma Maoni"
 }
