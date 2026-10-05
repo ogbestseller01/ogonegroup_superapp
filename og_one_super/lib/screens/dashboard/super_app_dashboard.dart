@@ -137,7 +137,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         ? 108.0
         : 118.0;
 
-    // Very tight vertical size
     final mainAxisExtent = crossAxisExtent + 28;
 
     final q = _query.trim().toLowerCase();
@@ -344,7 +343,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: crossAxisExtent,
                       mainAxisExtent: mainAxisExtent,
-                      mainAxisSpacing: 4,          // very tight rows
+                      mainAxisSpacing: 4,
                       crossAxisSpacing: 10,
                     ),
                     delegate: SliverChildBuilderDelegate(
@@ -358,7 +357,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                             title: t.serviceTitle(app.slug),
                             soonLabel: t.soon,
                             onTap: () => _open(app, t),
-                            size: crossAxisExtent * 0.52, // smaller icons
+                            size: crossAxisExtent * 0.52,
                           ),
                         );
                       },
@@ -375,7 +374,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 }
 
 // ============================================================
-// DRAWER – HEADER ONLY
+// DRAWER – HEADER + CLOSE BUTTON
 // ============================================================
 class _AppDrawer extends StatelessWidget {
   final AppLocalizations t;
@@ -392,8 +391,9 @@ class _AppDrawer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header with close button
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              padding: const EdgeInsets.fromLTRB(16, 16, 12, 20),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -408,12 +408,13 @@ class _AppDrawer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Top row: logo + name + close button
                   Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.all(6),
+                        width: 44,
+                        height: 44,
+                        padding: const EdgeInsets.all(5),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -425,25 +426,42 @@ class _AppDrawer extends StatelessWidget {
                             errorBuilder: (_, __, ___) => const Icon(
                               Icons.apps_rounded,
                               color: AppTheme.primary,
-                              size: 22,
+                              size: 20,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           t.appName,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      // Close / Cancel button
+                      Material(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Text(
                     'Partnerships & Integrations',
                     style: TextStyle(
@@ -455,6 +473,8 @@ class _AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
+
+            // Empty body (as requested earlier)
             const Expanded(child: SizedBox.shrink()),
           ],
         ),
@@ -792,7 +812,7 @@ class _SlideshowState extends State<_Slideshow> {
                       BoxShadow(
                         color: s.colors.last.withValues(alpha: 0.32),
                         blurRadius: 18,
-                        offset: const Offset(0, 8),
+                        offset: const Offset(0, 7),
                       ),
                     ],
                   ),
@@ -949,7 +969,7 @@ class _AppChip extends StatelessWidget {
 }
 
 // ============================================================
-// SERVICE CARD – smaller icons + smaller text + tight spacing
+// SERVICE CARD
 // ============================================================
 class _ServiceCard extends StatefulWidget {
   final MiniApp app;
@@ -1028,7 +1048,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                 color: iconColor,
               ),
             ),
-            const SizedBox(height: 6), // tighter gap
+            const SizedBox(height: 6),
             Text(
               widget.title,
               textAlign: TextAlign.center,
@@ -1036,7 +1056,7 @@ class _ServiceCardState extends State<_ServiceCard> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 11.5, // smaller text
+                fontSize: 11.5,
                 height: 1.15,
                 color: isDark ? Colors.white : AppTheme.primary,
               ),

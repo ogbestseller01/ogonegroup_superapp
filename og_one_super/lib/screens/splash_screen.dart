@@ -1,5 +1,3 @@
-// lib/screens/splash_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -19,45 +17,45 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late final AnimationController _c;
 
-  late final Animation<double> _logoFade;
+  late final Animation<double> _logoOpacity;
   late final Animation<double> _logoScale;
-  late final Animation<double> _titleFade;
-  late final Animation<Offset> _titleSlide;
-  late final Animation<double> _taglineFade;
-  late final Animation<Offset> _taglineSlide;
+  late final Animation<double> _textOpacity;
+  late final Animation<Offset> _textSlide;
+  late final Animation<double> _lineWidth;
+  late final Animation<double> _bottomOpacity;
   late final Animation<double> _progress;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
+    _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 2600),
     );
 
-    CurvedAnimation interval(double begin, double end, Curve curve) =>
-        CurvedAnimation(parent: _controller, curve: Interval(begin, end, curve: curve));
+    CurvedAnimation iv(double b, double e, Curve curve) =>
+        CurvedAnimation(parent: _c, curve: Interval(b, e, curve: curve));
 
-    _logoFade = interval(0.00, 0.25, Curves.easeOut);
-    _logoScale = Tween<double>(begin: 0.85, end: 1.0)
-        .animate(interval(0.00, 0.35, Curves.easeOutBack));
+    _logoOpacity = iv(0.00, 0.28, Curves.easeOut);
+    _logoScale = Tween(begin: 0.72, end: 1.0)
+        .animate(iv(0.00, 0.38, Curves.easeOutBack));
 
-    _titleFade = interval(0.20, 0.45, Curves.easeOut);
-    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero)
-        .animate(interval(0.20, 0.45, Curves.easeOutCubic));
+    _textOpacity = iv(0.25, 0.50, Curves.easeOut);
+    _textSlide = Tween(begin: const Offset(0, 0.22), end: Offset.zero)
+        .animate(iv(0.25, 0.50, Curves.easeOutCubic));
 
-    _taglineFade = interval(0.35, 0.60, Curves.easeOut);
-    _taglineSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero)
-        .animate(interval(0.35, 0.60, Curves.easeOutCubic));
+    _lineWidth = Tween(begin: 0.0, end: 1.0)
+        .animate(iv(0.40, 0.65, Curves.easeOutCubic));
 
-    _progress = interval(0.15, 1.0, Curves.easeInOut);
+    _progress = iv(0.15, 0.92, Curves.easeInOut);
+    _bottomOpacity = iv(0.55, 0.78, Curves.easeOut);
 
-    _controller.forward().whenComplete(() {
+    _c.forward().whenComplete(() {
       if (!mounted) return;
-      Future.delayed(const Duration(milliseconds: 250), () {
+      Future.delayed(const Duration(milliseconds: 180), () {
         if (mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
         }
@@ -67,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _c.dispose();
     super.dispose();
   }
 
@@ -75,6 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final t = context.t;
     final settings = context.watch<SettingsProvider>();
+    final size = MediaQuery.sizeOf(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -84,122 +83,145 @@ class _SplashScreenState extends State<SplashScreen>
           height: double.infinity,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF00102B), Color(0xFF001D45), Color(0xFF0A3670)],
+              colors: [
+                Color(0xFF000814),
+                Color(0xFF001D45),
+                Color(0xFF0A2F5C),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
           child: Stack(
             children: [
-              // Soft decorative circles
+              // Soft ambient shapes
               Positioned(
-                top: -90,
-                right: -60,
-                child: _Blob(
-                  size: 260,
-                  color: AppTheme.secondary.withValues(alpha: 0.10),
+                top: -size.height * 0.12,
+                right: -size.width * 0.18,
+                child: _GlowCircle(
+                  size: size.width * 0.55,
+                  color: AppTheme.secondary.withValues(alpha: 0.07),
                 ),
               ),
               Positioned(
-                bottom: -80,
-                left: -60,
-                child: _Blob(
-                  size: 220,
-                  color: Colors.white.withValues(alpha: 0.05),
+                bottom: -size.height * 0.10,
+                left: -size.width * 0.15,
+                child: _GlowCircle(
+                  size: size.width * 0.48,
+                  color: Colors.white.withValues(alpha: 0.03),
                 ),
               ),
 
-              // Centered brand block
-              Center(
+              // Content
+              SafeArea(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    FadeTransition(
-                      opacity: _logoFade,
-                      child: ScaleTransition(
-                        scale: _logoScale,
-                        child: const _Logo(),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    FadeTransition(
-                      opacity: _titleFade,
-                      child: SlideTransition(
-                        position: _titleSlide,
-                        child: Text(
-                          t.appName,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.6,
+                    // Language
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10, right: 16),
+                        child: FadeTransition(
+                          opacity: _logoOpacity,
+                          child: LanguageDropdown(
+                            currentCode: settings.locale.languageCode,
+                            onChanged: (code) =>
+                                settings.setLocale(Locale(code)),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+
+                    const Spacer(flex: 5),
+
+                    // Logo
                     FadeTransition(
-                      opacity: _taglineFade,
+                      opacity: _logoOpacity,
+                      child: ScaleTransition(
+                        scale: _logoScale,
+                        child: const _BrandLogo(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // App name + tagline
+                    FadeTransition(
+                      opacity: _textOpacity,
                       child: SlideTransition(
-                        position: _taglineSlide,
+                        position: _textSlide,
                         child: Column(
                           children: [
-                            Container(
-                              width: 36,
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppTheme.secondary,
-                                borderRadius: BorderRadius.circular(3),
+                            Text(
+                              t.appName,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 27,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 2.2,
+                                height: 1.05,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 16),
+                            // Animated gold line
+                            AnimatedBuilder(
+                              animation: _lineWidth,
+                              builder: (_, __) {
+                                return Container(
+                                  width: 40 * _lineWidth.value,
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.secondary,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 14),
                             Text(
                               t.superApps,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppTheme.secondary,
-                                fontSize: 14.5,
+                              style: TextStyle(
+                                color: AppTheme.secondary.withValues(alpha: 0.9),
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
+                                letterSpacing: 1.6,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
 
-              // Language dropdown (top right)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12, right: 16),
-                    child: FadeTransition(
-                      opacity: _logoFade,
-                      child: LanguageDropdown(
-                        currentCode: settings.locale.languageCode,
-                        onChanged: (code) => settings.setLocale(Locale(code)),
+                    const Spacer(flex: 6),
+
+                    // Progress + version
+                    FadeTransition(
+                      opacity: _bottomOpacity,
+                      child: Column(
+                        children: [
+                          AnimatedBuilder(
+                            animation: _progress,
+                            builder: (_, __) =>
+                                _ThinProgress(value: _progress.value),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'v 0.0.1',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.28),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-              ),
 
-              // Loading bar (bottom)
-              SafeArea(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 48),
-                    child: AnimatedBuilder(
-                      animation: _progress,
-                      builder: (_, __) => _ProgressBar(value: _progress.value),
-                    ),
-                  ),
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
             ],
@@ -211,54 +233,55 @@ class _SplashScreenState extends State<SplashScreen>
 }
 
 // ============================================================
-// LOGO (white disc with a soft gold ring)
+// BRAND LOGO
 // ============================================================
-class _Logo extends StatelessWidget {
-  const _Logo();
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 154,
-      height: 154,
-      alignment: Alignment.center,
+      width: 142,
+      height: 142,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppTheme.secondary.withValues(alpha: 0.45),
-          width: 2,
+          color: AppTheme.secondary.withValues(alpha: 0.35),
+          width: 1.8,
         ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.secondary.withValues(alpha: 0.18),
-            blurRadius: 40,
-            spreadRadius: 4,
+            blurRadius: 32,
+            spreadRadius: 1,
           ),
         ],
       ),
-      child: Container(
-        width: 132,
-        height: 132,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: ClipOval(
-          child: Image.asset(
-            'assets/images/homeimg.png',
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.apps_rounded,
-              size: 64,
-              color: AppTheme.primary,
+      child: Center(
+        child: Container(
+          width: 120,
+          height: 120,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/homeimg.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.apps_rounded,
+                size: 52,
+                color: AppTheme.primary,
+              ),
             ),
           ),
         ),
@@ -268,46 +291,69 @@ class _Logo extends StatelessWidget {
 }
 
 // ============================================================
-// PROGRESS BAR
+// THIN PROGRESS
 // ============================================================
-class _ProgressBar extends StatelessWidget {
+class _ThinProgress extends StatelessWidget {
   final double value;
-  const _ProgressBar({required this.value});
+
+  const _ThinProgress({required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 96,
+      height: 3,
+      child: Stack(
+        children: [
+          // Track
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          // Fill
+          FractionallySizedBox(
+            widthFactor: value.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF5C30E), Color(0xFFFFD54F)],
+                ),
+                borderRadius: BorderRadius.circular(3),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.secondary.withValues(alpha: 0.4),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// GLOW CIRCLE
+// ============================================================
+class _GlowCircle extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _GlowCircle({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 120,
-      height: 4,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: value.clamp(0.0, 1.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.secondary,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
+        shape: BoxShape.circle,
+        color: color,
       ),
     );
   }
-}
-
-class _Blob extends StatelessWidget {
-  final double size;
-  final Color color;
-  const _Blob({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-  );
 }
