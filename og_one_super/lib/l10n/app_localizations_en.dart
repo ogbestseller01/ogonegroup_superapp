@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'OG ONE GROUP';
+  String get appName => 'OG ONEGROUP';
 
   @override
   String get superApps => 'Super App';

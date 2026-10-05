@@ -9,7 +9,7 @@ class AppLocalizationsSw extends AppLocalizations {
   AppLocalizationsSw([String locale = 'sw']) : super(locale);
 
   @override
-  String get appName => 'OG ONE GROUP';
+  String get appName => 'OG ONEGROUP';
 
   @override
   String get superApps => 'Programu Kuu';
