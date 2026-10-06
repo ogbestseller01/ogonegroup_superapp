@@ -42,7 +42,6 @@ class SettingsProvider extends ChangeNotifier {
 
     // Notifications
     _pushEnabled = prefs.getBool('pushEnabled') ?? true;
-    _orderNotifications = prefs.getBool('orderNotifications') ?? true;
     _promoNotifications = prefs.getBool('promoNotifications') ?? true;
     _systemNotifications = prefs.getBool('systemNotifications') ?? true;
 
@@ -84,12 +83,6 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool('pushEnabled', value);
   }
 
-  Future<void> setOrderNotifications(bool value) async {
-    _orderNotifications = value;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('orderNotifications', value);
-  }
 
   Future<void> setPromoNotifications(bool value) async {
     _promoNotifications = value;
