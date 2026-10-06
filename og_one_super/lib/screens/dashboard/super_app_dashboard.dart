@@ -14,6 +14,9 @@ import '../../models/mini_app.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/language_dropdown.dart';
 
+// ============================================================
+// HELPERS
+// ============================================================
 Color _hex(String h) => Color(int.parse(h.replaceFirst('#', '0xFF')));
 
 IconData _iconFor(String name) {
@@ -39,6 +42,12 @@ IconData _iconFor(String name) {
   }
 }
 
+const _headerGradient = LinearGradient(
+  colors: [Color(0xFF000C1F), Color(0xFF001D45), Color(0xFF0A3670)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
 class _Slide {
   final String title;
   final String subtitle;
@@ -49,6 +58,9 @@ class _Slide {
   const _Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
 }
 
+// ============================================================
+// DASHBOARD
+// ============================================================
 class SuperAppDashboard extends StatefulWidget {
   const SuperAppDashboard({super.key});
 
@@ -69,6 +81,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   }
 
   void _snack(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -76,7 +89,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           content: Text(message),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -112,6 +126,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
   Future<void> _onRefresh() async {
     await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
     _searchController.clear();
     setState(() {
       _query = '';
@@ -128,7 +143,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final width = MediaQuery.sizeOf(context).width;
     final hPad = width > 800 ? (width - 760) / 2 : 20.0;
 
-    // Smaller & denser grid
     final crossAxisExtent = width < 360
         ? 92.0
         : width < 420
@@ -136,7 +150,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         : width < 600
         ? 108.0
         : 118.0;
-
     final mainAxisExtent = crossAxisExtent + 28;
 
     final q = _query.trim().toLowerCase();
@@ -144,8 +157,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
     final apps = miniApps.where((a) {
       if (searching) {
-        final title = t.serviceTitle(a.slug).toLowerCase();
-        return title.contains(q) ||
+        return t.serviceTitle(a.slug).toLowerCase().contains(q) ||
             a.slug.toLowerCase().contains(q) ||
             a.name.toLowerCase().contains(q);
       }
@@ -182,8 +194,17 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
-        drawer: _AppDrawer(t: t),
+        backgroundColor:
+        isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
+        drawer: _AppDrawer(
+          t: t,
+          languageCode: settings.locale.languageCode,
+          onLanguage: (code) => settings.setLocale(Locale(code)),
+          onSettings: () {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, AppRoutes.settings);
+          },
+        ),
         body: RefreshIndicator(
           onRefresh: _onRefresh,
           color: AppTheme.primary,
@@ -193,15 +214,13 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              // ── Header ──────────────────────────────────────
+              // ── Header + search ───────────────────────────
               SliverToBoxAdapter(
                 child: _Header(
                   t: t,
                   hPad: hPad,
-                  languageCode: settings.locale.languageCode,
-                  onLanguage: (code) => settings.setLocale(Locale(code)),
                   onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                  onSettings: () => Navigator.pushNamed(context, AppRoutes.settings),
+                  onAiAgent: () => _snack('AI Agent — Coming soon'),
                   searchController: _searchController,
                   onSearch: (v) => setState(() => _query = v),
                   onClear: _clearSearch,
@@ -209,7 +228,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                 ),
               ),
 
-              // ── Slideshow banner ────────────────────────────
+              // ── Slideshow ─────────────────────────────────
               if (!searching)
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
@@ -221,53 +240,19 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                   ),
                 ),
 
-              // ── Section title ───────────────────────────────
+              // ── Section title ─────────────────────────────
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 24, hPad, 12),
+                padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          t.allServices,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                            color: isDark ? Colors.white : AppTheme.primary,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${apps.length}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                            color: isDark ? AppTheme.secondary : AppTheme.gold600,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: _SectionTitle(
+                    title: t.allServices,
+                    count: apps.length,
+                    isDark: isDark,
                   ),
                 ),
               ),
 
-              // ── Chips ───────────────────────────────────────
+              // ── Chips ─────────────────────────────────────
               if (!searching)
                 SliverToBoxAdapter(
                   child: SizedBox(
@@ -301,40 +286,10 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                   ),
                 ),
 
-              // ── Empty / Grid ────────────────────────────────
+              // ── Empty state / Grid ────────────────────────
               if (apps.isEmpty)
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 60),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.06)
-                                : Colors.grey.shade100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.search_off_rounded,
-                            size: 30,
-                            color: isDark ? Colors.white38 : Colors.grey.shade400,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          t.noResults,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white54 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _EmptyState(message: t.noResults, isDark: isDark),
                 )
               else
                 SliverPadding(
@@ -350,7 +305,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                           (context, i) {
                         final app = apps[i];
                         return _Reveal(
-                          key: ValueKey('${app.slug}|$_selected'),
+                          key: ValueKey('${app.slug}|$_selected|$searching'),
                           index: i + 2,
                           child: _ServiceCard(
                             app: app,
@@ -374,63 +329,149 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 }
 
 // ============================================================
-// DRAWER – HEADER + CLOSE BUTTON
+// SECTION TITLE
 // ============================================================
-class _AppDrawer extends StatelessWidget {
-  final AppLocalizations t;
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final int count;
+  final bool isDark;
 
-  const _AppDrawer({required this.t});
+  const _SectionTitle({
+    required this.title,
+    required this.count,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          decoration: BoxDecoration(
+            color: AppTheme.secondary,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: isDark ? Colors.white : AppTheme.primary,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppTheme.secondary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: isDark ? AppTheme.secondary : AppTheme.gold600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ============================================================
+// EMPTY STATE
+// ============================================================
+class _EmptyState extends StatelessWidget {
+  final String message;
+  final bool isDark;
+
+  const _EmptyState({required this.message, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.search_off_rounded,
+              size: 30,
+              color: isDark ? Colors.white38 : Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            message,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white54 : Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// DRAWER
+// ============================================================
+class _AppDrawer extends StatelessWidget {
+  final AppLocalizations t;
+  final String languageCode;
+  final ValueChanged<String> onLanguage;
+  final VoidCallback onSettings;
+
+  const _AppDrawer({
+    required this.t,
+    required this.languageCode,
+    required this.onLanguage,
+    required this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Drawer(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? AppTheme.darkSurface
-          : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       child: SafeArea(
+        top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header with close button
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 12, 20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF000C1F),
-                    Color(0xFF001D45),
-                    Color(0xFF0A3670),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                MediaQuery.paddingOf(context).top + 16,
+                12,
+                20,
               ),
+              decoration: const BoxDecoration(gradient: _headerGradient),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top row: logo + name + close button
                   Row(
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        padding: const EdgeInsets.all(5),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/homeimg.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.apps_rounded,
-                              color: AppTheme.primary,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
+                      const _Logo(size: 44),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -442,22 +483,10 @@ class _AppDrawer extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Close / Cancel button
-                      Material(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        child: InkWell(
-                          onTap: () => Navigator.of(context).pop(),
-                          borderRadius: BorderRadius.circular(10),
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.close_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
+                      _GlassButton(
+                        icon: Icons.close_rounded,
+                        tooltip: 'Close',
+                        onTap: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
@@ -473,10 +502,119 @@ class _AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Empty body (as requested earlier)
             const Expanded(child: SizedBox.shrink()),
+            Divider(
+              height: 1,
+              color: isDark ? AppTheme.darkBorder : Colors.grey.shade200,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Language',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  LanguageDropdown(
+                    currentCode: languageCode,
+                    onChanged: onLanguage,
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.settings_rounded,
+                color: isDark ? Colors.white70 : AppTheme.primary,
+              ),
+              title: Text(
+                'Settings',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppTheme.primary,
+                ),
+              ),
+              onTap: onSettings,
+            ),
+            const SizedBox(height: 12),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// SHARED SMALL WIDGETS
+// ============================================================
+class _Logo extends StatelessWidget {
+  final double size;
+
+  const _Logo({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.09),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/images/homeimg.png',
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.apps_rounded,
+            color: AppTheme.primary,
+            size: size * 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _GlassButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(9),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
         ),
       ),
     );
@@ -513,10 +651,8 @@ class _Reveal extends StatelessWidget {
 class _Header extends StatelessWidget {
   final AppLocalizations t;
   final double hPad;
-  final String languageCode;
-  final ValueChanged<String> onLanguage;
   final VoidCallback onMenu;
-  final VoidCallback onSettings;
+  final VoidCallback onAiAgent;
   final TextEditingController searchController;
   final ValueChanged<String> onSearch;
   final VoidCallback onClear;
@@ -528,10 +664,8 @@ class _Header extends StatelessWidget {
   const _Header({
     required this.t,
     required this.hPad,
-    required this.languageCode,
-    required this.onLanguage,
     required this.onMenu,
-    required this.onSettings,
+    required this.onAiAgent,
     required this.searchController,
     required this.onSearch,
     required this.onClear,
@@ -548,16 +682,9 @@ class _Header extends StatelessWidget {
             width: double.infinity,
             clipBehavior: Clip.antiAlias,
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF000C1F),
-                  Color(0xFF001D45),
-                  Color(0xFF0A3670),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+              gradient: _headerGradient,
+              borderRadius:
+              BorderRadius.vertical(bottom: Radius.circular(32)),
             ),
             child: Stack(
               children: [
@@ -580,28 +707,20 @@ class _Header extends StatelessWidget {
                 SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 20),
+                    padding:
+                    EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Material(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
-                                onTap: onMenu,
-                                borderRadius: BorderRadius.circular(12),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(9),
-                                  child: Icon(
-                                    Icons.menu_rounded,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
+                            _GlassButton(
+                              icon: Icons.menu_rounded,
+                              tooltip: 'Menu',
+                              onTap: onMenu,
                             ),
+                            const SizedBox(width: 12),
+                            const _Logo(size: 40),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -612,30 +731,14 @@ class _Header extends StatelessWidget {
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.3,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                             ),
-                            LanguageDropdown(
-                              currentCode: languageCode,
-                              onChanged: onLanguage,
-                            ),
-                            const SizedBox(width: 8),
-                            Material(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
-                                onTap: onSettings,
-                                borderRadius: BorderRadius.circular(12),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(9),
-                                  child: Icon(
-                                    Icons.settings_rounded,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
+                            _GlassButton(
+                              icon: Icons.smart_toy_rounded,
+                              tooltip: 'AI Agent',
+                              onTap: onAiAgent,
                             ),
                           ],
                         ),
@@ -668,7 +771,7 @@ class _Header extends StatelessWidget {
           ),
         ),
 
-        // Floating Search + Clear
+        // Floating search
         Positioned(
           left: hPad,
           right: hPad,
@@ -689,6 +792,7 @@ class _Header extends StatelessWidget {
             child: TextField(
               controller: searchController,
               onChanged: onSearch,
+              textInputAction: TextInputAction.search,
               cursorColor: AppTheme.primary,
               style: const TextStyle(
                 color: AppTheme.primary,
@@ -766,8 +870,13 @@ class _SlideshowState extends State<_Slideshow> {
   void initState() {
     super.initState();
     _ctrl = PageController(viewportFraction: 0.93);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!_ctrl.hasClients) return;
+      if (!_ctrl.hasClients || widget.slides.isEmpty) return;
       final next = (_page + 1) % widget.slides.length;
       _ctrl.animateToPage(
         next,
@@ -791,80 +900,86 @@ class _SlideshowState extends State<_Slideshow> {
       children: [
         SizedBox(
           height: 122,
-          child: PageView.builder(
-            controller: _ctrl,
-            itemCount: widget.slides.length,
-            onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (_, i) {
-              final s = widget.slides[i];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: s.colors,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+          child: Listener(
+            // Restart the auto-advance timer after the user touches the banner.
+            onPointerDown: (_) => _timer?.cancel(),
+            onPointerUp: (_) => _startTimer(),
+            onPointerCancel: (_) => _startTimer(),
+            child: PageView.builder(
+              controller: _ctrl,
+              itemCount: widget.slides.length,
+              onPageChanged: (i) => setState(() => _page = i),
+              itemBuilder: (_, i) {
+                final s = widget.slides[i];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: s.colors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: s.colors.last.withValues(alpha: 0.32),
+                          blurRadius: 18,
+                          offset: const Offset(0, 7),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: s.colors.last.withValues(alpha: 0.32),
-                        blurRadius: 18,
-                        offset: const Offset(0, 7),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              s.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: s.ink,
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.w800,
-                                height: 1.25,
-                                letterSpacing: -0.2,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                s.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: s.ink,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.25,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              s.subtitle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: s.ink.withValues(alpha: 0.80),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                height: 1.3,
+                              const SizedBox(height: 6),
+                              Text(
+                                s.subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: s.ink.withValues(alpha: 0.80),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: s.ink.withValues(alpha: 0.13),
-                          shape: BoxShape.circle,
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: s.ink.withValues(alpha: 0.13),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(s.icon, size: 26, color: s.ink),
                         ),
-                        child: Icon(s.icon, size: 26, color: s.ink),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -918,50 +1033,55 @@ class _AppChip extends StatelessWidget {
         ? Colors.white
         : (isDark ? Colors.white70 : AppTheme.primary);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? AppTheme.primary
-                : (isDark ? AppTheme.darkBorder : const Color(0xFFE3E8F1)),
-          ),
-          boxShadow: selected
-              ? [
-            BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.25),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected
+                  ? AppTheme.primary
+                  : (isDark ? AppTheme.darkBorder : const Color(0xFFE3E8F1)),
             ),
-          ]
-              : [
-            if (!isDark)
+            boxShadow: selected
+                ? [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: AppTheme.primary.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: selected ? AppTheme.secondary : fg),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                color: fg,
-                fontWeight: FontWeight.w700,
-                fontSize: 12.5,
+            ]
+                : [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: selected ? AppTheme.secondary : fg),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -969,7 +1089,7 @@ class _AppChip extends StatelessWidget {
 }
 
 // ============================================================
-// SERVICE CARD
+// SERVICE CARD (circle icon + label)
 // ============================================================
 class _ServiceCard extends StatefulWidget {
   final MiniApp app;
@@ -1000,86 +1120,94 @@ class _ServiceCardState extends State<_ServiceCard> {
     final iconColor = widget.app.isComingSoon ? AppTheme.gold600 : color;
     final iconSize = widget.size * 0.44;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.93 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: widget.size,
-              height: widget.size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : color.withValues(alpha: 0.11),
-                border: Border.all(
-                  color: isDark
-                      ? AppTheme.darkBorder
-                      : color.withValues(alpha: 0.20),
-                  width: 1.3,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: isDark ? 0.18 : 0.20),
-                    blurRadius: 14,
-                    spreadRadius: 0.5,
-                    offset: const Offset(0, 5),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Icon(
-                _iconFor(widget.app.icon),
-                size: iconSize,
-                color: iconColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 11.5,
-                height: 1.15,
-                color: isDark ? Colors.white : AppTheme.primary,
-              ),
-            ),
-            if (widget.app.isComingSoon) ...[
-              const SizedBox(height: 3),
+    return Semantics(
+      button: true,
+      label: widget.title,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.93 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                width: widget.size,
+                height: widget.size,
                 decoration: BoxDecoration(
-                  color: AppTheme.secondary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  widget.soonLabel,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : color.withValues(alpha: 0.11),
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.darkBorder
+                        : color.withValues(alpha: 0.20),
+                    width: 1.3,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: isDark ? 0.18 : 0.20),
+                      blurRadius: 14,
+                      spreadRadius: 0.5,
+                      offset: const Offset(0, 5),
+                    ),
+                    BoxShadow(
+                      color: Colors.black
+                          .withValues(alpha: isDark ? 0.22 : 0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _iconFor(widget.app.icon),
+                  size: iconSize,
+                  color: iconColor,
                 ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11.5,
+                  height: 1.15,
+                  color: isDark ? Colors.white : AppTheme.primary,
+                ),
+              ),
+              if (widget.app.isComingSoon) ...[
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 1.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondary.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.soonLabel,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
