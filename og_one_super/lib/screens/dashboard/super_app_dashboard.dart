@@ -1,11 +1,9 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fundiapp_sdk/fundi_app_mini.dart';
 import 'package:nearbyfundi_sdk/nearby_fundi_mini.dart';
 import 'package:provider/provider.dart';
-
 import '../../config/app_routes.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
@@ -13,6 +11,7 @@ import '../../data/mini_apps_data.dart';
 import '../../models/mini_app.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/language_dropdown.dart';
+import 'dashboard_slideshow.dart';
 
 // ============================================================
 // HELPERS
@@ -48,22 +47,11 @@ const _headerGradient = LinearGradient(
   end: Alignment.bottomRight,
 );
 
-class _Slide {
-  final String title;
-  final String subtitle;
-  final List<Color> colors;
-  final Color ink;
-  final IconData icon;
-
-  const _Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
-}
-
 // ============================================================
 // DASHBOARD
 // ============================================================
 class SuperAppDashboard extends StatefulWidget {
   const SuperAppDashboard({super.key});
-
   @override
   State<SuperAppDashboard> createState() => _SuperAppDashboardState();
 }
@@ -89,8 +77,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           content: Text(message),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -142,7 +129,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final t = context.t;
     final width = MediaQuery.sizeOf(context).width;
     final hPad = width > 800 ? (width - 760) / 2 : 20.0;
-
     final crossAxisExtent = width < 360
         ? 92.0
         : width < 420
@@ -151,10 +137,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         ? 108.0
         : 118.0;
     final mainAxisExtent = crossAxisExtent + 28;
-
     final q = _query.trim().toLowerCase();
     final searching = q.isNotEmpty;
-
     final apps = miniApps.where((a) {
       if (searching) {
         return t.serviceTitle(a.slug).toLowerCase().contains(q) ||
@@ -163,30 +147,37 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       }
       return _selected == 'all' || a.slug == _selected;
     }).toList();
-
     final chipApps = miniApps.where((a) => !a.isComingSoon).toList();
 
-    final slides = <_Slide>[
-      _Slide(
+    // ── Slides (fully localized – no hardcodes) ────────────
+    final slides = <Slide>[
+      Slide(
         t.bannerTitle,
         t.bannerSubtitle,
         const [Color(0xFFFFC61F), Color(0xFFF5A90E)],
         AppTheme.primary,
         Icons.grid_view_rounded,
       ),
-      const _Slide(
-        'Trusted fundis, near you',
-        'Book verified technicians in a few taps',
-        [Color(0xFF0A3670), Color(0xFF1A5BB5)],
+      Slide(
+        t.bannerFundiTitle,
+        t.bannerFundiSubtitle,
+        const [Color(0xFF0A3670), Color(0xFF1A5BB5)],
         Colors.white,
         Icons.handyman_rounded,
       ),
-      const _Slide(
-        'Food & laundry, delivered',
-        'Msosi Chap Chap and Mfua Nguo at your door',
-        [Color(0xFFE8590C), Color(0xFFF98A3B)],
+      Slide(
+        t.bannerFoodTitle,
+        t.bannerFoodSubtitle,
+        const [Color(0xFFE8590C), Color(0xFFF98A3B)],
         Colors.white,
         Icons.delivery_dining_rounded,
+      ),
+      Slide(
+        t.adsBannersTitle,
+        t.adsBannersSubtitle,
+        const [Color(0xFF6B21A8), Color(0xFF9333EA)],
+        Colors.white,
+        Icons.campaign_rounded,
       ),
     ];
 
@@ -220,7 +211,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                   t: t,
                   hPad: hPad,
                   onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                  onAiAgent: () => _snack('AI Agent — Coming soon'),
+                  onAiAgent: () => _snack(t.comingSoonMessage),
                   searchController: _searchController,
                   onSearch: (v) => setState(() => _query = v),
                   onClear: _clearSearch,
@@ -235,7 +226,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
                   sliver: SliverToBoxAdapter(
                     child: _Reveal(
                       index: 0,
-                      child: _Slideshow(slides: slides),
+                      child: DashboardSlideshow(slides: slides),
                     ),
                   ),
                 ),
@@ -335,13 +326,11 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
   final bool isDark;
-
   const _SectionTitle({
     required this.title,
     required this.count,
     required this.isDark,
   });
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -392,9 +381,7 @@ class _SectionTitle extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final String message;
   final bool isDark;
-
   const _EmptyState({required this.message, required this.isDark});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -439,22 +426,20 @@ class _AppDrawer extends StatelessWidget {
   final String languageCode;
   final ValueChanged<String> onLanguage;
   final VoidCallback onSettings;
-
   const _AppDrawer({
     required this.t,
     required this.languageCode,
     required this.onLanguage,
     required this.onSettings,
   });
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Drawer(
       backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       child: SafeArea(
         top: false,
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -485,14 +470,16 @@ class _AppDrawer extends StatelessWidget {
                       ),
                       _GlassButton(
                         icon: Icons.close_rounded,
-                        tooltip: 'Close',
+                        tooltip: t.close,
                         onTap: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'Partnerships & Integrations',
+                    languageCode == 'sw'
+                        ? 'Karibu kwa ushirikiano'
+                        : 'Welcome for partnerships',
                     style: TextStyle(
                       color: AppTheme.secondary.withValues(alpha: 0.95),
                       fontSize: 13,
@@ -503,46 +490,107 @@ class _AppDrawer extends StatelessWidget {
               ),
             ),
             const Expanded(child: SizedBox.shrink()),
-            Divider(
-              height: 1,
-              color: isDark ? AppTheme.darkBorder : Colors.grey.shade200,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            // ── Dashboard-style footer (language + settings) ──
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                20,
+                16,
+                MediaQuery.paddingOf(context).bottom + 16,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.white, AppTheme.navy50],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'Language',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        t.language,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.navy100),
+                    ),
+                    child: LanguageDropdown(
+                      currentCode: languageCode,
+                      onChanged: onLanguage,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  LanguageDropdown(
-                    currentCode: languageCode,
-                    onChanged: onLanguage,
+                  const SizedBox(height: 12),
+                  Material(
+                    color: AppTheme.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: onSettings,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.settings_rounded,
+                              color: AppTheme.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                t.settings,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppTheme.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(
-                Icons.settings_rounded,
-                color: isDark ? Colors.white70 : AppTheme.primary,
-              ),
-              title: Text(
-                'Settings',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppTheme.primary,
-                ),
-              ),
-              onTap: onSettings,
-            ),
-            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -555,9 +603,7 @@ class _AppDrawer extends StatelessWidget {
 // ============================================================
 class _Logo extends StatelessWidget {
   final double size;
-
   const _Logo({required this.size});
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -594,13 +640,11 @@ class _GlassButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-
   const _GlassButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return Tooltip(
@@ -627,9 +671,7 @@ class _GlassButton extends StatelessWidget {
 class _Reveal extends StatelessWidget {
   final int index;
   final Widget child;
-
   const _Reveal({super.key, required this.index, required this.child});
-
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
@@ -657,10 +699,8 @@ class _Header extends StatelessWidget {
   final ValueChanged<String> onSearch;
   final VoidCallback onClear;
   final bool hasText;
-
   static const double _searchHeight = 52;
   static const double _overlap = 26;
-
   const _Header({
     required this.t,
     required this.hPad,
@@ -671,7 +711,6 @@ class _Header extends StatelessWidget {
     required this.onClear,
     required this.hasText,
   });
-
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -683,8 +722,7 @@ class _Header extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: const BoxDecoration(
               gradient: _headerGradient,
-              borderRadius:
-              BorderRadius.vertical(bottom: Radius.circular(32)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
             ),
             child: Stack(
               children: [
@@ -707,8 +745,7 @@ class _Header extends StatelessWidget {
                 SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding:
-                    EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 20),
+                    padding: EdgeInsets.fromLTRB(hPad, 12, hPad, _overlap + 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -716,7 +753,7 @@ class _Header extends StatelessWidget {
                           children: [
                             _GlassButton(
                               icon: Icons.menu_rounded,
-                              tooltip: 'Menu',
+                              tooltip: t.close,
                               onTap: onMenu,
                             ),
                             const SizedBox(width: 12),
@@ -737,7 +774,7 @@ class _Header extends StatelessWidget {
                             ),
                             _GlassButton(
                               icon: Icons.smart_toy_rounded,
-                              tooltip: 'AI Agent',
+                              tooltip: t.comingSoon,
                               onTap: onAiAgent,
                             ),
                           ],
@@ -770,7 +807,6 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
-
         // Floating search
         Positioned(
           left: hPad,
@@ -838,172 +874,13 @@ class _Header extends StatelessWidget {
 class _Blob extends StatelessWidget {
   final double size;
   final Color color;
-
   const _Blob({required this.size, required this.color});
-
   @override
   Widget build(BuildContext context) => Container(
     width: size,
     height: size,
     decoration: BoxDecoration(shape: BoxShape.circle, color: color),
   );
-}
-
-// ============================================================
-// SLIDESHOW
-// ============================================================
-class _Slideshow extends StatefulWidget {
-  final List<_Slide> slides;
-
-  const _Slideshow({required this.slides});
-
-  @override
-  State<_Slideshow> createState() => _SlideshowState();
-}
-
-class _SlideshowState extends State<_Slideshow> {
-  late final PageController _ctrl;
-  Timer? _timer;
-  int _page = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = PageController(viewportFraction: 0.93);
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!_ctrl.hasClients || widget.slides.isEmpty) return;
-      final next = (_page + 1) % widget.slides.length;
-      _ctrl.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      children: [
-        SizedBox(
-          height: 122,
-          child: Listener(
-            // Restart the auto-advance timer after the user touches the banner.
-            onPointerDown: (_) => _timer?.cancel(),
-            onPointerUp: (_) => _startTimer(),
-            onPointerCancel: (_) => _startTimer(),
-            child: PageView.builder(
-              controller: _ctrl,
-              itemCount: widget.slides.length,
-              onPageChanged: (i) => setState(() => _page = i),
-              itemBuilder: (_, i) {
-                final s = widget.slides[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: s.colors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: s.colors.last.withValues(alpha: 0.32),
-                          blurRadius: 18,
-                          offset: const Offset(0, 7),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                s.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: s.ink,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.25,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                s.subtitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: s.ink.withValues(alpha: 0.80),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: s.ink.withValues(alpha: 0.13),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(s.icon, size: 26, color: s.ink),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(widget.slides.length, (i) {
-            final on = i == _page;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: on ? 18 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: on
-                    ? AppTheme.secondary
-                    : (isDark ? Colors.white24 : Colors.black12),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
 }
 
 // ============================================================
@@ -1015,7 +892,6 @@ class _AppChip extends StatelessWidget {
   final bool selected;
   final bool isDark;
   final VoidCallback onTap;
-
   const _AppChip({
     required this.label,
     required this.icon,
@@ -1023,7 +899,6 @@ class _AppChip extends StatelessWidget {
     required this.isDark,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     final bg = selected
@@ -1032,7 +907,6 @@ class _AppChip extends StatelessWidget {
     final fg = selected
         ? Colors.white
         : (isDark ? Colors.white70 : AppTheme.primary);
-
     return Semantics(
       button: true,
       selected: selected,
@@ -1097,7 +971,6 @@ class _ServiceCard extends StatefulWidget {
   final String soonLabel;
   final VoidCallback onTap;
   final double size;
-
   const _ServiceCard({
     required this.app,
     required this.title,
@@ -1105,21 +978,18 @@ class _ServiceCard extends StatefulWidget {
     required this.onTap,
     required this.size,
   });
-
   @override
   State<_ServiceCard> createState() => _ServiceCardState();
 }
 
 class _ServiceCardState extends State<_ServiceCard> {
   bool _pressed = false;
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _hex(widget.app.color);
     final iconColor = widget.app.isComingSoon ? AppTheme.gold600 : color;
     final iconSize = widget.size * 0.44;
-
     return Semantics(
       button: true,
       label: widget.title,
@@ -1159,8 +1029,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                       offset: const Offset(0, 5),
                     ),
                     BoxShadow(
-                      color: Colors.black
-                          .withValues(alpha: isDark ? 0.22 : 0.05),
+                      color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),

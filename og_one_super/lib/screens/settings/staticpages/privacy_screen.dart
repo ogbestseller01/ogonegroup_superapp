@@ -1,23 +1,24 @@
+// lib/screens/settings/staticpages/privacy_screen.dart
 import 'package:flutter/material.dart';
 
 import '../../../config/app_strings.dart';
 import '../../../services/api_service.dart';
 import 'static_page_scaffold.dart';
 
-class AboutScreen extends StatelessWidget {
-  const AboutScreen({super.key});
+class PrivacyScreen extends StatelessWidget {
+  const PrivacyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final title = context.t.about;
+    final title = context.t.privacyPolicy;
     return StaticPageScaffold(
       title: title,
-      loader: ApiService.instance.getAbout,
+      loader: ApiService.instance.getPrivacyPolicy,
       builder: (context, data) => buildDocumentChildren(
         context,
         data,
         fallbackTitle: title,
-        icon: Icons.info_outline_rounded,
+        icon: Icons.privacy_tip_outlined,
       ),
     );
   }

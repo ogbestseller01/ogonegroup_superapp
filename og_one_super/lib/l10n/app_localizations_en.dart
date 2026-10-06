@@ -135,6 +135,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noResults => 'No services found';
 
   @override
+  String get adsBannersTitle => 'Ads/Banners';
+
+  @override
+  String get adsBannersSubtitle => 'Coming soon — grow with us';
+
+  @override
   String get ok => 'OK';
 
   @override
@@ -209,4 +215,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sendFeedback => 'Send Feedback';
+
+  @override
+  String get bannerFundiTitle => 'Trusted fundis, near you';
+
+  @override
+  String get bannerFundiSubtitle => 'Book verified technicians in a few taps';
+
+  @override
+  String get bannerFoodTitle => 'Food & laundry, delivered';
+
+  @override
+  String get bannerFoodSubtitle => 'Msosi Chap Chap and Mfua Nguo at your door';
+
+  @override
+  String get faqs => 'FAQs';
+
+  @override
+  String get searchFaqs => 'Search FAQs';
+
+  @override
+  String get noFaqs => 'No FAQs available yet.';
+
+  @override
+  String get couldNotOpen => 'Could not open this link.';
+
+  @override
+  String get getInTouch => 'Get in touch';
+
+  @override
+  String get getInTouchSub =>
+      'We are happy to help. Reach us any way you like.';
+
+  @override
+  String get emailWebsite => 'EMAIL & WEBSITE';
+
+  @override
+  String get phoneNumbers => 'PHONE NUMBERS';
+
+  @override
+  String get whatsappSection => 'WHATSAPP';
+
+  @override
+  String get call => 'Call';
+
+  @override
+  String get chat => 'Chat';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get phone => 'Phone';
+
+  @override
+  String get website => 'Website';
+
+  @override
+  String get address => 'Address';
+
+  @override
+  String get helpUsImprove => 'Help us improve';
+
+  @override
+  String get helpUsImproveSub =>
+      'Tell us what you like, what is broken or what you would love to see next.';
+
+  @override
+  String get feedbackTypeLabel => 'FEEDBACK TYPE';
+
+  @override
+  String get rateAppLabel => 'HOW WOULD YOU RATE THE APP?';
+
+  @override
+  String get fullName => 'Full name';
+
+  @override
+  String get yourFeedback => 'Your feedback';
+
+  @override
+  String get sendFeedbackBtn => 'Send feedback';
+
+  @override
+  String get required => 'This field is required';
+
+  @override
+  String get validEmail => 'Enter a valid email address';
+
+  @override
+  String get suggestion => 'Suggestion';
+
+  @override
+  String get bugReport => 'Bug report';
+
+  @override
+  String get compliment => 'Compliment';
+
+  @override
+  String get other => 'Other';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get nothingToShow => 'Nothing to show yet.';
 }

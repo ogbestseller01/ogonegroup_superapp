@@ -344,6 +344,18 @@ abstract class AppLocalizations {
   /// **'No services found'**
   String get noResults;
 
+  /// No description provided for @adsBannersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads/Banners'**
+  String get adsBannersTitle;
+
+  /// No description provided for @adsBannersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon — grow with us'**
+  String get adsBannersSubtitle;
+
   /// No description provided for @ok.
   ///
   /// In en, this message translates to:
@@ -493,6 +505,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send Feedback'**
   String get sendFeedback;
+
+  /// No description provided for @bannerFundiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted fundis, near you'**
+  String get bannerFundiTitle;
+
+  /// No description provided for @bannerFundiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book verified technicians in a few taps'**
+  String get bannerFundiSubtitle;
+
+  /// No description provided for @bannerFoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Food & laundry, delivered'**
+  String get bannerFoodTitle;
+
+  /// No description provided for @bannerFoodSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Msosi Chap Chap and Mfua Nguo at your door'**
+  String get bannerFoodSubtitle;
+
+  /// No description provided for @faqs.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQs'**
+  String get faqs;
+
+  /// No description provided for @searchFaqs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search FAQs'**
+  String get searchFaqs;
+
+  /// No description provided for @noFaqs.
+  ///
+  /// In en, this message translates to:
+  /// **'No FAQs available yet.'**
+  String get noFaqs;
+
+  /// No description provided for @couldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this link.'**
+  String get couldNotOpen;
+
+  /// No description provided for @getInTouch.
+  ///
+  /// In en, this message translates to:
+  /// **'Get in touch'**
+  String get getInTouch;
+
+  /// No description provided for @getInTouchSub.
+  ///
+  /// In en, this message translates to:
+  /// **'We are happy to help. Reach us any way you like.'**
+  String get getInTouchSub;
+
+  /// No description provided for @emailWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'EMAIL & WEBSITE'**
+  String get emailWebsite;
+
+  /// No description provided for @phoneNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'PHONE NUMBERS'**
+  String get phoneNumbers;
+
+  /// No description provided for @whatsappSection.
+  ///
+  /// In en, this message translates to:
+  /// **'WHATSAPP'**
+  String get whatsappSection;
+
+  /// No description provided for @call.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get call;
+
+  /// No description provided for @chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chat;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @helpUsImprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Help us improve'**
+  String get helpUsImprove;
+
+  /// No description provided for @helpUsImproveSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what you like, what is broken or what you would love to see next.'**
+  String get helpUsImproveSub;
+
+  /// No description provided for @feedbackTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'FEEDBACK TYPE'**
+  String get feedbackTypeLabel;
+
+  /// No description provided for @rateAppLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HOW WOULD YOU RATE THE APP?'**
+  String get rateAppLabel;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fullName;
+
+  /// No description provided for @yourFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback'**
+  String get yourFeedback;
+
+  /// No description provided for @sendFeedbackBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get sendFeedbackBtn;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get required;
+
+  /// No description provided for @validEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get validEmail;
+
+  /// No description provided for @suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion'**
+  String get suggestion;
+
+  /// No description provided for @bugReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report'**
+  String get bugReport;
+
+  /// No description provided for @compliment.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliment'**
+  String get compliment;
+
+  /// No description provided for @other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get other;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @nothingToShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show yet.'**
+  String get nothingToShow;
 }
 
 class _AppLocalizationsDelegate

@@ -9,11 +9,17 @@ import '../../widgets/language_dropdown.dart';
 
 import 'staticpages/about_screen.dart';
 import 'staticpages/contact_screen.dart';
+import 'staticpages/faq_screen.dart';
+import 'staticpages/feedback_screen.dart';
+import 'staticpages/privacy_screen.dart';
 import 'staticpages/terms_screen.dart';
-import 'staticpages/coming_soon_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  void _go(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +89,8 @@ class SettingsScreen extends StatelessWidget {
           _SettingsCard(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   children: [
                     _IconBox(icon: Icons.language_rounded, isDark: isDark),
@@ -144,11 +151,7 @@ class SettingsScreen extends StatelessWidget {
               _SettingsAction(
                 title: t.privacyPolicy,
                 icon: Icons.privacy_tip_outlined,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening Privacy Policy...')),
-                  );
-                },
+                onTap: () => _go(context, const PrivacyScreen()),
               ),
               const _Divider(),
               _SettingsAction(
@@ -169,30 +172,19 @@ class SettingsScreen extends StatelessWidget {
               _SettingsAction(
                 title: t.helpCenter,
                 icon: Icons.help_outline_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Help Center coming soon')),
-                  );
-                },
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.sendFeedback,
-                icon: Icons.feedback_outlined,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Feedback form coming soon')),
-                  );
-                },
+                onTap: () => _go(context, const FaqScreen()),
               ),
               const _Divider(),
               _SettingsAction(
                 title: t.contactUs,
                 icon: Icons.contact_support_rounded,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ContactScreen()),
-                ),
+                onTap: () => _go(context, const ContactScreen()),
+              ),
+              const _Divider(),
+              _SettingsAction(
+                title: t.sendFeedback,
+                icon: Icons.feedback_outlined,
+                onTap: () => _go(context, const FeedbackScreen()),
               ),
             ],
           ),
@@ -205,14 +197,15 @@ class SettingsScreen extends StatelessWidget {
           _SettingsCard(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
                   children: [
                     Container(
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.12),
+                        color: AppTheme.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -245,19 +238,13 @@ class SettingsScreen extends StatelessWidget {
               _SettingsAction(
                 title: t.about,
                 icon: Icons.info_outline_rounded,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AboutScreen()),
-                ),
+                onTap: () => _go(context, const AboutScreen()),
               ),
               const _Divider(),
               _SettingsAction(
                 title: t.termsConditions,
                 icon: Icons.description_outlined,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TermsScreen()),
-                ),
+                onTap: () => _go(context, const TermsScreen()),
               ),
               const _Divider(),
               _SettingsAction(
@@ -265,18 +252,11 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.star_outline_rounded,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Rate App feature coming soon!')),
+                    const SnackBar(
+                      content: Text('Rate App feature coming soon!'),
+                    ),
                   );
                 },
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.comingSoon,
-                icon: Icons.hourglass_empty_rounded,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ComingSoonScreen()),
-                ),
               ),
             ],
           ),
@@ -348,13 +328,13 @@ class _SettingsCard extends StatelessWidget {
         color: isDark ? AppTheme.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: isDark
-            ? Border.all(color: AppTheme.darkBorder.withOpacity(0.6))
+            ? Border.all(color: AppTheme.darkBorder.withValues(alpha: 0.6))
             : null,
         boxShadow: isDark
             ? null
             : [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -392,7 +372,9 @@ class _IconBox extends StatelessWidget {
       width: 42,
       height: 42,
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade100,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
@@ -436,9 +418,9 @@ class _ThemeOption extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: selected
-                    ? AppTheme.primary.withOpacity(0.15)
+                    ? AppTheme.primary.withValues(alpha: 0.15)
                     : (isDark
-                    ? Colors.white.withOpacity(0.08)
+                    ? Colors.white.withValues(alpha: 0.08)
                     : Colors.grey.shade100),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -587,7 +569,7 @@ class _SettingsSwitch extends StatelessWidget {
               value: value,
               onChanged: enabled ? onChanged : null,
               activeColor: AppTheme.primary,
-              activeTrackColor: AppTheme.primary.withOpacity(0.45),
+              activeTrackColor: AppTheme.primary.withValues(alpha: 0.45),
               inactiveThumbColor:
               isDark ? Colors.grey.shade500 : Colors.grey.shade400,
               inactiveTrackColor:

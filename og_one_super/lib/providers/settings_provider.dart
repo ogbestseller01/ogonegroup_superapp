@@ -1,5 +1,10 @@
 // lib/providers/settings_provider.dart
+
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -83,7 +88,6 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool('pushEnabled', value);
   }
 
-
   Future<void> setPromoNotifications(bool value) async {
     _promoNotifications = value;
     notifyListeners();
@@ -98,10 +102,24 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool('systemNotifications', value);
   }
 
-  // Optional helper
+  // ── Clear Cache (real implementation) ───────────────────
   Future<void> clearCache() async {
-    // You can clear image cache, temporary files, etc. here
-    // For now just a placeholder
-    await Future.delayed(const Duration(milliseconds: 300));
+    // 1. Clear Flutter's in-memory image cache
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+
+    // 2. Delete temporary files
+    try {
+      final tempDir = await getTemporaryDirectory();
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+        await tempDir.create(); // recreate empty folder
+      }
+    } catch (_) {
+      // Ignore errors (permission, etc.)
+    }
+
+    // Optional: small delay so the user feels something happened
+    await Future.delayed(const Duration(milliseconds: 400));
   }
 }

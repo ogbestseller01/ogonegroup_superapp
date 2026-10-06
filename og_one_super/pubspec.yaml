@@ -16,6 +16,12 @@ dependencies:
   provider: ^6.1.1
   shared_preferences: ^2.2.2
 
+  # HTTP client for the static pages API (About, Terms, Privacy, FAQs, Contact)
+  dio: ^5.7.0
+
+  # Open email, website, phone dialer and WhatsApp from the Contact screen
+  url_launcher: ^6.3.0
+
   firebase_core: ^4.15.0
 
   fundiapp_sdk:
@@ -55,6 +61,7 @@ dependency_overrides:
   connectivity_plus: ^7.2.0
   emoji_picker_flutter: ^4.4.0
   font_awesome_flutter: ^10.8.0
+  path_provider: ^2.1.4
 
   # ===== record family – MUST stay in sync =====
   record: ^7.1.1

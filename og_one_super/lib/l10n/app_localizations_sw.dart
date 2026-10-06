@@ -135,6 +135,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noResults => 'Hakuna huduma iliyopatikana';
 
   @override
+  String get adsBannersTitle => 'Matangazo/Banners';
+
+  @override
+  String get adsBannersSubtitle =>
+      'Inakuja hivi karibuni — kukuza biashara yako';
+
+  @override
   String get ok => 'Sawa';
 
   @override
@@ -209,4 +216,110 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get sendFeedback => 'Tuma Maoni';
+
+  @override
+  String get bannerFundiTitle => 'Mafundi waaminifu, karibu nawe';
+
+  @override
+  String get bannerFundiSubtitle =>
+      'Weka miadi na mafundi waliothibitishwa kwa taps chache';
+
+  @override
+  String get bannerFoodTitle => 'Chakula na kufulia, kinatolewa';
+
+  @override
+  String get bannerFoodSubtitle =>
+      'Msosi Chap Chap na Mfua Nguo mlangoni mwako';
+
+  @override
+  String get faqs => 'Maswali Yanayoulizwa Mara kwa Mara';
+
+  @override
+  String get searchFaqs => 'Tafuta maswali';
+
+  @override
+  String get noFaqs => 'Bado hakuna maswali.';
+
+  @override
+  String get couldNotOpen => 'Imeshindikana kufungua kiungo hiki.';
+
+  @override
+  String get getInTouch => 'Wasiliana nasi';
+
+  @override
+  String get getInTouchSub =>
+      'Tuko tayari kukusaidia. Tufikie kwa njia unayopenda.';
+
+  @override
+  String get emailWebsite => 'BARUA PEPE NA TOVUTI';
+
+  @override
+  String get phoneNumbers => 'NAMBA ZA SIMU';
+
+  @override
+  String get whatsappSection => 'WHATSAPP';
+
+  @override
+  String get call => 'Piga';
+
+  @override
+  String get chat => 'Ongea';
+
+  @override
+  String get email => 'Barua pepe';
+
+  @override
+  String get phone => 'Simu';
+
+  @override
+  String get website => 'Tovuti';
+
+  @override
+  String get address => 'Anwani';
+
+  @override
+  String get helpUsImprove => 'Tusaidie kuboresha';
+
+  @override
+  String get helpUsImproveSub =>
+      'Tuambie unachopenda, kisichofanya kazi, au unachotaka kuona baadaye.';
+
+  @override
+  String get feedbackTypeLabel => 'AINA YA MAONI';
+
+  @override
+  String get rateAppLabel => 'UNAKADIRIAJE PROGRAMU?';
+
+  @override
+  String get fullName => 'Jina kamili';
+
+  @override
+  String get yourFeedback => 'Maoni yako';
+
+  @override
+  String get sendFeedbackBtn => 'Tuma maoni';
+
+  @override
+  String get required => 'Sehemu hii inahitajika';
+
+  @override
+  String get validEmail => 'Weka barua pepe sahihi';
+
+  @override
+  String get suggestion => 'Pendekezo';
+
+  @override
+  String get bugReport => 'Ripoti ya hitilafu';
+
+  @override
+  String get compliment => 'Pongezi';
+
+  @override
+  String get other => 'Nyingine';
+
+  @override
+  String get tryAgain => 'Jaribu tena';
+
+  @override
+  String get nothingToShow => 'Hakuna cha kuonyesha bado.';
 }
