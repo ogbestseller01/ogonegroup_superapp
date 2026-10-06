@@ -319,4 +319,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nothingToShow => 'Nothing to show yet.';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get aiAssistant => 'AI Assistant';
+
+  @override
+  String get partnerships => 'Partnerships';
+
+  @override
+  String get welcomePartnerships => 'Welcome for partnerships';
 }

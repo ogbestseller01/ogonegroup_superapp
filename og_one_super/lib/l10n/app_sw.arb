@@ -115,5 +115,9 @@
     "compliment": "Pongezi",
     "other": "Nyingine",
     "tryAgain": "Jaribu tena",
-    "nothingToShow": "Hakuna cha kuonyesha bado."
+    "nothingToShow": "Hakuna cha kuonyesha bado.",
+      "menu": "Menyu",
+      "aiAssistant": "Msaidizi wa AI",
+      "partnerships": "Ushirikiano",
+      "welcomePartnerships": "Karibu kwa ushirikiano"
 }

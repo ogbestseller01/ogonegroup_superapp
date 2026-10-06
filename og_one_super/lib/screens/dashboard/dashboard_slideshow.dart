@@ -27,9 +27,14 @@ class Slide {
 class DashboardSlideshow extends StatefulWidget {
   final List<Slide> slides;
 
+  /// Horizontal page padding of the dashboard, so the first card lines up
+  /// with the rest of the content while the next card peeks to the screen edge.
+  final double hPad;
+
   const DashboardSlideshow({
     super.key,
     required this.slides,
+    this.hPad = 20,
   });
 
   @override
@@ -37,23 +42,40 @@ class DashboardSlideshow extends StatefulWidget {
 }
 
 class _DashboardSlideshowState extends State<DashboardSlideshow> {
-  late final PageController _ctrl;
+  static const double _gap = 5; // horizontal padding around each card
+  static const double _baseHeight = 122;
+
+  PageController? _ctrl;
+  double _fraction = 0;
   Timer? _timer;
   int _page = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _ctrl = PageController(viewportFraction: 0.93);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final w = MediaQuery.sizeOf(context).width;
+    final f = ((w - 2 * widget.hPad + 2 * _gap) / w).clamp(0.6, 0.95);
+    if (f != _fraction) {
+      final old = _ctrl;
+      _fraction = f;
+      _ctrl = PageController(viewportFraction: f, initialPage: _page);
+      if (old != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+      }
+    }
     _startTimer();
   }
 
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!_ctrl.hasClients || widget.slides.isEmpty) return;
+      if (!mounted) return;
+      final c = _ctrl;
+      if (c == null || !c.hasClients || widget.slides.isEmpty) return;
+      // Respect the OS "reduce motion" setting.
+      if (MediaQuery.disableAnimationsOf(context)) return;
       final next = (_page + 1) % widget.slides.length;
-      _ctrl.animateToPage(
+      c.animateToPage(
         next,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeOutCubic,
@@ -64,30 +86,35 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
   @override
   void dispose() {
     _timer?.cancel();
-    _ctrl.dispose();
+    _ctrl?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scale =
+    MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
+    final height = _baseHeight + (scale - 1) * 72;
 
     return Column(
       children: [
         SizedBox(
-          height: 122,
+          height: height,
           child: Listener(
             onPointerDown: (_) => _timer?.cancel(),
             onPointerUp: (_) => _startTimer(),
             onPointerCancel: (_) => _startTimer(),
             child: PageView.builder(
               controller: _ctrl,
+              // Do not crop the card shadows.
+              clipBehavior: Clip.none,
               itemCount: widget.slides.length,
               onPageChanged: (i) => setState(() => _page = i),
               itemBuilder: (_, i) {
                 final s = widget.slides[i];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: _gap),
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
                     decoration: BoxDecoration(
@@ -99,9 +126,9 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: s.colors.last.withValues(alpha: 0.32),
-                          blurRadius: 18,
-                          offset: const Offset(0, 7),
+                          color: s.colors.last.withValues(alpha: 0.30),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -130,7 +157,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: s.ink.withValues(alpha: 0.80),
+                                  color: s.ink.withValues(alpha: 0.88),
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600,
                                   height: 1.3,
@@ -157,7 +184,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(widget.slides.length, (i) {

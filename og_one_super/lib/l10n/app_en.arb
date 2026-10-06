@@ -116,5 +116,9 @@
     "compliment": "Compliment",
     "other": "Other",
     "tryAgain": "Try again",
-    "nothingToShow": "Nothing to show yet."
+    "nothingToShow": "Nothing to show yet.",
+      "menu": "Menu",
+      "aiAssistant": "AI Assistant",
+      "partnerships": "Partnerships",
+      "welcomePartnerships": "Welcome for partnerships"
 }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fundiapp_sdk/fundi_app_mini.dart';
@@ -13,10 +12,27 @@ import '../../providers/settings_provider.dart';
 import '../../widgets/language_dropdown.dart';
 import 'dashboard_slideshow.dart';
 
+// Darker gold for TEXT on light backgrounds (AppTheme.gold600 is too pale).
+const Color _goldText = Color(0xFF8A6500);
+// Higher-contrast grey for hint text on white.
+const Color _hintGrey = Color(0xFF5B6B82);
+
 // ============================================================
 // HELPERS
 // ============================================================
 Color _hex(String h) => Color(int.parse(h.replaceFirst('#', '0xFF')));
+
+/// Live apps get a bright, distinct color so they never look disabled.
+Color _appColor(MiniApp a) {
+  switch (a.slug) {
+    case 'nearbyfundi':
+      return const Color(0xFF1E6BFF);
+    case 'fundiapp':
+      return const Color(0xFFFFA000);
+    default:
+      return _hex(a.color);
+  }
+}
 
 IconData _iconFor(String name) {
   switch (name) {
@@ -59,8 +75,17 @@ class SuperAppDashboard extends StatefulWidget {
 class _SuperAppDashboardState extends State<SuperAppDashboard> {
   String _query = '';
   String _selected = 'all';
+  bool _intro = true; // entrance animations only on first load
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _intro = false);
+    });
+  }
 
   @override
   void dispose() {
@@ -77,7 +102,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           content: Text(message),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -128,6 +154,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final settings = context.watch<SettingsProvider>();
     final t = context.t;
     final width = MediaQuery.sizeOf(context).width;
+    final textScale =
+    MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
     final hPad = width > 800 ? (width - 760) / 2 : 20.0;
     final crossAxisExtent = width < 360
         ? 92.0
@@ -136,7 +164,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         : width < 600
         ? 108.0
         : 118.0;
-    final mainAxisExtent = crossAxisExtent + 28;
+    final iconSize = crossAxisExtent * 0.52;
+    // circle + gap + 2 label lines + "Soon" badge, scaled with text size
+    final mainAxisExtent = iconSize + 6 + 46 * textScale + 28;
     final q = _query.trim().toLowerCase();
     final searching = q.isNotEmpty;
     final apps = miniApps.where((a) {
@@ -149,7 +179,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     }).toList();
     final chipApps = miniApps.where((a) => !a.isComingSoon).toList();
 
-    // ── Slides (fully localized – no hardcodes) ────────────
     final slides = <Slide>[
       Slide(
         t.bannerTitle,
@@ -168,7 +197,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       Slide(
         t.bannerFoodTitle,
         t.bannerFoodSubtitle,
-        const [Color(0xFFE8590C), Color(0xFFF98A3B)],
+        const [Color(0xFFD9480F), Color(0xFFF0701E)],
         Colors.white,
         Icons.delivery_dining_rounded,
       ),
@@ -183,135 +212,152 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor:
-        isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
-        drawer: _AppDrawer(
-          t: t,
-          languageCode: settings.locale.languageCode,
-          onLanguage: (code) => settings.setLocale(Locale(code)),
-          onSettings: () {
-            Navigator.pop(context);
-            Navigator.pushNamed(context, AppRoutes.settings);
-          },
-        ),
-        body: RefreshIndicator(
-          onRefresh: _onRefresh,
-          color: AppTheme.primary,
-          backgroundColor: Colors.white,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            slivers: [
-              // ── Header + search ───────────────────────────
-              SliverToBoxAdapter(
-                child: _Header(
-                  t: t,
-                  hPad: hPad,
-                  onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                  onAiAgent: () => _snack(t.comingSoonMessage),
-                  searchController: _searchController,
-                  onSearch: (v) => setState(() => _query = v),
-                  onClear: _clearSearch,
-                  hasText: _query.isNotEmpty,
-                ),
+      // Cap system font scaling so the layout never breaks.
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor:
+          isDark ? AppTheme.darkBackground : const Color(0xFFF5F7FB),
+          drawer: _AppDrawer(
+            t: t,
+            languageCode: settings.locale.languageCode,
+            onLanguage: (code) => settings.setLocale(Locale(code)),
+            onSettings: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, AppRoutes.settings);
+            },
+          ),
+          body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: AppTheme.primary,
+            backgroundColor: Colors.white,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
+              slivers: [
+                // ── Header + search ─────────────────────────
+                SliverToBoxAdapter(
+                  child: _Header(
+                    t: t,
+                    hPad: hPad,
+                    onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+                    onAiAgent: () => _snack(t.comingSoonMessage),
+                    searchController: _searchController,
+                    onSearch: (v) => setState(() => _query = v),
+                    onClear: _clearSearch,
+                    hasText: _query.isNotEmpty,
+                  ),
+                ),
 
-              // ── Slideshow ─────────────────────────────────
-              if (!searching)
+                // ── Slideshow (full width so shadows/peek aren't cropped) ──
+                if (!searching)
+                  SliverPadding(
+                    padding: const EdgeInsets.only(top: 20),
+                    sliver: SliverToBoxAdapter(
+                      child: _Reveal(
+                        index: 0,
+                        animate: _intro,
+                        child: DashboardSlideshow(slides: slides, hPad: hPad),
+                      ),
+                    ),
+                  ),
+
+                // ── Section title ───────────────────────────
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
+                  padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
                   sliver: SliverToBoxAdapter(
-                    child: _Reveal(
-                      index: 0,
-                      child: DashboardSlideshow(slides: slides),
+                    child: _SectionTitle(
+                      title: t.allServices,
+                      count: apps.length,
+                      isDark: isDark,
                     ),
                   ),
                 ),
 
-              // ── Section title ─────────────────────────────
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
-                sliver: SliverToBoxAdapter(
-                  child: _SectionTitle(
-                    title: t.allServices,
-                    count: apps.length,
-                    isDark: isDark,
-                  ),
-                ),
-              ),
-
-              // ── Chips ─────────────────────────────────────
-              if (!searching)
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 42,
-                    child: ListView.separated(
-                      padding: EdgeInsets.symmetric(horizontal: hPad),
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: chipApps.length + 1,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) {
-                        if (i == 0) {
+                // ── Chips ───────────────────────────────────
+                if (!searching)
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 42,
+                      child: ListView.separated(
+                        clipBehavior: Clip.none, // keep chip shadows
+                        padding: EdgeInsets.symmetric(horizontal: hPad),
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: chipApps.length + 1,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (_, i) {
+                          if (i == 0) {
+                            return _AppChip(
+                              label: t.allServices,
+                              icon: Icons.apps_rounded,
+                              selected: _selected == 'all',
+                              isDark: isDark,
+                              onTap: () => setState(() => _selected = 'all'),
+                            );
+                          }
+                          final a = chipApps[i - 1];
                           return _AppChip(
-                            label: t.allServices,
-                            icon: Icons.apps_rounded,
-                            selected: _selected == 'all',
+                            label: t.serviceTitle(a.slug),
+                            icon: _iconFor(a.icon),
+                            selected: _selected == a.slug,
                             isDark: isDark,
-                            onTap: () => setState(() => _selected = 'all'),
+                            onTap: () => setState(() => _selected = a.slug),
                           );
-                        }
-                        final a = chipApps[i - 1];
-                        return _AppChip(
-                          label: t.serviceTitle(a.slug),
-                          icon: _iconFor(a.icon),
-                          selected: _selected == a.slug,
-                          isDark: isDark,
-                          onTap: () => setState(() => _selected = a.slug),
-                        );
-                      },
+                        },
+                      ),
                     ),
                   ),
-                ),
 
-              // ── Empty state / Grid ────────────────────────
-              if (apps.isEmpty)
-                SliverToBoxAdapter(
-                  child: _EmptyState(message: t.noResults, isDark: isDark),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(hPad, 10, hPad, 36),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: crossAxisExtent,
-                      mainAxisExtent: mainAxisExtent,
-                      mainAxisSpacing: 4,
-                      crossAxisSpacing: 10,
-                    ),
-                    delegate: SliverChildBuilderDelegate(
-                          (context, i) {
-                        final app = apps[i];
-                        return _Reveal(
-                          key: ValueKey('${app.slug}|$_selected|$searching'),
-                          index: i + 2,
-                          child: _ServiceCard(
-                            app: app,
-                            title: t.serviceTitle(app.slug),
-                            soonLabel: t.soon,
-                            onTap: () => _open(app, t),
-                            size: crossAxisExtent * 0.52,
-                          ),
-                        );
-                      },
-                      childCount: apps.length,
+                // ── Empty state / Grid ──────────────────────
+                if (apps.isEmpty)
+                  SliverToBoxAdapter(
+                    child: _EmptyState(message: t.noResults, isDark: isDark),
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 36),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: crossAxisExtent,
+                        mainAxisExtent: mainAxisExtent,
+                        mainAxisSpacing: 4,
+                        crossAxisSpacing: 10,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                            (context, i) {
+                          final app = apps[i];
+                          return _Reveal(
+                            key: ValueKey(app.slug),
+                            index: i + 2,
+                            animate: _intro,
+                            child: RepaintBoundary(
+                              child: _ServiceCard(
+                                app: app,
+                                title: t.serviceTitle(app.slug),
+                                soonLabel: t.soon,
+                                onTap: () => _open(app, t),
+                                size: iconSize,
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: apps.length,
+                        findChildIndexCallback: (key) {
+                          if (key is ValueKey<String>) {
+                            final idx =
+                            apps.indexWhere((a) => a.slug == key.value);
+                            return idx < 0 ? null : idx;
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -366,7 +412,7 @@ class _SectionTitle extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12,
-              color: isDark ? AppTheme.secondary : AppTheme.gold600,
+              color: isDark ? AppTheme.secondary : _goldText,
             ),
           ),
         ),
@@ -400,7 +446,7 @@ class _EmptyState extends StatelessWidget {
             child: Icon(
               Icons.search_off_rounded,
               size: 30,
-              color: isDark ? Colors.white38 : Colors.grey.shade400,
+              color: isDark ? Colors.white38 : Colors.grey.shade500,
             ),
           ),
           const SizedBox(height: 14),
@@ -409,7 +455,7 @@ class _EmptyState extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white54 : Colors.grey.shade600,
+              color: isDark ? Colors.white60 : Colors.grey.shade700,
             ),
           ),
         ],
@@ -443,6 +489,7 @@ class _AppDrawer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ── Header ────────────────────────────────────
             Container(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -477,9 +524,7 @@ class _AppDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    languageCode == 'sw'
-                        ? 'Karibu kwa ushirikiano'
-                        : 'Welcome for partnerships',
+                    t.welcomePartnerships,
                     style: TextStyle(
                       color: AppTheme.secondary.withValues(alpha: 0.95),
                       fontSize: 13,
@@ -490,7 +535,7 @@ class _AppDrawer extends StatelessWidget {
               ),
             ),
             const Expanded(child: SizedBox.shrink()),
-            // ── Dashboard-style footer (language + settings) ──
+            // ── Footer (language + settings) ──────────────
             Container(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -523,7 +568,7 @@ class _AppDrawer extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         t.language,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.3,
@@ -535,10 +580,8 @@ class _AppDrawer extends StatelessWidget {
                   const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
@@ -563,7 +606,7 @@ class _AppDrawer extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.settings_rounded,
                               color: AppTheme.primary,
                               size: 24,
@@ -640,43 +683,74 @@ class _GlassButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final bool showDot; // small gold dot = "coming soon"
   const _GlassButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.showDot = false,
   });
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(9),
-            child: Icon(icon, color: Colors.white, size: 22),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Icon(icon, color: Colors.white, size: 22),
+              ),
+            ),
           ),
-        ),
+          if (showDot)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: IgnorePointer(
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.navy900, width: 2),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
 // ============================================================
-// ENTRANCE ANIMATION
+// ENTRANCE ANIMATION (first load only)
 // ============================================================
 class _Reveal extends StatelessWidget {
   final int index;
+  final bool animate;
   final Widget child;
-  const _Reveal({super.key, required this.index, required this.child});
+  const _Reveal({
+    super.key,
+    required this.index,
+    required this.animate,
+    required this.child,
+  });
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 340 + index.clamp(0, 10) * 50),
+      tween: Tween(begin: animate ? 0 : 1, end: 1),
+      duration: animate
+          ? Duration(milliseconds: 340 + index.clamp(0, 10) * 50)
+          : Duration.zero,
       curve: Curves.easeOutCubic,
       builder: (_, v, c) => Opacity(
         opacity: v,
@@ -753,7 +827,7 @@ class _Header extends StatelessWidget {
                           children: [
                             _GlassButton(
                               icon: Icons.menu_rounded,
-                              tooltip: t.close,
+                              tooltip: t.menu,
                               onTap: onMenu,
                             ),
                             const SizedBox(width: 12),
@@ -774,8 +848,9 @@ class _Header extends StatelessWidget {
                             ),
                             _GlassButton(
                               icon: Icons.smart_toy_rounded,
-                              tooltip: t.comingSoon,
+                              tooltip: '${t.aiAssistant} · ${t.comingSoon}',
                               onTap: onAiAgent,
+                              showDot: true,
                             ),
                           ],
                         ),
@@ -837,8 +912,8 @@ class _Header extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 hintText: t.searchHint,
-                hintStyle: TextStyle(
-                  color: Colors.grey.shade500,
+                hintStyle: const TextStyle(
+                  color: _hintGrey,
                   fontWeight: FontWeight.w500,
                 ),
                 prefixIcon: const Icon(
@@ -901,8 +976,10 @@ class _AppChip extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    // In dark mode the selected chip uses a lighter navy so it stands out.
+    final selectedBg = isDark ? AppTheme.navy600 : AppTheme.primary;
     final bg = selected
-        ? AppTheme.primary
+        ? selectedBg
         : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white);
     final fg = selected
         ? Colors.white
@@ -911,6 +988,7 @@ class _AppChip extends StatelessWidget {
       button: true,
       selected: selected,
       label: label,
+      excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -919,15 +997,10 @@ class _AppChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected
-                  ? AppTheme.primary
-                  : (isDark ? AppTheme.darkBorder : const Color(0xFFE3E8F1)),
-            ),
             boxShadow: selected
                 ? [
               BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.25),
+                color: selectedBg.withValues(alpha: 0.28),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -935,8 +1008,8 @@ class _AppChip extends StatelessWidget {
                 : [
               if (!isDark)
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
+                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
             ],
@@ -984,22 +1057,30 @@ class _ServiceCard extends StatefulWidget {
 
 class _ServiceCardState extends State<_ServiceCard> {
   bool _pressed = false;
+
+  void _setPressed(bool v) {
+    if (_pressed != v) setState(() => _pressed = v);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = _hex(widget.app.color);
-    final iconColor = widget.app.isComingSoon ? AppTheme.gold600 : color;
+    final color = _appColor(widget.app);
+    final soon = widget.app.isComingSoon;
+    final iconColor = soon ? (isDark ? AppTheme.secondary : _goldText) : color;
     final iconSize = widget.size * 0.44;
     return Semantics(
       button: true,
       label: widget.title,
+      excludeSemantics: true,
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) {
-          setState(() => _pressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _pressed = false),
+        behavior: HitTestBehavior.opaque,
+        // The action fires only on a real tap (not when the finger slides
+        // away or a scroll starts). Down/up/cancel only drive the press effect.
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onTap: widget.onTap,
         child: AnimatedScale(
           scale: _pressed ? 0.93 : 1.0,
           duration: const Duration(milliseconds: 110),
@@ -1014,24 +1095,17 @@ class _ServiceCardState extends State<_ServiceCard> {
                   shape: BoxShape.circle,
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.08)
-                      : color.withValues(alpha: 0.11),
-                  border: Border.all(
-                    color: isDark
-                        ? AppTheme.darkBorder
-                        : color.withValues(alpha: 0.20),
-                    width: 1.3,
-                  ),
+                      : color.withValues(alpha: soon ? 0.10 : 0.13),
+                  // No border in light mode; faint tinted ring in dark mode.
+                  border: isDark
+                      ? Border.all(color: color.withValues(alpha: 0.30))
+                      : null,
+                  // One light shadow per icon (cheaper on low-end devices).
                   boxShadow: [
                     BoxShadow(
-                      color: color.withValues(alpha: isDark ? 0.18 : 0.20),
-                      blurRadius: 14,
-                      spreadRadius: 0.5,
-                      offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: color.withValues(alpha: isDark ? 0.16 : 0.18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -1049,28 +1123,26 @@ class _ServiceCardState extends State<_ServiceCard> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  fontSize: 11.5,
+                  fontSize: 12,
                   height: 1.15,
                   color: isDark ? Colors.white : AppTheme.primary,
                 ),
               ),
-              if (widget.app.isComingSoon) ...[
+              if (soon) ...[
                 const SizedBox(height: 3),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 1.5,
-                  ),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
                   decoration: BoxDecoration(
-                    color: AppTheme.secondary.withValues(alpha: 0.16),
+                    color: AppTheme.secondary.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     widget.soonLabel,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: isDark ? AppTheme.secondary : AppTheme.gold600,
+                      color: isDark ? AppTheme.secondary : _goldText,
                     ),
                   ),
                 ),

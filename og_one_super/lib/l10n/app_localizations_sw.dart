@@ -322,4 +322,16 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get nothingToShow => 'Hakuna cha kuonyesha bado.';
+
+  @override
+  String get menu => 'Menyu';
+
+  @override
+  String get aiAssistant => 'Msaidizi wa AI';
+
+  @override
+  String get partnerships => 'Ushirikiano';
+
+  @override
+  String get welcomePartnerships => 'Karibu kwa ushirikiano';
 }

@@ -709,6 +709,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing to show yet.'**
   String get nothingToShow;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @aiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get aiAssistant;
+
+  /// No description provided for @partnerships.
+  ///
+  /// In en, this message translates to:
+  /// **'Partnerships'**
+  String get partnerships;
+
+  /// No description provided for @welcomePartnerships.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome for partnerships'**
+  String get welcomePartnerships;
 }
 
 class _AppLocalizationsDelegate
