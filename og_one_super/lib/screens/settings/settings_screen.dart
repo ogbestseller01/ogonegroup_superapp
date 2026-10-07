@@ -6,6 +6,7 @@ import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/language_dropdown.dart';
+import '../../widgets/page_skeletons.dart';
 
 import 'staticpages/about_screen.dart';
 import 'staticpages/contact_screen.dart';
@@ -14,8 +15,23 @@ import 'staticpages/feedback_screen.dart';
 import 'staticpages/privacy_screen.dart';
 import 'staticpages/terms_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _boot = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _boot = false);
+    });
+  }
 
   void _go(BuildContext context, Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
@@ -47,225 +63,245 @@ class SettingsScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        children: [
-          // ========== APPEARANCE ==========
-          _SectionTitle(title: t.appearance),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              _ThemeOption(
-                title: t.system,
-                subtitle: t.followDevice,
-                icon: Icons.brightness_auto_rounded,
-                selected: settings.themeMode == ThemeMode.system,
-                onTap: () => settings.setThemeMode(ThemeMode.system),
-              ),
-              const _Divider(),
-              _ThemeOption(
-                title: t.light,
-                subtitle: t.lightMode,
-                icon: Icons.light_mode_rounded,
-                selected: settings.themeMode == ThemeMode.light,
-                onTap: () => settings.setThemeMode(ThemeMode.light),
-              ),
-              const _Divider(),
-              _ThemeOption(
-                title: t.dark,
-                subtitle: t.darkMode,
-                icon: Icons.dark_mode_rounded,
-                selected: settings.themeMode == ThemeMode.dark,
-                onTap: () => settings.setThemeMode(ThemeMode.dark),
-              ),
-            ],
-          ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _boot
+            ? const SettingsPageSkeleton(key: ValueKey('sk'))
+            : ListView(
+          key: const ValueKey('content'),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+          children: [
+            // ========== APPEARANCE ==========
+            _SectionTitle(title: t.appearance),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                _ThemeOption(
+                  title: t.system,
+                  subtitle: t.followDevice,
+                  icon: Icons.brightness_auto_rounded,
+                  selected: settings.themeMode == ThemeMode.system,
+                  onTap: () =>
+                      settings.setThemeMode(ThemeMode.system),
+                ),
+                const _Divider(),
+                _ThemeOption(
+                  title: t.light,
+                  subtitle: t.lightMode,
+                  icon: Icons.light_mode_rounded,
+                  selected: settings.themeMode == ThemeMode.light,
+                  onTap: () => settings.setThemeMode(ThemeMode.light),
+                ),
+                const _Divider(),
+                _ThemeOption(
+                  title: t.dark,
+                  subtitle: t.darkMode,
+                  icon: Icons.dark_mode_rounded,
+                  selected: settings.themeMode == ThemeMode.dark,
+                  onTap: () => settings.setThemeMode(ThemeMode.dark),
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-          // ========== LANGUAGE ==========
-          _SectionTitle(title: t.language),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    _IconBox(icon: Icons.language_rounded, isDark: isDark),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        t.language,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: isDark ? Colors.white : AppTheme.primary,
+            // ========== LANGUAGE ==========
+            _SectionTitle(title: t.language),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      _IconBox(
+                          icon: Icons.language_rounded, isDark: isDark),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          t.language,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color:
+                            isDark ? Colors.white : AppTheme.primary,
+                          ),
                         ),
                       ),
-                    ),
-                    LanguageDropdown(
-                      currentCode: settings.locale.languageCode,
-                      onChanged: (code) => settings.setLocale(Locale(code)),
-                    ),
-                  ],
+                      LanguageDropdown(
+                        currentCode: settings.locale.languageCode,
+                        onChanged: (code) =>
+                            settings.setLocale(Locale(code)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-          // ========== NOTIFICATIONS ==========
-          _SectionTitle(title: t.notifications),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              _SettingsSwitch(
-                title: t.pushNotifications,
-                subtitle: t.receivePushNotifications,
-                icon: Icons.notifications_active_rounded,
-                value: settings.pushEnabled,
-                onChanged: settings.setPushEnabled,
-              ),
-              const _Divider(),
-              _SettingsSwitch(
-                title: t.promotions,
-                subtitle: t.promotionsDesc,
-                icon: Icons.local_offer_rounded,
-                value: settings.promoNotifications,
-                onChanged: settings.setPromoNotifications,
-                enabled: settings.pushEnabled,
-              ),
-            ],
-          ),
+            // ========== NOTIFICATIONS ==========
+            _SectionTitle(title: t.notifications),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                _SettingsSwitch(
+                  title: t.pushNotifications,
+                  subtitle: t.receivePushNotifications,
+                  icon: Icons.notifications_active_rounded,
+                  value: settings.pushEnabled,
+                  onChanged: settings.setPushEnabled,
+                ),
+                const _Divider(),
+                _SettingsSwitch(
+                  title: t.promotions,
+                  subtitle: t.promotionsDesc,
+                  icon: Icons.local_offer_rounded,
+                  value: settings.promoNotifications,
+                  onChanged: settings.setPromoNotifications,
+                  enabled: settings.pushEnabled,
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-          // ========== PRIVACY & DATA ==========
-          _SectionTitle(title: t.privacyData),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              _SettingsAction(
-                title: t.privacyPolicy,
-                icon: Icons.privacy_tip_outlined,
-                onTap: () => _go(context, const PrivacyScreen()),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.clearCache,
-                icon: Icons.cleaning_services_rounded,
-                onTap: () => _showClearCacheDialog(context, settings),
-              ),
-            ],
-          ),
+            // ========== PRIVACY & DATA ==========
+            _SectionTitle(title: t.privacyData),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                _SettingsAction(
+                  title: t.privacyPolicy,
+                  icon: Icons.privacy_tip_outlined,
+                  onTap: () => _go(context, const PrivacyScreen()),
+                ),
+                const _Divider(),
+                _SettingsAction(
+                  title: t.clearCache,
+                  icon: Icons.cleaning_services_rounded,
+                  onTap: () =>
+                      _showClearCacheDialog(context, settings),
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-          // ========== HELP & FEEDBACK ==========
-          _SectionTitle(title: t.helpFeedback),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              _SettingsAction(
-                title: t.helpCenter,
-                icon: Icons.help_outline_rounded,
-                onTap: () => _go(context, const FaqScreen()),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.contactUs,
-                icon: Icons.contact_support_rounded,
-                onTap: () => _go(context, const ContactScreen()),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.sendFeedback,
-                icon: Icons.feedback_outlined,
-                onTap: () => _go(context, const FeedbackScreen()),
-              ),
-            ],
-          ),
+            // ========== HELP & FEEDBACK ==========
+            _SectionTitle(title: t.helpFeedback),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                _SettingsAction(
+                  title: t.helpCenter,
+                  icon: Icons.help_outline_rounded,
+                  onTap: () => _go(context, const FaqScreen()),
+                ),
+                const _Divider(),
+                _SettingsAction(
+                  title: t.contactUs,
+                  icon: Icons.contact_support_rounded,
+                  onTap: () => _go(context, const ContactScreen()),
+                ),
+                const _Divider(),
+                _SettingsAction(
+                  title: t.sendFeedback,
+                  icon: Icons.feedback_outlined,
+                  onTap: () => _go(context, const FeedbackScreen()),
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 28),
 
-          // ========== ABOUT & SUPPORT ==========
-          _SectionTitle(title: t.about),
-          const SizedBox(height: 12),
-          _SettingsCard(
-            children: [
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.info_outline_rounded,
-                        color: isDark ? Colors.white : AppTheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        t.version,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: isDark ? Colors.white : AppTheme.primary,
+            // ========== ABOUT & SUPPORT ==========
+            _SectionTitle(title: t.about),
+            const SizedBox(height: 12),
+            _SettingsCard(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.info_outline_rounded,
+                          color:
+                          isDark ? Colors.white : AppTheme.primary,
                         ),
                       ),
-                    ),
-                    Text(
-                      '0.0.1',
-                      style: TextStyle(
-                        color: isDark ? Colors.white70 : Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          t.version,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color:
+                            isDark ? Colors.white : AppTheme.primary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        '0.0.1',
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white70
+                              : Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.about,
-                icon: Icons.info_outline_rounded,
-                onTap: () => _go(context, const AboutScreen()),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.termsConditions,
-                icon: Icons.description_outlined,
-                onTap: () => _go(context, const TermsScreen()),
-              ),
-              const _Divider(),
-              _SettingsAction(
-                title: t.rateApp,
-                icon: Icons.star_outline_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Rate App feature coming soon!'),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
+                const _Divider(),
+                _SettingsAction(
+                  title: t.about,
+                  icon: Icons.info_outline_rounded,
+                  onTap: () => _go(context, const AboutScreen()),
+                ),
+                const _Divider(),
+                _SettingsAction(
+                  title: t.termsConditions,
+                  icon: Icons.description_outlined,
+                  onTap: () => _go(context, const TermsScreen()),
+                ),
+                const _Divider(),
+                _SettingsAction(
+                  title: t.rateApp,
+                  icon: Icons.star_outline_rounded,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                        Text('Rate App feature coming soon!'),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showClearCacheDialog(BuildContext context, SettingsProvider settings) {
+  void _showClearCacheDialog(
+      BuildContext context, SettingsProvider settings) {
     final t = context.t;
     showDialog(
       context: context,

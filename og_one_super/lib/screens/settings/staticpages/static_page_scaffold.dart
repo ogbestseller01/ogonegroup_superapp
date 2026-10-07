@@ -19,11 +19,15 @@ class StaticPageScaffold extends StatefulWidget {
   final PageLoader loader;
   final PageBuilder builder;
 
+  /// Optional skeleton shown while loading (instead of a spinner).
+  final Widget? skeleton;
+
   const StaticPageScaffold({
     super.key,
     required this.title,
     required this.loader,
     required this.builder,
+    this.skeleton,
   });
 
   @override
@@ -77,9 +81,10 @@ class _StaticPageScaffoldState extends State<StaticPageScaffold> {
 
     Widget body;
     if (_loading) {
-      body = const Center(
-        child: CircularProgressIndicator(color: AppTheme.primary),
-      );
+      body = widget.skeleton ??
+          const Center(
+            child: CircularProgressIndicator(color: AppTheme.primary),
+          );
     } else if (_error != null) {
       body = _ErrorView(message: _error!, onRetry: _load, isDark: isDark);
     } else {
@@ -101,7 +106,16 @@ class _StaticPageScaffoldState extends State<StaticPageScaffold> {
       backgroundColor:
       isDark ? AppTheme.darkBackground : const Color(0xFFF4F7FC),
       appBar: staticAppBar(widget.title),
-      body: body,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: KeyedSubtree(
+          key: ValueKey(
+              _loading ? 'sk' : (_error != null ? 'err' : 'content')),
+          child: body,
+        ),
+      ),
     );
   }
 }
@@ -494,7 +508,6 @@ class _ContactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Material(transparency) keeps the card background from hiding ListTile ink.
     return Container(
       decoration: cardDecoration(isDark),
       clipBehavior: Clip.antiAlias,

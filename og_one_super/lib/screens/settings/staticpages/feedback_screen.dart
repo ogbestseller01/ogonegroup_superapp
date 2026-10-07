@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/app_strings.dart';
 import '../../../config/app_theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/page_skeletons.dart';
 import 'static_page_scaffold.dart' show staticAppBar;
 
 class FeedbackScreen extends StatefulWidget {
@@ -30,6 +31,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   String _type = 'suggestion';
   int _rating = 0;
   bool _sending = false;
+  bool _boot = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _boot = false);
+    });
+  }
 
   @override
   void dispose() {
@@ -141,168 +151,183 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       backgroundColor:
       isDark ? AppTheme.darkBackground : const Color(0xFFF4F7FC),
       appBar: staticAppBar(t.sendFeedback),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  t.helpUsImprove,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : AppTheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  t.helpUsImproveSub,
-                  style: TextStyle(
-                    height: 1.4,
-                    color: isDark ? Colors.white60 : Colors.grey.shade600,
-                  ),
-                ),
-
-                const SizedBox(height: 22),
-                Text(t.feedbackTypeLabel, style: labelStyle),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _typeKeys.map((key) {
-                    final selected = _type == key;
-                    return ChoiceChip(
-                      label: Text(_typeLabel(t, key)),
-                      avatar: Icon(
-                        _typeIcons[key],
-                        size: 17,
-                        color: selected
-                            ? AppTheme.secondary
-                            : (isDark ? Colors.white70 : AppTheme.primary),
-                      ),
-                      selected: selected,
-                      showCheckmark: false,
-                      onSelected: (_) => setState(() => _type = key),
-                      selectedColor: AppTheme.primary,
-                      backgroundColor:
-                      isDark ? AppTheme.darkSurface : Colors.white,
-                      side: BorderSide(
-                        color: selected
-                            ? AppTheme.primary
-                            : (isDark
-                            ? AppTheme.darkBorder
-                            : const Color(0xFFE3E8F1)),
-                      ),
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: selected
-                            ? Colors.white
-                            : (isDark ? Colors.white70 : AppTheme.primary),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    );
-                  }).toList(),
-                ),
-
-                const SizedBox(height: 22),
-                Text(t.rateAppLabel, style: labelStyle),
-                const SizedBox(height: 6),
-                Row(
-                  children: List.generate(5, (i) {
-                    final star = i + 1;
-                    return IconButton(
-                      tooltip: '$star',
-                      padding: const EdgeInsets.only(right: 6),
-                      constraints: const BoxConstraints(),
-                      iconSize: 38,
-                      onPressed: () => setState(
-                            () => _rating = _rating == star ? 0 : star,
-                      ),
-                      icon: Icon(
-                        star <= _rating
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: star <= _rating
-                            ? AppTheme.secondary
-                            : (isDark ? Colors.white30 : Colors.grey.shade400),
-                      ),
-                    );
-                  }),
-                ),
-
-                const SizedBox(height: 18),
-                TextFormField(
-                  controller: _name,
-                  style: textStyle,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (v) => _required(v, t.required),
-                  decoration:
-                  _decoration(t.fullName, Icons.person_rounded, isDark),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _email,
-                  style: textStyle,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  validator: (v) =>
-                      _emailRule(v, t.required, t.validEmail),
-                  decoration:
-                  _decoration(t.email, Icons.email_rounded, isDark),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _message,
-                  style: textStyle,
-                  minLines: 5,
-                  maxLines: 8,
-                  validator: (v) => _required(v, t.required),
-                  decoration: _decoration(
-                    t.yourFeedback,
-                    Icons.edit_note_rounded,
-                    isDark,
-                  ).copyWith(alignLabelWithHint: true),
-                ),
-
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: _sending ? null : _send,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: _sending
-                        ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        color: Colors.white,
-                      ),
-                    )
-                        : Text(
-                      t.sendFeedbackBtn,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _boot
+            ? const FeedbackPageSkeleton(key: ValueKey('sk'))
+            : GestureDetector(
+          key: const ValueKey('content'),
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    t.helpUsImprove,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppTheme.primary,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    t.helpUsImproveSub,
+                    style: TextStyle(
+                      height: 1.4,
+                      color:
+                      isDark ? Colors.white60 : Colors.grey.shade600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+                  Text(t.feedbackTypeLabel, style: labelStyle),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _typeKeys.map((key) {
+                      final selected = _type == key;
+                      return ChoiceChip(
+                        label: Text(_typeLabel(t, key)),
+                        avatar: Icon(
+                          _typeIcons[key],
+                          size: 17,
+                          color: selected
+                              ? AppTheme.secondary
+                              : (isDark
+                              ? Colors.white70
+                              : AppTheme.primary),
+                        ),
+                        selected: selected,
+                        showCheckmark: false,
+                        onSelected: (_) => setState(() => _type = key),
+                        selectedColor: AppTheme.primary,
+                        backgroundColor:
+                        isDark ? AppTheme.darkSurface : Colors.white,
+                        side: BorderSide(
+                          color: selected
+                              ? AppTheme.primary
+                              : (isDark
+                              ? AppTheme.darkBorder
+                              : const Color(0xFFE3E8F1)),
+                        ),
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: selected
+                              ? Colors.white
+                              : (isDark
+                              ? Colors.white70
+                              : AppTheme.primary),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 22),
+                  Text(t.rateAppLabel, style: labelStyle),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: List.generate(5, (i) {
+                      final star = i + 1;
+                      return IconButton(
+                        tooltip: '$star',
+                        padding: const EdgeInsets.only(right: 6),
+                        constraints: const BoxConstraints(),
+                        iconSize: 38,
+                        onPressed: () => setState(
+                              () => _rating = _rating == star ? 0 : star,
+                        ),
+                        icon: Icon(
+                          star <= _rating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          color: star <= _rating
+                              ? AppTheme.secondary
+                              : (isDark
+                              ? Colors.white30
+                              : Colors.grey.shade400),
+                        ),
+                      );
+                    }),
+                  ),
+
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: _name,
+                    style: textStyle,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    validator: (v) => _required(v, t.required),
+                    decoration: _decoration(
+                        t.fullName, Icons.person_rounded, isDark),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _email,
+                    style: textStyle,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: (v) =>
+                        _emailRule(v, t.required, t.validEmail),
+                    decoration: _decoration(
+                        t.email, Icons.email_rounded, isDark),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _message,
+                    style: textStyle,
+                    minLines: 5,
+                    maxLines: 8,
+                    validator: (v) => _required(v, t.required),
+                    decoration: _decoration(
+                      t.yourFeedback,
+                      Icons.edit_note_rounded,
+                      isDark,
+                    ).copyWith(alignLabelWithHint: true),
+                  ),
+
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: _sending ? null : _send,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: _sending
+                          ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                          : Text(
+                        t.sendFeedbackBtn,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -3,11 +3,17 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/app_strings.dart';
 import '../../../config/app_theme.dart';
+import '../../../widgets/page_skeletons.dart';
 import 'static_page_scaffold.dart' show staticAppBar;
 
-class ContactScreen extends StatelessWidget {
+class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
 
+  @override
+  State<ContactScreen> createState() => _ContactScreenState();
+}
+
+class _ContactScreenState extends State<ContactScreen> {
   static const String email = 'ogbestseller01@gmail.com';
   static const String website = 'https://ogonegroup.co.tz';
   static const List<String> phones = [
@@ -22,6 +28,16 @@ class ContactScreen extends StatelessWidget {
   ];
 
   static const String _countryCode = '255';
+
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
 
   Future<void> _open(
       BuildContext context,
@@ -90,120 +106,128 @@ class ContactScreen extends StatelessWidget {
       backgroundColor:
       isDark ? AppTheme.darkBackground : const Color(0xFFF4F7FC),
       appBar: staticAppBar(t.contactUs),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF001D45), Color(0xFF0A3670)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 350),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _loading
+            ? const ContactPageSkeleton(key: ValueKey('sk'))
+            : ListView(
+          key: const ValueKey('content'),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF001D45), Color(0xFF0A3670)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
               ),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+              child: Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.contact_mail_outlined,
+                      color: AppTheme.secondary,
+                      size: 28,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.contact_mail_outlined,
-                    color: AppTheme.secondary,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.getInTouch,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.getInTouch,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        t.getInTouchSub,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          height: 1.3,
+                        const SizedBox(height: 4),
+                        Text(
+                          t.getInTouchSub,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          sectionTitle(t.emailWebsite),
-          _ContactTile(
-            icon: Icons.email_outlined,
-            label: t.email,
-            value: email,
-            isDark: isDark,
-            onTap: openEmail,
-          ),
-          const SizedBox(height: 10),
-          _ContactTile(
-            icon: Icons.language_outlined,
-            label: t.website,
-            value: website,
-            isDark: isDark,
-            onTap: openWebsite,
-          ),
-
-          sectionTitle(t.phoneNumbers),
-          for (final p in phones) ...[
-            _ContactTile(
-              icon: Icons.phone_android_outlined,
-              value: p,
-              badge: t.call,
-              isDark: isDark,
-              onTap: () => call(p),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          sectionTitle(t.whatsappSection),
-          for (final p in whatsappNumbers) ...[
-            _ContactTile(
-              icon: Icons.chat_rounded,
-              iconColor: const Color(0xFF25D366),
-              label: 'WhatsApp',
-              value: p,
-              badge: t.chat,
-              badgeColor: const Color(0xFF25D366),
-              isDark: isDark,
-              onTap: () => whatsApp(p),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          const SizedBox(height: 6),
-          Center(
-            child: Text(
-              'OG ONE GROUP',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1,
-                color: titleColor.withValues(alpha: 0.4),
+                ],
               ),
             ),
-          ),
-        ],
+
+            sectionTitle(t.emailWebsite),
+            _ContactTile(
+              icon: Icons.email_outlined,
+              label: t.email,
+              value: email,
+              isDark: isDark,
+              onTap: openEmail,
+            ),
+            const SizedBox(height: 10),
+            _ContactTile(
+              icon: Icons.language_outlined,
+              label: t.website,
+              value: website,
+              isDark: isDark,
+              onTap: openWebsite,
+            ),
+
+            sectionTitle(t.phoneNumbers),
+            for (final p in phones) ...[
+              _ContactTile(
+                icon: Icons.phone_android_outlined,
+                value: p,
+                badge: t.call,
+                isDark: isDark,
+                onTap: () => call(p),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            sectionTitle(t.whatsappSection),
+            for (final p in whatsappNumbers) ...[
+              _ContactTile(
+                icon: Icons.chat_rounded,
+                iconColor: const Color(0xFF25D366),
+                label: 'WhatsApp',
+                value: p,
+                badge: t.chat,
+                badgeColor: const Color(0xFF25D366),
+                isDark: isDark,
+                onTap: () => whatsApp(p),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            const SizedBox(height: 6),
+            Center(
+              child: Text(
+                'OG ONE GROUP',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                  color: titleColor.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -273,7 +297,8 @@ class _ContactTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                          color:
+                          isDark ? Colors.white54 : Colors.grey.shade600,
                         ),
                       ),
                     Text(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/app_strings.dart';
 import '../../../config/app_theme.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/page_skeletons.dart';
 import 'static_page_scaffold.dart';
 
 class FaqScreen extends StatelessWidget {
@@ -14,6 +15,7 @@ class FaqScreen extends StatelessWidget {
     return StaticPageScaffold(
       title: t.faqs,
       loader: ApiService.instance.getFaqs,
+      skeleton: const FaqPageSkeleton(),
       builder: (context, data) => [_FaqList(data: data)],
     );
   }
@@ -36,8 +38,8 @@ List<_Faq> _parseFaqs(dynamic data) {
   for (final item in list) {
     if (item is! Map) continue;
     final q = (item['question'] ?? item['title'] ?? '').toString();
-    final a = (item['answer'] ?? item['content'] ?? item['body'] ?? '')
-        .toString();
+    final a =
+    (item['answer'] ?? item['content'] ?? item['body'] ?? '').toString();
     if (q.trim().isEmpty) continue;
     out.add(_Faq(htmlToText(q), htmlToText(a)));
   }

@@ -10,6 +10,7 @@ import '../../data/mini_apps_data.dart';
 import '../../models/mini_app.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/language_dropdown.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'dashboard_slideshow.dart';
 
 // Darker gold for TEXT on light backgrounds (AppTheme.gold600 is too pale).
@@ -76,21 +77,38 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   String _query = '';
   String _selected = 'all';
   bool _intro = true; // entrance animations only on first load
+  bool _loading = true; // skeleton covers the WHOLE dashboard until data is ready
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) setState(() => _intro = false);
-    });
+    _initialLoad();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Replace the body with your real fetch (API, provider, Firebase...).
+  Future<void> _loadData() async {
+    await Future.delayed(const Duration(milliseconds: 900));
+  }
+
+  Future<void> _initialLoad() async {
+    try {
+      await _loadData();
+    } catch (_) {
+      // show a snackbar / retry state if you want
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) setState(() => _intro = false);
+    });
   }
 
   void _snack(String message) {
@@ -138,7 +156,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   }
 
   Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    try {
+      await _loadData();
+    } catch (_) {}
     if (!mounted) return;
     _searchController.clear();
     setState(() {
@@ -228,135 +248,162 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               Navigator.pushNamed(context, AppRoutes.settings);
             },
           ),
-          body: RefreshIndicator(
-            onRefresh: _onRefresh,
-            color: AppTheme.primary,
-            backgroundColor: Colors.white,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              slivers: [
-                // ── Header + search ─────────────────────────
-                SliverToBoxAdapter(
-                  child: _Header(
-                    t: t,
-                    hPad: hPad,
-                    onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                    onAiAgent: () => _snack(t.comingSoonMessage),
-                    searchController: _searchController,
-                    onSearch: (v) => setState(() => _query = v),
-                    onClear: _clearSearch,
-                    hasText: _query.isNotEmpty,
-                  ),
+          // Skeleton (whole dashboard) cross-fades into the real content.
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            layoutBuilder: (current, previous) => Stack(
+              fit: StackFit.expand,
+              children: [...previous, if (current != null) current],
+            ),
+            child: _loading
+                ? SkeletonLoader(
+              key: const ValueKey('skeleton'),
+              hPad: hPad,
+              crossAxisExtent: crossAxisExtent,
+              mainAxisExtent: mainAxisExtent,
+              iconSize: iconSize,
+            )
+                : RefreshIndicator(
+              key: const ValueKey('content'),
+              onRefresh: _onRefresh,
+              color: AppTheme.primary,
+              backgroundColor: Colors.white,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
+                slivers: [
+                  // ── Header + search ─────────────────────────
+                  SliverToBoxAdapter(
+                    child: _Header(
+                      t: t,
+                      hPad: hPad,
+                      onMenu: () =>
+                          _scaffoldKey.currentState?.openDrawer(),
+                      onAiAgent: () => _snack(t.comingSoonMessage),
+                      searchController: _searchController,
+                      onSearch: (v) => setState(() => _query = v),
+                      onClear: _clearSearch,
+                      hasText: _query.isNotEmpty,
+                    ),
+                  ),
 
-                // ── Slideshow (full width so shadows/peek aren't cropped) ──
-                if (!searching)
+                  // ── Slideshow (full width so shadows/peek aren't cropped) ──
+                  if (!searching)
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 20),
+                      sliver: SliverToBoxAdapter(
+                        child: _Reveal(
+                          index: 0,
+                          animate: _intro,
+                          child: DashboardSlideshow(
+                              slides: slides, hPad: hPad),
+                        ),
+                      ),
+                    ),
+
+                  // ── Section title ───────────────────────────
                   SliverPadding(
-                    padding: const EdgeInsets.only(top: 20),
+                    padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
                     sliver: SliverToBoxAdapter(
-                      child: _Reveal(
-                        index: 0,
-                        animate: _intro,
-                        child: DashboardSlideshow(slides: slides, hPad: hPad),
+                      child: _SectionTitle(
+                        title: t.allServices,
+                        count: apps.length,
+                        isDark: isDark,
                       ),
                     ),
                   ),
 
-                // ── Section title ───────────────────────────
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(hPad, 22, hPad, 12),
-                  sliver: SliverToBoxAdapter(
-                    child: _SectionTitle(
-                      title: t.allServices,
-                      count: apps.length,
-                      isDark: isDark,
-                    ),
-                  ),
-                ),
-
-                // ── Chips ───────────────────────────────────
-                if (!searching)
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 42,
-                      child: ListView.separated(
-                        clipBehavior: Clip.none, // keep chip shadows
-                        padding: EdgeInsets.symmetric(horizontal: hPad),
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: chipApps.length + 1,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (_, i) {
-                          if (i == 0) {
+                  // ── Chips ───────────────────────────────────
+                  if (!searching)
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 42,
+                        child: ListView.separated(
+                          clipBehavior: Clip.none, // keep chip shadows
+                          padding:
+                          EdgeInsets.symmetric(horizontal: hPad),
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: chipApps.length + 1,
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(width: 8),
+                          itemBuilder: (_, i) {
+                            if (i == 0) {
+                              return _AppChip(
+                                label: t.allServices,
+                                icon: Icons.apps_rounded,
+                                selected: _selected == 'all',
+                                isDark: isDark,
+                                onTap: () =>
+                                    setState(() => _selected = 'all'),
+                              );
+                            }
+                            final a = chipApps[i - 1];
                             return _AppChip(
-                              label: t.allServices,
-                              icon: Icons.apps_rounded,
-                              selected: _selected == 'all',
+                              label: t.serviceTitle(a.slug),
+                              icon: _iconFor(a.icon),
+                              selected: _selected == a.slug,
                               isDark: isDark,
-                              onTap: () => setState(() => _selected = 'all'),
+                              onTap: () =>
+                                  setState(() => _selected = a.slug),
                             );
-                          }
-                          final a = chipApps[i - 1];
-                          return _AppChip(
-                            label: t.serviceTitle(a.slug),
-                            icon: _iconFor(a.icon),
-                            selected: _selected == a.slug,
-                            isDark: isDark,
-                            onTap: () => setState(() => _selected = a.slug),
-                          );
-                        },
+                          },
+                        ),
                       ),
                     ),
-                  ),
 
-                // ── Empty state / Grid ──────────────────────
-                if (apps.isEmpty)
-                  SliverToBoxAdapter(
-                    child: _EmptyState(message: t.noResults, isDark: isDark),
-                  )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 36),
-                    sliver: SliverGrid(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: crossAxisExtent,
-                        mainAxisExtent: mainAxisExtent,
-                        mainAxisSpacing: 4,
-                        crossAxisSpacing: 10,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                            (context, i) {
-                          final app = apps[i];
-                          return _Reveal(
-                            key: ValueKey(app.slug),
-                            index: i + 2,
-                            animate: _intro,
-                            child: RepaintBoundary(
-                              child: _ServiceCard(
-                                app: app,
-                                title: t.serviceTitle(app.slug),
-                                soonLabel: t.soon,
-                                onTap: () => _open(app, t),
-                                size: iconSize,
+                  // ── Empty state / Grid ──────────────────────
+                  if (apps.isEmpty)
+                    SliverToBoxAdapter(
+                      child: _EmptyState(
+                          message: t.noResults, isDark: isDark),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(hPad, 14, hPad, 36),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                        SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: crossAxisExtent,
+                          mainAxisExtent: mainAxisExtent,
+                          mainAxisSpacing: 4,
+                          crossAxisSpacing: 10,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                              (context, i) {
+                            final app = apps[i];
+                            return _Reveal(
+                              key: ValueKey(app.slug),
+                              index: i + 2,
+                              animate: _intro,
+                              child: RepaintBoundary(
+                                child: _ServiceCard(
+                                  app: app,
+                                  title: t.serviceTitle(app.slug),
+                                  soonLabel: t.soon,
+                                  onTap: () => _open(app, t),
+                                  size: iconSize,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        childCount: apps.length,
-                        findChildIndexCallback: (key) {
-                          if (key is ValueKey<String>) {
-                            final idx =
-                            apps.indexWhere((a) => a.slug == key.value);
-                            return idx < 0 ? null : idx;
-                          }
-                          return null;
-                        },
+                            );
+                          },
+                          childCount: apps.length,
+                          findChildIndexCallback: (key) {
+                            if (key is ValueKey<String>) {
+                              final idx = apps
+                                  .indexWhere((a) => a.slug == key.value);
+                              return idx < 0 ? null : idx;
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
