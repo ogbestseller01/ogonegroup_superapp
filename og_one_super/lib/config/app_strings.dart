@@ -1,7 +1,6 @@
 // lib/config/app_strings.dart
 
 import 'package:flutter/material.dart';
-
 import '../l10n/app_localizations.dart';
 
 // Re-export so `context.t` works in any file that imports this.
@@ -32,6 +31,8 @@ extension ServiceTitles on AppLocalizations {
         return hama;
       case 'checkspace':
         return checkspace;
+      case 'nimepoteza':
+        return nimepoteza;
       case 'coming_soon':
       default:
         return comingSoon;

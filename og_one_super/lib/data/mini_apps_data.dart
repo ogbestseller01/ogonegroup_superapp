@@ -60,6 +60,14 @@ const List<MiniApp> miniApps = [
     color: '#C2185B',
   ),
   MiniApp(
+    id: 10,
+    slug: 'nimepoteza',
+    name: 'Nimepoteza App',
+    subtitle: 'Report & find lost items',
+    icon: 'find_in_page',
+    color: '#2E7D32',
+  ),
+  MiniApp(
     id: 4,
     slug: 'health',
     name: 'Nearby Health Facility',
@@ -67,13 +75,5 @@ const List<MiniApp> miniApps = [
     icon: 'local_hospital',
     color: '#0A8A6D',
   ),
-  MiniApp(
-    id: 9,
-    slug: 'coming_soon',
-    name: 'Coming Soon',
-    subtitle: 'More apps coming',
-    icon: 'apps',
-    color: '#F5C30E',
-    isComingSoon: true,
-  ),
+
 ];

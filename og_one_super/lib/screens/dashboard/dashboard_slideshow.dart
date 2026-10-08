@@ -12,13 +12,7 @@ class Slide {
   final Color ink;
   final IconData icon;
 
-  const Slide(
-      this.title,
-      this.subtitle,
-      this.colors,
-      this.ink,
-      this.icon,
-      );
+  const Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
 }
 
 // ============================================================
@@ -44,6 +38,7 @@ class DashboardSlideshow extends StatefulWidget {
 class _DashboardSlideshowState extends State<DashboardSlideshow> {
   static const double _gap = 5; // horizontal padding around each card
   static const double _baseHeight = 122;
+  static const Duration _autoPlayEvery = Duration(seconds: 5);
 
   PageController? _ctrl;
   double _fraction = 0;
@@ -54,11 +49,13 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final w = MediaQuery.sizeOf(context).width;
-    final f = ((w - 2 * widget.hPad + 2 * _gap) / w).clamp(0.6, 0.95);
-    if (f != _fraction) {
+    final fraction =
+    ((w - 2 * widget.hPad + 2 * _gap) / w).clamp(0.6, 0.95).toDouble();
+
+    if (fraction != _fraction) {
       final old = _ctrl;
-      _fraction = f;
-      _ctrl = PageController(viewportFraction: f, initialPage: _page);
+      _fraction = fraction;
+      _ctrl = PageController(viewportFraction: fraction, initialPage: _page);
       if (old != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
       }
@@ -68,15 +65,14 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _timer = Timer.periodic(_autoPlayEvery, (_) {
       if (!mounted) return;
       final c = _ctrl;
       if (c == null || !c.hasClients || widget.slides.isEmpty) return;
       // Respect the OS "reduce motion" setting.
       if (MediaQuery.disableAnimationsOf(context)) return;
-      final next = (_page + 1) % widget.slides.length;
       c.animateToPage(
-        next,
+        (_page + 1) % widget.slides.length,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeOutCubic,
       );
@@ -92,7 +88,6 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final scale =
     MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
     final height = _baseHeight + (scale - 1) * 72;
@@ -107,103 +102,128 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
             onPointerCancel: (_) => _startTimer(),
             child: PageView.builder(
               controller: _ctrl,
-              // Do not crop the card shadows.
-              clipBehavior: Clip.none,
+              clipBehavior: Clip.none, // do not crop the card shadows
               itemCount: widget.slides.length,
               onPageChanged: (i) => setState(() => _page = i),
-              itemBuilder: (_, i) {
-                final s = widget.slides[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: _gap),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: s.colors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: s.colors.last.withValues(alpha: 0.30),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                s.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: s.ink,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.25,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                s.subtitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: s.ink.withValues(alpha: 0.88),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: s.ink.withValues(alpha: 0.13),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(s.icon, size: 26, color: s.ink),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+              itemBuilder: (_, i) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: _gap),
+                child: _SlideCard(slide: widget.slides[i]),
+              ),
             ),
           ),
         ),
         const SizedBox(height: 14),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(widget.slides.length, (i) {
-            final on = i == _page;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: on ? 18 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: on
-                    ? AppTheme.secondary
-                    : (isDark ? Colors.white24 : Colors.black12),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            );
-          }),
-        ),
+        _PageDots(count: widget.slides.length, current: _page),
       ],
+    );
+  }
+}
+
+// ============================================================
+// SLIDE CARD
+// ============================================================
+class _SlideCard extends StatelessWidget {
+  final Slide slide;
+  const _SlideCard({required this.slide});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = slide;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: s.colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: s.colors.last.withValues(alpha: 0.30),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  s.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: s.ink,
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w800,
+                    height: 1.25,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  s.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: s.ink.withValues(alpha: 0.88),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: s.ink.withValues(alpha: 0.13),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(s.icon, size: 26, color: s.ink),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// PAGE DOTS
+// ============================================================
+class _PageDots extends StatelessWidget {
+  final int count;
+  final int current;
+  const _PageDots({required this.count, required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final on = i == current;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: on ? 18 : 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: on
+                ? AppTheme.secondary
+                : (isDark ? Colors.white24 : Colors.black12),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        );
+      }),
     );
   }
 }

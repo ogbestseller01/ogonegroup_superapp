@@ -74,6 +74,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkspace => 'CheckSpace App';
 
   @override
+  String get nimepoteza => 'Nimepoteza App';
+
+  @override
   String get comingSoon => 'Coming Soon';
 
   @override

@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'CheckSpace App'**
   String get checkspace;
 
+  /// No description provided for @nimepoteza.
+  ///
+  /// In en, this message translates to:
+  /// **'Nimepoteza App'**
+  String get nimepoteza;
+
   /// No description provided for @comingSoon.
   ///
   /// In en, this message translates to:
