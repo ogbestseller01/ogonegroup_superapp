@@ -36,14 +36,24 @@ class DashboardSlideshow extends StatefulWidget {
 }
 
 class _DashboardSlideshowState extends State<DashboardSlideshow> {
+  // ── Layout ──
   static const double _gap = 5; // horizontal padding around each card
   static const double _baseHeight = 122;
+  static const double _dotsGap = 14;
+
+  // ── Motion ──
   static const Duration _autoPlayEvery = Duration(seconds: 5);
+  static const Duration _slideDuration = Duration(milliseconds: 450);
+  static const Curve _slideCurve = Curves.easeOutCubic;
 
   PageController? _ctrl;
   double _fraction = 0;
   Timer? _timer;
   int _page = 0;
+
+  bool get _canAutoPlay => widget.slides.length > 1;
+
+  // ── Lifecycle ───────────────────────────────────────────
 
   @override
   void didChangeDependencies() {
@@ -63,20 +73,13 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
     _startTimer();
   }
 
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(_autoPlayEvery, (_) {
-      if (!mounted) return;
-      final c = _ctrl;
-      if (c == null || !c.hasClients || widget.slides.isEmpty) return;
-      // Respect the OS "reduce motion" setting.
-      if (MediaQuery.disableAnimationsOf(context)) return;
-      c.animateToPage(
-        (_page + 1) % widget.slides.length,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic,
-      );
-    });
+  @override
+  void didUpdateWidget(covariant DashboardSlideshow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Keep the current page valid if the slide list changes.
+    if (_page >= widget.slides.length) {
+      _page = widget.slides.isEmpty ? 0 : widget.slides.length - 1;
+    }
   }
 
   @override
@@ -85,6 +88,33 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
     _ctrl?.dispose();
     super.dispose();
   }
+
+  // ── Auto-play ───────────────────────────────────────────
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (!_canAutoPlay) return;
+    _timer = Timer.periodic(_autoPlayEvery, (_) => _next());
+  }
+
+  void _stopTimer() => _timer?.cancel();
+
+  void _next() {
+    if (!mounted) return;
+    final c = _ctrl;
+    if (c == null || !c.hasClients || widget.slides.isEmpty) return;
+    // Respect the OS "reduce motion" setting.
+    if (MediaQuery.disableAnimationsOf(context)) return;
+    _goTo((_page + 1) % widget.slides.length);
+  }
+
+  void _goTo(int index) {
+    final c = _ctrl;
+    if (c == null || !c.hasClients) return;
+    c.animateToPage(index, duration: _slideDuration, curve: _slideCurve);
+  }
+
+  // ── Build ───────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +127,8 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
         SizedBox(
           height: height,
           child: Listener(
-            onPointerDown: (_) => _timer?.cancel(),
+            // Pause while the finger is down so the card never moves away.
+            onPointerDown: (_) => _stopTimer(),
             onPointerUp: (_) => _startTimer(),
             onPointerCancel: (_) => _startTimer(),
             child: PageView.builder(
@@ -112,8 +143,14 @@ class _DashboardSlideshowState extends State<DashboardSlideshow> {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        _PageDots(count: widget.slides.length, current: _page),
+        if (widget.slides.length > 1) ...[
+          const SizedBox(height: _dotsGap),
+          _PageDots(
+            count: widget.slides.length,
+            current: _page,
+            onSelect: _goTo,
+          ),
+        ],
       ],
     );
   }
@@ -129,68 +166,79 @@ class _SlideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = slide;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: s.colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+
+    return Semantics(
+      container: true,
+      label: '${s.title}. ${s.subtitle}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: s.colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: s.colors.last.withValues(alpha: 0.30),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: s.colors.last.withValues(alpha: 0.30),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  s.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: s.ink,
-                    fontSize: 16.5,
-                    fontWeight: FontWeight.w800,
-                    height: 1.25,
-                    letterSpacing: -0.2,
+        child: Row(
+          children: [
+            // ── Text (left → right) ──
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    s.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: s.ink,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                      letterSpacing: -0.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  s.subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: s.ink.withValues(alpha: 0.88),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
+                  const SizedBox(height: 6),
+                  Text(
+                    s.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: s.ink.withValues(alpha: 0.88),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: s.ink.withValues(alpha: 0.13),
-              shape: BoxShape.circle,
+            const SizedBox(width: 12),
+
+            // ── Icon badge ──
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: s.ink.withValues(alpha: 0.13),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(s.icon, size: 26, color: s.ink),
             ),
-            child: Icon(s.icon, size: 26, color: s.ink),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -202,25 +250,47 @@ class _SlideCard extends StatelessWidget {
 class _PageDots extends StatelessWidget {
   final int count;
   final int current;
-  const _PageDots({required this.count, required this.current});
+
+  /// Tapping a dot jumps to that slide.
+  final ValueChanged<int> onSelect;
+
+  const _PageDots({
+    required this.count,
+    required this.current,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final idle = isDark ? Colors.white24 : Colors.black12;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
         final on = i == current;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: on ? 18 : 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: on
-                ? AppTheme.secondary
-                : (isDark ? Colors.white24 : Colors.black12),
-            borderRadius: BorderRadius.circular(3),
+        return Semantics(
+          button: true,
+          selected: on,
+          label: '${i + 1} / $count',
+          excludeSemantics: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => onSelect(i),
+            // Larger invisible tap area around the small dot.
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                width: on ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: on ? AppTheme.secondary : idle,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
           ),
         );
       }),

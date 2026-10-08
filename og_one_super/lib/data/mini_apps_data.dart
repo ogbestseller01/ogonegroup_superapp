@@ -65,7 +65,7 @@ const List<MiniApp> miniApps = [
     name: 'Nimepoteza App',
     subtitle: 'Report & find lost items',
     icon: 'find_in_page',
-    color: '#2E7D32',
+    color: '#F5C30E',
   ),
   MiniApp(
     id: 4,
