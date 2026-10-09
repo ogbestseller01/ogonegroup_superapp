@@ -77,6 +77,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get nimepoteza => 'Nimepoteza App';
 
   @override
+  String get duma => 'Duma App';
+
+  @override
   String get comingSoon => 'Inakuja';
 
   @override
@@ -337,4 +340,19 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get welcomePartnerships => 'Karibu kwa ushirikiano';
+
+  @override
+  String get featured => 'Programu Zilizoangaziwa';
+
+  @override
+  String get partnerApps => 'Programu za Washirika';
+
+  @override
+  String get partnerAppsHint => 'Programu za washirika zitaonekana hapa';
+
+  @override
+  String get home => 'Nyumbani';
+
+  @override
+  String get scan => 'Skani';
 }

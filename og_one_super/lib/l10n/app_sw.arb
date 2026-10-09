@@ -28,6 +28,7 @@
   "hama": "Hama Chap Chap",
   "checkspace": "CheckSpace App",
   "nimepoteza": "Nimepoteza App",
+  "duma": "Duma App",
   "comingSoon": "Inakuja",
 
   "appearance": "Muonekano",
@@ -123,5 +124,11 @@
   "menu": "Menyu",
   "aiAssistant": "Msaidizi wa AI",
   "partnerships": "Ushirikiano",
-  "welcomePartnerships": "Karibu kwa ushirikiano"
+  "welcomePartnerships": "Karibu kwa ushirikiano",
+
+    "featured": "Programu Zilizoangaziwa",
+    "partnerApps": "Programu za Washirika",
+    "partnerAppsHint": "Programu za washirika zitaonekana hapa",
+    "home": "Nyumbani",
+    "scan": "Skani"
 }

@@ -28,6 +28,8 @@
   "hama": "Hama Chap Chap",
   "checkspace": "CheckSpace App",
   "nimepoteza": "Nimepoteza App",
+  "duma": "Duma App",
+  "@duma": { "description": "Service title for the Duma mini app" },
   "comingSoon": "Coming Soon",
 
   "appearance": "Appearance",
@@ -123,5 +125,11 @@
   "menu": "Menu",
   "aiAssistant": "AI Assistant",
   "partnerships": "Partnerships",
-  "welcomePartnerships": "Welcome for partnerships"
+  "welcomePartnerships": "Welcome for partnerships",
+
+    "featured": "Featured App's",
+    "partnerApps": "Partner's Apps",
+    "partnerAppsHint": "Partner apps will appear here",
+    "home": "Home",
+    "scan": "Scan"
 }

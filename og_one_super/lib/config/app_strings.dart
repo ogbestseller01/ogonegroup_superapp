@@ -1,5 +1,3 @@
-// lib/config/app_strings.dart
-
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 
@@ -21,18 +19,16 @@ extension ServiceTitles on AppLocalizations {
         return fundiApp;
       case 'msosi':
         return msosi;
-      case 'health':
-        return nearbyHealth;
       case 'laundry':
         return laundry;
       case 'osha':
         return osha;
       case 'hama':
         return hama;
-      case 'checkspace':
-        return checkspace;
       case 'nimepoteza':
         return nimepoteza;
+      case 'duma':
+        return duma;
       case 'coming_soon':
       default:
         return comingSoon;

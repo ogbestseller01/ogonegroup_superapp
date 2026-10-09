@@ -77,6 +77,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nimepoteza => 'Nimepoteza App';
 
   @override
+  String get duma => 'Duma App';
+
+  @override
   String get comingSoon => 'Coming Soon';
 
   @override
@@ -334,4 +337,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomePartnerships => 'Welcome for partnerships';
+
+  @override
+  String get featured => 'Featured App\'s';
+
+  @override
+  String get partnerApps => 'Partner\'s Apps';
+
+  @override
+  String get partnerAppsHint => 'Partner apps will appear here';
+
+  @override
+  String get home => 'Home';
+
+  @override
+  String get scan => 'Scan';
 }

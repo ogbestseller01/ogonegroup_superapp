@@ -38,7 +38,7 @@ class DashboardSlideshow extends StatefulWidget {
 class _DashboardSlideshowState extends State<DashboardSlideshow> {
   // ── Layout ──
   static const double _gap = 5; // horizontal padding around each card
-  static const double _baseHeight = 122;
+  static const double _baseHeight = 112;
   static const double _dotsGap = 14;
 
   // ── Motion ──
@@ -172,7 +172,7 @@ class _SlideCard extends StatelessWidget {
       label: '${s.title}. ${s.subtitle}',
       excludeSemantics: true,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+        padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: s.colors,
@@ -203,7 +203,7 @@ class _SlideCard extends StatelessWidget {
                     textAlign: TextAlign.start,
                     style: TextStyle(
                       color: s.ink,
-                      fontSize: 16.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                       height: 1.25,
                       letterSpacing: -0.2,
@@ -217,7 +217,7 @@ class _SlideCard extends StatelessWidget {
                     textAlign: TextAlign.start,
                     style: TextStyle(
                       color: s.ink.withValues(alpha: 0.88),
-                      fontSize: 12.5,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                       height: 1.3,
                     ),
@@ -229,13 +229,13 @@ class _SlideCard extends StatelessWidget {
 
             // ── Icon badge ──
             Container(
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: s.ink.withValues(alpha: 0.13),
                 shape: BoxShape.circle,
               ),
-              child: Icon(s.icon, size: 26, color: s.ink),
+              child: Icon(s.icon, size: 23, color: s.ink),
             ),
           ],
         ),

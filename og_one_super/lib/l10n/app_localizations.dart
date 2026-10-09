@@ -230,6 +230,12 @@ abstract class AppLocalizations {
   /// **'Nimepoteza App'**
   String get nimepoteza;
 
+  /// Service title for the Duma mini app
+  ///
+  /// In en, this message translates to:
+  /// **'Duma App'**
+  String get duma;
+
   /// No description provided for @comingSoon.
   ///
   /// In en, this message translates to:
@@ -739,6 +745,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome for partnerships'**
   String get welcomePartnerships;
+
+  /// No description provided for @featured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured App\'s'**
+  String get featured;
+
+  /// No description provided for @partnerApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner\'s Apps'**
+  String get partnerApps;
+
+  /// No description provided for @partnerAppsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner apps will appear here'**
+  String get partnerAppsHint;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @scan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
 }
 
 class _AppLocalizationsDelegate
