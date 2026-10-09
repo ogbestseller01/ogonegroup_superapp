@@ -1504,12 +1504,9 @@ class _NavItem extends StatelessWidget {
 class _LangOption {
   final String code;
   final String label;
-  final String badge; // text fallback shown while the flag loads / offline
-  final String flag; // ISO country code used to fetch the flag image
-  const _LangOption(this.code, this.label, this.badge, this.flag);
-
-  /// Flag fetched from the network (small PNG, cached by Flutter's image cache).
-  String get flagUrl => 'https://flagcdn.com/w160/$flag.png';
+  final String badge; // text fallback if the flag image can't be loaded
+  final String flagAsset; // local flag image bundled in assets/images
+  const _LangOption(this.code, this.label, this.badge, this.flagAsset);
 }
 
 class _SettingsSheet extends StatelessWidget {
@@ -1524,8 +1521,8 @@ class _SettingsSheet extends StatelessWidget {
     final current = settings.locale.languageCode;
 
     final options = [
-      _LangOption('en', t.english, 'EN', 'gb'),
-      _LangOption('sw', t.swahili, 'SW', 'tz'),
+      _LangOption('en', t.english, 'EN', 'assets/images/englishflug.png'),
+      _LangOption('sw', t.swahili, 'SW', 'assets/images/tzflug.png'),
     ];
 
     return Container(
@@ -1656,8 +1653,8 @@ class _SettingsSheet extends StatelessWidget {
   }
 }
 
-/// Circular flag fetched from the network. While loading (or if the request
-/// fails, e.g. offline) it shows the EN/SW text badge instead.
+/// Circular flag loaded from the app's bundled assets. If the asset is missing
+/// it shows the EN/SW text badge instead.
 class _FlagBadge extends StatelessWidget {
   final _LangOption option;
   final bool selected;
@@ -1705,14 +1702,11 @@ class _FlagBadge extends StatelessWidget {
         ),
       ),
       child: ClipOval(
-        child: Image.network(
-          option.flagUrl,
+        child: Image.asset(
+          option.flagAsset,
           width: _size,
           height: _size,
           fit: BoxFit.cover,
-          gaplessPlayback: true,
-          loadingBuilder: (context, child, progress) =>
-          progress == null ? child : fallback(),
           errorBuilder: (_, __, ___) => fallback(),
         ),
       ),
