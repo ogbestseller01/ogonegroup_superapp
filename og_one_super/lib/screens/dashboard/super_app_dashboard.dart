@@ -27,6 +27,12 @@ const _headerGradient = LinearGradient(
   end: Alignment.bottomRight,
 );
 
+const _goldGradient = LinearGradient(
+  colors: [Color(0xFFFFC61F), Color(0xFFF5A90E)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+);
+
 const _icons = <String, IconData>{
   'build': Icons.build_rounded,
   'handyman': Icons.handyman_rounded,
@@ -104,7 +110,8 @@ class _GridLayout {
     final gridW = contentW - 2 * cardPad;
     final cellW = (gridW - (columns - 1) * colSpacing) / columns;
 
-    final icon = (cellW * 0.80).clamp(48.0, 72.0).toDouble();
+    // The ring is gone, so the single circle can be a touch larger.
+    final icon = (cellW * 0.74).clamp(50.0, 74.0).toDouble();
     final labelH =
     (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
@@ -113,7 +120,7 @@ class _GridLayout {
       columns,
       contentW / columns,
       icon,
-      icon + 12 + labelH + 8, // icon + gap + 2-line label + breathing room
+      icon + 16 + labelH + 10, // icon + gap + 2-line label + breathing room
     );
   }
 }
@@ -166,6 +173,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   }
 
   Future<void> _onRefresh() async {
+    HapticFeedback.mediumImpact();
     try {
       await _loadData();
     } catch (_) {}
@@ -184,12 +192,20 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
+          elevation: 8,
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          margin: const EdgeInsets.all(16),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          margin: EdgeInsets.fromLTRB(
+              16, 0, 16, _BottomBar.heightOf(context) + 8),
         ),
       );
   }
@@ -333,6 +349,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       backgroundColor: Colors.white,
       child: CustomScrollView(
         controller: _scroll,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
@@ -362,7 +379,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       AppLocalizations t, _GridLayout layout, bool isDark) {
     final apps = _filtered(t);
     return [
-      _section(layout.hPad, t.allServices, apps.length, isDark, top: 22),
+      _section(layout.hPad, t.allServices, apps.length, isDark, top: 26),
       if (apps.isEmpty)
         SliverToBoxAdapter(
           child: _EmptyState(message: t.noResults, isDark: isDark),
@@ -380,13 +397,13 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
     return [
       // 1. Featured — every app, as circle icons
-      _section(hPad, t.featured, miniApps.length, isDark, top: 22),
+      _section(hPad, t.featured, miniApps.length, isDark, top: 26),
       _gridCard(t, layout, miniApps, isDark, startIndex: 1),
 
       // 2. Slideshow
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 6),
+          padding: const EdgeInsets.only(top: 20, bottom: 6),
           child: _Reveal(
             index: 2,
             animate: _intro,
@@ -401,7 +418,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         t.partnerApps,
         0,
         isDark,
-        top: 22,
+        top: 26,
         trailing: Text(
           t.comingSoon,
           style: TextStyle(
@@ -431,7 +448,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
   /// Space at the end of the list so content can scroll clear of the bottom bar.
   Widget _bottomSpacer() => SliverToBoxAdapter(
-    child: SizedBox(height: _BottomBar.heightOf(context) + 20),
+    child: SizedBox(height: _BottomBar.heightOf(context) + 24),
   );
 
   Widget _section(
@@ -444,7 +461,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       }) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 8),
+        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 10),
         child: _SectionTitle(
           title: title,
           count: count,
@@ -469,21 +486,26 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       sliver: DecoratedSliver(
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(30),
           border: isDark
               ? Border.all(color: Colors.white.withValues(alpha: 0.06))
               : null,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withValues(alpha: isDark ? 0.0 : 0.07),
-              blurRadius: 22,
-              offset: const Offset(0, 8),
+              color: AppTheme.primary.withValues(alpha: isDark ? 0.0 : 0.08),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         sliver: SliverPadding(
           padding: const EdgeInsets.fromLTRB(
-              _GridLayout.cardPad, 20, _GridLayout.cardPad, 8),
+              _GridLayout.cardPad, 22, _GridLayout.cardPad, 10),
           sliver: _grid(t, layout, apps, startIndex: startIndex),
         ),
       ),
@@ -500,7 +522,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: layout.columns,
         mainAxisExtent: layout.mainAxisExtent,
-        mainAxisSpacing: 8,
+        mainAxisSpacing: 10,
         crossAxisSpacing: _GridLayout.colSpacing,
       ),
       delegate: SliverChildBuilderDelegate(
@@ -549,7 +571,7 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Container(
           width: 4,
-          height: 16,
+          height: 18,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFFFFC61F), Color(0xFFF5A90E)],
@@ -566,7 +588,7 @@ class _SectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
               color: isDark ? Colors.white : AppTheme.primary,
@@ -575,9 +597,9 @@ class _SectionTitle extends StatelessWidget {
         ),
         if (trailing != null) ...[trailing!, const SizedBox(width: 10)],
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
           decoration: BoxDecoration(
-            color: AppTheme.secondary.withValues(alpha: 0.15),
+            color: AppTheme.secondary.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
@@ -610,8 +632,8 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 72,
-            height: 72,
+            width: 76,
+            height: 76,
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.06)
@@ -619,19 +641,19 @@ class _EmptyState extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Icon(
               Icons.search_off_rounded,
-              size: 32,
+              size: 34,
               color: isDark ? Colors.white38 : Colors.grey.shade500,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             message,
             style: TextStyle(
@@ -730,9 +752,9 @@ class _Logo extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -773,10 +795,13 @@ class _GlassButton extends StatelessWidget {
         children: [
           Material(
             color: Colors.white.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onTap();
+              },
+              borderRadius: BorderRadius.circular(14),
               child: Padding(
                 padding: const EdgeInsets.all(10),
                 child: Icon(icon, color: Colors.white, size: 22),
@@ -818,7 +843,7 @@ class _Blob extends StatelessWidget {
   );
 }
 
-/// Tap target with a subtle press-scale. Shared by every card.
+/// Tap target with a subtle press-scale + light haptic. Shared by every card.
 class _Pressable extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
@@ -852,10 +877,13 @@ class _PressableState extends State<_Pressable> {
         onTapDown: (_) => _set(true),
         onTapUp: (_) => _set(false),
         onTapCancel: () => _set(false),
-        onTap: widget.onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          widget.onTap();
+        },
         child: AnimatedScale(
-          scale: _pressed ? 0.94 : 1.0,
-          duration: const Duration(milliseconds: 110),
+          scale: _pressed ? 0.92 : 1.0,
+          duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: widget.child,
         ),
@@ -898,8 +926,8 @@ class _Reveal extends StatelessWidget {
 // Header
 // ════════════════════════════════════════════════
 class _Header extends StatelessWidget {
-  static const double _searchHeight = 50;
-  static const double _overlap = 24;
+  static const double _searchHeight = 52;
+  static const double _overlap = 26;
 
   final AppLocalizations t;
   final double hPad;
@@ -940,7 +968,7 @@ class _Header extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         gradient: _headerGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(34)),
       ),
       child: Stack(
         children: [
@@ -963,7 +991,7 @@ class _Header extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, _overlap + 16),
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, _overlap + 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -997,23 +1025,23 @@ class _Header extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 20),
                   Text(
                     t.welcome,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 21,
+                      fontSize: 24,
                       fontWeight: FontWeight.w800,
                       height: 1.15,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.6,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     t.chooseService,
                     style: TextStyle(
                       color: AppTheme.secondary.withValues(alpha: 0.95),
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1031,12 +1059,17 @@ class _Header extends StatelessWidget {
       height: _searchHeight,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.16),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: AppTheme.primary.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1070,7 +1103,7 @@ class _Header extends StatelessWidget {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(vertical: 15),
         ),
       ),
     );
@@ -1098,18 +1131,32 @@ class _ComingSoonBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         color: isDark ? AppTheme.darkSurface : Colors.white,
-        border: Border.all(color: accent.withValues(alpha: 0.30), width: 1.2),
+        border: Border.all(color: accent.withValues(alpha: 0.28), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: isDark ? 0.0 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppTheme.secondary.withValues(alpha: 0.18),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.secondary.withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Icon(Icons.hourglass_top_rounded, size: 24, color: accent),
           ),
@@ -1150,6 +1197,12 @@ class _ComingSoonBox extends StatelessWidget {
 
 // ════════════════════════════════════════════════
 // Service card (grid)
+//
+// One circle per app: no outer ring, no outer tint.
+// Live apps: solid gradient circle, white icon, glossy top highlight and a
+// coloured glow + soft ambient shadow.
+// Coming-soon apps: light tinted circle with a coloured icon and a lighter
+// shadow, plus a "Soon" pill.
 // ════════════════════════════════════════════════
 class _ServiceCard extends StatelessWidget {
   final MiniApp app;
@@ -1172,58 +1225,76 @@ class _ServiceCard extends StatelessWidget {
     final color = _appColor(app);
     final soon = app.isComingSoon;
     final surface = isDark ? AppTheme.darkSurface : Colors.white;
-    final inner = size * 0.72;
 
-    // Outer circular card: a soft tint of the app colour, a ring and a glow.
-    final cardFill = Color.alphaBlend(
-      color.withValues(alpha: isDark ? 0.14 : 0.07),
+    // Shadow: coloured glow underneath + tight ambient shadow for depth.
+    final glowAlpha = soon ? (isDark ? 0.16 : 0.18) : (isDark ? 0.42 : 0.42);
+    final shadows = <BoxShadow>[
+      BoxShadow(
+        color: color.withValues(alpha: glowAlpha),
+        blurRadius: 18,
+        spreadRadius: -2,
+        offset: const Offset(0, 9),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+        blurRadius: 6,
+        offset: const Offset(0, 3),
+      ),
+    ];
+
+    final Color soonFill = Color.alphaBlend(
+      color.withValues(alpha: isDark ? 0.26 : 0.16),
       isDark ? AppTheme.darkSurfaceLight : Colors.white,
     );
-    final ringAlpha = soon ? (isDark ? 0.35 : 0.18) : (isDark ? 0.60 : 0.35);
-    final glowAlpha = soon ? 0.10 : (isDark ? 0.30 : 0.22);
 
-    // Inner medallion: live apps are solid with a white icon,
-    // coming-soon apps are a light tint with a coloured icon.
-    final medallion = Container(
-      width: inner,
-      height: inner,
+    final circle = Container(
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: soon
             ? null
             : LinearGradient(
-          colors: [_shade(color, 0.08), _shade(color, -0.08)],
+          colors: [_shade(color, 0.09), _shade(color, -0.09)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        color: soon ? color.withValues(alpha: isDark ? 0.24 : 0.14) : null,
+        color: soon ? soonFill : null,
+        boxShadow: shadows,
       ),
-      child: Icon(
-        _iconFor(app.icon),
-        size: inner * 0.54,
-        color: soon
-            ? (isDark ? _shade(color, 0.22) : color.withValues(alpha: 0.9))
-            : Colors.white,
+      child: ClipOval(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Glossy highlight on the upper half.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: size * 0.5,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: soon ? 0.30 : 0.26),
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+            ),
+            Icon(
+              _iconFor(app.icon),
+              size: size * 0.46,
+              color: soon
+                  ? (isDark ? _shade(color, 0.22) : color.withValues(alpha: 0.92))
+                  : Colors.white,
+            ),
+          ],
+        ),
       ),
-    );
-
-    final circleCard = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: cardFill,
-        border: Border.all(color: color.withValues(alpha: ringAlpha), width: 1.4),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: glowAlpha),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: medallion,
     );
 
     return _Pressable(
@@ -1238,20 +1309,27 @@ class _ServiceCard extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                circleCard,
+                circle,
                 if (soon)
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: -7,
+                    bottom: -8,
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppTheme.secondary,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: surface, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Text(
                           soonLabel,
@@ -1269,7 +1347,7 @@ class _ServiceCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
@@ -1358,8 +1436,8 @@ class _BottomBar extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: AppTheme.primary
-                            .withValues(alpha: isDark ? 0 : 0.10),
-                        blurRadius: 24,
+                            .withValues(alpha: isDark ? 0 : 0.12),
+                        blurRadius: 26,
                         offset: const Offset(0, -6),
                       ),
                     ],
@@ -1410,17 +1488,13 @@ class _BottomBar extends StatelessWidget {
                       height: _fab,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFC61F), Color(0xFFF5A90E)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        gradient: _goldGradient,
                         border: Border.all(color: surface, width: 5),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFFF5A90E)
-                                .withValues(alpha: isDark ? 0.35 : 0.45),
-                            blurRadius: 16,
+                                .withValues(alpha: isDark ? 0.40 : 0.50),
+                            blurRadius: 18,
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -1558,7 +1632,7 @@ class _SettingsSheet extends StatelessWidget {
               children: [
                 Container(
                   width: 4,
-                  height: 16,
+                  height: 18,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFFFC61F), Color(0xFFF5A90E)],
@@ -1575,7 +1649,7 @@ class _SettingsSheet extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: textColor,
                     ),
