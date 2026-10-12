@@ -71,11 +71,19 @@ Color _shade(Color c, double amount) {
 }
 
 const double _labelFont = 12.5;
+const double _labelMinFont = 10.0;
 const double _labelLineHeight = 1.25;
+
+/// Width (dp) below which the header switches to its compact form.
+const double _compactWidth = 370;
+
+bool _isCompact(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < _compactWidth;
 
 class _GridLayout {
   static const double colSpacing = 8;
   static const double rowSpacing = 16;
+  static const double _minCellWidth = 76;
 
   final double hPad;
   final int columns;
@@ -93,16 +101,19 @@ class _GridLayout {
     MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
 
     final sideInset = max(safe.left, safe.right) + 14;
-    final baseH = width < 360 ? 18.0 : 22.0;
-    final hPad = width > 800
-        ? max((width - 760) / 2, sideInset)
-        : max(baseH, sideInset);
+    final baseH = width < 360 ? 16.0 : 22.0;
+    final hPad =
+    width > 800 ? max((width - 760) / 2, sideInset) : max(baseH, sideInset);
 
-    final columns = width < 340 ? 3 : (width < 600 ? 4 : (width < 900 ? 5 : 6));
     final contentW = width - 2 * hPad;
-    final cellW = (contentW - (columns - 1) * colSpacing) / columns;
 
-    final icon = (cellW * 0.60).clamp(46.0, 60.0).toDouble();
+    // Column count comes from the available width, not fixed breakpoints.
+    final columns = ((contentW + colSpacing) / (_minCellWidth + colSpacing))
+        .floor()
+        .clamp(3, 6);
+
+    final cellW = (contentW - (columns - 1) * colSpacing) / columns;
+    final icon = (cellW * 0.60).clamp(44.0, 60.0).toDouble();
     final labelH =
     (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
@@ -750,17 +761,23 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
+/// Gold "AI Agent" button. Becomes icon-only when [compact] is true.
 class _AiAgentButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
+  final bool compact;
 
   const _AiAgentButton({
     required this.tooltip,
     required this.onTap,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    const navy = Color(0xFF1A2B4A);
+    final radius = BorderRadius.circular(compact ? 16 : 24);
+
     return Tooltip(
       message: tooltip,
       child: Semantics(
@@ -772,7 +789,7 @@ class _AiAgentButton extends StatelessWidget {
           child: Ink(
             decoration: BoxDecoration(
               gradient: _goldGradient,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: radius,
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFFFFB300).withValues(alpha: 0.40),
@@ -782,14 +799,21 @@ class _AiAgentButton extends StatelessWidget {
               ],
             ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: radius,
               onTap: () {
                 HapticFeedback.selectionClick();
                 onTap();
               },
-              child: const SizedBox(
-                height: 40,
-                child: Padding(
+              child: SizedBox(
+                height: compact ? 44 : 40,
+                width: compact ? 44 : null,
+                child: compact
+                    ? const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 22,
+                  color: navy,
+                )
+                    : const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -797,14 +821,14 @@ class _AiAgentButton extends StatelessWidget {
                       Icon(
                         Icons.auto_awesome_rounded,
                         size: 18,
-                        color: Color(0xFF1A2B4A),
+                        color: navy,
                       ),
                       SizedBox(width: 6),
                       Text(
                         'AI Agent',
                         maxLines: 1,
                         style: TextStyle(
-                          color: Color(0xFF1A2B4A),
+                          color: navy,
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -914,6 +938,65 @@ class _Reveal extends StatelessWidget {
   }
 }
 
+/// Two-line centered label that never breaks a word mid-way: the font is
+/// shrunk (down to [minFontSize]) until the longest word fits the width.
+class _FitLabel extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  final double minFontSize;
+
+  const _FitLabel({
+    required this.text,
+    required this.style,
+    this.minFontSize = _labelMinFont,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth;
+        final base = style.fontSize ?? _labelFont;
+        var size = base;
+
+        if (maxW.isFinite) {
+          final longest = text
+              .split(RegExp(r'\s+'))
+              .fold<String>('', (a, b) => b.length > a.length ? b : a);
+
+          final painter = TextPainter(
+            text: TextSpan(
+              text: longest,
+              style: style.copyWith(fontSize: base),
+            ),
+            textDirection: direction,
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+
+          if (painter.width > maxW) {
+            size = (base * maxW / painter.width)
+                .clamp(minFontSize, base)
+                .toDouble();
+          }
+          painter.dispose();
+        }
+
+        return Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: style.copyWith(fontSize: size),
+        );
+      },
+    );
+  }
+}
+
 // ════════════════════════════════════════════════
 // Header – Friendly & Warm
 // ════════════════════════════════════════════════
@@ -948,7 +1031,7 @@ class _Header extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: _searchHeight - _overlap),
-          child: _banner(),
+          child: _banner(context),
         ),
         Positioned(
           left: hPad,
@@ -960,7 +1043,10 @@ class _Header extends StatelessWidget {
     );
   }
 
-  Widget _banner() {
+  Widget _banner(BuildContext context) {
+    final compact = _isCompact(context);
+    final narrow = MediaQuery.sizeOf(context).width < 360;
+
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
@@ -1001,49 +1087,62 @@ class _Header extends StatelessWidget {
                         tooltip: t.menu,
                         onTap: onMenu,
                       ),
-                      const SizedBox(width: 12),
-                      const _Logo(size: 36),
-                      const SizedBox(width: 11),
+                      SizedBox(width: compact ? 8 : 12),
+                      _Logo(size: compact ? 32 : 36),
+                      SizedBox(width: compact ? 8 : 11),
                       Expanded(
-                        child: Text(
-                          t.appName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.1,
+                        // Scales down to fit instead of showing "…"
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            t.appName,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.1,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: compact ? 6 : 8),
                       _AiAgentButton(
+                        compact: compact,
                         tooltip: '${t.aiAssistant} · ${t.comingSoon}',
                         onTap: onAiAgent,
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 22),
+                  SizedBox(height: narrow ? 16 : 22),
 
                   // Welcome
-                  Text(
-                    t.welcome,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      height: 1.15,
-                      letterSpacing: -0.5,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      t.welcome,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: narrow ? 22 : 26,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     t.chooseService,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: const Color(0xFFFFD54F).withValues(alpha: 0.95),
-                      fontSize: 14,
+                      fontSize: narrow ? 13 : 14,
                       fontWeight: FontWeight.w600,
                       height: 1.3,
                     ),
@@ -1302,11 +1401,8 @@ class _ServiceCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 15),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          _FitLabel(
+            text: title,
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: _labelFont,

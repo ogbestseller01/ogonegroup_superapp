@@ -41,7 +41,7 @@ flutter_launcher_icons:
   image_path: "assets/images/app_icon.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/app_icon.png"
-  adaptive_icon_foreground_inset: 22   # ← makes the logo smaller (more padding). Default is 16. Increase for smaller logo.
+  adaptive_icon_foreground_inset: 16   # ← makes the logo smaller (more padding). Default is 16. Increase for smaller logo.
 
 flutter:
   generate: true
