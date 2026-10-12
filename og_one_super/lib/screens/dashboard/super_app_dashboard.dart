@@ -775,6 +775,72 @@ class _GlassButton extends StatelessWidget {
   }
 }
 
+/// Gold pill with a sparkle icon and the "AI Agent" label.
+class _AiAgentButton extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _AiAgentButton({required this.tooltip, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: 'AI Agent',
+        excludeSemantics: true,
+        child: Material(
+          color: Colors.transparent,
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: _goldGradient,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF5A90E).withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onTap();
+              },
+              child: const SizedBox(
+                height: 40,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 18, color: AppTheme.primary),
+                      SizedBox(width: 6),
+                      Text(
+                        'AI Agent',
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: AppTheme.primary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Blob extends StatelessWidget {
   final double size;
   final Color color;
@@ -959,11 +1025,9 @@ class _Header extends StatelessWidget {
                           ),
                         ),
                       ),
-                      _GlassButton(
-                        icon: Icons.smart_toy_rounded,
+                      _AiAgentButton(
                         tooltip: '${t.aiAssistant} · ${t.comingSoon}',
                         onTap: onAiAgent,
-                        showDot: true,
                       ),
                     ],
                   ),
