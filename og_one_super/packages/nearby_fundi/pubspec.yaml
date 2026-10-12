@@ -105,6 +105,6 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/nearbylogo.png
-    - assets/icons/app_icon.png
+    - assets/icons/app_icon_foreground.png
     - assets/icons/chat/chat_icon.svg
     - assets/icons/chat/audio_icon.svg

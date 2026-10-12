@@ -15,6 +15,8 @@ class $AssetsIconsGen {
   final AssetGenImage airtel = const AssetGenImage('assets/icons/airtel.png');
   final AssetGenImage appIcon =
       const AssetGenImage('assets/icons/app_icon.png');
+  final AssetGenImage appIconForeground =
+      const AssetGenImage('assets/icons/app_icon_foreground.png');
   final AssetGenImage mixxByYas =
       const AssetGenImage('assets/icons/mixx_by_yas.png');
   final AssetGenImage mpesa = const AssetGenImage('assets/icons/mpesa.png');

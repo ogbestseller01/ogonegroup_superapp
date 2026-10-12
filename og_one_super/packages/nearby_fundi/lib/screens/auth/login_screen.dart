@@ -904,7 +904,7 @@ class _BrandHeader extends StatelessWidget {
             ],
           ),
           child: Image.asset(
-            'assets/images/app_icon.png',
+            'assets/images/app_icon_foreground.png',
             package: _kAssetPackage,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => const Icon(
