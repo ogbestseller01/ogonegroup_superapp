@@ -20,6 +20,7 @@ import 'dashboard_slideshow.dart';
 const Color _goldText = Color(0xFF8A6500);
 const Color _hintGrey = Color(0xFF5B6B82);
 const Color _lightBackground = Color(0xFFF7F9FC);
+const Color _navy = Color(0xFF1A2B4A);
 
 const _headerGradient = LinearGradient(
   colors: [Color(0xFF0B1C3A), Color(0xFF132B55), Color(0xFF1A3A75)],
@@ -70,7 +71,13 @@ Color _shade(Color c, double amount) {
       .toColor();
 }
 
-const double _labelFont = 12.5;
+/// Available apps first, "coming soon" ones after. Stable within each group.
+List<MiniApp> _availableFirst(List<MiniApp> apps) => [
+  ...apps.where((a) => !a.isComingSoon),
+  ...apps.where((a) => a.isComingSoon),
+];
+
+const double _labelFont = 12;
 const double _labelMinFont = 10.0;
 const double _labelLineHeight = 1.25;
 
@@ -82,7 +89,7 @@ bool _isCompact(BuildContext context) =>
 
 class _GridLayout {
   static const double colSpacing = 8;
-  static const double rowSpacing = 16;
+  static const double rowSpacing = 8;
   static const double _minCellWidth = 76;
 
   final double hPad;
@@ -113,7 +120,7 @@ class _GridLayout {
         .clamp(3, 6);
 
     final cellW = (contentW - (columns - 1) * colSpacing) / columns;
-    final icon = (cellW * 0.60).clamp(44.0, 60.0).toDouble();
+    final icon = (cellW * 0.52).clamp(40.0, 50.0).toDouble();
     final labelH =
     (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
@@ -122,7 +129,7 @@ class _GridLayout {
       columns,
       contentW / columns,
       icon,
-      icon + 16 + labelH + 8,
+      icon + 14 + labelH + 2,
     );
   }
 }
@@ -251,8 +258,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
   List<MiniApp> _filtered(AppLocalizations t) {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return miniApps;
-    return miniApps
+    final sorted = _availableFirst(miniApps);
+    if (q.isEmpty) return sorted;
+    return sorted
         .where((a) =>
     t.serviceTitle(a.slug).toLowerCase().contains(q) ||
         a.slug.toLowerCase().contains(q) ||
@@ -297,6 +305,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     context.watch<SettingsProvider>();
     final t = context.t;
     final layout = _GridLayout.of(context);
+    final bg = _pageBg(isDark);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -304,7 +313,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         maxScaleFactor: 1.3,
         child: Scaffold(
           key: _scaffoldKey,
-          backgroundColor: _pageBg(isDark),
+          backgroundColor: bg,
           extendBody: true,
           drawer: _AppDrawer(t: t),
           bottomNavigationBar: _BottomBar(
@@ -315,23 +324,53 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
             onScan: () => _snack(t.comingSoonMessage),
             onSettings: _showSettingsSheet,
           ),
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 450),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            layoutBuilder: (current, previous) => Stack(
-              fit: StackFit.expand,
-              children: [...previous, if (current != null) current],
-            ),
-            child: _loading
-                ? SkeletonLoader(
-              key: const ValueKey('skeleton'),
-              hPad: layout.hPad,
-              crossAxisExtent: layout.crossAxisExtent,
-              mainAxisExtent: layout.mainAxisExtent,
-              iconSize: layout.iconSize,
-            )
-                : _buildContent(t, layout, isDark),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  layoutBuilder: (current, previous) => Stack(
+                    fit: StackFit.expand,
+                    children: [...previous, if (current != null) current],
+                  ),
+                  child: _loading
+                      ? SkeletonLoader(
+                    key: const ValueKey('skeleton'),
+                    hPad: layout.hPad,
+                    crossAxisExtent: layout.crossAxisExtent,
+                    mainAxisExtent: layout.mainAxisExtent,
+                    iconSize: layout.iconSize,
+                  )
+                      : _buildContent(t, layout, isDark),
+                ),
+              ),
+              // Fades scrolling content out behind the floating bottom bar so
+              // cards no longer peek out around its rounded corners.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: _BottomBar.heightOf(context) + 10,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          bg.withValues(alpha: 0),
+                          bg.withValues(alpha: 0.92),
+                          bg,
+                        ],
+                        stops: const [0, 0.55, 1],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -391,13 +430,14 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   List<Widget> _homeSlivers(
       AppLocalizations t, _GridLayout layout, bool isDark) {
     final hPad = layout.hPad;
+    final apps = _filtered(t);
 
     return [
-      _section(hPad, t.featured, miniApps.length, isDark, top: 28),
-      _grid(t, layout, miniApps, isDark, startIndex: 1),
+      _section(hPad, t.featured, apps.length, isDark, top: 20),
+      _grid(t, layout, apps, isDark, startIndex: 1),
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 26, bottom: 6),
+          padding: const EdgeInsets.only(top: 12, bottom: 0),
           child: _Reveal(
             index: 2,
             animate: _intro,
@@ -405,21 +445,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           ),
         ),
       ),
-      _section(
-        hPad,
-        t.partnerApps,
-        0,
-        isDark,
-        top: 26,
-        trailing: Text(
-          t.comingSoon,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: _accent(isDark),
-          ),
-        ),
-      ),
+      // No redundant "0" count bubble; the box below already says "coming soon".
+      _section(hPad, t.partnerApps, null, isDark, top: 8),
       SliverPadding(
         padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 0),
         sliver: SliverToBoxAdapter(
@@ -445,7 +472,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   Widget _section(
       double hPad,
       String title,
-      int count,
+      int? count,
       bool isDark, {
         double top = 22,
         Widget? trailing,
@@ -509,14 +536,14 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 // ════════════════════════════════════════════════
 class _SectionTitle extends StatelessWidget {
   final String title;
-  final int count;
+  final int? count;
   final bool isDark;
   final Widget? trailing;
 
   const _SectionTitle({
     required this.title,
-    required this.count,
     required this.isDark,
+    this.count,
     this.trailing,
   });
 
@@ -538,23 +565,24 @@ class _SectionTitle extends StatelessWidget {
           ),
         ),
         if (trailing != null) ...[trailing!, const SizedBox(width: 10)],
-        Container(
-          constraints: const BoxConstraints(minWidth: 30),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppTheme.secondary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            '$count',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 12.5,
-              color: _accent(isDark),
+        if (count != null)
+          Container(
+            constraints: const BoxConstraints(minWidth: 30),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.secondary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12.5,
+                color: _accent(isDark),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -611,6 +639,7 @@ class _EmptyState extends StatelessWidget {
 // ════════════════════════════════════════════════
 class _AppDrawer extends StatelessWidget {
   final AppLocalizations t;
+
   const _AppDrawer({required this.t});
 
   @override
@@ -666,6 +695,68 @@ class _AppDrawer extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = isDark ? AppTheme.secondary : AppTheme.primary;
+    final color = selected
+        ? accent
+        : (isDark ? Colors.white : AppTheme.primary);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: selected
+            ? accent.withValues(alpha: isDark ? 0.14 : 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, size: 23, color: color),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -762,6 +853,9 @@ class _GlassButton extends StatelessWidget {
 }
 
 /// Gold "AI Agent" button. Becomes icon-only when [compact] is true.
+///
+/// The glow lives on a plain [Container] (not [Ink]) so it renders as a soft
+/// rounded shadow instead of the faint square box visible before.
 class _AiAgentButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
@@ -775,7 +869,6 @@ class _AiAgentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF1A2B4A);
     final radius = BorderRadius.circular(compact ? 16 : 24);
 
     return Tooltip(
@@ -784,20 +877,22 @@ class _AiAgentButton extends StatelessWidget {
         button: true,
         label: 'AI Agent',
         excludeSemantics: true,
-        child: Material(
-          color: Colors.transparent,
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: _goldGradient,
-              borderRadius: radius,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFB300).withValues(alpha: 0.40),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: _goldGradient,
+            borderRadius: radius,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFB300).withValues(alpha: 0.40),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: radius,
+            clipBehavior: Clip.antiAlias,
             child: InkWell(
               borderRadius: radius,
               onTap: () {
@@ -811,7 +906,7 @@ class _AiAgentButton extends StatelessWidget {
                     ? const Icon(
                   Icons.auto_awesome_rounded,
                   size: 22,
-                  color: navy,
+                  color: _navy,
                 )
                     : const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
@@ -821,14 +916,14 @@ class _AiAgentButton extends StatelessWidget {
                       Icon(
                         Icons.auto_awesome_rounded,
                         size: 18,
-                        color: navy,
+                        color: _navy,
                       ),
                       SizedBox(width: 6),
                       Text(
                         'AI Agent',
                         maxLines: 1,
                         style: TextStyle(
-                          color: navy,
+                          color: _navy,
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1391,7 +1486,7 @@ class _ServiceCard extends StatelessWidget {
                             fontSize: 9.5,
                             height: 1.1,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A2B4A),
+                            color: _navy,
                           ),
                         ),
                       ),
@@ -1400,7 +1495,7 @@ class _ServiceCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 13),
           _FitLabel(
             text: title,
             style: TextStyle(
@@ -1452,6 +1547,7 @@ class _BottomBar extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppTheme.darkSurface : Colors.white;
     final bottom = MediaQuery.paddingOf(context).bottom + _margin;
+    final labelColor = isDark ? AppTheme.darkTextSecondary : _hintGrey;
 
     return SizedBox(
       height: heightOf(context),
@@ -1517,6 +1613,25 @@ class _BottomBar extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // Label under the scan button so all three actions are named.
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 9,
+                    child: IgnorePointer(
+                      child: Text(
+                        scanLabel,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: labelColor,
+                        ),
+                      ),
+                    ),
+                  ),
                   Positioned(
                     top: 0,
                     left: 0,
@@ -1543,7 +1658,7 @@ class _BottomBar extends StatelessWidget {
                           ),
                           child: const Icon(
                             Icons.qr_code_scanner_rounded,
-                            color: Color(0xFF1A2B4A),
+                            color: _navy,
                             size: 29,
                           ),
                         ),
