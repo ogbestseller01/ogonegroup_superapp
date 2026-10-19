@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../config/app_routes.dart';
 import '../config/app_strings.dart';
 import '../config/app_theme.dart';
+import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -60,7 +60,14 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder<void>(
+              transitionDuration: const Duration(milliseconds: 500),
+              pageBuilder: (_, __, ___) => const OnboardingScreen(),
+              transitionsBuilder: (_, animation, __, child) =>
+                  FadeTransition(opacity: animation, child: child),
+            ),
+          );
         }
       });
     });
