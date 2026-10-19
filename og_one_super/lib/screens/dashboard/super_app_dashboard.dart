@@ -6,7 +6,7 @@ import 'package:fundiapp_sdk/fundi_app_mini.dart';
 import 'package:nearbyfundi_sdk/nearby_fundi_mini.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
-import '../../config/app_strings.dart';
+import '../../config/app_strings.dart'; // This is where your working extension lives
 import '../../config/app_theme.dart';
 import '../../data/mini_apps_data.dart';
 import '../../models/mini_app.dart';
@@ -61,20 +61,14 @@ Color _appColor(MiniApp a) {
 }
 
 Color _accent(bool isDark) => isDark ? AppTheme.secondary : _goldText;
-
-Color _pageBg(bool isDark) =>
-    isDark ? AppTheme.darkBackground : _lightBackground;
-
+Color _pageBg(bool isDark) => isDark ? AppTheme.darkBackground : _lightBackground;
 Color _ink(bool isDark) => isDark ? Colors.white : _navy;
 
 Color _shade(Color c, double amount) {
   final hsl = HSLColor.fromColor(c);
-  return hsl
-      .withLightness((hsl.lightness + amount).clamp(0.0, 1.0))
-      .toColor();
+  return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0)).toColor();
 }
 
-/// Available apps first, "coming soon" ones after. Stable within each group.
 List<MiniApp> _availableFirst(List<MiniApp> apps) => [
   ...apps.where((a) => !a.isComingSoon),
   ...apps.where((a) => a.isComingSoon),
@@ -83,8 +77,6 @@ List<MiniApp> _availableFirst(List<MiniApp> apps) => [
 const double _labelFont = 12;
 const double _labelMinFont = 10.0;
 const double _labelLineHeight = 1.25;
-
-/// Width (dp) below which the header switches to its compact form.
 const double _compactWidth = 370;
 
 bool _isCompact(BuildContext context) =>
@@ -92,7 +84,6 @@ bool _isCompact(BuildContext context) =>
 
 class _GridLayout {
   static const double colSpacing = 8;
-  static const double rowSpacing = 8;
   static const double _minCellWidth = 76;
 
   final double hPad;
@@ -112,8 +103,7 @@ class _GridLayout {
 
     final sideInset = max(safe.left, safe.right) + 14;
     final baseH = width < 360 ? 16.0 : 22.0;
-    final hPad =
-    width > 800 ? max((width - 760) / 2, sideInset) : max(baseH, sideInset);
+    final hPad = width > 800 ? max((width - 760) / 2, sideInset) : max(baseH, sideInset);
 
     final contentW = width - 2 * hPad;
 
@@ -122,9 +112,8 @@ class _GridLayout {
         .clamp(3, 6);
 
     final cellW = (contentW - (columns - 1) * colSpacing) / columns;
-    final icon = (cellW * 0.52).clamp(40.0, 46.0).toDouble();
-    final labelH =
-    (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
+    final icon = (cellW * 0.55).clamp(44.0, 52.0).toDouble();
+    final labelH = (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
     return _GridLayout._(
       hPad,
@@ -168,8 +157,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     super.dispose();
   }
 
-  Future<void> _loadData() =>
-      Future.delayed(const Duration(milliseconds: 900));
+  Future<void> _loadData() => Future.delayed(const Duration(milliseconds: 900));
 
   Future<void> _initialLoad() async {
     try {
@@ -204,24 +192,18 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
         SnackBar(
           content: Text(
             message,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
           elevation: 6,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          margin: EdgeInsets.fromLTRB(
-              16, 0, 16, _BottomBar.heightOf(context) + 6),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          margin: EdgeInsets.fromLTRB(16, 0, 16, _BottomBar.heightOf(context) + 6),
         ),
       );
   }
 
-  void _push(Widget page) =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  void _push(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   void _open(MiniApp app, AppLocalizations t) {
     FocusScope.of(context).unfocus();
@@ -251,11 +233,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
   void _scrollToTop() {
     if (!_scroll.hasClients) return;
-    _scroll.animateTo(
-      0,
-      duration: const Duration(milliseconds: 450),
-      curve: Curves.easeOutCubic,
-    );
+    _scroll.animateTo(0, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
   }
 
   List<MiniApp> _filtered(AppLocalizations t) {
@@ -271,34 +249,10 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   }
 
   List<Slide> _slides(AppLocalizations t) => [
-    Slide(
-      t.bannerTitle,
-      t.bannerSubtitle,
-      const [Color(0xFFFFD54F), Color(0xFFFFB300)],
-      AppTheme.primary,
-      Icons.grid_view_rounded,
-    ),
-    Slide(
-      t.bannerFundiTitle,
-      t.bannerFundiSubtitle,
-      const [Color(0xFF1A3A75), Color(0xFF2B5AA8)],
-      Colors.white,
-      Icons.handyman_rounded,
-    ),
-    Slide(
-      t.bannerFoodTitle,
-      t.bannerFoodSubtitle,
-      const [Color(0xFFE85D04), Color(0xFFF48C06)],
-      Colors.white,
-      Icons.delivery_dining_rounded,
-    ),
-    Slide(
-      t.adsBannersTitle,
-      t.adsBannersSubtitle,
-      const [Color(0xFF7B2CBF), Color(0xFF9D4EDD)],
-      Colors.white,
-      Icons.campaign_rounded,
-    ),
+    Slide(t.bannerTitle, t.bannerSubtitle, const [Color(0xFFFFD54F), Color(0xFFFFB300)], AppTheme.primary, Icons.grid_view_rounded),
+    Slide(t.bannerFundiTitle, t.bannerFundiSubtitle, const [Color(0xFF1A3A75), Color(0xFF2B5AA8)], Colors.white, Icons.handyman_rounded),
+    Slide(t.bannerFoodTitle, t.bannerFoodSubtitle, const [Color(0xFFE85D04), Color(0xFFF48C06)], Colors.white, Icons.delivery_dining_rounded),
+    Slide(t.adsBannersTitle, t.adsBannersSubtitle, const [Color(0xFF7B2CBF), Color(0xFF9D4EDD)], Colors.white, Icons.campaign_rounded),
   ];
 
   @override
@@ -360,9 +314,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       child: CustomScrollView(
         controller: _scroll,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         slivers: [
           SliverToBoxAdapter(
             child: _Header(
@@ -377,31 +329,25 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               hasText: _query.isNotEmpty,
             ),
           ),
-          ...(searching
-              ? _searchSlivers(t, layout, isDark)
-              : _homeSlivers(t, layout, isDark)),
+          ...(searching ? _searchSlivers(t, layout, isDark) : _homeSlivers(t, layout, isDark)),
         ],
       ),
     );
   }
 
-  List<Widget> _searchSlivers(
-      AppLocalizations t, _GridLayout layout, bool isDark) {
+  List<Widget> _searchSlivers(AppLocalizations t, _GridLayout layout, bool isDark) {
     final apps = _filtered(t);
     return [
       _section(layout.hPad, t.allServices, apps.length, isDark, top: 24),
       if (apps.isEmpty)
-        SliverToBoxAdapter(
-          child: _EmptyState(message: t.noResults, isDark: isDark),
-        )
+        SliverToBoxAdapter(child: _EmptyState(message: t.noResults, isDark: isDark))
       else
         ..._appSlivers(t, layout, apps, isDark),
       _bottomSpacer(),
     ];
   }
 
-  List<Widget> _homeSlivers(
-      AppLocalizations t, _GridLayout layout, bool isDark) {
+  List<Widget> _homeSlivers(AppLocalizations t, _GridLayout layout, bool isDark) {
     final hPad = layout.hPad;
     final apps = _filtered(t);
 
@@ -441,13 +387,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     child: SizedBox(height: _BottomBar.heightOf(context) + 18),
   );
 
-  Widget _section(
-      double hPad,
-      String title,
-      int? count,
-      bool isDark, {
-        double top = 22,
-      }) {
+  Widget _section(double hPad, String title, int? count, bool isDark, {double top = 22}) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.fromLTRB(hPad, top, hPad, 14),
@@ -456,7 +396,6 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     );
   }
 
-  /// Every app (live or coming soon) uses the same card and icon size.
   List<Widget> _appSlivers(
       AppLocalizations t,
       _GridLayout layout,
@@ -471,7 +410,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: layout.columns,
             mainAxisExtent: layout.mainAxisExtent,
-            mainAxisSpacing: 10,
+            mainAxisSpacing: 14,
             crossAxisSpacing: 10,
           ),
           delegate: SliverChildBuilderDelegate(
@@ -501,18 +440,147 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 }
 
 // ════════════════════════════════════════════════
-// Section title
+// Sub-widgets
 // ════════════════════════════════════════════════
+
+class _AppCard extends StatelessWidget {
+  final MiniApp app;
+  final String title;
+  final String soonLabel;
+  final VoidCallback onTap;
+  final double size;
+
+  const _AppCard({
+    required this.app,
+    required this.title,
+    required this.soonLabel,
+    required this.onTap,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = _appColor(app);
+    final soon = app.isComingSoon;
+    final hasImage = app.imageAsset != null;
+
+    return _Pressable(
+      label: soon ? '$title, $soonLabel' : title,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          children: [
+            SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(size * 0.28),
+                      gradient: hasImage
+                          ? null
+                          : LinearGradient(
+                        colors: [_shade(color, 0.09), _shade(color, -0.07)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: isDark ? 0.25 : 0.2),
+                          blurRadius: 14,
+                          spreadRadius: -2,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: hasImage
+                        ? Padding(
+                      // Slight padding prevents the 3D icon from clipping at the edges
+                      padding: EdgeInsets.all(size * 0.05),
+                      child: Image.asset(
+                        app.imageAsset!,
+                        fit: BoxFit.contain, // Changed from cover to contain
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          _iconFor(app.icon),
+                          size: size * 0.5,
+                          color: color.computeLuminance() > 0.4 ? _navy : Colors.white,
+                        ),
+                      ),
+                    )
+                        : Icon(
+                      _iconFor(app.icon),
+                      size: size * 0.5,
+                      color: color.computeLuminance() > 0.4 ? _navy : Colors.white,
+                    ),
+                  ),
+                  if (soon)
+                    Positioned(
+                      top: -7,
+                      right: -9,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(color: _pageBg(isDark), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
+                        ),
+                        child: Text(
+                          soonLabel,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            height: 1.1,
+                            fontWeight: FontWeight.w800,
+                            color: _navy,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _FitLabel(
+                  text: title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: _labelFont,
+                    height: _labelLineHeight,
+                    color: _ink(isDark),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int? count;
   final bool isDark;
 
-  const _SectionTitle({
-    required this.title,
-    required this.isDark,
-    this.count,
-  });
+  const _SectionTitle({required this.title, required this.isDark, this.count});
 
   @override
   Widget build(BuildContext context) {
@@ -554,9 +622,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Empty state
-// ════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final String message;
   final bool isDark;
@@ -573,9 +638,7 @@ class _EmptyState extends StatelessWidget {
             width: 76,
             height: 76,
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : AppTheme.primary.withValues(alpha: 0.06),
+              color: isDark ? Colors.white.withValues(alpha: 0.06) : AppTheme.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -600,9 +663,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Drawer
-// ════════════════════════════════════════════════
 class _AppDrawer extends StatelessWidget {
   final AppLocalizations t;
 
@@ -667,9 +727,6 @@ class _AppDrawer extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Shared widgets
-// ════════════════════════════════════════════════
 class _Logo extends StatelessWidget {
   final double size;
   const _Logo({required this.size});
@@ -706,7 +763,6 @@ class _Logo extends StatelessWidget {
   }
 }
 
-/// Soft rounded icon button. [onDark] is for use on the navy drawer header.
 class _SoftButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -749,7 +805,6 @@ class _SoftButton extends StatelessWidget {
   }
 }
 
-/// Gold "AI Agent" button. Becomes icon-only when [compact] is true.
 class _AiAgentButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
@@ -866,7 +921,7 @@ class _PressableState extends State<_Pressable> {
           widget.onTap();
         },
         child: AnimatedScale(
-          scale: _pressed ? 0.95 : 1.0,
+          scale: _pressed ? 0.92 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: widget.child,
@@ -905,8 +960,6 @@ class _Reveal extends StatelessWidget {
   }
 }
 
-/// Two-line centered label that never breaks a word mid-way: the font is
-/// shrunk (down to [minFontSize]) until the longest word fits the width.
 class _FitLabel extends StatelessWidget {
   final String text;
   final TextStyle style;
@@ -964,9 +1017,6 @@ class _FitLabel extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Header – navy banner, glass buttons, floating search
-// ════════════════════════════════════════════════
 class _Header extends StatelessWidget {
   static const double _searchHeight = 56;
   static const double _overlap = 28;
@@ -1243,9 +1293,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Coming soon box
-// ════════════════════════════════════════════════
 class _ComingSoonBox extends StatelessWidget {
   final bool isDark;
   final String title;
@@ -1322,8 +1369,7 @@ class _ComingSoonBox extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color:
-                          isDark ? AppTheme.darkTextSecondary : _hintGrey,
+                          color: isDark ? AppTheme.darkTextSecondary : _hintGrey,
                         ),
                       ),
                     ],
@@ -1339,126 +1385,6 @@ class _ComingSoonBox extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// App card – identical size and icon for every app
-// ════════════════════════════════════════════════
-class _AppCard extends StatelessWidget {
-  final MiniApp app;
-  final String title;
-  final String soonLabel;
-  final VoidCallback onTap;
-  final double size;
-
-  const _AppCard({
-    required this.app,
-    required this.title,
-    required this.soonLabel,
-    required this.onTap,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = _appColor(app);
-    final soon = app.isComingSoon;
-
-    return _Pressable(
-      label: soon ? '$title, $soonLabel' : title,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Column(
-          children: [
-            SizedBox(
-              width: size,
-              height: size,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: size,
-                    height: size,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(size * 0.34),
-                      gradient: LinearGradient(
-                        colors: [_shade(color, 0.09), _shade(color, -0.07)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: isDark ? 0.30 : 0.28),
-                          blurRadius: 12,
-                          spreadRadius: -2,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _iconFor(app.icon),
-                      size: size * 0.5,
-                      color: color.computeLuminance() > 0.4
-                          ? _navy
-                          : Colors.white,
-                    ),
-                  ),
-                  if (soon)
-                    Positioned(
-                      top: -7,
-                      right: -9,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondary,
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: _pageBg(isDark),
-                            width: 2,
-                          ),
-                        ),
-                        child: Text(
-                          soonLabel,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: const TextStyle(
-                            fontSize: 8.5,
-                            height: 1.1,
-                            fontWeight: FontWeight.w800,
-                            color: _navy,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: _FitLabel(
-                  text: title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: _labelFont,
-                    height: _labelLineHeight,
-                    color: _ink(isDark),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ════════════════════════════════════════════════
-// Bottom bar – flat, edge-to-edge, raised scan button
-// ════════════════════════════════════════════════
 class _BottomBar extends StatelessWidget {
   static const double _barH = 66;
   static const double _lift = 26;
@@ -1657,9 +1583,6 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════
-// Settings bottom sheet
-// ════════════════════════════════════════════════
 class _LangOption {
   final String code;
   final String label;

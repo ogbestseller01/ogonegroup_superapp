@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-// ============================================================
-// SLIDE MODEL
-// ============================================================
 class Slide {
   final String title;
   final String subtitle;
@@ -14,16 +11,8 @@ class Slide {
   const Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
 }
 
-// ============================================================
-// SLIDESHOW WIDGET
-// Peeking carousel. Auto-plays, pauses while touched,
-// respects the OS "reduce motion" setting.
-// ============================================================
 class DashboardSlideshow extends StatefulWidget {
   final List<Slide> slides;
-
-  /// Horizontal page padding of the dashboard, so the first card lines up
-  /// with the rest of the content while the next card peeks in.
   final double hPad;
 
   const DashboardSlideshow({
@@ -38,12 +27,10 @@ class DashboardSlideshow extends StatefulWidget {
 
 class _DashboardSlideshowState extends State<DashboardSlideshow>
     with SingleTickerProviderStateMixin {
-  // ── Layout ──
   static const double _gap = 6;
   static const double _baseHeight = 128;
   static const double _dotsGap = 4;
 
-  // ── Motion ──
   static const Duration _autoPlayEvery = Duration(seconds: 5);
   static const Duration _slideDuration = Duration(milliseconds: 500);
   static const Curve _slideCurve = Curves.easeOutCubic;
@@ -56,8 +43,6 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   late final AnimationController _progress;
 
   bool get _canAutoPlay => widget.slides.length > 1;
-
-  // ── Lifecycle ───────────────────────────────────────────
 
   @override
   void initState() {
@@ -102,8 +87,6 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
     super.dispose();
   }
 
-  // ── Auto-play ───────────────────────────────────────────
-
   void _restart() {
     _progress.stop();
     _progress.value = 0;
@@ -134,8 +117,6 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
     if (c == null || !c.hasClients) return;
     c.animateToPage(index, duration: _slideDuration, curve: _slideCurve);
   }
-
-  // ── Build ───────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -202,10 +183,6 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   }
 }
 
-// ============================================================
-// SLIDE CARD
-// Gradient, big faded watermark icon, text left, icon chip right.
-// ============================================================
 class _SlideCard extends StatelessWidget {
   final Slide slide;
   const _SlideCard({required this.slide});
@@ -336,11 +313,6 @@ class _Orb extends StatelessWidget {
   );
 }
 
-// ============================================================
-// PAGE DOTS
-// The active dot is a pill that fills as the auto-play timer runs,
-// so people can see when the next slide is coming.
-// ============================================================
 class _PageDots extends StatelessWidget {
   final int count;
   final int current;

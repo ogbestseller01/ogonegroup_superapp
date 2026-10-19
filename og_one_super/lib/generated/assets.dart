@@ -11,6 +11,7 @@ class Assets {
 class $AssetsImagesGen {
   const $AssetsImagesGen();
 
+  final $AssetsAppsGen apps = const $AssetsAppsGen();
   final AssetGenImage appIcon =
       const AssetGenImage('assets/images/app_icon.png');
   final AssetGenImage appIconForeground =
@@ -22,6 +23,30 @@ class $AssetsImagesGen {
   final AssetGenImage sliderimg =
       const AssetGenImage('assets/images/sliderimg.png');
   final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');
+}
+
+class $AssetsAppsGen {
+  const $AssetsAppsGen();
+
+  final AssetGenImage dumaApp =
+      const AssetGenImage('assets/images/apps/duma_app.png');
+  final AssetGenImage fundiApp =
+      const AssetGenImage('assets/images/apps/fundi_app.png');
+  final AssetGenImage hamaChapChap =
+      const AssetGenImage('assets/images/apps/hama_chap_chap.png');
+  final AssetGenImage idDocuments =
+      const AssetGenImage('assets/images/apps/id_documents.png');
+  final AssetGenImage keys = const AssetGenImage('assets/images/apps/keys.png');
+  final AssetGenImage laundry =
+      const AssetGenImage('assets/images/apps/laundry.png');
+  final AssetGenImage msosiChapChap =
+      const AssetGenImage('assets/images/apps/msosi_chap_chap.png');
+  final AssetGenImage nearbyfundi =
+      const AssetGenImage('assets/images/apps/nearbyfundi.png');
+  final AssetGenImage nimepoteza =
+      const AssetGenImage('assets/images/apps/nimepoteza.png');
+  final AssetGenImage oshaPapoHapo =
+      const AssetGenImage('assets/images/apps/osha_papo_hapo.png');
 }
 
 class AssetGenImage {

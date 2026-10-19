@@ -10,6 +10,7 @@ const List<MiniApp> miniApps = [
     icon: 'build',
     color: '#1E6BFF',
     isComingSoon: false,
+    imageAsset: 'assets/images/apps/nearbyfundi.png',
   ),
   MiniApp(
     id: 2,
@@ -19,6 +20,7 @@ const List<MiniApp> miniApps = [
     icon: 'handyman',
     color: '#FFA000',
     isComingSoon: false,
+    imageAsset: 'assets/images/apps/fundi_app.png',
   ),
 
   // Partner’s apps
@@ -30,6 +32,7 @@ const List<MiniApp> miniApps = [
     icon: 'fastfood',
     color: '#E65100',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/msosi_chap_chap.png',
   ),
   MiniApp(
     id: 5,
@@ -39,6 +42,7 @@ const List<MiniApp> miniApps = [
     icon: 'local_laundry_service',
     color: '#0277BD',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/laundry.png',
   ),
   MiniApp(
     id: 6,
@@ -48,6 +52,7 @@ const List<MiniApp> miniApps = [
     icon: 'local_car_wash',
     color: '#00897B',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/osha_papo_hapo.png',
   ),
   MiniApp(
     id: 7,
@@ -57,6 +62,7 @@ const List<MiniApp> miniApps = [
     icon: 'local_shipping',
     color: '#5E35B1',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/hama_chap_chap.png',
   ),
   MiniApp(
     id: 11,
@@ -66,6 +72,7 @@ const List<MiniApp> miniApps = [
     icon: 'delivery_dining',
     color: '#6D4C41',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/duma_app.png',
   ),
   MiniApp(
     id: 10,
@@ -75,5 +82,6 @@ const List<MiniApp> miniApps = [
     icon: 'find_in_page',
     color: '#F5C30E',
     isComingSoon: true,
+    imageAsset: 'assets/images/apps/nimepoteza.png',
   ),
 ];
