@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/app_prefs.dart';
 import '../config/app_routes.dart';
 import '../config/app_strings.dart';
 import '../config/app_theme.dart';
@@ -147,6 +148,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   final _ctrl = PageController();
   int _index = 0;
+  bool _finishing = false;
   late final AnimationController _blobCtrl;
 
   bool get _last => _index == _steps.length - 1;
@@ -167,7 +169,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
-  void _finish() {
+  /// Marks onboarding as done (so it never shows again) and opens dashboard.
+  Future<void> _finish() async {
+    if (_finishing) return;
+    _finishing = true;
+
+    try {
+      await AppPrefs.setOnboardingDone();
+    } catch (_) {
+      // Even if saving fails, still let the user into the app.
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
   }
 
@@ -263,7 +276,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               },
             ),
 
-            // Background illustration — larger + more visible
+            // Background illustration
             Positioned.fill(
               child: IgnorePointer(
                 child: Opacity(
@@ -521,7 +534,7 @@ class _Hero extends StatelessWidget {
   }
 }
 
-/// Welcome step — orbit of mini-app icons + gold OG badge (no big center logo)
+/// Welcome step — orbit of mini-app icons + gold OG badge
 class _WelcomeVisual extends StatelessWidget {
   final double maxHeight;
   final bool isDark;

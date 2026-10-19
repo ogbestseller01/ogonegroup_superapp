@@ -1,6 +1,10 @@
+// lib/screens/splash_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../config/app_prefs.dart';
+import '../config/app_routes.dart';
 import '../config/app_strings.dart';
 import '../config/app_theme.dart';
 import 'onboarding_screen.dart';
@@ -14,70 +18,86 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  late final AnimationController _intro;
-  late final AnimationController _rings;
-  late final AnimationController _shimmer;
+  late final AnimationController _main;
+  late final AnimationController _pulse;
 
-  late final Animation<double> _logoOpacity;
+  late final Animation<double> _logoFade;
   late final Animation<double> _logoScale;
-  late final Animation<double> _titleOpacity;
-  late final Animation<Offset> _titleSlide;
-  late final Animation<double> _taglineOpacity;
-  late final Animation<double> _bottomOpacity;
-  late final Animation<double> _progress;
+  late final Animation<double> _nameFade;
+  late final Animation<Offset> _nameSlide;
+  late final Animation<double> _lineFade;
+  late final Animation<double> _tagFade;
+  late final Animation<double> _bar;
+
+  /// Read the flag while the splash animation plays, so there is no delay
+  /// when the animation ends.
+  late final Future<bool> _onboardingDone;
 
   @override
   void initState() {
     super.initState();
 
-    _intro = AnimationController(
+    _onboardingDone = AppPrefs.isOnboardingDone();
+
+    _main = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 2200),
     );
-    _rings = AnimationController(
+    _pulse = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
-    )..repeat();
-    _shimmer = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
 
-    CurvedAnimation iv(double b, double e, Curve curve) =>
-        CurvedAnimation(parent: _intro, curve: Interval(b, e, curve: curve));
+    CurvedAnimation iv(double a, double b, [Curve c = Curves.easeOut]) =>
+        CurvedAnimation(parent: _main, curve: Interval(a, b, curve: c));
 
-    _logoOpacity = iv(0.00, 0.30, Curves.easeOut);
-    _logoScale = Tween(begin: 0.80, end: 1.0)
-        .animate(iv(0.00, 0.45, Curves.easeOutBack));
-    _titleOpacity = iv(0.28, 0.55, Curves.easeOut);
-    _titleSlide = Tween(begin: const Offset(0, 0.18), end: Offset.zero)
-        .animate(iv(0.28, 0.55, Curves.easeOutCubic));
-    _taglineOpacity = iv(0.45, 0.70, Curves.easeOut);
-    _progress = iv(0.20, 0.90, Curves.easeInOut);
-    _bottomOpacity = iv(0.60, 0.85, Curves.easeOut);
+    _logoFade = iv(0.00, 0.28);
+    _logoScale =
+        Tween(begin: 0.72, end: 1.0).animate(iv(0.00, 0.40, Curves.easeOutBack));
+    _nameFade = iv(0.25, 0.50);
+    _nameSlide = Tween(begin: const Offset(0, 0.22), end: Offset.zero)
+        .animate(iv(0.25, 0.50, Curves.easeOutCubic));
+    _lineFade = iv(0.42, 0.62);
+    _tagFade = iv(0.50, 0.72);
+    _bar = iv(0.15, 0.88, Curves.easeInOut);
 
-    _intro.forward().whenComplete(() {
-      if (!mounted) return;
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder<void>(
-              transitionDuration: const Duration(milliseconds: 500),
-              pageBuilder: (_, __, ___) => const OnboardingScreen(),
-              transitionsBuilder: (_, animation, __, child) =>
-                  FadeTransition(opacity: animation, child: child),
-            ),
-          );
-        }
-      });
-    });
+    _main.forward().whenComplete(_goNext);
+  }
+
+  Future<void> _goNext() async {
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 280));
+    if (!mounted) return;
+
+    bool done;
+    try {
+      done = await _onboardingDone;
+    } catch (_) {
+      done = false;
+    }
+
+    if (!mounted) return;
+
+    if (done) {
+      // Returning user: splash -> dashboard
+      Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+    } else {
+      // First install only: splash -> onboarding -> dashboard
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder<void>(
+          transitionDuration: const Duration(milliseconds: 480),
+          pageBuilder: (_, __, ___) => const OnboardingScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
-    _intro.dispose();
-    _rings.dispose();
-    _shimmer.dispose();
+    _main.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
@@ -85,182 +105,190 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final t = context.t;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final size = MediaQuery.sizeOf(context);
 
-    // ── Theme-aware palette ─────────────────────────────
-    final bg = isDark ? AppTheme.darkBackground : Colors.white;
-    final bgAlt = isDark ? AppTheme.darkSurface : const Color(0xFFF4F7FC);
-    final onBg = isDark ? Colors.white : AppTheme.primary;
-    final muted =
-    isDark ? AppTheme.darkTextSecondary : const Color(0xFF5B6B82);
-    final gold = AppTheme.secondary;
-    final ringBase = isDark ? AppTheme.secondary : AppTheme.primary;
-    final trackColor = isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : AppTheme.primary.withValues(alpha: 0.10);
-    final bigBlob = gold.withValues(alpha: isDark ? 0.06 : 0.12);
-    final smallBlob =
-    AppTheme.primary.withValues(alpha: isDark ? 0.10 : 0.05);
+    final bg = isDark ? AppTheme.darkBackground : const Color(0xFF0F1A2E);
+    final onBg = Colors.white;
+    final muted = Colors.white70;
+    const gold = Color(0xFFFFB300);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value:
-      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: bg,
         body: Stack(
           children: [
-            // ── Background gradient (theme-aware) ──
+            // Deep navy gradient
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                     colors: isDark
-                        ? [AppTheme.darkBackground, bgAlt]
-                        : [Colors.white, bgAlt],
+                        ? [
+                      AppTheme.darkBackground,
+                      const Color(0xFF152238),
+                      AppTheme.darkSurface,
+                    ]
+                        : [
+                      const Color(0xFF0F1A2E),
+                      const Color(0xFF1A2B4A),
+                      const Color(0xFF152238),
+                    ],
                   ),
                 ),
               ),
             ),
 
-            // ── Soft ambient shapes ──
+            // Soft gold glow top-right
             Positioned(
-              right: -100,
-              bottom: -140,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: bigBlob,
-                ),
+              right: -size.width * 0.25,
+              top: -size.height * 0.12,
+              child: AnimatedBuilder(
+                animation: _pulse,
+                builder: (_, __) {
+                  final s = 280.0 + 40 * _pulse.value;
+                  return Container(
+                    width: s,
+                    height: s,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          gold.withValues(alpha: 0.18 + 0.06 * _pulse.value),
+                          gold.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
+
+            // Soft blue glow bottom-left
             Positioned(
-              left: -80,
-              top: -100,
+              left: -size.width * 0.2,
+              bottom: -size.height * 0.08,
               child: Container(
                 width: 260,
                 height: 260,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: smallBlob,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF2B7BFF).withValues(alpha: 0.12),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            // ── Main content ──
             SafeArea(
               child: Column(
                 children: [
-                  const Spacer(flex: 4),
+                  const Spacer(flex: 3),
 
-                  // ── Logo with pulsing rings ──
+                  // Logo
                   FadeTransition(
-                    opacity: _logoOpacity,
+                    opacity: _logoFade,
                     child: ScaleTransition(
                       scale: _logoScale,
-                      child: _LogoWithRings(
-                        ringBase: ringBase,
-                        ringCtrl: _rings,
-                        isDark: isDark,
-                      ),
+                      child: _SplashLogo(pulse: _pulse),
                     ),
                   ),
 
-                  const SizedBox(height: 34),
+                  const SizedBox(height: 36),
 
-                  // ── App name ──
+                  // App name
                   FadeTransition(
-                    opacity: _titleOpacity,
+                    opacity: _nameFade,
                     child: SlideTransition(
-                      position: _titleSlide,
+                      position: _nameSlide,
                       child: Text(
                         t.appName,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: onBg,
-                          fontSize: 26,
+                          fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 3.5,
+                          letterSpacing: 3.8,
                           height: 1.1,
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // ── Gold divider with dot ──
+                  // Gold line + dot
                   FadeTransition(
-                    opacity: _taglineOpacity,
+                    opacity: _lineFade,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(width: 30, height: 1.4, color: gold),
+                        Container(width: 36, height: 1.5, color: gold),
                         Container(
-                          width: 6,
-                          height: 6,
-                          margin:
-                          const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: const BoxDecoration(
                             color: gold,
                             shape: BoxShape.circle,
                           ),
                         ),
-                        Container(width: 30, height: 1.4, color: gold),
+                        Container(width: 36, height: 1.5, color: gold),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 14),
 
-                  // ── Tagline ──
+                  // Tagline
                   FadeTransition(
-                    opacity: _taglineOpacity,
+                    opacity: _tagFade,
                     child: Text(
                       t.superApps,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: muted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 3.2,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 2.8,
                       ),
                     ),
                   ),
 
-                  const Spacer(flex: 5),
+                  const Spacer(flex: 4),
 
-                  // ── Progress bar + version ──
+                  // Progress
                   FadeTransition(
-                    opacity: _bottomOpacity,
+                    opacity: _tagFade,
                     child: Column(
                       children: [
                         AnimatedBuilder(
-                          animation: _progress,
-                          builder: (_, __) => _ProgressBar(
-                            value: _progress.value,
-                            track: trackColor,
+                          animation: _bar,
+                          builder: (_, __) => _SlimBar(
+                            value: _bar.value,
                             gold: gold,
-                            shimmer: _shimmer,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
                         Text(
                           'v 0.0.1',
                           style: TextStyle(
-                            color: muted.withValues(alpha: 0.7),
+                            color: muted.withValues(alpha: 0.55),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            letterSpacing: 1.4,
+                            letterSpacing: 1.6,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -271,173 +299,107 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// LOGO WITH PULSING RINGS
-// ══════════════════════════════════════════════════════════════
-class _LogoWithRings extends StatelessWidget {
-  final Color ringBase;
-  final AnimationController ringCtrl;
-  final bool isDark;
+// ── Logo ────────────────────────────────────────────────────
+class _SplashLogo extends StatelessWidget {
+  final AnimationController pulse;
 
-  const _LogoWithRings({
-    required this.ringBase,
-    required this.ringCtrl,
-    required this.isDark,
-  });
+  const _SplashLogo({required this.pulse});
 
   @override
   Widget build(BuildContext context) {
-    const baseSize = 124.0;
-    const maxSize = 190.0;
-
-    return SizedBox(
-      width: maxSize + 24,
-      height: maxSize + 24,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Expanding pulse rings
-          AnimatedBuilder(
-            animation: ringCtrl,
-            builder: (_, __) {
-              return Stack(
-                alignment: Alignment.center,
-                children: List.generate(2, (i) {
-                  final t = (ringCtrl.value + i * 0.5) % 1.0;
-                  final size = baseSize + (maxSize - baseSize) * t;
-                  final opacity = (1.0 - t) * 0.85;
-                  return Container(
-                    width: size,
-                    height: size,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: ringBase.withValues(alpha: opacity),
-                        width: 1.3,
-                      ),
-                    ),
-                  );
-                }),
-              );
-            },
-          ),
-          // Logo core
-          _LogoCore(isDark: isDark),
-        ],
-      ),
-    );
-  }
-}
-
-class _LogoCore extends StatelessWidget {
-  final bool isDark;
-  const _LogoCore({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final outerRing = isDark
-        ? AppTheme.secondary.withValues(alpha: 0.55)
-        : AppTheme.primary.withValues(alpha: 0.35);
-    final glow = isDark
-        ? AppTheme.secondary.withValues(alpha: 0.22)
-        : AppTheme.primary.withValues(alpha: 0.14);
-
-    return Container(
-      width: 132,
-      height: 132,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: outerRing, width: 1.5),
-        boxShadow: [
-          BoxShadow(color: glow, blurRadius: 28, spreadRadius: 2),
-        ],
-      ),
-      child: Center(
-        child: Container(
-          width: 112,
-          height: 112,
-          padding: const EdgeInsets.all(16),
+    return AnimatedBuilder(
+      animation: pulse,
+      builder: (_, __) {
+        final glow = 0.35 + 0.15 * pulse.value;
+        return Container(
+          width: 128,
+          height: 128,
           decoration: BoxDecoration(
-            color: Colors.white,
             shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFFFFB300).withValues(alpha: 0.55),
+              width: 1.6,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: const Color(0xFFFFB300).withValues(alpha: glow * 0.45),
+                blurRadius: 28,
+                spreadRadius: 2,
               ),
             ],
           ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/images/homeimg.png',
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(
-                Icons.apps_rounded,
-                size: 48,
-                color: AppTheme.primary,
+          child: Center(
+            child: Container(
+              width: 108,
+              height: 108,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/homeimg.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.apps_rounded,
+                    size: 48,
+                    color: Color(0xFF1A2B4A),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-// PROGRESS BAR WITH SHIMMER
-// ══════════════════════════════════════════════════════════════
-class _ProgressBar extends StatelessWidget {
+// ── Slim gold progress bar ──────────────────────────────────
+class _SlimBar extends StatelessWidget {
   final double value;
-  final Color track;
   final Color gold;
-  final AnimationController shimmer;
 
-  const _ProgressBar({
-    required this.value,
-    required this.track,
-    required this.gold,
-    required this.shimmer,
-  });
+  const _SlimBar({required this.value, required this.gold});
 
   @override
   Widget build(BuildContext context) {
-    const w = 132.0;
-    const h = 4.0;
+    const w = 140.0;
+    const h = 3.5;
 
     return SizedBox(
       width: w,
       height: h,
       child: Stack(
         children: [
-          // Track
           Container(
             decoration: BoxDecoration(
-              color: track,
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(h),
             ),
           ),
-          // Fill
           FractionallySizedBox(
             widthFactor: value.clamp(0.0, 1.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(h),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: gold,
-                  borderRadius: BorderRadius.circular(h),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [gold.withValues(alpha: 0.7), gold],
                 ),
-                child: AnimatedBuilder(
-                  animation: shimmer,
-                  builder: (_, __) => CustomPaint(
-                    painter: _ShimmerPainter(
-                      progress: shimmer.value,
-                      color: Colors.white.withValues(alpha: 0.55),
-                    ),
-                    size: Size.infinite,
+                borderRadius: BorderRadius.circular(h),
+                boxShadow: [
+                  BoxShadow(
+                    color: gold.withValues(alpha: 0.4),
+                    blurRadius: 8,
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -445,36 +407,4 @@ class _ProgressBar extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ShimmerPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-
-  _ShimmerPainter({required this.progress, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bandW = size.width * 0.3;
-    final x = -bandW + (size.width + bandW * 2) * progress;
-    final rect = Rect.fromLTWH(x - bandW / 2, 0, bandW, size.height);
-
-    final paint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          color.withValues(alpha: 0),
-          color,
-          color.withValues(alpha: 0),
-        ],
-      ).createShader(rect);
-
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ShimmerPainter old) =>
-      old.progress != progress || old.color != color;
 }
