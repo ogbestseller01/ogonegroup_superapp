@@ -16,7 +16,7 @@ class Slide {
 
 // ============================================================
 // SLIDESHOW WIDGET
-// Calm, peeking carousel. Auto-plays, pauses while touched,
+// Peeking carousel. Auto-plays, pauses while touched,
 // respects the OS "reduce motion" setting.
 // ============================================================
 class DashboardSlideshow extends StatefulWidget {
@@ -40,8 +40,8 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
     with SingleTickerProviderStateMixin {
   // ── Layout ──
   static const double _gap = 6;
-  static const double _baseHeight = 116;
-  static const double _dotsGap = 6;
+  static const double _baseHeight = 128;
+  static const double _dotsGap = 4;
 
   // ── Motion ──
   static const Duration _autoPlayEvery = Duration(seconds: 5);
@@ -204,7 +204,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
 
 // ============================================================
 // SLIDE CARD
-// One soft gradient, one decorative circle, text left, icon right.
+// Gradient, big faded watermark icon, text left, icon chip right.
 // ============================================================
 class _SlideCard extends StatelessWidget {
   final Slide slide;
@@ -225,30 +225,42 @@ class _SlideCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: s.colors.last.withValues(alpha: 0.28),
-              blurRadius: 18,
+              color: s.colors.last.withValues(alpha: 0.30),
+              blurRadius: 20,
               spreadRadius: -4,
-              offset: const Offset(0, 8),
+              offset: const Offset(0, 9),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(26),
           child: Stack(
             children: [
               Positioned(
-                right: -30,
-                top: -36,
-                child: _Orb(size: 120, color: s.ink.withValues(alpha: 0.09)),
+                right: -26,
+                top: -40,
+                child: _Orb(size: 130, color: s.ink.withValues(alpha: 0.09)),
               ),
               Positioned(
                 left: -24,
-                bottom: -44,
+                bottom: -48,
                 child: _Orb(
-                    size: 90, color: Colors.white.withValues(alpha: 0.07)),
+                    size: 96, color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              Positioned(
+                right: 6,
+                bottom: -26,
+                child: Transform.rotate(
+                  angle: -0.2,
+                  child: Icon(
+                    s.icon,
+                    size: 118,
+                    color: s.ink.withValues(alpha: 0.13),
+                  ),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
@@ -265,7 +277,7 @@ class _SlideCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: s.ink,
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               height: 1.2,
                               letterSpacing: -0.3,
@@ -288,13 +300,17 @@ class _SlideCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Container(
-                      width: 52,
-                      height: 52,
+                      width: 54,
+                      height: 54,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: s.ink.withValues(alpha: 0.16),
+                        color: s.ink.withValues(alpha: 0.18),
+                        border: Border.all(
+                          color: s.ink.withValues(alpha: 0.25),
+                          width: 1.2,
+                        ),
                       ),
-                      child: Icon(s.icon, size: 26, color: s.ink),
+                      child: Icon(s.icon, size: 27, color: s.ink),
                     ),
                   ],
                 ),
@@ -342,7 +358,8 @@ class _PageDots extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final idle = isDark ? Colors.white24 : Colors.black12;
-    final track = isDark ? Colors.white30 : Colors.black.withValues(alpha: 0.14);
+    final track =
+    isDark ? Colors.white30 : Colors.black.withValues(alpha: 0.14);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -359,7 +376,6 @@ class _PageDots extends StatelessWidget {
               HapticFeedback.selectionClick();
               onSelect(i);
             },
-            // Larger invisible tap area around the small dot.
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
               child: AnimatedContainer(

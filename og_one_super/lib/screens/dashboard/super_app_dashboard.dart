@@ -21,6 +21,7 @@ const Color _goldText = Color(0xFF8A6500);
 const Color _hintGrey = Color(0xFF5B6B82);
 const Color _lightBackground = Color(0xFFF7F9FC);
 const Color _navy = Color(0xFF1A2B4A);
+const Color _gold = Color(0xFFFFB300);
 
 const _headerGradient = LinearGradient(
   colors: [Color(0xFF0B1C3A), Color(0xFF132B55), Color(0xFF1A3A75)],
@@ -63,6 +64,8 @@ Color _accent(bool isDark) => isDark ? AppTheme.secondary : _goldText;
 
 Color _pageBg(bool isDark) =>
     isDark ? AppTheme.darkBackground : _lightBackground;
+
+Color _ink(bool isDark) => isDark ? Colors.white : _navy;
 
 Color _shade(Color c, double amount) {
   final hsl = HSLColor.fromColor(c);
@@ -114,13 +117,12 @@ class _GridLayout {
 
     final contentW = width - 2 * hPad;
 
-    // Column count comes from the available width, not fixed breakpoints.
     final columns = ((contentW + colSpacing) / (_minCellWidth + colSpacing))
         .floor()
         .clamp(3, 6);
 
     final cellW = (contentW - (columns - 1) * colSpacing) / columns;
-    final icon = (cellW * 0.52).clamp(40.0, 50.0).toDouble();
+    final icon = (cellW * 0.52).clamp(40.0, 46.0).toDouble();
     final labelH =
     (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
@@ -129,7 +131,7 @@ class _GridLayout {
       columns,
       contentW / columns,
       icon,
-      icon + 14 + labelH + 2,
+      8 + icon + 12 + labelH + 6,
     );
   }
 }
@@ -324,53 +326,23 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
             onScan: () => _snack(t.comingSoonMessage),
             onSettings: _showSettingsSheet,
           ),
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 450),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
-                  layoutBuilder: (current, previous) => Stack(
-                    fit: StackFit.expand,
-                    children: [...previous, if (current != null) current],
-                  ),
-                  child: _loading
-                      ? SkeletonLoader(
-                    key: const ValueKey('skeleton'),
-                    hPad: layout.hPad,
-                    crossAxisExtent: layout.crossAxisExtent,
-                    mainAxisExtent: layout.mainAxisExtent,
-                    iconSize: layout.iconSize,
-                  )
-                      : _buildContent(t, layout, isDark),
-                ),
-              ),
-              // Fades scrolling content out behind the floating bottom bar so
-              // cards no longer peek out around its rounded corners.
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: _BottomBar.heightOf(context) + 10,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          bg.withValues(alpha: 0),
-                          bg.withValues(alpha: 0.92),
-                          bg,
-                        ],
-                        stops: const [0, 0.55, 1],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 450),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            layoutBuilder: (current, previous) => Stack(
+              fit: StackFit.expand,
+              children: [...previous, if (current != null) current],
+            ),
+            child: _loading
+                ? SkeletonLoader(
+              key: const ValueKey('skeleton'),
+              hPad: layout.hPad,
+              crossAxisExtent: layout.crossAxisExtent,
+              mainAxisExtent: layout.mainAxisExtent,
+              iconSize: layout.iconSize,
+            )
+                : _buildContent(t, layout, isDark),
           ),
         ),
       ),
@@ -398,6 +370,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
               hPad: layout.hPad,
               onMenu: () => _scaffoldKey.currentState?.openDrawer(),
               onAiAgent: () => _snack(t.comingSoonMessage),
+              onScan: () => _snack(t.comingSoonMessage),
               searchController: _searchController,
               onSearch: (v) => setState(() => _query = v),
               onClear: _clearSearch,
@@ -416,13 +389,13 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       AppLocalizations t, _GridLayout layout, bool isDark) {
     final apps = _filtered(t);
     return [
-      _section(layout.hPad, t.allServices, apps.length, isDark, top: 28),
+      _section(layout.hPad, t.allServices, apps.length, isDark, top: 24),
       if (apps.isEmpty)
         SliverToBoxAdapter(
           child: _EmptyState(message: t.noResults, isDark: isDark),
         )
       else
-        _grid(t, layout, apps, isDark),
+        ..._appSlivers(t, layout, apps, isDark),
       _bottomSpacer(),
     ];
   }
@@ -433,25 +406,24 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final apps = _filtered(t);
 
     return [
-      _section(hPad, t.featured, apps.length, isDark, top: 20),
-      _grid(t, layout, apps, isDark, startIndex: 1),
+      _section(hPad, t.featured, apps.length, isDark, top: 26),
+      ..._appSlivers(t, layout, apps, isDark, startIndex: 1),
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 0),
+          padding: const EdgeInsets.only(top: 18),
           child: _Reveal(
-            index: 2,
+            index: 5,
             animate: _intro,
             child: DashboardSlideshow(slides: _slides(t), hPad: hPad),
           ),
         ),
       ),
-      // No redundant "0" count bubble; the box below already says "coming soon".
-      _section(hPad, t.partnerApps, null, isDark, top: 8),
+      _section(hPad, t.partnerApps, null, isDark, top: 14),
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 0),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         sliver: SliverToBoxAdapter(
           child: _Reveal(
-            index: 4,
+            index: 7,
             animate: _intro,
             child: _ComingSoonBox(
               isDark: isDark,
@@ -475,59 +447,56 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       int? count,
       bool isDark, {
         double top = 22,
-        Widget? trailing,
       }) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 16),
-        child: _SectionTitle(
-          title: title,
-          count: count,
-          isDark: isDark,
-          trailing: trailing,
-        ),
+        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 14),
+        child: _SectionTitle(title: title, count: count, isDark: isDark),
       ),
     );
   }
 
-  Widget _grid(
+  /// Every app (live or coming soon) uses the same card and icon size.
+  List<Widget> _appSlivers(
       AppLocalizations t,
       _GridLayout layout,
       List<MiniApp> apps,
       bool isDark, {
         int startIndex = 0,
       }) {
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: layout.hPad),
-      sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: layout.columns,
-          mainAxisExtent: layout.mainAxisExtent,
-          mainAxisSpacing: _GridLayout.rowSpacing,
-          crossAxisSpacing: _GridLayout.colSpacing,
-        ),
-        delegate: SliverChildBuilderDelegate(
-              (context, i) {
-            final app = apps[i];
-            return _Reveal(
-              key: ValueKey(app.slug),
-              index: startIndex + i,
-              animate: _intro,
-              child: RepaintBoundary(
-                child: _ServiceCard(
-                  app: app,
-                  title: t.serviceTitle(app.slug),
-                  soonLabel: t.soon,
-                  onTap: () => _open(app, t),
-                  size: layout.iconSize,
+    return [
+      SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: layout.hPad),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: layout.columns,
+            mainAxisExtent: layout.mainAxisExtent,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+          ),
+          delegate: SliverChildBuilderDelegate(
+                (context, i) {
+              final app = apps[i];
+              return _Reveal(
+                key: ValueKey(app.slug),
+                index: startIndex + i,
+                animate: _intro,
+                child: RepaintBoundary(
+                  child: _AppCard(
+                    app: app,
+                    title: t.serviceTitle(app.slug),
+                    soonLabel: t.soon,
+                    onTap: () => _open(app, t),
+                    size: layout.iconSize,
+                  ),
                 ),
-              ),
-            );
-          },
-          childCount: apps.length,
+              );
+            },
+            childCount: apps.length,
+          ),
         ),
       ),
-    );
+    ];
   }
 }
 
@@ -538,13 +507,11 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final int? count;
   final bool isDark;
-  final Widget? trailing;
 
   const _SectionTitle({
     required this.title,
     required this.isDark,
     this.count,
-    this.trailing,
   });
 
   @override
@@ -557,14 +524,13 @@ class _SectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 18.5,
+              fontSize: 19,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
-              color: isDark ? Colors.white : AppTheme.primary,
+              color: _ink(isDark),
             ),
           ),
         ),
-        if (trailing != null) ...[trailing!, const SizedBox(width: 10)],
         if (count != null)
           Container(
             constraints: const BoxConstraints(minWidth: 30),
@@ -675,10 +641,11 @@ class _AppDrawer extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _GlassButton(
+                    _SoftButton(
                       icon: Icons.close_rounded,
                       tooltip: t.close,
                       onTap: () => Navigator.of(context).pop(),
+                      onDark: true,
                     ),
                   ],
                 ),
@@ -700,68 +667,6 @@ class _AppDrawer extends StatelessWidget {
   }
 }
 
-class _DrawerItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _DrawerItem({
-    required this.icon,
-    required this.label,
-    required this.isDark,
-    required this.onTap,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = isDark ? AppTheme.secondary : AppTheme.primary;
-    final color = selected
-        ? accent
-        : (isDark ? Colors.white : AppTheme.primary);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: selected
-            ? accent.withValues(alpha: isDark ? 0.14 : 0.08)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            child: Row(
-              children: [
-                Icon(icon, size: 23, color: color),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ════════════════════════════════════════════════
 // Shared widgets
 // ════════════════════════════════════════════════
@@ -775,9 +680,16 @@ class _Logo extends StatelessWidget {
       width: size,
       height: size,
       padding: EdgeInsets.all(size * 0.09),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: ClipOval(
         child: Image.asset(
@@ -794,68 +706,50 @@ class _Logo extends StatelessWidget {
   }
 }
 
-class _GlassButton extends StatelessWidget {
+/// Soft rounded icon button. [onDark] is for use on the navy drawer header.
+class _SoftButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  final bool showDot;
+  final bool onDark;
 
-  const _GlassButton({
+  const _SoftButton({
     required this.icon,
     required this.tooltip,
     required this.onTap,
-    this.showDot = false,
+    this.onDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final light = onDark || isDark;
+
     return Tooltip(
       message: tooltip,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Material(
-            color: Colors.white.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onTap();
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: Icon(icon, color: Colors.white, size: 22),
-              ),
-            ),
+      child: Material(
+        color: light
+            ? Colors.white.withValues(alpha: 0.14)
+            : _navy.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, color: light ? Colors.white : _navy, size: 22),
           ),
-          if (showDot)
-            Positioned(
-              top: -2,
-              right: -2,
-              child: IgnorePointer(
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.navy900, width: 2),
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
 
 /// Gold "AI Agent" button. Becomes icon-only when [compact] is true.
-///
-/// The glow lives on a plain [Container] (not [Ink]) so it renders as a soft
-/// rounded shadow instead of the faint square box visible before.
 class _AiAgentButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
@@ -883,7 +777,7 @@ class _AiAgentButton extends StatelessWidget {
             borderRadius: radius,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFFB300).withValues(alpha: 0.40),
+                color: _gold.withValues(alpha: 0.38),
                 blurRadius: 14,
                 offset: const Offset(0, 5),
               ),
@@ -903,21 +797,15 @@ class _AiAgentButton extends StatelessWidget {
                 height: compact ? 44 : 40,
                 width: compact ? 44 : null,
                 child: compact
-                    ? const Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 22,
-                  color: _navy,
-                )
+                    ? const Icon(Icons.auto_awesome_rounded,
+                    size: 22, color: _navy)
                     : const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 18,
-                        color: _navy,
-                      ),
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 18, color: _navy),
                       SizedBox(width: 6),
                       Text(
                         'AI Agent',
@@ -936,22 +824,6 @@ class _AiAgentButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Blob extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _Blob({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
@@ -994,7 +866,7 @@ class _PressableState extends State<_Pressable> {
           widget.onTap();
         },
         child: AnimatedScale(
-          scale: _pressed ? 0.94 : 1.0,
+          scale: _pressed ? 0.95 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: widget.child,
@@ -1093,16 +965,17 @@ class _FitLabel extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════
-// Header – Friendly & Warm
+// Header – navy banner, glass buttons, floating search
 // ════════════════════════════════════════════════
 class _Header extends StatelessWidget {
-  static const double _searchHeight = 54;
+  static const double _searchHeight = 56;
   static const double _overlap = 28;
 
   final AppLocalizations t;
   final double hPad;
   final VoidCallback onMenu;
   final VoidCallback onAiAgent;
+  final VoidCallback onScan;
   final TextEditingController searchController;
   final ValueChanged<String> onSearch;
   final VoidCallback onClear;
@@ -1113,6 +986,7 @@ class _Header extends StatelessWidget {
     required this.hPad,
     required this.onMenu,
     required this.onAiAgent,
+    required this.onScan,
     required this.searchController,
     required this.onSearch,
     required this.onClear,
@@ -1138,6 +1012,15 @@ class _Header extends StatelessWidget {
     );
   }
 
+  Widget _ring(double size, Color color) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: Border.all(color: color, width: 1.4),
+    ),
+  );
+
   Widget _banner(BuildContext context) {
     final compact = _isCompact(context);
     final narrow = MediaQuery.sizeOf(context).width < 360;
@@ -1147,46 +1030,65 @@ class _Header extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         gradient: _headerGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(38)),
       ),
       child: Stack(
         children: [
           Positioned(
-            top: -50,
-            right: -30,
-            child: _Blob(
-              size: 170,
-              color: const Color(0xFFFFB300).withValues(alpha: 0.13),
+            top: -60,
+            right: -40,
+            child: Container(
+              width: 190,
+              height: 190,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _gold.withValues(alpha: 0.30),
+                    _gold.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
             ),
           ),
           Positioned(
-            bottom: 10,
-            left: -40,
-            child: _Blob(
-              size: 140,
-              color: const Color(0xFF3A6BC5).withValues(alpha: 0.22),
+            top: 60,
+            right: 20,
+            child: _ring(90, Colors.white.withValues(alpha: 0.08)),
+          ),
+          Positioned(
+            bottom: 6,
+            left: -50,
+            child: _ring(170, Colors.white.withValues(alpha: 0.07)),
+          ),
+          Positioned(
+            right: 18,
+            bottom: _overlap + 8,
+            child: Icon(
+              Icons.grid_view_rounded,
+              size: 74,
+              color: Colors.white.withValues(alpha: 0.07),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(hPad, 10, hPad, _overlap + 20),
+              padding: EdgeInsets.fromLTRB(hPad, 10, hPad, _overlap + 22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top bar
                   Row(
                     children: [
-                      _GlassButton(
+                      _SoftButton(
                         icon: Icons.menu_rounded,
                         tooltip: t.menu,
                         onTap: onMenu,
+                        onDark: true,
                       ),
                       SizedBox(width: compact ? 8 : 12),
-                      _Logo(size: compact ? 32 : 36),
+                      _Logo(size: compact ? 34 : 38),
                       SizedBox(width: compact ? 8 : 11),
                       Expanded(
-                        // Scales down to fit instead of showing "…"
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
@@ -1211,10 +1113,7 @@ class _Header extends StatelessWidget {
                       ),
                     ],
                   ),
-
-                  SizedBox(height: narrow ? 16 : 22),
-
-                  // Welcome
+                  SizedBox(height: narrow ? 20 : 26),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -1223,24 +1122,40 @@ class _Header extends StatelessWidget {
                       maxLines: 1,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: narrow ? 22 : 26,
+                        fontSize: narrow ? 26 : 31,
                         fontWeight: FontWeight.w800,
                         height: 1.15,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.8,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    t.chooseService,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: const Color(0xFFFFD54F).withValues(alpha: 0.95),
-                      fontSize: narrow ? 13 : 14,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          gradient: _goldGradient,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          t.chooseService,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFFFFD54F)
+                                .withValues(alpha: 0.95),
+                            fontSize: narrow ? 13 : 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1253,7 +1168,7 @@ class _Header extends StatelessWidget {
 
   Widget _searchBox(bool isDark) {
     final fieldColor = isDark ? AppTheme.darkSurface : Colors.white;
-    final textColor = isDark ? Colors.white : AppTheme.primary;
+    final textColor = _ink(isDark);
     final hintColor = isDark ? AppTheme.darkTextSecondary : _hintGrey;
 
     return Container(
@@ -1266,7 +1181,7 @@ class _Header extends StatelessWidget {
             : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.11),
+            color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.12),
             blurRadius: 22,
             offset: const Offset(0, 9),
           ),
@@ -1284,23 +1199,44 @@ class _Header extends StatelessWidget {
         ),
         decoration: InputDecoration(
           hintText: t.searchHint,
-          hintStyle: TextStyle(
-            color: hintColor,
-            fontWeight: FontWeight.w500,
-          ),
+          hintStyle: TextStyle(color: hintColor, fontWeight: FontWeight.w500),
           prefixIcon: Icon(Icons.search_rounded, color: textColor, size: 23),
-          suffixIcon: hasText
-              ? IconButton(
-            onPressed: onClear,
-            icon: Icon(Icons.close_rounded, color: textColor, size: 21),
-            splashRadius: 22,
-          )
-              : null,
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasText)
+                IconButton(
+                  onPressed: onClear,
+                  icon: Icon(Icons.close_rounded, color: textColor, size: 20),
+                  splashRadius: 20,
+                ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Material(
+                  color: _gold.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(18),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onScan();
+                    },
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(Icons.qr_code_scanner_rounded,
+                          color: _accent(isDark), size: 21),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           filled: false,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 18),
         ),
       ),
     );
@@ -1324,79 +1260,96 @@ class _ComingSoonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = _accent(isDark);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: isDark ? AppTheme.darkSurface : Colors.white,
-        border: Border.all(color: accent.withValues(alpha: 0.22)),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              color: AppTheme.secondary.withValues(alpha: 0.16),
-            ),
-            child: Icon(Icons.hourglass_top_rounded, size: 25, color: accent),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(26),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark ? AppTheme.darkSurface : const Color(0xFFFFF4D6),
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.07)
+                : _gold.withValues(alpha: 0.25),
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -24,
+              bottom: -34,
+              child: Icon(
+                Icons.hourglass_top_rounded,
+                size: 120,
+                color: _gold.withValues(alpha: isDark ? 0.10 : 0.18),
+              ),
+            ),
+            Row(
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : AppTheme.primary,
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: isDark
+                        ? AppTheme.secondary.withValues(alpha: 0.16)
+                        : Colors.white,
+                  ),
+                  child: Icon(Icons.hourglass_top_rounded,
+                      size: 26, color: accent),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          color: _ink(isDark),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color:
+                          isDark ? AppTheme.darkTextSecondary : _hintGrey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? AppTheme.darkTextSecondary : _hintGrey,
-                  ),
-                ),
+                const SizedBox(width: 40),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ════════════════════════════════════════════════
-// Service card
+// App card – identical size and icon for every app
 // ════════════════════════════════════════════════
-class _ServiceCard extends StatelessWidget {
+class _AppCard extends StatelessWidget {
   final MiniApp app;
   final String title;
   final String soonLabel;
   final VoidCallback onTap;
   final double size;
 
-  const _ServiceCard({
+  const _AppCard({
     required this.app,
     required this.title,
     required this.soonLabel,
@@ -1409,81 +1362,68 @@ class _ServiceCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _appColor(app);
     final soon = app.isComingSoon;
-    final radius = BorderRadius.circular(size * 0.34);
-
-    final soonFill = Color.alphaBlend(
-      color.withValues(alpha: isDark ? 0.22 : 0.13),
-      isDark ? AppTheme.darkSurfaceLight : Colors.white,
-    );
-
-    final tile = Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        gradient: soon
-            ? null
-            : LinearGradient(
-          colors: [_shade(color, 0.09), _shade(color, -0.07)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        color: soon ? soonFill : null,
-        boxShadow: soon
-            ? null
-            : [
-          BoxShadow(
-            color: color.withValues(alpha: isDark ? 0.32 : 0.28),
-            blurRadius: 16,
-            spreadRadius: -2,
-            offset: const Offset(0, 7),
-          ),
-        ],
-      ),
-      child: Icon(
-        _iconFor(app.icon),
-        size: size * 0.45,
-        color: soon
-            ? (isDark ? _shade(color, 0.22) : color.withValues(alpha: 0.92))
-            : Colors.white,
-      ),
-    );
 
     return _Pressable(
       label: soon ? '$title, $soonLabel' : title,
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                tile,
-                if (soon)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: -9,
-                    child: Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(
+          children: [
+            SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(size * 0.34),
+                      gradient: LinearGradient(
+                        colors: [_shade(color, 0.09), _shade(color, -0.07)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: isDark ? 0.30 : 0.28),
+                          blurRadius: 12,
+                          spreadRadius: -2,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _iconFor(app.icon),
+                      size: size * 0.5,
+                      color: color.computeLuminance() > 0.4
+                          ? _navy
+                          : Colors.white,
+                    ),
+                  ),
+                  if (soon)
+                    Positioned(
+                      top: -7,
+                      right: -9,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 3),
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppTheme.secondary,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(9),
                           border: Border.all(
                             color: _pageBg(isDark),
-                            width: 2.5,
+                            width: 2,
                           ),
                         ),
                         child: Text(
                           soonLabel,
                           maxLines: 1,
+                          softWrap: false,
                           style: const TextStyle(
-                            fontSize: 9.5,
+                            fontSize: 8.5,
                             height: 1.1,
                             fontWeight: FontWeight.w800,
                             color: _navy,
@@ -1491,40 +1431,41 @@ class _ServiceCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _FitLabel(
+                  text: title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: _labelFont,
+                    height: _labelLineHeight,
+                    color: _ink(isDark),
                   ),
-              ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 13),
-          _FitLabel(
-            text: title,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: _labelFont,
-              height: _labelLineHeight,
-              color: isDark
-                  ? (soon ? AppTheme.darkTextSecondary : Colors.white)
-                  : (soon ? _hintGrey : AppTheme.primary),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ════════════════════════════════════════════════
-// Bottom bar
+// Bottom bar – flat, edge-to-edge, raised scan button
 // ════════════════════════════════════════════════
 class _BottomBar extends StatelessWidget {
-  static const double _barH = 68;
-  static const double _lift = 24;
-  static const double _fab = 64;
-  static const double _margin = 14;
-  static const double _maxWidth = 520;
+  static const double _barH = 66;
+  static const double _lift = 26;
+  static const double _fab = 62;
 
   static double heightOf(BuildContext context) =>
-      _barH + _lift + _margin + MediaQuery.paddingOf(context).bottom;
+      _barH + _lift + MediaQuery.paddingOf(context).bottom;
 
   final String homeLabel;
   final String scanLabel;
@@ -1546,130 +1487,115 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? AppTheme.darkSurface : Colors.white;
-    final bottom = MediaQuery.paddingOf(context).bottom + _margin;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
     final labelColor = isDark ? AppTheme.darkTextSecondary : _hintGrey;
 
     return SizedBox(
       height: heightOf(context),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _maxWidth),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
-            child: SizedBox(
-              height: _barH + _lift,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: _barH,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: surface,
-                        borderRadius: BorderRadius.circular(34),
-                        border: isDark
-                            ? Border.all(
-                            color: Colors.white.withValues(alpha: 0.08))
-                            : null,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black
-                                .withValues(alpha: isDark ? 0.42 : 0.11),
-                            blurRadius: 26,
-                            offset: const Offset(0, 9),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: _barH,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _NavItem(
-                            icon: Icons.home_rounded,
-                            label: homeLabel,
-                            active: true,
-                            onTap: onHome,
-                          ),
-                        ),
-                        const SizedBox(width: _fab + 22),
-                        Expanded(
-                          child: _NavItem(
-                            icon: Icons.settings_rounded,
-                            label: settingsLabel,
-                            active: false,
-                            onTap: onSettings,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Label under the scan button so all three actions are named.
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 9,
-                    child: IgnorePointer(
-                      child: Text(
-                        scanLabel,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: labelColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: _Pressable(
-                        label: scanLabel,
-                        onTap: onScan,
-                        child: Container(
-                          width: _fab,
-                          height: _fab,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: _goldGradient,
-                            border: Border.all(color: surface, width: 5.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFFB300)
-                                    .withValues(alpha: isDark ? 0.35 : 0.45),
-                                blurRadius: 18,
-                                offset: const Offset(0, 7),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.qr_code_scanner_rounded,
-                            color: _navy,
-                            size: 29,
-                          ),
-                        ),
-                      ),
-                    ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: _barH + safeBottom,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
+                border: isDark
+                    ? Border(
+                  top: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.08)),
+                )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: safeBottom),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.home_rounded,
+                        label: homeLabel,
+                        active: true,
+                        onTap: onHome,
+                      ),
+                    ),
+                    const SizedBox(width: _fab + 36),
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.settings_rounded,
+                        label: settingsLabel,
+                        active: false,
+                        onTap: onSettings,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: safeBottom + 9,
+            child: IgnorePointer(
+              child: Text(
+                scanLabel,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _Pressable(
+                label: scanLabel,
+                onTap: onScan,
+                child: Container(
+                  width: _fab,
+                  height: _fab,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: _goldGradient,
+                    border: Border.all(color: surface, width: 5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _gold.withValues(alpha: isDark ? 0.35 : 0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 7),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: _navy,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1703,14 +1629,14 @@ class _NavItem extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
             decoration: BoxDecoration(
               color: active
                   ? (isDark
                   ? AppTheme.secondary.withValues(alpha: 0.16)
-                  : AppTheme.primary.withValues(alpha: 0.09))
+                  : AppTheme.primary.withValues(alpha: 0.08))
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, size: 24, color: color),
           ),
