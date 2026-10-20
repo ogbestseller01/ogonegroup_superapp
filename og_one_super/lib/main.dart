@@ -18,8 +18,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase ONCE for the whole super-app.
-  // The embedded fundiapp_sdk checks Firebase.apps.isEmpty and skips
-  // re-initialization, so this is the single source of truth.
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -65,16 +63,53 @@ class OgOneSuperApp extends StatelessWidget {
       initialRoute: AppRoutes.splash,
       onGenerateRoute: (route) {
         switch (route.name) {
+          case AppRoutes.splash:
+            return MaterialPageRoute(
+                settings: route, builder: (_) => const SplashScreen());
           case AppRoutes.dashboard:
             return MaterialPageRoute(
-                builder: (_) => const SuperAppDashboard());
+                settings: route, builder: (_) => const SuperAppDashboard());
           case AppRoutes.settings:
-            return MaterialPageRoute(builder: (_) => const SettingsScreen());
-          case AppRoutes.splash:
+            return MaterialPageRoute(
+                settings: route, builder: (_) => const SettingsScreen());
           default:
-            return MaterialPageRoute(builder: (_) => const SplashScreen());
+            debugPrint('⚠️ Host app: unknown route "${route.name}"');
+            return MaterialPageRoute(
+                settings: route, builder: (_) => _UnknownRoutePage(route.name));
         }
       },
+    );
+  }
+}
+
+class _UnknownRoutePage extends StatelessWidget {
+  final String? name;
+  const _UnknownRoutePage(this.name);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.explore_off_rounded, size: 56),
+              const SizedBox(height: 16),
+              Text('Page not found: ${name ?? '(unknown)'}',
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.dashboard, (r) => false),
+                child: const Text('Go to dashboard'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

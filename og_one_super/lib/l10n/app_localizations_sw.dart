@@ -355,4 +355,48 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get scan => 'Skani';
+
+  @override
+  String get onboardingWelcomeTitle => 'Karibu OG ONEGROUP';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.';
+
+  @override
+  String get onboardingTrustedHelpTitle => 'Msaada unaoaminika, karibu nawe';
+
+  @override
+  String get onboardingTrustedHelpBody =>
+      'NearbyFundi na Fundi App zinakuunganisha na mafundi waliothibitishwa. Weka oda kwa kubonyeza mara chache tu.';
+
+  @override
+  String get onboardingFoodTitle => 'Chakula na usafirishaji, chap chap';
+
+  @override
+  String get onboardingFoodBody =>
+      'Agiza msosi mtamu kupitia Msosi Chap Chap na upokee vitu vyako haraka kupitia Duma App.';
+
+  @override
+  String get onboardingEverydayTitle => 'Maisha ya kila siku, rahisi';
+
+  @override
+  String get onboardingEverydayBody =>
+      'Ufuaji nguo, kuosha gari, kuhama na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.';
+
+  @override
+  String get onboardingAllInOneTitle => 'Vyote mahali pamoja';
+
+  @override
+  String get onboardingAllInOneBody =>
+      'Fungua programu ndogo yoyote kutoka skrini ya mwanzo. Nyingine zinakuja hivi karibuni, pamoja na AI Agent wa kukusaidia.';
+
+  @override
+  String get skip => 'Ruka';
+
+  @override
+  String get next => 'Endelea';
+
+  @override
+  String get getStarted => 'Anza';
 }

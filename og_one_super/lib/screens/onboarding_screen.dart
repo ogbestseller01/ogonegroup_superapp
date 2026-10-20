@@ -24,6 +24,20 @@ const _goldGradient = LinearGradient(
   end: Alignment.bottomRight,
 );
 
+const _icons = <String, IconData>{
+  'build': Icons.build_rounded,
+  'handyman': Icons.handyman_rounded,
+  'fastfood': Icons.fastfood_rounded,
+  'local_laundry_service': Icons.local_laundry_service_rounded,
+  'local_car_wash': Icons.local_car_wash_rounded,
+  'local_shipping': Icons.local_shipping_rounded,
+  'find_in_page': Icons.find_in_page_rounded,
+  'pets': Icons.pets_rounded,
+  'delivery_dining': Icons.delivery_dining_rounded,
+};
+
+IconData _iconFor(String name) => _icons[name] ?? Icons.apps_rounded;
+
 Color _shade(Color c, double amount) {
   final hsl = HSLColor.fromColor(c);
   return hsl
@@ -35,101 +49,65 @@ Color _shade(Color c, double amount) {
 // Content
 // ══════════════════════════════════════════════════════════════
 class _AppTile {
-  final String name;
-  final IconData icon;
+  final String slug;
+  final String iconName;
   final Color color;
+  final String? imageAsset;
 
-  const _AppTile(this.name, this.icon, this.color);
+  const _AppTile(this.slug, this.iconName, this.color, {this.imageAsset});
 }
 
-const _nearbyFundi =
-_AppTile('NearbyFundi', Icons.build_rounded, Color(0xFF2B7BFF));
-const _fundiApp =
-_AppTile('Fundi App', Icons.handyman_rounded, Color(0xFFFFB300));
-const _msosi =
-_AppTile('Msosi Chap Chap', Icons.fastfood_rounded, Color(0xFFE85D04));
-const _duma =
-_AppTile('Duma App', Icons.delivery_dining_rounded, Color(0xFF6D4C41));
-const _laundry = _AppTile(
-    'Laundry', Icons.local_laundry_service_rounded, Color(0xFF2F80D1));
-const _osha =
-_AppTile('Osha Papo Hapo', Icons.local_car_wash_rounded, Color(0xFF2E9E8A));
-const _hama =
-_AppTile('Hama Chap Chap', Icons.local_shipping_rounded, Color(0xFF6A3FB5));
-const _nimepoteza = _AppTile(
-    'Nimepoteza App', Icons.find_in_page_rounded, Color(0xFFE6B422));
+const _nearbyFundi = _AppTile('nearbyfundi', 'build', Color(0xFF2B7BFF), imageAsset: 'assets/images/apps/nearbyfundi.png');
+const _fundiApp = _AppTile('fundiapp', 'handyman', Color(0xFFFFB300), imageAsset: 'assets/images/apps/fundi_app.png');
+const _msosi = _AppTile('msosi', 'fastfood', Color(0xFFE85D04), imageAsset: 'assets/images/apps/msosi_chap_chap.png');
+const _duma = _AppTile('duma', 'delivery_dining', Color(0xFF6D4C41), imageAsset: 'assets/images/apps/duma_app.png');
+const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1), imageAsset: 'assets/images/apps/laundry.png');
+const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png');
+const _hama = _AppTile('hama', 'local_shipping', Color(0xFF6A3FB5), imageAsset: 'assets/images/apps/hama_chap_chap.png');
+const _nimepoteza = _AppTile('nimepoteza', 'find_in_page', Color(0xFFE6B422), imageAsset: 'assets/images/apps/nimepoteza.png');
+
+enum StepType { welcome, trustedHelp, food, everyday, allInOne }
 
 class _Step {
-  final String titleEn;
-  final String titleSw;
-  final String bodyEn;
-  final String bodySw;
+  final StepType type;
   final List<_AppTile> tiles;
   final int columns;
 
   const _Step({
-    required this.titleEn,
-    required this.titleSw,
-    required this.bodyEn,
-    required this.bodySw,
+    required this.type,
     this.tiles = const [],
     this.columns = 2,
   });
+
+  String getTitle(AppLocalizations t) {
+    switch (type) {
+      case StepType.welcome: return t.onboardingWelcomeTitle;
+      case StepType.trustedHelp: return t.onboardingTrustedHelpTitle;
+      case StepType.food: return t.onboardingFoodTitle;
+      case StepType.everyday: return t.onboardingEverydayTitle;
+      case StepType.allInOne: return t.onboardingAllInOneTitle;
+    }
+  }
+
+  String getBody(AppLocalizations t) {
+    switch (type) {
+      case StepType.welcome: return t.onboardingWelcomeBody;
+      case StepType.trustedHelp: return t.onboardingTrustedHelpBody;
+      case StepType.food: return t.onboardingFoodBody;
+      case StepType.everyday: return t.onboardingEverydayBody;
+      case StepType.allInOne: return t.onboardingAllInOneBody;
+    }
+  }
 }
 
 const _steps = <_Step>[
+  _Step(type: StepType.welcome),
+  _Step(type: StepType.trustedHelp, tiles: [_nearbyFundi, _fundiApp]),
+  _Step(type: StepType.food, tiles: [_msosi, _duma]),
+  _Step(type: StepType.everyday, tiles: [_laundry, _osha, _hama, _nimepoteza]),
   _Step(
-    titleEn: 'Welcome to OG ONE GROUP',
-    titleSw: 'Karibu OG ONE GROUP',
-    bodyEn:
-    'One super app, many mini apps. Everything you need in daily life, together in one place.',
-    bodySw:
-    'Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.',
-  ),
-  _Step(
-    titleEn: 'Trusted help, near you',
-    titleSw: 'Msaada unaoaminika, karibu nawe',
-    bodyEn:
-    'NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.',
-    bodySw:
-    'NearbyFundi na Fundi App zinakuunganisha na mafundi waliothibitishwa. Weka oda kwa kubonyeza mara chache tu.',
-    tiles: [_nearbyFundi, _fundiApp],
-  ),
-  _Step(
-    titleEn: 'Food and deliveries, chap chap',
-    titleSw: 'Chakula na usafirishaji, chap chap',
-    bodyEn:
-    'Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.',
-    bodySw:
-    'Agiza msosi mtamu kupitia Msosi Chap Chap na upokee vitu vyako haraka kupitia Duma App.',
-    tiles: [_msosi, _duma],
-  ),
-  _Step(
-    titleEn: 'Everyday life, made easy',
-    titleSw: 'Maisha ya kila siku, rahisi',
-    bodyEn:
-    'Laundry, car wash, moving and lost-and-found, each handled by its own mini app.',
-    bodySw:
-    'Ufuaji nguo, kuosha gari, kuhama na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.',
-    tiles: [_laundry, _osha, _hama, _nimepoteza],
-  ),
-  _Step(
-    titleEn: 'All in one place',
-    titleSw: 'Vyote mahali pamoja',
-    bodyEn:
-    'Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.',
-    bodySw:
-    'Fungua programu ndogo yoyote kutoka skrini ya mwanzo. Nyingine zinakuja hivi karibuni, pamoja na AI Agent wa kukusaidia.',
-    tiles: [
-      _nearbyFundi,
-      _fundiApp,
-      _msosi,
-      _laundry,
-      _osha,
-      _hama,
-      _duma,
-      _nimepoteza,
-    ],
+    type: StepType.allInOne,
+    tiles: [_nearbyFundi, _fundiApp, _msosi, _laundry, _osha, _hama, _duma, _nimepoteza],
     columns: 4,
   ),
 ];
@@ -209,7 +187,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     final t = context.t;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sw = Localizations.localeOf(context).languageCode == 'sw';
     final size = MediaQuery.sizeOf(context);
     final screenW = size.width;
 
@@ -301,7 +278,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 children: [
                   _TopBar(
                     title: t.appName,
-                    skipLabel: sw ? 'Ruka' : 'Skip',
+                    skipLabel: t.skip,
                     showSkip: !_last,
                     onSkip: _finish,
                     onBg: onBg,
@@ -315,7 +292,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       onPageChanged: (i) => setState(() => _index = i),
                       itemBuilder: (_, i) => _StepPage(
                         step: _steps[i],
-                        sw: sw,
                         isDark: isDark,
                         onBg: onBg,
                         muted: muted,
@@ -334,9 +310,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         ),
                         const SizedBox(height: 16),
                         _PrimaryButton(
-                          label: _last
-                              ? (sw ? 'Anza' : 'Get started')
-                              : (sw ? 'Endelea' : 'Next'),
+                          label: _last ? t.getStarted : t.next,
                           icon: _last
                               ? Icons.check_rounded
                               : Icons.arrow_forward_rounded,
@@ -429,14 +403,12 @@ class _TopBar extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════
 class _StepPage extends StatelessWidget {
   final _Step step;
-  final bool sw;
   final bool isDark;
   final Color onBg;
   final Color muted;
 
   const _StepPage({
     required this.step,
-    required this.sw,
     required this.isDark,
     required this.onBg,
     required this.muted,
@@ -444,6 +416,8 @@ class _StepPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final heroH = constraints.maxHeight * 0.50;
@@ -466,7 +440,7 @@ class _StepPage extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          sw ? step.titleSw : step.titleEn,
+                          step.getTitle(t),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: onBg,
@@ -478,7 +452,7 @@ class _StepPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          sw ? step.bodySw : step.bodyEn,
+                          step.getBody(t),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: muted,
@@ -649,11 +623,13 @@ class _OrbitIcon extends StatelessWidget {
         height: iconSize * 1.55,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(iconSize * 0.42),
-          gradient: LinearGradient(
+          gradient: tile.imageAsset == null
+              ? LinearGradient(
             colors: [_shade(tile.color, 0.10), _shade(tile.color, -0.08)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-          ),
+          )
+              : null,
           boxShadow: [
             BoxShadow(
               color: tile.color.withValues(alpha: isDark ? 0.36 : 0.28),
@@ -662,8 +638,21 @@ class _OrbitIcon extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          tile.icon,
+        child: tile.imageAsset != null
+            ? ClipRRect(
+          borderRadius: BorderRadius.circular(iconSize * 0.42),
+          child: Image.asset(
+            tile.imageAsset!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Icon(
+              _iconFor(tile.iconName),
+              size: iconSize * 0.82,
+              color: tile.color.computeLuminance() > 0.4 ? _navy : Colors.white,
+            ),
+          ),
+        )
+            : Icon(
+          _iconFor(tile.iconName),
           size: iconSize * 0.82,
           color: tile.color.computeLuminance() > 0.4 ? _navy : Colors.white,
         ),
@@ -763,6 +752,7 @@ class _TileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = tile.color;
     final iconColor = color.computeLuminance() > 0.4 ? _navy : Colors.white;
+    final t = context.t;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -772,11 +762,13 @@ class _TileView extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(size * 0.32),
-            gradient: LinearGradient(
+            gradient: tile.imageAsset == null
+                ? LinearGradient(
               colors: [_shade(color, 0.10), _shade(color, -0.08)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-            ),
+            )
+                : null,
             boxShadow: [
               BoxShadow(
                 color: color.withValues(alpha: isDark ? 0.32 : 0.26),
@@ -786,11 +778,28 @@ class _TileView extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(tile.icon, size: size * 0.48, color: iconColor),
+          child: tile.imageAsset != null
+              ? ClipRRect(
+            borderRadius: BorderRadius.circular(size * 0.32),
+            child: Image.asset(
+              tile.imageAsset!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                _iconFor(tile.iconName),
+                size: size * 0.48,
+                color: iconColor,
+              ),
+            ),
+          )
+              : Icon(
+            _iconFor(tile.iconName),
+            size: size * 0.48,
+            color: iconColor,
+          ),
         ),
         const SizedBox(height: 7),
         Text(
-          tile.name,
+          t.serviceTitle(tile.slug),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

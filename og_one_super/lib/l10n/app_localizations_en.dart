@@ -352,4 +352,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scan => 'Scan';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to OG ONEGROUP';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'One super app, many mini apps. Everything you need in daily life, together in one place.';
+
+  @override
+  String get onboardingTrustedHelpTitle => 'Trusted help, near you';
+
+  @override
+  String get onboardingTrustedHelpBody =>
+      'NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.';
+
+  @override
+  String get onboardingFoodTitle => 'Food and deliveries, chap chap';
+
+  @override
+  String get onboardingFoodBody =>
+      'Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.';
+
+  @override
+  String get onboardingEverydayTitle => 'Everyday life, made easy';
+
+  @override
+  String get onboardingEverydayBody =>
+      'Laundry, car wash, moving and lost-and-found, each handled by its own mini app.';
+
+  @override
+  String get onboardingAllInOneTitle => 'All in one place';
+
+  @override
+  String get onboardingAllInOneBody =>
+      'Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get getStarted => 'Get started';
 }

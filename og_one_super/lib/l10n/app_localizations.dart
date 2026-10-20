@@ -775,6 +775,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan'**
   String get scan;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to OG ONEGROUP'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One super app, many mini apps. Everything you need in daily life, together in one place.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingTrustedHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted help, near you'**
+  String get onboardingTrustedHelpTitle;
+
+  /// No description provided for @onboardingTrustedHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.'**
+  String get onboardingTrustedHelpBody;
+
+  /// No description provided for @onboardingFoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Food and deliveries, chap chap'**
+  String get onboardingFoodTitle;
+
+  /// No description provided for @onboardingFoodBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.'**
+  String get onboardingFoodBody;
+
+  /// No description provided for @onboardingEverydayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday life, made easy'**
+  String get onboardingEverydayTitle;
+
+  /// No description provided for @onboardingEverydayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry, car wash, moving and lost-and-found, each handled by its own mini app.'**
+  String get onboardingEverydayBody;
+
+  /// No description provided for @onboardingAllInOneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All in one place'**
+  String get onboardingAllInOneTitle;
+
+  /// No description provided for @onboardingAllInOneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.'**
+  String get onboardingAllInOneBody;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get getStarted;
 }
 
 class _AppLocalizationsDelegate

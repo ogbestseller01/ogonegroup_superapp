@@ -131,5 +131,19 @@
     "partnerApps": "Partner's Apps",
     "partnerAppsHint": "Partner apps will appear here",
     "home": "Home",
-    "scan": "Scan"
+    "scan": "Scan",
+
+      "onboardingWelcomeTitle": "Welcome to OG ONEGROUP",
+      "onboardingWelcomeBody": "One super app, many mini apps. Everything you need in daily life, together in one place.",
+      "onboardingTrustedHelpTitle": "Trusted help, near you",
+      "onboardingTrustedHelpBody": "NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.",
+      "onboardingFoodTitle": "Food and deliveries, chap chap",
+      "onboardingFoodBody": "Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.",
+      "onboardingEverydayTitle": "Everyday life, made easy",
+      "onboardingEverydayBody": "Laundry, car wash, moving and lost-and-found, each handled by its own mini app.",
+      "onboardingAllInOneTitle": "All in one place",
+      "onboardingAllInOneBody": "Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.",
+      "skip": "Skip",
+      "next": "Next",
+      "getStarted": "Get started"
 }

@@ -52,7 +52,7 @@
          Required for camera/scanner functionality
          ============================================================ -->
     <key>NSCameraUsageDescription</key>
-    <string>Og One Super needs access to your camera to scan products, capture images, and perform related services.</string>
+    <string>Og One Super needs access to your camera to scan app QR codes, capture images, and perform related services.</string>
 
     <!-- ============================================================
          LOCATION

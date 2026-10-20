@@ -130,5 +130,20 @@
     "partnerApps": "Programu za Washirika",
     "partnerAppsHint": "Programu za washirika zitaonekana hapa",
     "home": "Nyumbani",
-    "scan": "Skani"
+    "scan": "Skani",
+
+      "onboardingWelcomeTitle": "Karibu OG ONEGROUP",
+      "onboardingWelcomeBody": "Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.",
+      "onboardingTrustedHelpTitle": "Msaada unaoaminika, karibu nawe",
+      "onboardingTrustedHelpBody": "NearbyFundi na Fundi App zinakuunganisha na mafundi waliothibitishwa. Weka oda kwa kubonyeza mara chache tu.",
+      "onboardingFoodTitle": "Chakula na usafirishaji, chap chap",
+      "onboardingFoodBody": "Agiza msosi mtamu kupitia Msosi Chap Chap na upokee vitu vyako haraka kupitia Duma App.",
+      "onboardingEverydayTitle": "Maisha ya kila siku, rahisi",
+      "onboardingEverydayBody": "Ufuaji nguo, kuosha gari, kuhama na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.",
+      "onboardingAllInOneTitle": "Vyote mahali pamoja",
+      "onboardingAllInOneBody": "Fungua programu ndogo yoyote kutoka skrini ya mwanzo. Nyingine zinakuja hivi karibuni, pamoja na AI Agent wa kukusaidia.",
+      "skip": "Ruka",
+      "next": "Endelea",
+      "getStarted": "Anza"
+
 }

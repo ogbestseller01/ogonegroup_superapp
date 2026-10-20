@@ -4,7 +4,8 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  # withValues() (used across the UI) needs Dart 3.6+ / Flutter 3.27+
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -24,6 +25,11 @@ dependencies:
 
   firebase_core: ^4.15.0
 
+  # QR codes: draw a QR for each mini app, and scan one from the dashboard.
+  # mobile_scanner 7.x uses Apple Vision on iOS (no ML Kit, works on arm64 simulators).
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.2
+
   fundiapp_sdk:
     path: packages/fundiapp
   nearbyfundi_sdk:
@@ -32,7 +38,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
 
 flutter_launcher_icons:
@@ -64,7 +70,7 @@ dependency_overrides:
   font_awesome_flutter: ^10.8.0
   path_provider: ^2.1.4
 
-  # ===== record family – MUST stay in sync =====
+  # ===== record family: MUST stay in sync =====
   record: ^7.1.1
   record_platform_interface: ^2.1.0
   record_linux: ^2.1.0
