@@ -217,7 +217,7 @@ class _ContactScreenState extends State<ContactScreen> {
             const SizedBox(height: 6),
             Center(
               child: Text(
-                'OG ONE GROUP',
+                'OG ONEGROUP',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
