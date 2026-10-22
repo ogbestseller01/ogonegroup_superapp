@@ -8,9 +8,9 @@ import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_strings.dart'; // This is where your working extension lives
 import '../../config/app_theme.dart';
-import '../../data/mini_apps_data.dart';
 import '../../models/mini_app.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/mini_app_service.dart';
 import '../scanner/qr_scanner_screen.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'dashboard_slideshow.dart';
@@ -154,6 +154,9 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   /// would throw "Multiple widgets used the same GlobalKey".
   bool _opening = false;
 
+  /// Mini apps: built-in list, adjusted by Laravel when reachable.
+  List<MiniApp> get _apps => MiniAppService.instance.apps;
+
   @override
   void initState() {
     super.initState();
@@ -167,8 +170,14 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     super.dispose();
   }
 
-  Future<void> _loadData() =>
-      Future.delayed(const Duration(milliseconds: 900));
+  /// Fetches mini apps from Laravel (never throws, falls back to the built-in
+  /// list) and keeps the skeleton visible at least 600 ms so it does not flash.
+  Future<void> _loadData() async {
+    await Future.wait([
+      MiniAppService.instance.refresh(),
+      Future<void>.delayed(const Duration(milliseconds: 600)),
+    ]);
+  }
 
   Future<void> _initialLoad() async {
     try {
@@ -261,12 +270,16 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     }
     if (!mounted || slug == null) return;
 
-    final matches = miniApps.where((a) => a.slug == slug);
-    if (matches.isEmpty) return;
+    final app = MiniAppService.instance.bySlug(slug);
+    if (app == null) {
+      // Valid OG ONE code, but the server switched this app off.
+      _snack(t.comingSoonMessage);
+      return;
+    }
     // Give the scanner's pop animation time to release the camera/route.
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
-    _open(matches.first, t);
+    _open(app, t);
   }
 
   void _showSettingsSheet() {
@@ -290,7 +303,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
 
   List<MiniApp> _filtered(AppLocalizations t) {
     final q = _query.trim().toLowerCase();
-    final sorted = _availableFirst(miniApps);
+    final sorted = _availableFirst(_apps);
     if (q.isEmpty) return sorted;
     return sorted
         .where((a) =>

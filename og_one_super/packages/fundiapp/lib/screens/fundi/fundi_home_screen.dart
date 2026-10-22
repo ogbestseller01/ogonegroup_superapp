@@ -186,42 +186,13 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Text(
-                'Partnerships',
-                style: TextStyle(
-                  inherit: true,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                  color: mutedText,
-                ),
-              ),
-            ),
-            // Others – Coming soon
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: _MiniAppTile(
-                item: _MiniAppItem(
-                  name: 'Others',
-                  subtitle: 'Coming soon',
-                  icon: Icons.apps_rounded,
-                  color: AppTheme.secondary,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showComingSoon(context, 'Others');
-                  },
-                ),
-              ),
-            ),
             const Spacer(),
             Divider(color: isDark ? AppTheme.darkBorder : AppTheme.borderLight),
             ListTile(
               leading: const Icon(Icons.info_outline_rounded,
                   color: AppTheme.primary),
               title: Text(
-                'About OG ONE GROUP',
+                'About OG ONEGROUP',
                 style: TextStyle(
                   inherit: true,
                   color: primaryText,

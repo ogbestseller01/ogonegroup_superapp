@@ -1,13 +1,22 @@
 // lib/services/qr_service.dart
 //
-// QR payload format for mini apps:
+// QR payload formats:
+//     ogone://app/<slug>?t=<token>   expiring code (checked on the server)
+//     ogone://app/<slug>             old permanent code
 //
-//     ogone://app/<slug>        e.g.  ogone://app/nearbyfundi
-//
-// Only slugs that exist in miniApps are accepted, so a random QR code
-// (a website, a Wi-Fi code, ...) is rejected instead of opening something.
+// Only slugs compiled into this build (miniApps) are accepted.
 
 import '../data/mini_apps_data.dart';
+import 'api_service.dart';
+
+/// What was read from a QR code.
+class QrScan {
+  final String slug;
+  final String? token;
+  const QrScan(this.slug, this.token);
+}
+
+enum QrCheck { ok, expired, invalid, offline }
 
 class QrService {
   QrService._();
@@ -15,15 +24,13 @@ class QrService {
   static const String scheme = 'ogone';
   static const String host = 'app';
 
-  /// Text that is encoded inside the QR image for a mini app.
   static String payloadFor(String slug) => '$scheme://$host/$slug';
 
-  /// Returns the mini-app slug for a scanned value, or null when the
-  /// value is not one of our QR codes.
-  static String? slugFrom(String? raw) {
+  /// Returns slug (+ token) for one of our QR codes, otherwise null.
+  static QrScan? parse(String? raw) {
     if (raw == null) return null;
     final text = raw.trim();
-    if (text.isEmpty) return null;
+    if (text.isEmpty || text.length > 300) return null;
 
     final uri = Uri.tryParse(text);
     if (uri == null) return null;
@@ -34,6 +41,23 @@ class QrService {
     if (segments.length != 1) return null;
 
     final slug = segments.first.toLowerCase();
-    return miniApps.any((a) => a.slug == slug) ? slug : null;
+    if (!miniApps.any((a) => a.slug == slug)) return null;
+
+    final token = uri.queryParameters['t'];
+    return QrScan(slug, (token == null || token.isEmpty) ? null : token);
+  }
+
+  /// Kept for old call sites.
+  static String? slugFrom(String? raw) => parse(raw)?.slug;
+
+  /// Asks Laravel whether the token is still valid.
+  static Future<QrCheck> verify(String token) async {
+    final res = await ApiService.instance.verifyQr(token);
+    if (res.success) return QrCheck.ok;
+    final data = res.data;
+    final reason = data is Map ? data['reason'] : null;
+    if (reason == 'expired') return QrCheck.expired;
+    if (reason == 'invalid') return QrCheck.invalid;
+    return QrCheck.offline; // no answer from the server
   }
 }

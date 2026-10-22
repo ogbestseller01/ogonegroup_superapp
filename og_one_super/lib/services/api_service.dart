@@ -1,6 +1,6 @@
 // lib/services/api_service.dart
 //
-// Static-pages API only (About, Terms, Privacy, FAQs, Contact).
+// Public API only (About, Terms, Privacy, FAQs, Contact, Feedback, Mini apps).
 // All of these endpoints are public, so no auth token is needed.
 
 import 'package:dio/dio.dart';
@@ -52,7 +52,7 @@ class ApiService {
     );
   }
 
-  /// Shared instance used by the static pages.
+  /// Shared instance.
   static final ApiService instance = ApiService();
 
   late final Dio _dio;
@@ -70,6 +70,17 @@ class ApiService {
   Future<ApiResponse> getPrivacyPolicy() => _get('/v18/privacy-policy');
 
   // ============================================================
+  // MINI APPS
+  // ============================================================
+
+  /// GET /v24/mini-apps – list of active mini apps.
+  Future<ApiResponse> getMiniApps() => _get('/v24/mini-apps');
+
+  /// POST /v24/mini-apps/qr/verify – checks a QR token (expiry, revoked).
+  Future<ApiResponse> verifyQr(String token) =>
+      _post('/v24/mini-apps/qr/verify', data: {'token': token});
+
+  // ============================================================
   // CONTACT
   // ============================================================
 
@@ -81,8 +92,6 @@ class ApiService {
   // ============================================================
 
   /// POST /v23/feedback – public endpoint, token is optional.
-  /// Fields: name, email, type (suggestion|bug|compliment|other),
-  /// rating (1-5, optional), message.
   Future<ApiResponse> sendFeedback(Map<String, dynamic> data) =>
       _post('/v23/feedback', data: data);
 

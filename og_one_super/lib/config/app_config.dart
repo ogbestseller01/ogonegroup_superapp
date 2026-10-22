@@ -4,5 +4,5 @@ class AppConfig {
   AppConfig._();
 
   /// Backend base URL (no trailing slash).
-  static const String baseUrl = 'http://192.168.43.116:8000/api';
+  static const String baseUrl = 'http://172.18.5.162:8000/api';
 }

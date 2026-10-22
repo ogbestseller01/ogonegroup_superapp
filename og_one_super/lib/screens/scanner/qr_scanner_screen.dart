@@ -38,6 +38,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   )..repeat(reverse: true);
 
   bool _handled = false;
+  bool _checking = false;
   bool _torchOn = false;
   String? _error;
   DateTime _lastErrorAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -73,28 +74,58 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     }
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    if (_handled) return;
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    if (_handled || _checking) return;
 
     for (final barcode in capture.barcodes) {
-      final slug = QrService.slugFrom(barcode.rawValue);
-      if (slug != null) {
+      final scan = QrService.parse(barcode.rawValue);
+      if (scan == null) continue;
+
+      // Code with a token: ask the server (expiry / revoked).
+      var check = QrCheck.ok;
+      if (scan.token != null) {
+        _checking = true;
+        check = await QrService.verify(scan.token!);
+        _checking = false;
+        if (!mounted) return;
+      }
+
+      if (check == QrCheck.ok) {
         _handled = true;
         HapticFeedback.mediumImpact();
-        Navigator.of(context).pop<String>(slug);
+        _controller.stop();
+        Navigator.of(context).pop<String>(scan.slug);
         return;
       }
+
+      switch (check) {
+        case QrCheck.expired:
+          _flashError(_sw ? 'QR hii imeisha muda.' : 'This QR code has expired.');
+        case QrCheck.invalid:
+          _flashError(_sw ? 'QR hii haifai.' : 'This QR code is not valid.');
+        case QrCheck.offline:
+          _flashError(_sw
+              ? 'Imeshindwa kuthibitisha QR. Angalia intaneti.'
+              : 'Could not check the code. Check your internet.');
+        case QrCheck.ok:
+          break;
+      }
+      return;
     }
 
-    // A QR code was seen but it is not one of ours. Show a short message,
-    // at most once every 2 seconds so it does not flicker.
+    // A QR code was seen but it is not one of ours.
+    _flashError(_sw
+        ? 'QR hii si ya OG ONE GROUP.'
+        : 'This QR code is not an OG ONE GROUP app code.');
+  }
+
+  /// Short red message under the frame, at most once every 2 seconds.
+  void _flashError(String message) {
     final now = DateTime.now();
     if (now.difference(_lastErrorAt) < const Duration(seconds: 2)) return;
     _lastErrorAt = now;
     HapticFeedback.heavyImpact();
-    setState(() => _error = _sw
-        ? 'QR hii si ya OG ONE GROUP.'
-        : 'This QR code is not an OG ONE GROUP app code.');
+    setState(() => _error = message);
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _error = null);
     });
