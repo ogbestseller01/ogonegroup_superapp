@@ -77,6 +77,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get nimepoteza => 'Nimepoteza App';
 
   @override
+  String get safariPoa => 'Safari Poa';
+
+  @override
   String get duma => 'Duma App';
 
   @override
@@ -355,6 +358,46 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get scan => 'Skani';
+
+  @override
+  String get aiAgent => 'AI Agent';
+
+  @override
+  String get back => 'Rudi';
+
+  @override
+  String get torch => 'Tochi';
+
+  @override
+  String get switchCamera => 'Badili kamera';
+
+  @override
+  String get scannerHint => 'Elekeza kamera kwenye QR ya app';
+
+  @override
+  String get scannerNotOurCode => 'QR hii si ya OG ONE GROUP.';
+
+  @override
+  String get scannerExpired => 'QR hii imeisha muda.';
+
+  @override
+  String get scannerInvalid => 'QR hii haifai.';
+
+  @override
+  String get scannerOffline => 'Imeshindwa kuthibitisha QR. Angalia intaneti.';
+
+  @override
+  String get cameraPermissionTitle => 'Ruhusa ya kamera inahitajika';
+
+  @override
+  String get cameraPermissionBody =>
+      'Washa ruhusa ya kamera kwenye Mipangilio ya simu, kisha jaribu tena.';
+
+  @override
+  String get cameraUnavailableTitle => 'Kamera haipatikani';
+
+  @override
+  String get cameraUnavailableBody => 'Imeshindwa kuwasha kamera. Jaribu tena.';
 
   @override
   String get onboardingWelcomeTitle => 'Karibu OG ONEGROUP';

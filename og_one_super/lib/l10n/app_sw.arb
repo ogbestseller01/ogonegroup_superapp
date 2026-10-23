@@ -28,6 +28,7 @@
   "hama": "Hama Chap Chap",
   "checkspace": "CheckSpace App",
   "nimepoteza": "Nimepoteza App",
+  "safariPoa": "Safari Poa",
   "duma": "Duma App",
   "comingSoon": "Inakuja",
 
@@ -131,6 +132,20 @@
     "partnerAppsHint": "Programu za washirika zitaonekana hapa",
     "home": "Nyumbani",
     "scan": "Skani",
+
+    "aiAgent": "AI Agent",
+    "back": "Rudi",
+    "torch": "Tochi",
+    "switchCamera": "Badili kamera",
+    "scannerHint": "Elekeza kamera kwenye QR ya app",
+    "scannerNotOurCode": "QR hii si ya OG ONE GROUP.",
+    "scannerExpired": "QR hii imeisha muda.",
+    "scannerInvalid": "QR hii haifai.",
+    "scannerOffline": "Imeshindwa kuthibitisha QR. Angalia intaneti.",
+    "cameraPermissionTitle": "Ruhusa ya kamera inahitajika",
+    "cameraPermissionBody": "Washa ruhusa ya kamera kwenye Mipangilio ya simu, kisha jaribu tena.",
+    "cameraUnavailableTitle": "Kamera haipatikani",
+    "cameraUnavailableBody": "Imeshindwa kuwasha kamera. Jaribu tena.",
 
       "onboardingWelcomeTitle": "Karibu OG ONEGROUP",
       "onboardingWelcomeBody": "Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.",

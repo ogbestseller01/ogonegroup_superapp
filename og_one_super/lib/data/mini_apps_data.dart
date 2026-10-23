@@ -64,6 +64,18 @@ const List<MiniApp> miniApps = [
     isComingSoon: true,
     imageAsset: 'assets/images/apps/hama_chap_chap.png',
   ),
+
+  // Safari Poa sits right before Duma App.
+  MiniApp(
+    id: 12,
+    slug: 'safaripoa',
+    name: 'Safari Poa',
+    subtitle: 'Book vehicles for events & trips',
+    icon: 'directions_car',
+    color: '#00A86B',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/safaripoa.png',
+  ),
   MiniApp(
     id: 11,
     slug: 'duma',

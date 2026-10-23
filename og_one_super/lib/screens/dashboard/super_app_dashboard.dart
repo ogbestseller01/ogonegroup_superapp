@@ -46,6 +46,7 @@ const _icons = <String, IconData>{
   'find_in_page': Icons.find_in_page_rounded,
   'pets': Icons.pets_rounded,
   'delivery_dining': Icons.delivery_dining_rounded,
+  'directions_car': Icons.directions_car_rounded,
 };
 
 IconData _iconFor(String name) => _icons[name] ?? Icons.apps_rounded;
@@ -925,7 +926,7 @@ class _AiAgentButton extends StatelessWidget {
       message: tooltip,
       child: Semantics(
         button: true,
-        label: 'AI Agent',
+        label: context.t.aiAgent,
         excludeSemantics: true,
         child: Container(
           decoration: BoxDecoration(
@@ -955,16 +956,16 @@ class _AiAgentButton extends StatelessWidget {
                 child: compact
                     ? const Icon(Icons.auto_awesome_rounded,
                     size: 22, color: _navy)
-                    : const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14),
+                    : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome_rounded,
+                      const Icon(Icons.auto_awesome_rounded,
                           size: 18, color: _navy),
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
                       Text(
-                        'AI Agent',
+                        context.t.aiAgent,
                         maxLines: 1,
                         style: TextStyle(
                           color: _navy,

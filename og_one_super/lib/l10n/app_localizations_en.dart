@@ -77,6 +77,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nimepoteza => 'Nimepoteza App';
 
   @override
+  String get safariPoa => 'Safari Poa';
+
+  @override
   String get duma => 'Duma App';
 
   @override
@@ -352,6 +355,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scan => 'Scan';
+
+  @override
+  String get aiAgent => 'AI Agent';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get torch => 'Torch';
+
+  @override
+  String get switchCamera => 'Switch camera';
+
+  @override
+  String get scannerHint => 'Point the camera at an app QR code';
+
+  @override
+  String get scannerNotOurCode =>
+      'This QR code is not an OG ONE GROUP app code.';
+
+  @override
+  String get scannerExpired => 'This QR code has expired.';
+
+  @override
+  String get scannerInvalid => 'This QR code is not valid.';
+
+  @override
+  String get scannerOffline => 'Could not check the code. Check your internet.';
+
+  @override
+  String get cameraPermissionTitle => 'Camera permission needed';
+
+  @override
+  String get cameraPermissionBody =>
+      'Allow camera access in your phone Settings, then try again.';
+
+  @override
+  String get cameraUnavailableTitle => 'Camera not available';
+
+  @override
+  String get cameraUnavailableBody =>
+      'The camera could not be started. Please try again.';
 
   @override
   String get onboardingWelcomeTitle => 'Welcome to OG ONEGROUP';

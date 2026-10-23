@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../config/app_strings.dart';
 import '../../services/qr_service.dart';
 
 const Color _navy = Color(0xFF1A2B4A);
@@ -42,8 +43,6 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   bool _torchOn = false;
   String? _error;
   DateTime _lastErrorAt = DateTime.fromMillisecondsSinceEpoch(0);
-
-  bool get _sw => Localizations.localeOf(context).languageCode == 'sw';
 
   @override
   void initState() {
@@ -76,6 +75,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_handled || _checking) return;
+    final t = context.t;
 
     for (final barcode in capture.barcodes) {
       final scan = QrService.parse(barcode.rawValue);
@@ -100,13 +100,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
       switch (check) {
         case QrCheck.expired:
-          _flashError(_sw ? 'QR hii imeisha muda.' : 'This QR code has expired.');
+          _flashError(t.scannerExpired);
         case QrCheck.invalid:
-          _flashError(_sw ? 'QR hii haifai.' : 'This QR code is not valid.');
+          _flashError(t.scannerInvalid);
         case QrCheck.offline:
-          _flashError(_sw
-              ? 'Imeshindwa kuthibitisha QR. Angalia intaneti.'
-              : 'Could not check the code. Check your internet.');
+          _flashError(t.scannerOffline);
         case QrCheck.ok:
           break;
       }
@@ -114,9 +112,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     }
 
     // A QR code was seen but it is not one of ours.
-    _flashError(_sw
-        ? 'QR hii si ya OG ONE GROUP.'
-        : 'This QR code is not an OG ONE GROUP app code.');
+    _flashError(t.scannerNotOurCode);
   }
 
   /// Short red message under the frame, at most once every 2 seconds.
@@ -165,7 +161,6 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               errorBuilder: (context, error) => _CameraError(
                 denied:
                 error.errorCode == MobileScannerErrorCode.permissionDenied,
-                sw: _sw,
                 onRetry: () => _controller.start(),
                 onBack: () => Navigator.of(context).pop(),
               ),
@@ -217,7 +212,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                   children: [
                     _RoundButton(
                       icon: Icons.arrow_back_rounded,
-                      tooltip: _sw ? 'Rudi' : 'Back',
+                      tooltip: context.t.back,
                       onTap: () => Navigator.of(context).pop(),
                     ),
                     const Spacer(),
@@ -225,14 +220,14 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                       icon: _torchOn
                           ? Icons.flash_on_rounded
                           : Icons.flash_off_rounded,
-                      tooltip: _sw ? 'Tochi' : 'Torch',
+                      tooltip: context.t.torch,
                       active: _torchOn,
                       onTap: _toggleTorch,
                     ),
                     const SizedBox(width: 10),
                     _RoundButton(
                       icon: Icons.cameraswitch_rounded,
-                      tooltip: _sw ? 'Badili kamera' : 'Switch camera',
+                      tooltip: context.t.switchCamera,
                       onTap: () => _controller.switchCamera(),
                     ),
                   ],
@@ -256,9 +251,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                 )
                     : _Pill(
                   key: const ValueKey('hint'),
-                  text: _sw
-                      ? 'Elekeza kamera kwenye QR ya app'
-                      : 'Point the camera at an app QR code',
+                  text: context.t.scannerHint,
                   color: Colors.white24,
                   icon: Icons.qr_code_scanner_rounded,
                 ),
@@ -420,29 +413,20 @@ class _Pill extends StatelessWidget {
 
 class _CameraError extends StatelessWidget {
   final bool denied;
-  final bool sw;
   final VoidCallback onRetry;
   final VoidCallback onBack;
 
   const _CameraError({
     required this.denied,
-    required this.sw,
     required this.onRetry,
     required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
-    final title = denied
-        ? (sw ? 'Ruhusa ya kamera inahitajika' : 'Camera permission needed')
-        : (sw ? 'Kamera haipatikani' : 'Camera not available');
-    final body = denied
-        ? (sw
-        ? 'Washa ruhusa ya kamera kwenye Mipangilio ya simu, kisha jaribu tena.'
-        : 'Allow camera access in your phone Settings, then try again.')
-        : (sw
-        ? 'Imeshindwa kuwasha kamera. Jaribu tena.'
-        : 'The camera could not be started. Please try again.');
+    final t = context.t;
+    final title = denied ? t.cameraPermissionTitle : t.cameraUnavailableTitle;
+    final body = denied ? t.cameraPermissionBody : t.cameraUnavailableBody;
 
     return Container(
       color: _navy,
@@ -480,12 +464,12 @@ class _CameraError extends StatelessWidget {
                 foregroundColor: _navy,
               ),
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(sw ? 'Jaribu tena' : 'Try again'),
+              label: Text(t.tryAgain),
             ),
             TextButton(
               onPressed: onBack,
               child: Text(
-                sw ? 'Rudi' : 'Back',
+                t.back,
                 style: const TextStyle(color: Colors.white70),
               ),
             ),

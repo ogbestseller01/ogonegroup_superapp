@@ -230,6 +230,12 @@ abstract class AppLocalizations {
   /// **'Nimepoteza App'**
   String get nimepoteza;
 
+  /// Service title for the Safari Poa mini app
+  ///
+  /// In en, this message translates to:
+  /// **'Safari Poa'**
+  String get safariPoa;
+
   /// Service title for the Duma mini app
   ///
   /// In en, this message translates to:
@@ -775,6 +781,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scan'**
   String get scan;
+
+  /// No description provided for @aiAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Agent'**
+  String get aiAgent;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @torch.
+  ///
+  /// In en, this message translates to:
+  /// **'Torch'**
+  String get torch;
+
+  /// No description provided for @switchCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get switchCamera;
+
+  /// No description provided for @scannerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at an app QR code'**
+  String get scannerHint;
+
+  /// No description provided for @scannerNotOurCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not an OG ONE GROUP app code.'**
+  String get scannerNotOurCode;
+
+  /// No description provided for @scannerExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code has expired.'**
+  String get scannerExpired;
+
+  /// No description provided for @scannerInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not valid.'**
+  String get scannerInvalid;
+
+  /// No description provided for @scannerOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the code. Check your internet.'**
+  String get scannerOffline;
+
+  /// No description provided for @cameraPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission needed'**
+  String get cameraPermissionTitle;
+
+  /// No description provided for @cameraPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera access in your phone Settings, then try again.'**
+  String get cameraPermissionBody;
+
+  /// No description provided for @cameraUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera not available'**
+  String get cameraUnavailableTitle;
+
+  /// No description provided for @cameraUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera could not be started. Please try again.'**
+  String get cameraUnavailableBody;
 
   /// No description provided for @onboardingWelcomeTitle.
   ///

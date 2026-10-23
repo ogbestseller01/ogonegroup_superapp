@@ -27,6 +27,8 @@ extension ServiceTitles on AppLocalizations {
         return hama;
       case 'nimepoteza':
         return nimepoteza;
+      case 'safaripoa':
+        return safariPoa;
       case 'duma':
         return duma;
       case 'coming_soon':

@@ -28,6 +28,8 @@ class $AssetsImagesGen {
 class $AssetsAppsGen {
   const $AssetsAppsGen();
 
+  final AssetGenImage gRh10 =
+      const AssetGenImage('assets/images/apps/safaripoa.png');
   final AssetGenImage dumaApp =
       const AssetGenImage('assets/images/apps/duma_app.png');
   final AssetGenImage fundiApp =
