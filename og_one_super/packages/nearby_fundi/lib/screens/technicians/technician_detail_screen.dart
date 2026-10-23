@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/service.dart';
 import '../../providers/technician_provider.dart';
@@ -106,53 +105,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final url = Uri.parse('tel:$phoneNumber');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url);
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _launchWhatsApp(String phoneNumber) async {
-    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-
-    final whatsappUri = Uri.parse('whatsapp://send?phone=$cleanNumber');
-
-    try {
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-        return;
-      }
-
-      final fallbackUri = Uri.parse('https://wa.me/$cleanNumber');
-      if (await canLaunchUrl(fallbackUri)) {
-        await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-      }
-    } catch (_) {}
-  }
-
-  Future<void> _launchSocialUrl(String? url) async {
-    if (url == null || url.isEmpty) return;
-
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open link')),
-        );
-      }
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final technicianProvider = context.watch<TechnicianProvider>();
@@ -244,8 +196,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeroProfile(tech, l10n, theme),
-                const SizedBox(height: 16),
-                _buildContactChips(tech, theme, l10n),
                 if (tech.bio != null && tech.bio!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _buildBioSection(tech.bio!, l10n, theme),
@@ -548,97 +498,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
           style: TextStyle(color: theme.hintColor, fontSize: 12),
         ),
       ],
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONTACT BUTTONS
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildContactChips(
-      Technician tech,
-      ThemeData theme,
-      AppLocalizations l10n,
-      ) {
-    final hasPhone = tech.phone != null && tech.phone!.isNotEmpty;
-    final hasEmail = tech.email != null && tech.email!.isNotEmpty;
-
-    if (!hasPhone && !hasEmail) {
-      return const SizedBox.shrink();
-    }
-
-    final buttons = <Widget>[
-      if (hasPhone)
-        _contactChip(
-          icon: Icons.phone_rounded,
-          label: l10n.call,
-          color: Colors.green.shade700,
-          onTap: () => _makePhoneCall(tech.phone!),
-        ),
-      if (hasPhone)
-        _contactChip(
-          icon: Icons.chat_rounded,
-          label: 'WhatsApp',
-          color: Colors.green.shade600,
-          onTap: () => _launchWhatsApp(tech.phone!),
-        ),
-      if (hasEmail)
-        _contactChip(
-          icon: Icons.email_rounded,
-          label: l10n.email,
-          color: Colors.blue.shade700,
-          onTap: () async {
-            final uri = Uri.parse('mailto:${tech.email}');
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri);
-            }
-          },
-        ),
-    ];
-
-    return Row(
-      children: [
-        for (var i = 0; i < buttons.length; i++) ...[
-          Expanded(child: buttons[i]),
-          if (i != buttons.length - 1) const SizedBox(width: 10),
-        ],
-      ],
-    );
-  }
-
-  Widget _contactChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: color.withOpacity(0.09),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: color),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
