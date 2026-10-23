@@ -2,7 +2,7 @@
 class User {
   final int id;
   final String name;
-  final String email;
+  final String? email;          // ← now nullable
   final String? phone;
   final String? nida;
   final String locale;
@@ -11,7 +11,7 @@ class User {
   User({
     required this.id,
     required this.name,
-    required this.email,
+    this.email,                 // ← optional
     this.phone,
     this.nida,
     this.locale = 'en',
@@ -22,7 +22,7 @@ class User {
     return User(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      email: json['email'] ?? '',
+      email: json['email'],     // can be null
       phone: json['phone'],
       nida: json['nida'],
       locale: json['locale'] ?? 'en',

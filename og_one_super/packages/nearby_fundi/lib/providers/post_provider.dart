@@ -1,10 +1,11 @@
-// providers/post_provider.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/post.dart';
 
 class PostProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+
   List<Post> _posts = [];
   int _page = 1;
   bool _hasMore = true;
@@ -25,6 +26,7 @@ class PostProvider extends ChangeNotifier {
     fetchPosts(refresh: true);
   }
 
+  /// Public blog feed (used by BlogsScreen)
   Future<void> fetchPosts({bool refresh = false}) async {
     if (refresh) {
       _page = 1;
@@ -37,8 +39,8 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.getPosts(page: _page, technicianId: _filterTechnicianId);
-
+    final res =
+    await _api.getPosts(page: _page, technicianId: _filterTechnicianId);
     if (res.success && res.data != null) {
       final data = res.data as Map<String, dynamic>;
       final List<dynamic> items = data['data'] ?? [];
@@ -47,19 +49,76 @@ class PostProvider extends ChangeNotifier {
       _hasMore = data['next_page_url'] != null;
       _page++;
       _error = null;
-
-      // Debug YouTube data
-      for (var p in newPosts) {
-        debugPrint('📌 Post #${p.id} | youtubeUrl: ${p.youtubeUrl}');
-        debugPrint('   youtubeEmbed: ${p.youtubeEmbed}');
-        debugPrint('   hasYoutubeVideo: ${p.hasYoutubeVideo}');
-      }
     } else {
       _error = res.message;
     }
-
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Fundi’s own posts
+  Future<void> fetchMyPosts() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final res = await _api.getMyPosts();
+    if (res.success && res.data != null) {
+      _posts = (res.data as List).map((e) => Post.fromJson(e)).toList();
+      _error = null;
+    } else {
+      _error = res.message;
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> createPost(Map<String, dynamic> data) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final res = await _api.createPost(data);
+    _isLoading = false;
+    if (res.success) {
+      await fetchMyPosts();
+      return true;
+    }
+    _error = res.message;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> updatePost(int id, Map<String, dynamic> data) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final res = await _api.updatePost(id, data);
+    _isLoading = false;
+    if (res.success) {
+      await fetchMyPosts();
+      return true;
+    }
+    _error = res.message;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> deletePost(int id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    final res = await _api.deletePost(id);
+    _isLoading = false;
+    if (res.success) {
+      await fetchMyPosts();
+      return true;
+    }
+    _error = res.message;
+    notifyListeners();
+    return false;
   }
 
   Future<void> likePost(int id) async {
@@ -69,19 +128,21 @@ class PostProvider extends ChangeNotifier {
     final index = _posts.indexWhere((p) => p.id == id);
     if (index != -1) {
       final post = _posts[index];
-      final newLikesCount = post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
+      final newLikesCount =
+      post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
+
       _posts[index] = Post(
         id: post.id,
         title: post.title,
         content: post.content,
-        image: post.image,
+        images: post.images,
         youtubeUrl: post.youtubeUrl,
         youtubeEmbed: post.youtubeEmbed,
         likesCount: newLikesCount,
         commentsCount: post.commentsCount,
         technicianName: post.technicianName,
         technicianAvatar: post.technicianAvatar,
-        technicianId: post.technicianId,   // ← REQUIRED – fixed here
+        technicianId: post.technicianId,
         createdAt: post.createdAt,
         likedByUser: !post.likedByUser,
         comments: post.comments,

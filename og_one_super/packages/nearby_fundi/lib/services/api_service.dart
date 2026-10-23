@@ -384,15 +384,19 @@ class ApiService {
   Future<ApiResponse> getTrackingData(int requestId) =>
       _get('/tracking/$requestId');
 
+
+
   // ═══════════════════════════════════════════════════════════════════════
-  //  BLOG (Posts, Comments, Likes) - V1 & V5
-  // ═══════════════════════════════════════════════════════════════════════
+//  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)
+// ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getPosts({int page = 1, int? technicianId}) =>
       _get('/v1/posts', query: {
         'page': page,
         if (technicianId != null) 'technician_id': technicianId,
       });
+
+  Future<ApiResponse> getMyPosts() => _get('/v5/my-posts');
 
   Future<ApiResponse> getPostDetail(int id) => _get('/v1/posts/$id');
 
@@ -404,70 +408,121 @@ class ApiService {
 
   Future<ApiResponse> deleteComment(int id) => _delete('/v5/comments/$id');
 
-  Future<ApiResponse> createPost({
-    required String title,
-    required String content,
-    File? imageFile,
-    String? youtubeUrl,
-  }) async {
-    if (imageFile != null && await imageFile.exists()) {
-      final formData = FormData.fromMap({
-        'title': title,
-        'content': content,
-        'image': await MultipartFile.fromFile(imageFile.path),
-      });
-      if (youtubeUrl != null && youtubeUrl.isNotEmpty) {
-        formData.fields.add(MapEntry('youtube_url', youtubeUrl));
-      }
-      return _post('/v5/posts', data: formData);
+  /// Create post – supports multiple images (Fundi style)
+  Future<ApiResponse> createPost(Map<String, dynamic> data) async {
+    final formData = FormData();
+
+    formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
+    formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
+
+    if (data['youtube_url'] != null &&
+        data['youtube_url'].toString().isNotEmpty) {
+      formData.fields
+          .add(MapEntry('youtube_url', data['youtube_url'].toString()));
     }
 
-    final Map<String, dynamic> data = {
-      'title': title,
-      'content': content,
-    };
-    if (youtubeUrl != null && youtubeUrl.isNotEmpty) {
-      data['youtube_url'] = youtubeUrl;
+    // Multi-image
+    if (data['images'] != null && data['images'] is List) {
+      for (final p in data['images']) {
+        if (p is String && p.isNotEmpty) {
+          final file = File(p);
+          if (await file.exists()) {
+            formData.files.add(MapEntry(
+              'images[]',
+              await MultipartFile.fromFile(
+                file.path,
+                filename: path.basename(file.path),
+              ),
+            ));
+          }
+        }
+      }
     }
-    return _post('/v5/posts', data: data);
+    // Backward-compat single image
+    else if (data['image'] != null &&
+        data['image'] is String &&
+        (data['image'] as String).isNotEmpty) {
+      final file = File(data['image']);
+      if (await file.exists()) {
+        formData.files.add(MapEntry(
+          'images[]',
+          await MultipartFile.fromFile(
+            file.path,
+            filename: path.basename(file.path),
+          ),
+        ));
+      }
+    }
+
+    return _post('/v5/posts', data: formData);
   }
 
-  Future<ApiResponse> updatePost(
-      int id, {
-        String? title,
-        String? content,
-        File? imageFile,
-        String? youtubeUrl,
-      }) async {
-    if (imageFile != null && await imageFile.exists()) {
-      final formData = FormData.fromMap({
-        '_method': 'PUT',
-        if (title != null) 'title': title,
-        if (content != null) 'content': content,
-        'image': await MultipartFile.fromFile(imageFile.path),
-      });
-      if (youtubeUrl != null) {
-        formData.fields.add(MapEntry('youtube_url', youtubeUrl));
-      } else {
-        formData.fields.add(MapEntry('youtube_url', ''));
-      }
-      return _post('/v5/posts/$id', data: formData);
+  /// Update post – multi-image + keep_images support
+  Future<ApiResponse> updatePost(int id, Map<String, dynamic> data) async {
+    final formData = FormData();
+    formData.fields.add(const MapEntry('_method', 'PUT'));
+
+    if (data.containsKey('title')) {
+      formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
+    }
+    if (data.containsKey('content')) {
+      formData.fields
+          .add(MapEntry('content', data['content']?.toString() ?? ''));
+    }
+    if (data.containsKey('youtube_url')) {
+      formData.fields.add(MapEntry(
+        'youtube_url',
+        data['youtube_url']?.toString() ?? '',
+      ));
     }
 
-    final Map<String, dynamic> data = {
-      '_method': 'PUT',
-      if (title != null) 'title': title,
-      if (content != null) 'content': content,
-    };
-    if (youtubeUrl != null) {
-      data['youtube_url'] = youtubeUrl;
-    } else {
-      data['youtube_url'] = '';
+    // Keep existing images
+    if (data['keep_images'] != null && data['keep_images'] is List) {
+      for (final url in data['keep_images']) {
+        if (url != null && url.toString().isNotEmpty) {
+          formData.fields.add(MapEntry('keep_images[]', url.toString()));
+        }
+      }
     }
-    return _post('/v5/posts/$id', data: data);
+
+    // New images
+    if (data['images'] != null && data['images'] is List) {
+      for (final p in data['images']) {
+        if (p is String && p.isNotEmpty) {
+          final file = File(p);
+          if (await file.exists()) {
+            formData.files.add(MapEntry(
+              'images[]',
+              await MultipartFile.fromFile(
+                file.path,
+                filename: path.basename(file.path),
+              ),
+            ));
+          }
+        }
+      }
+    }
+    // Backward-compat single image
+    else if (data['image'] != null &&
+        data['image'] is String &&
+        (data['image'] as String).isNotEmpty) {
+      final file = File(data['image']);
+      if (await file.exists()) {
+        formData.files.add(MapEntry(
+          'images[]',
+          await MultipartFile.fromFile(
+            file.path,
+            filename: path.basename(file.path),
+          ),
+        ));
+      }
+    }
+
+    return _post('/v5/posts/$id', data: formData);
   }
 
   Future<ApiResponse> deletePost(int id) => _delete('/v5/posts/$id');
+
 
   // ═══════════════════════════════════════════════════════════════════════
   //  STATIC PAGES - V1 & V6

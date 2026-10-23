@@ -2,16 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/post_provider.dart';
 import '../../models/post.dart';
 import '../../config/app_theme.dart';
-import '../../utils/image_utils.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/app_routes.dart';
-import '../../widgets/safe_youtube_embed.dart';
+import '../../widgets/app_network_image.dart';
 import '../modals.dart';
+
+const double _maxCardWidth = 640;
 
 class BlogsScreen extends StatefulWidget {
   const BlogsScreen({super.key});
@@ -24,13 +25,13 @@ class _BlogsScreenState extends State<BlogsScreen> {
   final TextEditingController _filterController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String _filterQuery = '';
-  bool _searchExpanded = false;
 
   @override
   void initState() {
     super.initState();
+    // Same pattern as FundiPostsScreen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PostProvider>().fetchPosts(refresh: true);
+      if (mounted) context.read<PostProvider>().fetchPosts(refresh: true);
     });
   }
 
@@ -45,18 +46,33 @@ class _BlogsScreenState extends State<BlogsScreen> {
     final posts = context.watch<PostProvider>().posts;
     if (_filterQuery.trim().isEmpty) return posts;
     final q = _filterQuery.toLowerCase().trim();
-    return posts.where((post) =>
-    post.title.toLowerCase().contains(q) ||
-        post.content.toLowerCase().contains(q)
-    ).toList();
+    return posts
+        .where((p) =>
+    p.title.toLowerCase().contains(q) ||
+        p.content.toLowerCase().contains(q) ||
+        p.technicianName.toLowerCase().contains(q))
+        .toList();
   }
 
-  // ─── Navigation to technician detail ──────────────────────────────
   void _goToTechnicianDetail(int technicianId) {
+    if (technicianId <= 0) return;
     Navigator.pushNamed(
       context,
       AppRoutes.technicianDetail,
       arguments: technicianId,
+    );
+  }
+
+  void _openImage(String url, String tag) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black87,
+        pageBuilder: (_, __, ___) =>
+            _FullscreenImageViewer(imagePath: url, heroTag: tag),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
     );
   }
 
@@ -73,8 +89,8 @@ class _BlogsScreenState extends State<BlogsScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => provider.fetchPosts(refresh: true),
           color: AppTheme.primary,
+          onRefresh: () => provider.fetchPosts(refresh: true),
           child: CustomScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
@@ -101,12 +117,31 @@ class _BlogsScreenState extends State<BlogsScreen> {
                 else
                   SliverPadding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 24.0 : 0.0,
+                      horizontal: isTablet ? 24.0 : 12.0,
                       vertical: 4.0,
                     ),
-                    sliver: isTablet
-                        ? _buildTabletGrid(context, filteredPosts)
-                        : _buildMobileList(context, filteredPosts),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (ctx, i) {
+                          final post = filteredPosts[i];
+                          return Center(
+                            child: ConstrainedBox(
+                              constraints:
+                              const BoxConstraints(maxWidth: _maxCardWidth),
+                              child: _BlogPostCard(
+                                key: ValueKey(post.id),
+                                post: post,
+                                onImageTap: _openImage,
+                                onTechnicianTap: _goToTechnicianDetail,
+                                onLike: () =>
+                                    context.read<PostProvider>().likePost(post.id),
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: filteredPosts.length,
+                      ),
+                    ),
                   ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
@@ -121,139 +156,61 @@ class _BlogsScreenState extends State<BlogsScreen> {
     final theme = Theme.of(context);
     return SliverAppBar(
       pinned: true,
-      floating: false,
-      snap: false,
       elevation: 0,
       backgroundColor: theme.scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
-      titleSpacing: 4,
       leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            shape: BoxShape.circle,
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: Icon(Icons.arrow_back_ios_new_rounded,
-              size: 16, color: theme.colorScheme.onSurface),
-        ),
-        onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        onPressed: () =>
+            Navigator.pushReplacementNamed(context, AppRoutes.home),
       ),
-      title: ShaderMask(
-        shaderCallback: (bounds) => LinearGradient(
-          colors: [AppTheme.primary, AppTheme.primary.withOpacity(0.6)],
-        ).createShader(bounds),
-        child: Text(
-          l10n.blog,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 22,
-            letterSpacing: -0.5,
-          ),
-        ),
+      title: Text(
+        l10n.blog,
+        style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      centerTitle: false,
       actions: [
         IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: provider.isLoading
-                ? SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2.0, color: AppTheme.primary),
-            )
-                : Icon(Icons.refresh_rounded,
-                size: 18, color: theme.colorScheme.onSurface),
-          ),
-          onPressed: () => provider.fetchPosts(refresh: true),
           tooltip: 'Refresh',
+          icon: provider.isLoading
+              ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : const Icon(Icons.refresh_rounded),
+          onPressed:
+          provider.isLoading ? null : () => provider.fetchPosts(refresh: true),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
       ],
     );
   }
 
-  // ─── SEARCH BAR – Centered & Responsive ──────────────────────────
   Widget _buildSearchBar(BuildContext context) {
     final theme = Theme.of(context);
     final postCount = context.watch<PostProvider>().posts.length;
     final filteredCount = _filteredPosts.length;
-    final isTablet = MediaQuery.of(context).size.width > 600;
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 40.0 : 16.0,
-        vertical: 6.0,
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
-            flex: 3,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              height: 46,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(23),
-                border: Border.all(
-                  color: _searchExpanded
-                      ? AppTheme.primary.withOpacity(0.5)
-                      : theme.dividerColor,
-                  width: _searchExpanded ? 1.4 : 1.0,
+            child: TextField(
+              controller: _filterController,
+              onChanged: (v) => setState(() => _filterQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Search posts...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _filterQuery.isEmpty
+                    ? null
+                    : IconButton(
+                  icon: const Icon(Icons.clear_rounded),
+                  onPressed: () {
+                    _filterController.clear();
+                    setState(() => _filterQuery = '');
+                  },
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.shadowColor.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _filterController,
-                style: theme.textTheme.bodyMedium,
-                onTap: () => setState(() => _searchExpanded = true),
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: 'Search posts...',
-                  hintStyle: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.hintColor.withOpacity(0.6),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    size: 20,
-                    color: AppTheme.primary,
-                  ),
-                  suffixIcon: _filterQuery.isNotEmpty
-                      ? IconButton(
-                    icon: Icon(
-                      Icons.clear_rounded,
-                      size: 18,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                    onPressed: () {
-                      _filterController.clear();
-                      setState(() => _filterQuery = '');
-                    },
-                  )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                ),
-                onChanged: (value) {
-                  setState(() => _filterQuery = value);
-                },
               ),
             ),
           ),
@@ -267,7 +224,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
               ),
               child: Text(
                 _filterQuery.isNotEmpty ? '$filteredCount' : '$postCount',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppTheme.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
@@ -280,46 +237,6 @@ class _BlogsScreenState extends State<BlogsScreen> {
     );
   }
 
-  Widget _buildMobileList(BuildContext context, List<Post> posts) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-            (ctx, i) {
-          final post = posts[i];
-          return _BlogPostCard(
-            key: ValueKey(post.id),
-            post: post,
-            isGrid: false,
-            onTechnicianTap: _goToTechnicianDetail,
-          );
-        },
-        childCount: posts.length,
-      ),
-    );
-  }
-
-  Widget _buildTabletGrid(BuildContext context, List<Post> posts) {
-    return SliverGrid(
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 480,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 0.78,
-      ),
-      delegate: SliverChildBuilderDelegate(
-            (ctx, i) {
-          final post = posts[i];
-          return _BlogPostCard(
-            key: ValueKey(post.id),
-            post: post,
-            isGrid: true,
-            onTechnicianTap: _goToTechnicianDetail,
-          );
-        },
-        childCount: posts.length,
-      ),
-    );
-  }
-
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return Center(
@@ -328,24 +245,9 @@ class _BlogsScreenState extends State<BlogsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primary.withOpacity(0.15),
-                    AppTheme.primary.withOpacity(0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.article_rounded,
-                  size: 48, color: AppTheme.primary),
-            ),
-            const SizedBox(height: 24),
+            Icon(Icons.article_rounded,
+                size: 56, color: AppTheme.primary.withOpacity(0.7)),
+            const SizedBox(height: 16),
             Text(
               l10n.noBlogPosts,
               style: theme.textTheme.titleLarge
@@ -389,55 +291,99 @@ class _BlogsScreenState extends State<BlogsScreen> {
   }
 }
 
-// ─── BLOG POST CARD ────────────────────────────────────────────────
+// ═══════════════════════ FULLSCREEN IMAGE ═══════════════════════════
+
+class _FullscreenImageViewer extends StatelessWidget {
+  final String imagePath;
+  final String heroTag;
+  const _FullscreenImageViewer(
+      {required this.imagePath, required this.heroTag});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black87,
+      body: Stack(
+        children: [
+          Center(
+            child: Hero(
+              tag: heroTag,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4,
+                child: AppNetworkImage(
+                  path: imagePath,
+                  fit: BoxFit.contain,
+                  fallback: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.broken_image, size: 60, color: Colors.white54),
+                      SizedBox(height: 8),
+                      Text('Image not available',
+                          style: TextStyle(color: Colors.white54)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 12,
+            right: 12,
+            child: SafeArea(
+              child: IconButton(
+                style: IconButton.styleFrom(backgroundColor: Colors.black45),
+                icon: const Icon(Icons.close_rounded, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════ CARD ═══════════════════════════════════
+
+String? _videoSource(Post post) {
+  final url = post.youtubeUrl?.trim() ?? '';
+  if (url.isNotEmpty) return url;
+  final embed = post.youtubeEmbed?.trim() ?? '';
+  return embed.isNotEmpty ? embed : null;
+}
+
 class _BlogPostCard extends StatefulWidget {
   final Post post;
-  final bool isGrid;
+  final void Function(String url, String tag) onImageTap;
   final void Function(int technicianId) onTechnicianTap;
+  final VoidCallback onLike;
 
   const _BlogPostCard({
     super.key,
     required this.post,
-    this.isGrid = false,
+    required this.onImageTap,
     required this.onTechnicianTap,
+    required this.onLike,
   });
 
   @override
   State<_BlogPostCard> createState() => _BlogPostCardState();
 }
 
-class _BlogPostCardState extends State<_BlogPostCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _heartController;
-  bool _showBigHeart = false;
+class _BlogPostCardState extends State<_BlogPostCard> {
+  bool _heart = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _heartController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 550),
-    );
-  }
-
-  @override
-  void dispose() {
-    _heartController.dispose();
-    super.dispose();
-  }
-
-  void _handleDoubleTapLike() {
-    if (!widget.post.likedByUser) {
-      context.read<PostProvider>().likePost(widget.post.id);
-    }
-    setState(() => _showBigHeart = true);
-    _heartController.forward(from: 0).then((_) {
-      if (mounted) setState(() => _showBigHeart = false);
-    });
+  void _doubleTapLike() {
     HapticFeedback.mediumImpact();
+    if (!widget.post.likedByUser) widget.onLike();
+    setState(() => _heart = true);
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _heart = false);
+    });
   }
 
-  void _openPostModal(BuildContext context) {
+  void _openPostModal() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -449,328 +395,458 @@ class _BlogPostCardState extends State<_BlogPostCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTablet = MediaQuery.of(context).size.width > 600;
     final post = widget.post;
+    final video = _videoSource(post);
 
-    final imageUrl = (post.image != null && post.image!.isNotEmpty)
-        ? ImageUtils.getFullImageUrl(post.image!)
-        : null;
-
-    final hasVideo = post.hasYoutubeVideo;
-
-    return GestureDetector(
-      onTap: () => _openPostModal(context),
-      child: Container(
-        margin: EdgeInsets.symmetric(
-          horizontal: widget.isGrid ? 0.0 : 12.0,
-          vertical: widget.isGrid ? 0.0 : 10.0,
-        ),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: widget.isGrid ? MainAxisSize.max : MainAxisSize.min,
-          children: [
-            // ─── Header ──────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  // ─── Tappable Avatar ──────────────────────────────────
-                  GestureDetector(
-                    onTap: () => widget.onTechnicianTap(post.technicianId),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundImage: post.technicianAvatar != null
-                          ? CachedNetworkImageProvider(
-                          ImageUtils.getFullImageUrl(post.technicianAvatar!))
-                          : null,
-                      child: post.technicianAvatar == null
-                          ? Text(
-                        post.technicianName[0].toUpperCase(),
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // ─── Tappable Name ────────────────────────────────────
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => widget.onTechnicianTap(post.technicianId),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            post.technicianName,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: theme.dividerColor.withOpacity(0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => widget.onTechnicianTap(post.technicianId),
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: AppNetworkImage(
+                        path: post.technicianAvatar,
+                        fallback: Container(
+                          color: AppTheme.primary.withOpacity(0.1),
+                          alignment: Alignment.center,
+                          child: Text(
+                            post.technicianName.isNotEmpty
+                                ? post.technicianName[0].toUpperCase()
+                                : 'F',
+                            style: const TextStyle(
                               fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primary,
                             ),
                           ),
-                          Text(
-                            _formatDate(post.createdAt),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.hintColor,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                  // ─── Overflow Menu with "View Profile" ──────────────
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_horiz, size: 22, color: theme.hintColor),
-                    onSelected: (value) {
-                      if (value == 'profile') {
-                        widget.onTechnicianTap(post.technicianId);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem<String>(
-                        value: 'profile',
-                        child: Row(
-                          children: [
-                            Icon(Icons.person_outline, size: 18),
-                            SizedBox(width: 8),
-                            Text('View Profile'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // ─── Media (Image/Video) ───────────────────────────────────
-            if (imageUrl != null || hasVideo)
-              Expanded(
-                flex: widget.isGrid ? 3 : 0,
-                child: GestureDetector(
-                  onDoubleTap: imageUrl != null ? _handleDoubleTapLike : null,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      _MediaSection(
-                        imageUrl: imageUrl,
-                        videoUrl: hasVideo
-                            ? (post.youtubeUrl ?? post.youtubeEmbed)
-                            : null,
-                        isGrid: widget.isGrid,
-                      ),
-                      AnimatedOpacity(
-                        opacity: _showBigHeart ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.6, end: 1.15)
-                              .animate(CurvedAnimation(
-                            parent: _heartController,
-                            curve: const Interval(0, 0.5, curve: Curves.easeOut),
-                          )),
-                          child: Icon(
-                            Icons.favorite_rounded,
-                            color: Colors.white,
-                            size: 90,
-                            shadows: [
-                              Shadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              ),
-
-            // ─── Footer ──────────────────────────────────────────────────
-            Expanded(
-              flex: widget.isGrid ? 2 : 0,
-              child: Column(
-                mainAxisSize: widget.isGrid ? MainAxisSize.max : MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Actions
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Row(
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => widget.onTechnicianTap(post.technicianId),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            post.likedByUser
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: post.likedByUser ? Colors.red : theme.hintColor,
-                          ),
-                          onPressed: () =>
-                              context.read<PostProvider>().likePost(post.id),
+                        Text(
+                          post.technicianName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
-                        Text('${post.likesCount}',
-                            style: theme.textTheme.bodyMedium),
-                        const SizedBox(width: 20),
-                        IconButton(
-                          icon: Icon(Icons.comment_rounded, color: theme.hintColor),
-                          onPressed: () => _openPostModal(context),
+                        Text(
+                          _ago(post.createdAt),
+                          style: theme.textTheme.bodySmall,
                         ),
-                        Text('${post.commentsCount}',
-                            style: theme.textTheme.bodyMedium),
                       ],
                     ),
                   ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_horiz_rounded),
+                  onSelected: (v) {
+                    if (v == 'profile') {
+                      widget.onTechnicianTap(post.technicianId);
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'profile',
+                      child: ListTile(
+                        leading: Icon(Icons.person_outline),
+                        title: Text('View Profile'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
 
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                    child: RichText(
-                      text: TextSpan(
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.colorScheme.onSurface),
-                        children: [
-                          TextSpan(
-                            text: '${post.technicianName} ',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text: post.content.length > 120
-                                ? '${post.content.substring(0, 120)}...'
-                                : post.content,
-                          ),
-                        ],
+          // Media (multi-image + optional video)
+          if (post.hasImages || video != null)
+            GestureDetector(
+              onDoubleTap: post.hasImages ? _doubleTapLike : null,
+              onTap: _openPostModal,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  _MediaSection(
+                    images: post.images,
+                    videoUrl: video,
+                    postId: post.id,
+                    onImageTap: widget.onImageTap,
+                  ),
+                  IgnorePointer(
+                    child: AnimatedOpacity(
+                      opacity: _heart ? 1 : 0,
+                      duration: const Duration(milliseconds: 150),
+                      child: AnimatedScale(
+                        scale: _heart ? 1.15 : 0.6,
+                        duration: const Duration(milliseconds: 250),
+                        child: const Icon(
+                          Icons.favorite_rounded,
+                          size: 90,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(color: Colors.black38, blurRadius: 16)
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+
+          // Footer
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    post.likedByUser
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: post.likedByUser
+                        ? Colors.red
+                        : theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    widget.onLike();
+                  },
+                ),
+                Text(
+                  '${post.likesCount}',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 20,
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                  onPressed: _openPostModal,
+                ),
+                Text(
+                  '${post.commentsCount}',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (post.title.isNotEmpty)
+                  Text(
+                    post.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                const SizedBox(height: 3),
+                GestureDetector(
+                  onTap: _openPostModal,
+                  child: Text(
+                    post.content,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.4,
+                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+  String _ago(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inDays > 7) return '${t.day}/${t.month}/${t.year}';
+    if (d.inDays > 0) return '${d.inDays}d ago';
+    if (d.inHours > 0) return '${d.inHours}h ago';
+    if (d.inMinutes > 0) return '${d.inMinutes}m ago';
     return 'Just now';
   }
 }
 
-// ─── MEDIA SECTION ────────────────────────────────────────────────
-class _MediaSection extends StatelessWidget {
-  final String? imageUrl;
+// ───────────── MEDIA (multi-image) ─────────────
+
+class _MediaSection extends StatefulWidget {
+  final List<String> images;
   final String? videoUrl;
-  final bool isGrid;
+  final int postId;
+  final void Function(String url, String tag) onImageTap;
 
   const _MediaSection({
-    required this.imageUrl,
+    required this.images,
     required this.videoUrl,
-    required this.isGrid,
+    required this.postId,
+    required this.onImageTap,
   });
 
   @override
+  State<_MediaSection> createState() => _MediaSectionState();
+}
+
+class _MediaSectionState extends State<_MediaSection> {
+  final _pageC = PageController();
+  int _page = 0;
+
+  @override
+  void dispose() {
+    _pageC.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
-    final hasVideo = videoUrl != null && videoUrl!.trim().isNotEmpty;
+    final images = widget.images;
 
-    if (!hasImage && !hasVideo) return const SizedBox.shrink();
-
-    final theme = Theme.of(context);
-    final isTablet = MediaQuery.of(context).size.width > 600;
-    final double imageHeight = isTablet ? 380.0 : 280.0;
-
-    if (hasImage) {
-      return Stack(
-        fit: StackFit.passthrough,
-        children: [
-          CachedNetworkImage(
-            imageUrl: imageUrl!,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            height: isGrid ? double.infinity : imageHeight,
-            placeholder: (context, url) => Container(
-              height: isGrid ? double.infinity : imageHeight,
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Center(
-                  child: CircularProgressIndicator(color: AppTheme.primary)),
-            ),
-            errorWidget: (context, url, error) => Container(
-              height: isGrid ? double.infinity : imageHeight,
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.broken_image, size: 60, color: theme.hintColor),
-            ),
-          ),
-          if (hasVideo)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: _VideoBadge(videoUrl: videoUrl!),
-            ),
-        ],
-      );
+    if (images.isEmpty) {
+      return widget.videoUrl == null
+          ? const SizedBox.shrink()
+          : _YouTubeThumbnail(videoUrl: widget.videoUrl!, height: 220);
     }
 
-    // Show YouTube embed directly
-    return SafeYoutubeEmbed(
-      videoUrl: videoUrl!,
-      height: isGrid ? double.infinity : imageHeight,
+    return Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: 4 / 3,
+          child: PageView.builder(
+            controller: _pageC,
+            itemCount: images.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (context, i) {
+              final tag = 'blog-image-${widget.postId}-$i';
+              return GestureDetector(
+                onTap: () => widget.onImageTap(images[i], tag),
+                child: Hero(
+                  tag: tag,
+                  child: AppNetworkImage(
+                    path: images[i],
+                    width: double.infinity,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (images.length > 1) ...[
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_page + 1}/${images.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < images.length; i++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: _page == i ? 8 : 6,
+                    height: _page == i ? 8 : 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _page == i
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.5),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+        if (widget.videoUrl != null)
+          Positioned(
+            top: 10,
+            left: 10,
+            child: GestureDetector(
+              onTap: () => showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.black,
+                builder: (_) => SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: _YouTubeThumbnail(
+                        videoUrl: widget.videoUrl!, height: 240),
+                  ),
+                ),
+              ),
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_circle_fill_rounded,
+                        color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text('Video',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
 
-// ─── VIDEO BADGE ────────────────────────────────────────────────
-class _VideoBadge extends StatelessWidget {
-  final String videoUrl;
+String? _youtubeId(String input) {
+  var working = input.trim();
+  if (working.isEmpty) return null;
 
-  const _VideoBadge({required this.videoUrl});
+  if (working.toLowerCase().contains('<iframe')) {
+    final src = RegExp(r'''src=["']([^"']+)["']''', caseSensitive: false)
+        .firstMatch(working);
+    if (src != null) working = src.group(1) ?? working;
+  }
+
+  final match = RegExp(
+    r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/)|youtube-nocookie\.com\/embed\/)([_\-\w]{11})',
+    caseSensitive: false,
+  ).firstMatch(working);
+  if (match != null) return match.group(1);
+
+  if (working.length == 11 &&
+      !working.contains('/') &&
+      !working.contains('?')) {
+    return working;
+  }
+  return null;
+}
+
+class _YouTubeThumbnail extends StatelessWidget {
+  final String videoUrl;
+  final double height;
+  const _YouTubeThumbnail({required this.videoUrl, required this.height});
+
+  Future<void> _open(String id) async {
+    final uri = Uri.parse('https://www.youtube.com/watch?v=$id');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final id = _youtubeId(videoUrl);
+
+    if (id == null) {
+      return Container(
+        height: height,
+        width: double.infinity,
+        color: Colors.grey.shade900,
+        alignment: Alignment.center,
+        child: const Text('Invalid YouTube link',
+            style: TextStyle(color: Colors.white54)),
+      );
+    }
+
     return GestureDetector(
-      onTap: () => showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.black,
-        isScrollControlled: true,
-        builder: (_) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: SafeYoutubeEmbed(videoUrl: videoUrl, height: 260),
-          ),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
+      onTap: () => _open(id),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Icon(Icons.play_circle_fill_rounded,
-                color: Colors.white, size: 16),
-            SizedBox(width: 4),
-            Text('Video',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600)),
+            Image.network(
+              'https://img.youtube.com/vi/$id/hqdefault.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                  Container(color: Colors.grey.shade900),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0x8C000000)],
+                  stops: [0.5, 1],
+                ),
+              ),
+            ),
+            const Center(
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 44),
+              ),
+            ),
+            const Positioned(
+              bottom: 12,
+              left: 12,
+              child: Text('Tap to play on YouTube',
+                  style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
           ],
         ),
       ),

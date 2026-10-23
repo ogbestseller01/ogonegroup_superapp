@@ -36,7 +36,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       final chatUser = ChatUser(
         id: user.id,
         name: user.name,
-        email: user.email,
+        email: user.email ?? '', // ✅ FIX: email is now nullable
         phone: user.phone,
         avatar: null,
         isOnline: false,
@@ -55,9 +55,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Future<void> _confirmAndDelete(
-    BuildContext context,
-    ChatConversation conversation,
-  ) async {
+      BuildContext context,
+      ChatConversation conversation,
+      ) async {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -96,7 +96,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (confirm != true || !mounted) return;
 
     final success =
-        await context.read<ChatProvider>().deleteConversation(conversation.id);
+    await context.read<ChatProvider>().deleteConversation(conversation.id);
 
     if (!mounted) return;
 
@@ -193,62 +193,62 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       body: _isInitializing
           ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primary),
-            )
+        child: CircularProgressIndicator(color: AppTheme.primary),
+      )
           : Consumer<ChatProvider>(
-              builder: (context, chatProvider, child) {
-                final conversations = chatProvider.conversations;
+        builder: (context, chatProvider, child) {
+          final conversations = chatProvider.conversations;
 
-                if (chatProvider.isLoading && conversations.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primary),
-                  );
-                }
+          if (chatProvider.isLoading && conversations.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            );
+          }
 
-                if (conversations.isEmpty) {
-                  return _buildEmptyState(context, l10n, isDark);
-                }
+          if (conversations.isEmpty) {
+            return _buildEmptyState(context, l10n, isDark);
+          }
 
-                return RefreshIndicator(
-                  color: AppTheme.primary,
-                  onRefresh: () => chatProvider.refreshConversations(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    itemCount: conversations.length,
-                    itemBuilder: (context, index) {
-                      final conversation = conversations[index];
-                      return _ConversationTile(
-                        conversation: conversation,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ChatScreen(conversation: conversation),
-                            ),
-                          ).then((_) {
-                            chatProvider.refreshConversations();
-                          });
-                        },
-                        onDelete: () =>
-                            _confirmAndDelete(context, conversation),
-                      );
-                    },
-                  ),
+          return RefreshIndicator(
+            color: AppTheme.primary,
+            onRefresh: () => chatProvider.refreshConversations(),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              itemCount: conversations.length,
+              itemBuilder: (context, index) {
+                final conversation = conversations[index];
+                return _ConversationTile(
+                  conversation: conversation,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ChatScreen(conversation: conversation),
+                      ),
+                    ).then((_) {
+                      chatProvider.refreshConversations();
+                    });
+                  },
+                  onDelete: () =>
+                      _confirmAndDelete(context, conversation),
                 );
               },
             ),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildEmptyState(
-    BuildContext context,
-    AppLocalizations l10n,
-    bool isDark,
-  ) {
+      BuildContext context,
+      AppLocalizations l10n,
+      bool isDark,
+      ) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -301,7 +301,7 @@ class _ConversationTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final mutedText =
-        isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
+    isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     return Dismissible(
       key: Key('conversation_${conversation.id}'),
@@ -336,38 +336,38 @@ class _ConversationTile extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor:
-                    isDark ? AppTheme.darkSurfaceLight : AppTheme.navy100,
+                isDark ? AppTheme.darkSurfaceLight : AppTheme.navy100,
                 child: conversation.otherParty.avatar != null
                     ? ClipOval(
-                        child: Image.network(
-                          conversation.otherParty.avatar!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Text(
-                            conversation.otherParty.name.isNotEmpty
-                                ? conversation.otherParty.name[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                              inherit: true,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: primaryText,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Text(
-                        conversation.otherParty.name.isNotEmpty
-                            ? conversation.otherParty.name[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          inherit: true,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: primaryText,
-                        ),
+                  child: Image.network(
+                    conversation.otherParty.avatar!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Text(
+                      conversation.otherParty.name.isNotEmpty
+                          ? conversation.otherParty.name[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        inherit: true,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primaryText,
                       ),
+                    ),
+                  ),
+                )
+                    : Text(
+                  conversation.otherParty.name.isNotEmpty
+                      ? conversation.otherParty.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryText,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

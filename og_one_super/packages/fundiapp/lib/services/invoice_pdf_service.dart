@@ -191,14 +191,16 @@ class InvoicePdfService {
               fontWeight: pw.FontWeight.bold,
             ),
           ),
-          pw.Text(
-            user.email,
-            style: pw.TextStyle(
-              fontSize: 12,
-              color: _greyColor,
+          // ✅ FIX: email is now nullable
+          if (user.email != null && user.email!.isNotEmpty)
+            pw.Text(
+              user.email!,
+              style: pw.TextStyle(
+                fontSize: 12,
+                color: _greyColor,
+              ),
             ),
-          ),
-          if (user.phone != null)
+          if (user.phone != null && user.phone!.isNotEmpty)
             pw.Text(
               user.phone!,
               style: pw.TextStyle(

@@ -4,7 +4,7 @@ class Post {
   final int id;
   final String title;
   final String content;
-  final String? image;
+  final List<String> images;          // ← multiple images
   final String? youtubeUrl;
   final String? youtubeEmbed;
   int likesCount;
@@ -19,7 +19,7 @@ class Post {
     required this.id,
     required this.title,
     required this.content,
-    this.image,
+    this.images = const [],
     this.youtubeUrl,
     this.youtubeEmbed,
     required this.likesCount,
@@ -30,6 +30,11 @@ class Post {
     this.likedByUser = false,
     this.comments = const [],
   });
+
+  /// Convenience: first image (backward compatible)
+  String? get image => images.isNotEmpty ? images.first : null;
+
+  bool get hasImages => images.isNotEmpty;
 
   factory Post.fromJson(Map<String, dynamic> json) {
     final commentsList = (json['comments'] as List? ?? [])
@@ -52,11 +57,27 @@ class Post {
       techAvatar = json['technician']['profile_photo'];
     }
 
+    // Support both new multi-image and old single image
+    List<String> imagesList = [];
+    if (json['image_urls'] != null && json['image_urls'] is List) {
+      imagesList = (json['image_urls'] as List)
+          .where((e) => e != null && e.toString().isNotEmpty)
+          .map((e) => e.toString())
+          .toList();
+    } else if (json['images'] != null && json['images'] is List) {
+      imagesList = (json['images'] as List)
+          .where((e) => e != null && e.toString().isNotEmpty)
+          .map((e) => e.toString())
+          .toList();
+    } else if (json['image'] != null && json['image'].toString().isNotEmpty) {
+      imagesList = [json['image'].toString()];
+    }
+
     return Post(
       id: json['id'],
       title: json['title'] ?? '',
       content: json['content'] ?? '',
-      image: json['image'],
+      images: imagesList,
       youtubeUrl: json['youtube_url'],
       youtubeEmbed: json['youtube_embed'],
       likesCount: json['likes_count'] ?? 0,

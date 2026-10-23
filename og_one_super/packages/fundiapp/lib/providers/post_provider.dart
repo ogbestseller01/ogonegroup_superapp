@@ -65,11 +65,9 @@ class PostProvider extends ChangeNotifier {
       _posts = (res.data as List).map((e) => Post.fromJson(e)).toList();
       _error = null;
 
-      // Debug all posts
       for (var p in _posts) {
-        debugPrint('📌 Post #${p.id} | image: ${p.image}');
+        debugPrint('📌 Post #${p.id} | images: ${p.images.length}');
         debugPrint('   youtubeUrl: ${p.youtubeUrl}');
-        debugPrint('   youtubeEmbed: ${p.youtubeEmbed}');
         debugPrint('   hasYoutubeVideo: ${p.hasYoutubeVideo}');
       }
     } else {
@@ -138,12 +136,11 @@ class PostProvider extends ChangeNotifier {
       final newLikesCount =
       post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
 
-      // IMPORTANT: keep youtubeUrl & youtubeEmbed
       _posts[index] = Post(
         id: post.id,
         title: post.title,
         content: post.content,
-        image: post.image,
+        images: post.images,               // keep multi-images
         youtubeUrl: post.youtubeUrl,
         youtubeEmbed: post.youtubeEmbed,
         likesCount: newLikesCount,

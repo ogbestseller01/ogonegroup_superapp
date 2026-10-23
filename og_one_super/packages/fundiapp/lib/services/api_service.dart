@@ -283,94 +283,119 @@ class ApiService {
       _get('/technicians/registration-status/$technicianId');
 
   // ============================================================
-  // FUNDI – POSTS (WITH YOUTUBE SUPPORT)
+  // FUNDI – POSTS (MULTI-IMAGE SUPPORT)
   // ============================================================
 
   Future<ApiResponse> getMyPosts() => _get('/v5/my-posts');
 
   Future<ApiResponse> createPost(Map<String, dynamic> data) async {
-    final hasImage = data.containsKey('image') &&
-        data['image'] is String &&
-        data['image'].isNotEmpty;
+    final formData = FormData();
 
-    if (hasImage) {
+    formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
+    formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
+
+    if (data['youtube_url'] != null &&
+        data['youtube_url'].toString().isNotEmpty) {
+      formData.fields
+          .add(MapEntry('youtube_url', data['youtube_url'].toString()));
+    }
+
+    // Multiple images support
+    if (data['images'] != null && data['images'] is List) {
+      for (final path in data['images']) {
+        if (path is String && path.isNotEmpty) {
+          final file = File(path);
+          if (await file.exists()) {
+            formData.files.add(
+              MapEntry(
+                'images[]',
+                await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+    // Backward compatibility – single image
+    else if (data['image'] != null &&
+        data['image'] is String &&
+        data['image'].isNotEmpty) {
       final file = File(data['image']);
       if (await file.exists()) {
-        final formData = FormData();
-        formData.fields.add(MapEntry('title', data['title'] ?? ''));
-        formData.fields.add(MapEntry('content', data['content'] ?? ''));
-
-        if (data.containsKey('youtube_url') &&
-            data['youtube_url'] != null &&
-            data['youtube_url'].isNotEmpty) {
-          formData.fields.add(MapEntry('youtube_url', data['youtube_url']));
-        }
-
         formData.files.add(
-          MapEntry('image', await MultipartFile.fromFile(file.path)),
+          MapEntry(
+            'images[]',
+            await MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            ),
+          ),
         );
-
-        return _post('/v5/posts', data: formData);
       }
     }
 
-    final Map<String, dynamic> jsonData = {
-      'title': data['title'] ?? '',
-      'content': data['content'] ?? '',
-    };
-
-    if (data.containsKey('youtube_url') &&
-        data['youtube_url'] != null &&
-        data['youtube_url'].isNotEmpty) {
-      jsonData['youtube_url'] = data['youtube_url'];
-    }
-
-    return _post('/v5/posts', data: jsonData);
+    return _post('/v5/posts', data: formData);
   }
 
   Future<ApiResponse> updatePost(int id, Map<String, dynamic> data) async {
-    final hasImage = data.containsKey('image') &&
-        data['image'] is String &&
-        data['image'].isNotEmpty;
+    final formData = FormData();
+    formData.fields.add(const MapEntry('_method', 'PUT'));
 
-    if (hasImage) {
+    if (data.containsKey('title')) {
+      formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
+    }
+    if (data.containsKey('content')) {
+      formData.fields
+          .add(MapEntry('content', data['content']?.toString() ?? ''));
+    }
+    if (data.containsKey('youtube_url')) {
+      formData.fields.add(MapEntry(
+        'youtube_url',
+        data['youtube_url']?.toString() ?? '',
+      ));
+    }
+
+    // Multiple images support
+    if (data['images'] != null && data['images'] is List) {
+      for (final path in data['images']) {
+        if (path is String && path.isNotEmpty) {
+          final file = File(path);
+          if (await file.exists()) {
+            formData.files.add(
+              MapEntry(
+                'images[]',
+                await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+    // Backward compatibility – single image
+    else if (data['image'] != null &&
+        data['image'] is String &&
+        data['image'].isNotEmpty) {
       final file = File(data['image']);
       if (await file.exists()) {
-        final formData = FormData();
-        formData.fields.add(MapEntry('_method', 'PUT'));
-
-        if (data.containsKey('title')) {
-          formData.fields.add(MapEntry('title', data['title'] ?? ''));
-        }
-        if (data.containsKey('content')) {
-          formData.fields.add(MapEntry('content', data['content'] ?? ''));
-        }
-
-        if (data.containsKey('youtube_url')) {
-          formData.fields.add(MapEntry(
-            'youtube_url',
-            data['youtube_url']?.toString() ?? '',
-          ));
-        }
-
         formData.files.add(
-          MapEntry('image', await MultipartFile.fromFile(file.path)),
+          MapEntry(
+            'images[]',
+            await MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            ),
+          ),
         );
-
-        return _post('/v5/posts/$id', data: formData);
       }
     }
 
-    final Map<String, dynamic> jsonData = {};
-    if (data.containsKey('title')) jsonData['title'] = data['title'] ?? '';
-    if (data.containsKey('content')) {
-      jsonData['content'] = data['content'] ?? '';
-    }
-    if (data.containsKey('youtube_url')) {
-      jsonData['youtube_url'] = data['youtube_url']?.toString() ?? '';
-    }
-
-    return _put('/v5/posts/$id', data: jsonData);
+    return _post('/v5/posts/$id', data: formData);
   }
 
   Future<ApiResponse> deletePost(int id) => _delete('/v5/posts/$id');
@@ -417,7 +442,7 @@ class ApiService {
         formData.files.add(
           MapEntry('image', await MultipartFile.fromFile(file.path)),
         );
-        formData.fields.add(MapEntry('_method', 'PUT'));
+        formData.fields.add(const MapEntry('_method', 'PUT'));
         return _post('/v3/portfolios/$id', data: formData);
       }
     }
@@ -629,7 +654,7 @@ class ApiService {
       _delete('/v14/chat/conversations/$conversationId');
 
   // ============================================================
-  // NOTIFICATION ENDPOINTS (V15) - FIXED QUERY PARAMS
+  // NOTIFICATION ENDPOINTS (V15)
   // ============================================================
 
   Future<ApiResponse> getNotifications({
@@ -663,14 +688,13 @@ class ApiService {
   Future<ApiResponse> deleteNotification(String notificationId) =>
       _delete('/v15/notifications/$notificationId');
 
-  Future<ApiResponse> clearNotifications({String? excludeType}) =>
-      _delete(
-        '/v15/notifications/clear',
-        query: {
-          if (excludeType != null && excludeType.isNotEmpty)
-            'exclude_type': excludeType,
-        },
-      );
+  Future<ApiResponse> clearNotifications({String? excludeType}) => _delete(
+    '/v15/notifications/clear',
+    query: {
+      if (excludeType != null && excludeType.isNotEmpty)
+        'exclude_type': excludeType,
+    },
+  );
 
   // ============================================================
   // SUBSCRIPTION ENDPOINTS (V16)

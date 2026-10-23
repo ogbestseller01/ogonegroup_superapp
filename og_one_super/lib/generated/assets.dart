@@ -14,8 +14,6 @@ class $AssetsImagesGen {
   final $AssetsAppsGen apps = const $AssetsAppsGen();
   final AssetGenImage appIcon =
       const AssetGenImage('assets/images/app_icon.png');
-  final AssetGenImage appIconForeground =
-      const AssetGenImage('assets/images/app_icon_foreground.png');
   final AssetGenImage englishflug =
       const AssetGenImage('assets/images/englishflug.png');
   final AssetGenImage homeimg =
@@ -47,7 +45,7 @@ class $AssetsAppsGen {
       const AssetGenImage('assets/images/apps/nimepoteza.png');
   final AssetGenImage oshaPapoHapo =
       const AssetGenImage('assets/images/apps/osha_papo_hapo.png');
-  final AssetGenImage s4m6z =
+  final AssetGenImage safaripoa =
       const AssetGenImage('assets/images/apps/safaripoa.png');
 }
 

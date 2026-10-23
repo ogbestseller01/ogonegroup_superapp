@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../../../config/app_routes.dart';
-import '../../../models/user.dart';
+import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/service.dart';
+import '../../../models/technician.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/service_provider.dart';
 import '../../../providers/technician_provider.dart';
+import '../../../widgets/app_network_image.dart';
 import '../../../widgets/confirmation_dialog.dart';
-import '../../../utils/image_utils.dart';
-import '../../../l10n/app_localizations.dart';
-import '../../../config/app_theme.dart';
+import '../../../widgets/custom_button.dart';
 
 class FundiProfileScreen extends StatefulWidget {
   const FundiProfileScreen({super.key});
@@ -23,47 +26,356 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<TechnicianProvider>().fetchMyProfile();
       context.read<ServiceProvider>().fetchServices(forceRefresh: true);
     });
   }
 
-  Future<void> _refreshAll() async {
-    await Future.wait([
-      context.read<TechnicianProvider>().fetchMyProfile(),
-      context.read<ServiceProvider>().fetchServices(forceRefresh: true),
-    ]);
+  Future<void> _refreshAll() => Future.wait([
+    context.read<TechnicianProvider>().fetchMyProfile(),
+    context.read<ServiceProvider>().fetchServices(forceRefresh: true),
+  ]);
+
+  void _snack(String message, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? AppTheme.error : AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
-  // ✅ FIX: ensure the freshest technician data is loaded before
-  // navigating into the Edit Profile screen, so it never opens
-  // with stale/empty fields.
   Future<void> _goToEditProfile() async {
     await context.read<TechnicianProvider>().fetchMyProfile();
     if (!mounted) return;
     Navigator.pushNamed(context, AppRoutes.editProfile);
   }
 
-  // ✅ NEW: find the matching catalog Service (with categories) for
-  // a technician's selected service, by ID. The technician's own
-  // servicePrices pivot data doesn't carry category info, but the
-  // full service catalog from ServiceProvider does.
-  Service? _matchCatalogService(List<Service> catalog, int serviceId) {
+  Future<void> _editServices() async {
+    final tech = context.read<TechnicianProvider>();
+    final catalog = context.read<ServiceProvider>().services;
+
+    final prices = await showModalBottomSheet<List<Map<String, dynamic>>>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _ServicesEditorSheet(
+        current: tech.technician?.servicePrices ?? const [],
+        catalog: catalog,
+      ),
+    );
+    if (prices == null || !mounted) return;
+
+    final ok = await tech.updateServicePrices(prices);
+    if (!mounted) return;
+    _snack(ok ? 'Services & prices updated' : (tech.error ?? 'Update failed'),
+        error: !ok);
+  }
+
+  Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm =
+    await showConfirmationDialog(context, l10n.logout, l10n.logoutConfirmation);
+    if (confirm != true || !mounted) return;
+    final auth = context.read<AuthProvider>();
+    await auth.logout();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+  }
+
+  Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showConfirmationDialog(
+        context, l10n.deleteAccount, l10n.deleteAccountConfirmation);
+    if (confirm != true || !mounted) return;
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.deleteAccount();
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+    } else {
+      _snack(auth.errorMessage ?? 'Could not delete account', error: true);
+    }
+  }
+
+  String _maskNida(String nida) {
+    if (nida.length <= 8) return nida;
+    return '${nida.substring(0, 4)}${'*' * (nida.length - 8)}${nida.substring(nida.length - 4)}';
+  }
+
+  String? _categoryLabel(List<Service> catalog, int serviceId) {
     for (final s in catalog) {
-      if (s.id == serviceId) return s;
+      if (s.id == serviceId && s.categories.isNotEmpty) {
+        return s.categories.map((c) => c.name).join(', ');
+      }
     }
     return null;
+  }
+
+  // ───────────── SECTIONS ─────────────
+
+  Widget _header(ThemeData theme, AuthProvider auth, Technician? t) {
+    final user = auth.user;
+    final name = user?.name ?? '';
+    final email = user?.email ?? '';
+    final phone = user?.phone ?? '';
+
+    final initial = Container(
+      color: Colors.white.withValues(alpha: 0.2),
+      alignment: Alignment.center,
+      child: Text(
+        name.isNotEmpty ? name[0].toUpperCase() : 'F',
+        style: const TextStyle(
+            fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
+      ),
+    );
+
+    final verified = t?.verified ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Colors.white),
+                child: ClipOval(
+                  child: AppNetworkImage(
+                    path: t?.profilePhoto,
+                    fallback: initial,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _goToEditProfile,
+                child: const CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.edit, size: 16, color: AppTheme.primary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+                if (email.isNotEmpty)
+                  Text(email,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.85))),
+                if (phone.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(phone,
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.85))),
+                  ),
+                if (t != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: verified
+                          ? AppTheme.success.withValues(alpha: 0.9)
+                          : Colors.orange.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      verified
+                          ? '✓ VERIFIED'
+                          : (t.verificationStatus ?? 'pending').toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _servicesCard(ThemeData theme, AppLocalizations l10n, Technician? t,
+      List<Service> catalog) {
+    final prices = t?.servicePrices ?? const <TechnicianServicePrice>[];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.build_circle_outlined,
+                  color: theme.colorScheme.primary),
+            ),
+            title: Text('${l10n.servicesIOffer} (${prices.length})',
+                style: theme.textTheme.titleMedium),
+            trailing: const Icon(Icons.edit_outlined, size: 20),
+            onTap: _editServices,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: prices.isEmpty
+                ? Text(l10n.noServicesSelected, style: theme.textTheme.bodySmall)
+                : Column(
+              children: [
+                for (final sp in prices)
+                  _servicePriceTile(
+                      theme, sp, _categoryLabel(catalog, sp.id)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _servicePriceTile(
+      ThemeData theme, TechnicianServicePrice sp, String? category) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border:
+        Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(sp.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              Text(
+                'TZS ${sp.minPrice.toStringAsFixed(0)} - ${sp.maxPrice.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          if (category != null) ...[
+            const SizedBox(height: 4),
+            Text(category,
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color:
+                    theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _detailsCard(ThemeData theme, AppLocalizations l10n, Technician? t) {
+    final rows = <MapEntry<String, String>>[];
+
+    if (t != null) {
+      if ((t.bio ?? '').isNotEmpty) rows.add(MapEntry(l10n.bio, t.bio!));
+      if (t.experience > 0) {
+        rows.add(MapEntry(l10n.experience, '${t.experience} ${l10n.years}'));
+      }
+      if ((t.hourlyRate ?? 0) > 0) {
+        rows.add(MapEntry(
+            l10n.hourlyRate, '${l10n.tzs} ${t.hourlyRate!.toStringAsFixed(0)}'));
+      }
+      if ((t.area ?? '').isNotEmpty) rows.add(MapEntry(l10n.area, t.area!));
+      if ((t.nida ?? '').isNotEmpty) rows.add(MapEntry('NIDA', _maskNida(t.nida!)));
+      rows.add(MapEntry(
+        l10n.accountStatus,
+        t.verified ? l10n.active : (t.verificationStatus ?? 'pending').toUpperCase(),
+      ));
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.profileDetails, style: theme.textTheme.titleMedium),
+          const Divider(height: 24),
+          for (var i = 0; i < rows.length; i++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                    width: 100,
+                    child: Text(rows[i].key, style: theme.textTheme.bodySmall)),
+                Expanded(
+                    child:
+                    Text(rows[i].value, style: theme.textTheme.bodyMedium)),
+              ],
+            ),
+            if (i < rows.length - 1) const Divider(height: 16),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final tech = context.watch<TechnicianProvider>();
-    final servicesProvider = context.watch<ServiceProvider>();
-    final user = auth.user;
-    final technician = tech.technician;
+    final catalog = context.watch<ServiceProvider>().services;
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final t = tech.technician;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -71,7 +383,8 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
         title: Text(l10n.profile),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
+          onPressed: () =>
+              Navigator.pushReplacementNamed(context, AppRoutes.home),
         ),
       ),
       body: tech.isLoading
@@ -83,278 +396,23 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // ---- Modern Header Card ----
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Avatar
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: ClipOval(
-                            child: technician?.profilePhoto != null
-                                ? Image.network(
-                              ImageUtils.getFullImageUrl(technician!.profilePhoto!),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _defaultAvatar(user, theme),
-                            )
-                                : _defaultAvatar(user, theme),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _goToEditProfile,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.edit, size: 16, color: AppTheme.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 16),
-                    // User Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.name ?? '',
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          Text(
-                            user?.email ?? '',
-                            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8)),
-                          ),
-                          if (user?.phone != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '📱 ${user!.phone}',
-                              style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8)),
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: [
-                              // ✅ REMOVED: ONLINE/OFFLINE pill per request —
-                              // online/offline logic no longer surfaced here.
-                              if (technician != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: technician.verified
-                                        ? AppTheme.success.withOpacity(0.85)
-                                        : Colors.orange.withOpacity(0.85),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    technician.verified
-                                        ? '✓ VERIFIED'
-                                        : (technician.verificationStatus ?? 'pending').toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _header(theme, auth, t),
               const SizedBox(height: 20),
-
-              // ---- Modern Services Section ----
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.build_circle_outlined, color: theme.colorScheme.primary),
-                        ),
-                        title: Text(
-                          '${l10n.servicesIOffer} (${technician?.servicePrices.length ?? 0})',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                        onTap: () => _showServicesDialog(context),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: technician?.servicePrices.isNotEmpty == true
-                          ? Column(
-                        children: technician!.servicePrices.map((sp) {
-                          // ✅ NEW: cross-reference catalog to get this service's category
-                          final catalogMatch = _matchCatalogService(servicesProvider.services, sp.id);
-                          final categoryLabel = (catalogMatch != null && catalogMatch.categories.isNotEmpty)
-                              ? catalogMatch.categories.map((c) => c.name).join(', ')
-                              : null;
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        sp.name,
-                                        style: const TextStyle(fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        'TZS ${sp.minPrice.toStringAsFixed(0)} - ${sp.maxPrice.toStringAsFixed(0)}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (categoryLabel != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    categoryLabel,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      )
-                          : Text(l10n.noServicesSelected, style: theme.textTheme.bodySmall),
-                    ),
-                  ],
-                ),
-              ),
-
+              _servicesCard(theme, l10n, t, catalog),
               const SizedBox(height: 20),
-
-              // ---- Profile Details ----
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.profileDetails, style: theme.textTheme.titleMedium),
-                      const Divider(height: 24),
-                      if (technician?.bio != null && technician!.bio!.isNotEmpty) ...[
-                        _detailTile(l10n.bio, technician!.bio!, theme),
-                        const Divider(height: 16),
-                      ],
-                      if (technician?.experience != null) ...[
-                        _detailTile(l10n.experience, '${technician!.experience} ${l10n.years}', theme),
-                        const Divider(height: 16),
-                      ],
-                      if (technician?.hourlyRate != null) ...[
-                        _detailTile(l10n.hourlyRate, '${l10n.tzs} ${technician!.hourlyRate!.toStringAsFixed(0)}', theme),
-                        const Divider(height: 16),
-                      ],
-                      if (technician?.area != null && technician!.area!.isNotEmpty) ...[
-                        _detailTile(l10n.area, technician!.area!, theme),
-                        const Divider(height: 16),
-                      ],
-                      // ✅ NEW: NIDA — now actually parsed and shown, partially masked
-                      if (technician?.nida != null && technician!.nida!.isNotEmpty) ...[
-                        _detailTile('NIDA', _maskNida(technician.nida!), theme),
-                        const Divider(height: 16),
-                      ],
-                      if (technician?.verificationStatus != null) ...[
-                        _detailTile('Verification', technician!.verificationStatus!.toUpperCase(), theme),
-                        const Divider(height: 16),
-                      ],
-                      _detailTile(l10n.accountStatus, l10n.active, theme),
-                    ],
-                  ),
-                ),
-              ),
+              _detailsCard(theme, l10n, t),
               const SizedBox(height: 24),
-
-              // ---- Settings & Logout ----
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.settings),
                   icon: const Icon(Icons.settings_outlined, size: 18),
                   label: Text(l10n.settings),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: theme.dividerColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
@@ -363,43 +421,26 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final confirm = await showConfirmationDialog(context, l10n.logout, l10n.logoutConfirmation);
-                    if (confirm == true) {
-                      await auth.logout();
-                      if (context.mounted) {
-                        Navigator.pushReplacementNamed(context, AppRoutes.login);
-                      }
-                    }
-                  },
+                  onPressed: _logout,
                   icon: const Icon(Icons.logout_rounded, size: 18),
                   label: Text(l10n.logout),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.error,
-                    side: BorderSide(color: AppTheme.error.withOpacity(0.5)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    side: BorderSide(
+                        color: AppTheme.error.withValues(alpha: 0.5)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               TextButton.icon(
-                onPressed: () async {
-                  final confirm = await showConfirmationDialog(
-                    context,
-                    l10n.deleteAccount,
-                    l10n.deleteAccountConfirmation,
-                  );
-                  if (confirm == true) {
-                    await auth.deleteAccount();
-                    if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, AppRoutes.login);
-                    }
-                  }
-                },
+                onPressed: _deleteAccount,
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: Text(l10n.deleteAccount, style: TextStyle(color: AppTheme.error)),
-                style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+                label: Text(l10n.deleteAccount),
+                style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.error),
               ),
               const SizedBox(height: 20),
             ],
@@ -408,241 +449,185 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       ),
     );
   }
+}
 
-  // ✅ NEW: mask NIDA like 1990****3147 so full ID isn't shown in plain sight
-  String _maskNida(String nida) {
-    if (nida.length <= 8) return nida;
-    final start = nida.substring(0, 4);
-    final end = nida.substring(nida.length - 4);
-    return '$start${'*' * (nida.length - 8)}$end';
+// ═══════════════════ SERVICES & PRICES EDITOR ═══════════════════════════════
+
+class _ServicesEditorSheet extends StatefulWidget {
+  final List<TechnicianServicePrice> current;
+  final List<Service> catalog;
+
+  const _ServicesEditorSheet({required this.current, required this.catalog});
+
+  @override
+  State<_ServicesEditorSheet> createState() => _ServicesEditorSheetState();
+}
+
+class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
+  final Set<int> _selected = {};
+  final Map<int, TextEditingController> _min = {};
+  final Map<int, TextEditingController> _max = {};
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final sp in widget.current) {
+      _selected.add(sp.id);
+      _min[sp.id] = TextEditingController(text: sp.minPrice.toStringAsFixed(0));
+      _max[sp.id] = TextEditingController(text: sp.maxPrice.toStringAsFixed(0));
+    }
   }
 
-  Widget _defaultAvatar(User? user, ThemeData theme) {
-    return Container(
-      color: Colors.white.withOpacity(0.2),
-      child: Center(
-        child: Text(
-          user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'F',
-          style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
+  @override
+  void dispose() {
+    for (final c in [..._min.values, ..._max.values]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _toggle(int id, bool on) {
+    setState(() {
+      _error = null;
+      if (on) {
+        _selected.add(id);
+        _min.putIfAbsent(id, () => TextEditingController());
+        _max.putIfAbsent(id, () => TextEditingController());
+      } else {
+        _selected.remove(id);
+      }
+    });
+  }
+
+  void _submit() {
+    final l10n = AppLocalizations.of(context)!;
+    if (_selected.isEmpty) {
+      setState(() => _error = l10n.selectAtLeastOneService);
+      return;
+    }
+
+    final result = <Map<String, dynamic>>[];
+    for (final id in _selected) {
+      final min = double.tryParse(_min[id]!.text.trim());
+      final max = double.tryParse(_max[id]!.text.trim());
+      if (min == null || max == null || max < min) {
+        setState(() => _error = 'Enter a valid price range for every service');
+        return;
+      }
+      result.add({'service_id': id, 'min_price': min, 'max_price': max});
+    }
+    Navigator.pop(context, result);
+  }
+
+  Widget _priceField(TextEditingController c, String label) {
+    return Expanded(
+      child: TextField(
+        controller: c,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (_) => setState(() => _error = null),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixText: 'TZS ',
+          isDense: true,
+          border: const OutlineInputBorder(),
         ),
       ),
     );
   }
 
-  Widget _detailTile(String label, String value, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 100, child: Text(label, style: theme.textTheme.bodySmall)),
-          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
-        ],
-      ),
-    );
-  }
-
-  void _showServicesDialog(BuildContext context) {
-    final provider = context.read<TechnicianProvider>();
-    final serviceProvider = context.read<ServiceProvider>();
-    final technician = provider.technician;
-    final l10n = AppLocalizations.of(context)!;
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final height = MediaQuery.of(context).size.height * 0.8;
 
-    // Pre-fill with current service IDs and Prices
-    final Map<int, Map<String, TextEditingController>> priceControllers = {};
-    final Set<int> selectedIds = {};
-
-    if (technician != null) {
-      for (var sp in technician.servicePrices) {
-        selectedIds.add(sp.id);
-        priceControllers[sp.id] = {
-          'min': TextEditingController(text: sp.minPrice.toStringAsFixed(0)),
-          'max': TextEditingController(text: sp.maxPrice.toStringAsFixed(0)),
-        };
-      }
-    }
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.build_circle_outlined, color: AppTheme.primary),
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: height,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Edit services & prices',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w800)),
               ),
-              const SizedBox(width: 12),
-              Text('Edit Services & Prices', style: theme.textTheme.titleLarge),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: serviceProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-              shrinkWrap: true,
-              itemCount: serviceProvider.services.length,
-              itemBuilder: (ctx, i) {
-                final service = serviceProvider.services[i];
-                final isSelected = selectedIds.contains(service.id);
-                final categoryLabel = service.categories.isNotEmpty
-                    ? service.categories.map((c) => c.name).join(', ')
-                    : null;
-
-                // Initialize controllers if selected and not already present
-                if (isSelected && !priceControllers.containsKey(service.id)) {
-                  priceControllers[service.id] = {
-                    'min': TextEditingController(text: '0'),
-                    'max': TextEditingController(text: '0'),
-                  };
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? theme.colorScheme.primary.withOpacity(0.05) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: isSelected ? theme.colorScheme.primary.withOpacity(0.3) : Colors.transparent),
-                  ),
-                  child: Column(
-                    children: [
-                      CheckboxListTile(
-                        title: Text(service.name, style: theme.textTheme.bodyMedium),
-                        subtitle: categoryLabel != null
-                            ? Text(categoryLabel, style: theme.textTheme.bodySmall)
-                            : null,
-                        value: isSelected,
-                        onChanged: (val) {
-                          setState(() {
-                            if (val == true) {
-                              selectedIds.add(service.id);
-                              if (!priceControllers.containsKey(service.id)) {
-                                priceControllers[service.id] = {
-                                  'min': TextEditingController(text: '0'),
-                                  'max': TextEditingController(text: '0'),
-                                };
-                              }
-                            } else {
-                              selectedIds.remove(service.id);
-                              priceControllers[service.id]?.forEach((key, c) => c.dispose());
-                              priceControllers.remove(service.id);
-                            }
-                          });
-                        },
-                        activeColor: theme.colorScheme.primary,
-                        checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      if (isSelected) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(left: 48, right: 8, bottom: 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: priceControllers[service.id]!['min'],
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Min Price (TZS)',
-                                    prefixText: 'TZS ',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: priceControllers[service.id]!['max'],
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Max Price (TZS)',
-                                    prefixText: 'TZS ',
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-            ElevatedButton(
-              onPressed: () async {
-                if (selectedIds.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.selectAtLeastOneService),
-                      backgroundColor: AppTheme.error,
-                      behavior: SnackBarBehavior.floating,
+            Expanded(
+              child: widget.catalog.isEmpty
+                  ? const Center(child: Text('No services available.'))
+                  : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: widget.catalog.length,
+                itemBuilder: (context, i) {
+                  final s = widget.catalog[i];
+                  final on = _selected.contains(s.id);
+                  final category = s.categories.isNotEmpty
+                      ? s.categories.map((c) => c.name).join(', ')
+                      : null;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: on
+                          ? theme.colorScheme.primary
+                          .withValues(alpha: 0.05)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: on
+                            ? theme.colorScheme.primary
+                            .withValues(alpha: 0.3)
+                            : theme.dividerColor.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(s.name),
+                          subtitle: category != null
+                              ? Text(category,
+                              style: theme.textTheme.bodySmall)
+                              : null,
+                          value: on,
+                          onChanged: (v) => _toggle(s.id, v == true),
+                        ),
+                        if (on)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                            child: Row(
+                              children: [
+                                _priceField(_min[s.id]!, 'From'),
+                                const SizedBox(width: 10),
+                                _priceField(_max[s.id]!, 'To'),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   );
-                  return;
-                }
-
-                // Validate prices
-                for (var id in selectedIds) {
-                  final min = double.tryParse(priceControllers[id]!['min']!.text.trim());
-                  final max = double.tryParse(priceControllers[id]!['max']!.text.trim());
-                  if (min == null || max == null || min < 0 || max < 0 || max < min) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invalid price range'), backgroundColor: AppTheme.error),
-                    );
-                    return;
-                  }
-                }
-
-                // Prepare Data
-                final List<int> ids = selectedIds.toList();
-                final List<Map<String, dynamic>> prices = [];
-                for (var id in selectedIds) {
-                  prices.add({
-                    'service_id': id,
-                    'min_price': double.parse(priceControllers[id]!['min']!.text.trim()),
-                    'max_price': double.parse(priceControllers[id]!['max']!.text.trim()),
-                  });
-                }
-
-                // Show loader
-                Navigator.pop(ctx);
-                // Update Services and Prices
-                await provider.updateServices(ids);
-                await provider.updateServicePrices(prices);
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Services & Prices updated successfully'),
-                    backgroundColor: theme.colorScheme.primary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                },
               ),
-              child: Text(l10n.saveChanges),
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Text(_error!,
+                    style: TextStyle(color: theme.colorScheme.error)),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CustomButton(
+                text: l10n.saveChanges,
+                onPressed: _submit,
+              ),
             ),
           ],
         ),

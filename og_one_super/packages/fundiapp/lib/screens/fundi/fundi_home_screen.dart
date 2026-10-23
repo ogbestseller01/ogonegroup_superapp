@@ -97,7 +97,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
         currentUser: ChatUser(
           id: user.id,
           name: user.name,
-          email: user.email,
+          email: user.email ?? '', // ✅ FIX: email is now nullable
           phone: user.phone,
           avatar: null,
         ),
