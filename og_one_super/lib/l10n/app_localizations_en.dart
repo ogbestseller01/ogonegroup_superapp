@@ -424,7 +424,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingEverydayBody =>
-      'Laundry, car wash, moving and lost-and-found, each handled by its own mini app.';
+      'Laundry, car wash, moving, event rides and lost-and-found, each handled by its own mini app.';
 
   @override
   String get onboardingAllInOneTitle => 'All in one place';

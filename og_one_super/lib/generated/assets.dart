@@ -28,8 +28,6 @@ class $AssetsImagesGen {
 class $AssetsAppsGen {
   const $AssetsAppsGen();
 
-  final AssetGenImage gRh10 =
-      const AssetGenImage('assets/images/apps/safaripoa.png');
   final AssetGenImage dumaApp =
       const AssetGenImage('assets/images/apps/duma_app.png');
   final AssetGenImage fundiApp =
@@ -49,6 +47,8 @@ class $AssetsAppsGen {
       const AssetGenImage('assets/images/apps/nimepoteza.png');
   final AssetGenImage oshaPapoHapo =
       const AssetGenImage('assets/images/apps/osha_papo_hapo.png');
+  final AssetGenImage s4m6z =
+      const AssetGenImage('assets/images/apps/safaripoa.png');
 }
 
 class AssetGenImage {

@@ -425,7 +425,7 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get onboardingEverydayBody =>
-      'Ufuaji nguo, kuosha gari, kuhama na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.';
+      'Ufuaji nguo, kuosha gari, kuhama, usafiri wa matukio na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.';
 
   @override
   String get onboardingAllInOneTitle => 'Vyote mahali pamoja';

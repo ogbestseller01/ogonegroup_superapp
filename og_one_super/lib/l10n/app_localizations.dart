@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingEverydayBody.
   ///
   /// In en, this message translates to:
-  /// **'Laundry, car wash, moving and lost-and-found, each handled by its own mini app.'**
+  /// **'Laundry, car wash, moving, event rides and lost-and-found, each handled by its own mini app.'**
   String get onboardingEverydayBody;
 
   /// No description provided for @onboardingAllInOneTitle.

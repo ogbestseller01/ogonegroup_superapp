@@ -34,6 +34,7 @@ const _icons = <String, IconData>{
   'find_in_page': Icons.find_in_page_rounded,
   'pets': Icons.pets_rounded,
   'delivery_dining': Icons.delivery_dining_rounded,
+  'directions_car': Icons.directions_car_rounded,
 };
 
 IconData _iconFor(String name) => _icons[name] ?? Icons.apps_rounded;
@@ -60,6 +61,7 @@ class _AppTile {
 const _nearbyFundi = _AppTile('nearbyfundi', 'build', Color(0xFF2B7BFF), imageAsset: 'assets/images/apps/nearbyfundi.png');
 const _fundiApp = _AppTile('fundiapp', 'handyman', Color(0xFFFFB300), imageAsset: 'assets/images/apps/fundi_app.png');
 const _msosi = _AppTile('msosi', 'fastfood', Color(0xFFE85D04), imageAsset: 'assets/images/apps/msosi_chap_chap.png');
+const _safariPoa = _AppTile('safaripoa', 'directions_car', Color(0xFF00A86B), imageAsset: 'assets/images/apps/safaripoa.png');
 const _duma = _AppTile('duma', 'delivery_dining', Color(0xFF6D4C41), imageAsset: 'assets/images/apps/duma_app.png');
 const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1), imageAsset: 'assets/images/apps/laundry.png');
 const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png');
@@ -104,11 +106,25 @@ const _steps = <_Step>[
   _Step(type: StepType.welcome),
   _Step(type: StepType.trustedHelp, tiles: [_nearbyFundi, _fundiApp]),
   _Step(type: StepType.food, tiles: [_msosi, _duma]),
-  _Step(type: StepType.everyday, tiles: [_laundry, _osha, _hama, _nimepoteza]),
+  _Step(
+    type: StepType.everyday,
+    tiles: [_laundry, _osha, _hama, _safariPoa, _nimepoteza],
+    columns: 3,
+  ),
   _Step(
     type: StepType.allInOne,
-    tiles: [_nearbyFundi, _fundiApp, _msosi, _laundry, _osha, _hama, _duma, _nimepoteza],
-    columns: 4,
+    tiles: [
+      _nearbyFundi,
+      _fundiApp,
+      _msosi,
+      _laundry,
+      _osha,
+      _hama,
+      _safariPoa,
+      _duma,
+      _nimepoteza,
+    ],
+    columns: 3,
   ),
 ];
 
@@ -518,6 +534,7 @@ class _WelcomeVisual extends StatelessWidget {
   static const _preview = [
     _nearbyFundi,
     _msosi,
+    _safariPoa,
     _duma,
     _laundry,
     _osha,
@@ -712,22 +729,30 @@ class _TilesHero extends StatelessWidget {
           final tile =
           math.min(byWidth, byHeight).clamp(38.0, 74.0).toDouble();
 
-          return Wrap(
-            alignment: WrapAlignment.center,
-            spacing: _gap,
-            runSpacing: _runGap,
-            children: [
-              for (final a in step.tiles)
-                SizedBox(
-                  width: itemW,
-                  child: _TileView(
-                    tile: a,
-                    size: tile,
-                    compact: itemW < 88,
-                    isDark: isDark,
-                  ),
-                ),
-            ],
+          // FittedBox only scales the grid down when a small screen cannot
+          // fit every row, so the tiles never spill out of the card.
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: c.maxWidth,
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: _gap,
+                runSpacing: _runGap,
+                children: [
+                  for (final a in step.tiles)
+                    SizedBox(
+                      width: itemW,
+                      child: _TileView(
+                        tile: a,
+                        size: tile,
+                        compact: itemW < 88,
+                        isDark: isDark,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           );
         },
       ),
