@@ -68,9 +68,14 @@ class AppTheme {
   static const Color darkSurface = Color(0xFF000C1F);
   static const Color darkSurfaceLight = Color(0xFF001533);
   static const Color darkTextPrimary = Color(0xFFFFFFFF);
-  static const Color darkTextSecondary = Color(0xFF9FC0EB);
+
+  /// Kept for compatibility. Text in dark mode is now white everywhere.
+  static const Color darkTextSecondary = Color(0xFFFFFFFF);
   static const Color darkBorder = Color(0xFF001533);
   static const Color darkCard = Color(0xFF000C1F);
+
+  /// Soft white used for hints and placeholders in dark mode.
+  static const Color darkHint = Color(0xB3FFFFFF); // white 70%
 
   // ================================================================
   // STATUS
@@ -106,7 +111,7 @@ class AppTheme {
   static const Color chatTextReceived = Colors.white;
 
   static const Color chatTimestampSent = Color(0xCCFFFFFF);
-  static const Color chatTimestampReceived = Color(0xFF9FC0EB);
+  static const Color chatTimestampReceived = Color(0xB3FFFFFF);
 
   static const Color chatInputBackground = Color(0xFF001533);
   static const Color chatDivider = Color(0xFF001533);
@@ -138,68 +143,42 @@ class AppTheme {
   // TEXT STYLES
   // ================================================================
 
-  static TextStyle get bodyText {
-    return GoogleFonts.nunito(
-      fontSize: 14,
-      color: greyText,
-    );
-  }
+  static TextStyle get bodyText =>
+      GoogleFonts.nunito(fontSize: 14, color: greyText);
 
-  static TextStyle get headline2 {
-    return GoogleFonts.nunito(
-      fontSize: 22,
-      fontWeight: FontWeight.w600,
-      color: dark,
-    );
-  }
+  static TextStyle get headline2 => GoogleFonts.nunito(
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    color: dark,
+  );
 
-  static TextStyle get buttonText {
-    return GoogleFonts.nunito(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      color: light,
-    );
-  }
+  static TextStyle get buttonText => GoogleFonts.nunito(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: light,
+  );
 
   // ================================================================
   // CHAT TEXT
   // ================================================================
 
-  static TextStyle get chatMessageText {
-    return GoogleFonts.nunito(
-      fontSize: 15,
-      fontWeight: FontWeight.w400,
-    );
-  }
+  static TextStyle get chatMessageText =>
+      GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w400);
 
-  static TextStyle get chatTimestampText {
-    return GoogleFonts.nunito(
-      fontSize: 10,
-      fontWeight: FontWeight.w400,
-    );
-  }
+  static TextStyle get chatTimestampText =>
+      GoogleFonts.nunito(fontSize: 10, fontWeight: FontWeight.w400);
 
-  static TextStyle get chatNameText {
-    return GoogleFonts.nunito(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    );
-  }
+  static TextStyle get chatNameText =>
+      GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w600);
 
-  static TextStyle get chatEmptyText {
-    return GoogleFonts.nunito(
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
-      color: greyText,
-    );
-  }
+  static TextStyle get chatEmptyText => GoogleFonts.nunito(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: greyText,
+  );
 
-  static TextStyle get chatHeaderText {
-    return GoogleFonts.nunito(
-      fontSize: 18,
-      fontWeight: FontWeight.w600,
-    );
-  }
+  static TextStyle get chatHeaderText =>
+      GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w600);
 
   // ================================================================
   // CARD DECORATION
@@ -294,7 +273,7 @@ class AppTheme {
   static CardThemeData get cardTheme => lightTheme.cardTheme;
 
   // ================================================================
-  // INPUT DECORATION
+  // INPUT DECORATION (helper used directly by screens)
   // ================================================================
 
   static InputDecoration inputDecoration({
@@ -306,33 +285,16 @@ class AppTheme {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, color: primary)
-          : null,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: primary) : null,
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: light,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusMedium),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusMedium),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusMedium),
-        borderSide: const BorderSide(color: primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusMedium),
-        borderSide: const BorderSide(color: error, width: 2),
-      ),
+      border: _inputBorder(),
+      enabledBorder: _inputBorder(),
+      focusedBorder: _inputBorder(color: primary, width: 2),
+      errorBorder: _inputBorder(color: error, width: 2),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: GoogleFonts.nunito(
-        color: greyText,
-        fontSize: 14,
-      ),
+      labelStyle: GoogleFonts.nunito(color: greyText, fontSize: 14),
     );
   }
 
@@ -344,27 +306,72 @@ class AppTheme {
     String? hint,
     bool isDark = false,
   }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(borderRadiusExtraLarge),
+      borderSide: BorderSide.none,
+    );
+
     return InputDecoration(
       hintText: hint ?? 'Type a message...',
       hintStyle: GoogleFonts.nunito(
-        color: isDark ? darkTextSecondary : greyText,
+        color: isDark ? darkHint : greyText,
         fontSize: 14,
       ),
       filled: true,
       fillColor: isDark ? darkSurfaceLight : navy50,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusExtraLarge),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusExtraLarge),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(borderRadiusExtraLarge),
-        borderSide: BorderSide.none,
-      ),
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    );
+  }
+
+  // ================================================================
+  // PRIVATE HELPERS
+  // ================================================================
+
+  static OutlineInputBorder _inputBorder({Color? color, double width = 1}) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(borderRadiusMedium),
+      borderSide: color == null
+          ? BorderSide.none
+          : BorderSide(color: color, width: width),
+    );
+  }
+
+  static InputDecorationTheme _inputTheme({
+    required Color fill,
+    required Color focus,
+    required Color text,
+  }) {
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: fill,
+      border: _inputBorder(),
+      enabledBorder: _inputBorder(),
+      focusedBorder: _inputBorder(color: focus, width: 2),
+      errorBorder: _inputBorder(color: error, width: 2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(inherit: true, color: text),
+      hintStyle: TextStyle(inherit: true, color: text),
+    );
+  }
+
+  static TextStyle _t(
+      TextStyle? base,
+      double size,
+      FontWeight? weight,
+      Color color, {
+        double? height,
+        double? letterSpacing,
+      }) {
+    return (base ?? const TextStyle()).copyWith(
+      inherit: true,
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
     );
   }
 
@@ -373,154 +380,24 @@ class AppTheme {
   // ================================================================
 
   static TextTheme _buildTextTheme(Color primaryText, Color secondaryText) {
-    final base = GoogleFonts.nunitoTextTheme();
-    return base.copyWith(
-      displayLarge: base.displayLarge?.copyWith(
-        inherit: true,
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
-        color: primaryText,
-        letterSpacing: -0.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 32,
-            fontWeight: FontWeight.w800,
-            color: primaryText,
-            letterSpacing: -0.5,
-          ),
-      displayMedium: base.displayMedium?.copyWith(
-        inherit: true,
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: primaryText,
-        letterSpacing: -0.3,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: primaryText,
-            letterSpacing: -0.3,
-          ),
-      headlineMedium: base.headlineMedium?.copyWith(
-        inherit: true,
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: primaryText,
-          ),
-      titleLarge: base.titleLarge?.copyWith(
-        inherit: true,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      titleMedium: base.titleMedium?.copyWith(
-        inherit: true,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      titleSmall: base.titleSmall?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      bodyLarge: base.bodyLarge?.copyWith(
-        inherit: true,
-        fontSize: 16,
-        color: primaryText,
-        height: 1.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 16,
-            color: primaryText,
-            height: 1.5,
-          ),
-      bodyMedium: base.bodyMedium?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        color: secondaryText,
-        height: 1.5,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            color: secondaryText,
-            height: 1.5,
-          ),
-      bodySmall: base.bodySmall?.copyWith(
-        inherit: true,
-        fontSize: 12,
-        color: secondaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 12,
-            color: secondaryText,
-          ),
-      labelLarge: base.labelLarge?.copyWith(
-        inherit: true,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: primaryText,
-          ),
-      labelMedium: base.labelMedium?.copyWith(
-        inherit: true,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: primaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: primaryText,
-          ),
-      labelSmall: base.labelSmall?.copyWith(
-        inherit: true,
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        color: secondaryText,
-      ) ??
-          TextStyle(
-            inherit: true,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: secondaryText,
-          ),
+    final b = GoogleFonts.nunitoTextTheme();
+
+    return b.copyWith(
+      displayLarge: _t(b.displayLarge, 32, FontWeight.w800, primaryText,
+          letterSpacing: -0.5),
+      displayMedium: _t(b.displayMedium, 28, FontWeight.w700, primaryText,
+          letterSpacing: -0.3),
+      headlineMedium:
+      _t(b.headlineMedium, 24, FontWeight.w700, primaryText),
+      titleLarge: _t(b.titleLarge, 20, FontWeight.w600, primaryText),
+      titleMedium: _t(b.titleMedium, 16, FontWeight.w600, primaryText),
+      titleSmall: _t(b.titleSmall, 14, FontWeight.w600, primaryText),
+      bodyLarge: _t(b.bodyLarge, 16, null, primaryText, height: 1.5),
+      bodyMedium: _t(b.bodyMedium, 14, null, secondaryText, height: 1.5),
+      bodySmall: _t(b.bodySmall, 12, null, secondaryText),
+      labelLarge: _t(b.labelLarge, 14, FontWeight.w600, primaryText),
+      labelMedium: _t(b.labelMedium, 12, FontWeight.w500, primaryText),
+      labelSmall: _t(b.labelSmall, 11, FontWeight.w500, secondaryText),
     );
   }
 
@@ -533,6 +410,7 @@ class AppTheme {
     brightness: Brightness.light,
     primaryColor: primary,
     scaffoldBackgroundColor: scaffoldLight,
+    hintColor: greyText,
     colorScheme: const ColorScheme.light(
       primary: primary,
       secondary: secondary,
@@ -542,7 +420,6 @@ class AppTheme {
       onPrimary: Colors.white,
       onSecondary: primary,
       onSurface: primary,
-      onBackground: primary,
     ),
     dividerColor: dividerColor,
     fontFamily: GoogleFonts.nunito().fontFamily,
@@ -568,34 +445,10 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: primary,
       ),
-      subtitleTextStyle: GoogleFonts.nunito(
-        fontSize: 12,
-        color: greyText,
-      ),
+      subtitleTextStyle: GoogleFonts.nunito(fontSize: 12, color: greyText),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: error, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: const TextStyle(inherit: true, color: greyText),
-      hintStyle: const TextStyle(inherit: true, color: greyText),
-    ),
+    inputDecorationTheme:
+    _inputTheme(fill: Colors.white, focus: primary, text: greyText),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
@@ -651,6 +504,25 @@ class AppTheme {
       backgroundColor: Colors.white,
       elevation: 8,
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: primary.withOpacity(0.12),
+      labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
+            (states) => GoogleFonts.nunito(
+          fontSize: 11,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w500,
+          color: states.contains(WidgetState.selected) ? primary : greyText,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
+            (states) => IconThemeData(
+          color: states.contains(WidgetState.selected) ? primary : greyText,
+        ),
+      ),
+    ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: Colors.white,
       selectedIconTheme: const IconThemeData(color: primary, size: 24),
@@ -669,13 +541,13 @@ class AppTheme {
       useIndicator: true,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      thumbColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? primary
             : Colors.grey.shade400,
       ),
-      trackColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      trackColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? primary.withOpacity(0.5)
             : Colors.grey.shade300,
       ),
@@ -686,9 +558,7 @@ class AppTheme {
       labelStyle: const TextStyle(inherit: true, color: primary),
       secondaryLabelStyle: const TextStyle(inherit: true, color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     dialogTheme: const DialogThemeData(
       backgroundColor: Colors.white,
@@ -698,13 +568,9 @@ class AppTheme {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: primary,
-    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(color: primary),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: secondary,
       foregroundColor: primary,
@@ -712,7 +578,7 @@ class AppTheme {
   );
 
   // ================================================================
-  // DARK THEME
+  // DARK THEME  (all text is white)
   // ================================================================
 
   static final ThemeData darkTheme = ThemeData(
@@ -720,21 +586,21 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: primary,
     scaffoldBackgroundColor: darkBackground,
+    hintColor: darkHint,
     colorScheme: const ColorScheme.dark(
       primary: primary,
       secondary: secondary,
       tertiary: accent,
       error: error,
       surface: darkSurface,
-      background: darkBackground,
       onPrimary: Colors.white,
       onSecondary: primary,
       onSurface: Colors.white,
-      onBackground: Colors.white,
+      onSurfaceVariant: Colors.white,
     ),
     dividerColor: darkBorder,
     fontFamily: GoogleFonts.nunito().fontFamily,
-    textTheme: _buildTextTheme(Colors.white, darkTextSecondary),
+    textTheme: _buildTextTheme(Colors.white, Colors.white),
     appBarTheme: AppBarTheme(
       backgroundColor: darkSurface,
       foregroundColor: Colors.white,
@@ -758,40 +624,20 @@ class AppTheme {
       ),
       subtitleTextStyle: GoogleFonts.nunito(
         fontSize: 12,
-        color: darkTextSecondary,
+        color: Colors.white,
       ),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: darkSurfaceLight,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: secondary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: error, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: const TextStyle(inherit: true, color: darkTextSecondary),
-      hintStyle: const TextStyle(inherit: true, color: darkTextSecondary),
+    inputDecorationTheme: _inputTheme(
+      fill: darkSurfaceLight,
+      focus: secondary,
+      text: darkHint,
     ),
 
-    // ==============================================================
-    // DARK ELEVATED BUTTON — Deep Gold bg, White text
-    // ==============================================================
+    // Gold background, white text
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: secondary,          // Deep gold
-        foregroundColor: Colors.white,       // White text
+        backgroundColor: secondary,
+        foregroundColor: Colors.white,
         disabledBackgroundColor: gold600,
         disabledForegroundColor: Colors.white70,
         minimumSize: const Size(double.infinity, 50),
@@ -807,9 +653,7 @@ class AppTheme {
       ),
     ),
 
-    // ==============================================================
-    // DARK OUTLINED BUTTON — Gold border, Gold text
-    // ==============================================================
+    // Gold border and text
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: secondary,
@@ -826,9 +670,7 @@ class AppTheme {
       ),
     ),
 
-    // ==============================================================
-    // DARK TEXT BUTTON — Gold text
-    // ==============================================================
+    // Gold text
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: secondary,
@@ -851,22 +693,41 @@ class AppTheme {
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
       selectedItemColor: secondary,
-      unselectedItemColor: darkTextSecondary,
+      unselectedItemColor: Colors.white,
       backgroundColor: darkSurface,
       elevation: 8,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: darkSurface,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: secondary.withOpacity(0.15),
+      labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
+            (states) => GoogleFonts.nunito(
+          fontSize: 11,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
+            (states) => IconThemeData(
+          color:
+          states.contains(WidgetState.selected) ? secondary : Colors.white,
+        ),
+      ),
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: darkBackground,
       selectedIconTheme: const IconThemeData(color: secondary, size: 24),
-      unselectedIconTheme:
-      const IconThemeData(color: darkTextSecondary, size: 23),
+      unselectedIconTheme: const IconThemeData(color: Colors.white, size: 23),
       selectedLabelTextStyle: GoogleFonts.nunito(
         color: secondary,
         fontSize: 12,
         fontWeight: FontWeight.w700,
       ),
       unselectedLabelTextStyle: GoogleFonts.nunito(
-        color: darkTextSecondary,
+        color: Colors.white,
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),
@@ -874,13 +735,13 @@ class AppTheme {
       useIndicator: true,
     ),
     switchTheme: SwitchThemeData(
-      thumbColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      thumbColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? secondary
             : Colors.grey.shade600,
       ),
-      trackColor: MaterialStateProperty.resolveWith<Color>(
-            (states) => states.contains(MaterialState.selected)
+      trackColor: WidgetStateProperty.resolveWith<Color>(
+            (states) => states.contains(WidgetState.selected)
             ? secondary.withOpacity(0.5)
             : Colors.grey.shade700,
       ),
@@ -891,9 +752,7 @@ class AppTheme {
       labelStyle: const TextStyle(inherit: true, color: Colors.white),
       secondaryLabelStyle: const TextStyle(inherit: true, color: primary),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: darkSurface,
@@ -904,19 +763,12 @@ class AppTheme {
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       backgroundColor: darkSurface,
       contentTextStyle: const TextStyle(inherit: true, color: Colors.white),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: secondary,
-    ),
-    dividerTheme: const DividerThemeData(
-      color: darkBorder,
-      thickness: 0.5,
-    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(color: secondary),
+    dividerTheme: const DividerThemeData(color: darkBorder, thickness: 0.5),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: secondary,
       foregroundColor: primary,

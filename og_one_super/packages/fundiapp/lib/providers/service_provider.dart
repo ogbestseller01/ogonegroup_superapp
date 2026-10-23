@@ -12,39 +12,24 @@ class ServiceProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchServices({bool forceRefresh = false}) async {
+  // In ServiceProvider – change fetchServices to accept locale
+
+  Future<void> fetchServices({bool forceRefresh = false, String locale = 'en'}) async {
     if (!forceRefresh && _services.isNotEmpty) return;
 
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final res = await _api.getServices();
-
-    // ============================================================
-    // 🔍 DEBUG LOGGING — remove once the root cause is confirmed
-    // ============================================================
-    debugPrint('┌─────────────────────────────────────────────');
-    debugPrint('│ [ServiceProvider] fetchServices()');
-    debugPrint('│ success: ${res.success}');
-    debugPrint('│ message: ${res.message}');
-    debugPrint('│ data == null: ${res.data == null}');
-    debugPrint('│ data runtimeType: ${res.data.runtimeType}');
-    if (res.data is List) {
-      debugPrint('│ catalog service count: ${(res.data as List).length}');
-    }
-    debugPrint('└─────────────────────────────────────────────');
-    // ============================================================
+    // Pass locale so API can use Accept-Language (or query)
+    final res = await _api.getServices(locale: locale);
 
     if (res.success && res.data != null) {
       _services = (res.data as List)
           .map((e) => Service.fromJson(e as Map<String, dynamic>))
           .toList();
-
-      debugPrint('✅ [ServiceProvider] Parsed ${_services.length} catalog services');
     } else {
       _error = res.message;
-      debugPrint('❌ [ServiceProvider] fetchServices FAILED: ${res.message}');
     }
 
     _isLoading = false;

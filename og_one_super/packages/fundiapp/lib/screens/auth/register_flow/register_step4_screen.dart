@@ -20,6 +20,7 @@ class RegisterStep4Screen extends StatefulWidget {
 
 class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
   int _page = 0; // 0 = services (step 4), 1 = prices (step 5)
+  String _locale = 'en'; // default English
 
   final Set<int> _selected = {};
   bool _sameForAll = true;
@@ -34,7 +35,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
     super.initState();
     _checkAccess();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServiceProvider>().fetchServices();
+      context.read<ServiceProvider>().fetchServices(locale: _locale);
     });
   }
 
@@ -86,6 +87,16 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
     }
   }
 
+  void _setLocale(String locale) {
+    if (_locale == locale) return;
+    setState(() => _locale = locale);
+    // Re-fetch so backend returns localized names if needed
+    context.read<ServiceProvider>().fetchServices(
+      forceRefresh: true,
+      locale: locale,
+    );
+  }
+
   Future<void> _submit() async {
     final auth = context.read<AuthProvider>();
     auth.clearError();
@@ -100,7 +111,6 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
       };
     }).toList();
 
-    // Save services + prices, then submit for admin approval
     var ok = await auth.registerTechnicianStep4(
       technicianId: widget.technicianId,
       services: services,
@@ -113,7 +123,10 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
     if (!ok) {
       if (auth.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(auth.errorMessage!), backgroundColor: AppTheme.error),
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: AppTheme.error,
+          ),
         );
       }
       return;
@@ -152,7 +165,33 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
     );
   }
 
-  // ── Page 0: choose services ─────────────────────────────────────────────
+  // ── Language toggle ───────────────────────────────────────────────────
+  Widget _languageToggle(ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          _locale == 'sw' ? 'Lugha:' : 'Language:',
+          style: theme.textTheme.bodySmall,
+        ),
+        const SizedBox(width: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'en', label: Text('EN')),
+            ButtonSegment(value: 'sw', label: Text('SW')),
+          ],
+          selected: {_locale},
+          onSelectionChanged: (selected) => _setLocale(selected.first),
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Page 0: choose services ───────────────────────────────────────────
   Widget _servicesPage(ServiceProvider sp, ThemeData theme) {
     if (sp.isLoading && sp.services.isEmpty) {
       return const Center(
@@ -163,31 +202,46 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
       );
     }
     if (sp.services.isEmpty) {
-      return const Center(child: Text('No services available. Please try again later.'));
+      return Center(
+        child: Text(
+          _locale == 'sw'
+              ? 'Hakuna huduma zinazopatikana. Jaribu tena baadaye.'
+              : 'No services available. Please try again later.',
+        ),
+      );
     }
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: sp.services.map((s) {
-        final isSel = _selected.contains(s.id);
-        return FilterChip(
-          label: Text(s.name),
-          selected: isSel,
-          showCheckmark: false,
-          selectedColor: theme.colorScheme.primary,
-          backgroundColor: theme.colorScheme.surface,
-          labelStyle: TextStyle(
-            color: isSel ? Colors.white : theme.colorScheme.onSurface,
-          ),
-          onSelected: (v) => setState(() {
-            v ? _selected.add(s.id) : _selected.remove(s.id);
-          }),
-        );
-      }).toList(),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _languageToggle(theme),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: sp.services.map((s) {
+            final isSel = _selected.contains(s.id);
+            final label = s.localizedName(_locale);
+            return FilterChip(
+              label: Text(label),
+              selected: isSel,
+              showCheckmark: false,
+              selectedColor: theme.colorScheme.primary,
+              backgroundColor: theme.colorScheme.surface,
+              labelStyle: TextStyle(
+                color: isSel ? Colors.white : theme.colorScheme.onSurface,
+              ),
+              onSelected: (v) => setState(() {
+                v ? _selected.add(s.id) : _selected.remove(s.id);
+              }),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
-  // ── Page 1: price ranges ────────────────────────────────────────────────
+  // ── Page 1: price ranges ──────────────────────────────────────────────
   Widget _priceRow(TextEditingController minC, TextEditingController maxC) {
     InputDecoration deco(String label) => InputDecoration(
       labelText: label,
@@ -201,7 +255,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
             controller: minC,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: deco('From'),
+            decoration: deco(_locale == 'sw' ? 'Kutoka' : 'From'),
             onChanged: (_) => setState(() {}),
           ),
         ),
@@ -211,7 +265,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
             controller: maxC,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: deco('To'),
+            decoration: deco(_locale == 'sw' ? 'Hadi' : 'To'),
             onChanged: (_) => setState(() {}),
           ),
         ),
@@ -231,14 +285,22 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
         if (chosen.length > 1)
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Same price for all services'),
+            title: Text(
+              _locale == 'sw'
+                  ? 'Bei sawa kwa huduma zote'
+                  : 'Same price for all services',
+            ),
             value: _sameForAll,
             onChanged: (v) => setState(() => _sameForAll = v),
           ),
         const SizedBox(height: 8),
         if (_sameForAll || chosen.length == 1) ...[
           Text(
-            chosen.length == 1 ? chosen.first.name : '${chosen.length} services',
+            chosen.length == 1
+                ? chosen.first.localizedName(_locale)
+                : (_locale == 'sw'
+                ? '${chosen.length} huduma'
+                : '${chosen.length} services'),
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
@@ -247,7 +309,9 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '"To" must be higher than "From"',
+                _locale == 'sw'
+                    ? '"Hadi" lazima iwe juu ya "Kutoka"'
+                    : '"To" must be higher than "From"',
                 style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
               ),
             ),
@@ -258,7 +322,10 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    s.localizedName(_locale),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 8),
                   _priceRow(_minC(s.id), _maxC(s.id)),
                 ],
@@ -267,7 +334,9 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
           ),
         const SizedBox(height: 12),
         Text(
-          'This is a guide for customers. You can change it later in your profile.',
+          _locale == 'sw'
+              ? 'Hii ni mwongozo kwa wateja. Unaweza kuibadilisha baadaye kwenye wasifu wako.'
+              : 'This is a guide for customers. You can change it later in your profile.',
           style: theme.textTheme.bodySmall,
         ),
       ],
@@ -281,18 +350,25 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
     final theme = Theme.of(context);
     final isServices = _page == 0;
 
-    // keep the "single service" case on the shared pair of fields
     if (!isServices && _selected.length == 1) _sameForAll = true;
 
     return RegisterStepScaffold(
       step: isServices ? 4 : 5,
       total: 5,
-      title: isServices ? 'What do you do?' : 'Set your price range',
+      title: isServices
+          ? (_locale == 'sw' ? 'Unatoa huduma gani?' : 'What do you do?')
+          : (_locale == 'sw' ? 'Weka bei yako' : 'Set your price range'),
       subtitle: isServices
-          ? 'Pick every service you offer.'
-          : 'Customers see this range before they call you.',
+          ? (_locale == 'sw'
+          ? 'Chagua kila huduma unayotoa.'
+          : 'Pick every service you offer.')
+          : (_locale == 'sw'
+          ? 'Wateja wanaona bei hii kabla ya kukupigia simu.'
+          : 'Customers see this range before they call you.'),
       isLoading: auth.isLoading,
-      buttonText: isServices ? 'Continue' : 'Submit registration',
+      buttonText: isServices
+          ? (_locale == 'sw' ? 'Endelea' : 'Continue')
+          : (_locale == 'sw' ? 'Wasilisha usajili' : 'Submit registration'),
       onNext: isServices
           ? (_selected.isNotEmpty ? () => setState(() => _page = 1) : null)
           : (_pricesValid ? _submit : null),

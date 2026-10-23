@@ -154,7 +154,28 @@ class ApiService {
   // SERVICES
   // ============================================================
 
-  Future<ApiResponse> getServices() => _get('/v1/services');
+  // ============================================================
+// SERVICES
+// ============================================================
+
+  /// Fetch services. Sends Accept-Language so backend returns the right name.
+  /// Default locale is English.
+  Future<ApiResponse> getServices({String locale = 'en'}) async {
+    try {
+      final res = await _dio.get(
+        '/v1/services',
+        options: Options(
+          headers: {
+            'Accept-Language': locale, // 'en' or 'sw'
+          },
+        ),
+      );
+      return ApiResponse.fromJson(res.data);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
 
   // ============================================================
   // FUNDI – PROFILE & SERVICES (V19)
@@ -667,6 +688,7 @@ class ApiService {
         if (type != null && type.isNotEmpty) 'type': type,
       });
 
+
   Future<ApiResponse> getUnreadNotificationCount({String? excludeType}) =>
       _get('/v15/notifications/unread-count', query: {
         if (excludeType != null && excludeType.isNotEmpty)
@@ -736,6 +758,7 @@ class ApiService {
       if (notes != null) 'notes': notes,
     });
   }
+
 
   Future<ApiResponse> getMySubscriptions() => _get('/v16/my-subscriptions');
 

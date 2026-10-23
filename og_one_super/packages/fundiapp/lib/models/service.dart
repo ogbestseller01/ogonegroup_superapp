@@ -21,12 +21,17 @@ class ServiceCategory {
       slug: json['slug'] ?? '',
     );
   }
+
+  String localizedName(String locale) {
+    if (locale == 'sw' && swahiliName.isNotEmpty) return swahiliName;
+    return name;
+  }
 }
 
 class Service {
   final int id;
-  final String name;
-  final String swahiliName;
+  final String name;        // English
+  final String swahiliName; // Swahili
   final List<ServiceCategory> categories;
 
   Service({
@@ -46,9 +51,17 @@ class Service {
 
     return Service(
       id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      swahiliName: json['swahili_name'] ?? '',
+      // Prefer name_en if API sends it, else name
+      name: json['name_en'] ?? json['name'] ?? '',
+      swahiliName: json['name_sw'] ?? json['swahili_name'] ?? '',
       categories: categories,
     );
+  }
+
+  /// Returns the name for the given locale ('en' or 'sw').
+  /// Falls back to English if Swahili is empty.
+  String localizedName(String locale) {
+    if (locale == 'sw' && swahiliName.isNotEmpty) return swahiliName;
+    return name;
   }
 }
