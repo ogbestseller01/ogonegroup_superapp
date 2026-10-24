@@ -7,7 +7,8 @@
 //  * Nested MaterialApp → own localizations, theme, routes, providers.
 //  * Host still owns Firebase init (main.dart skips if already initialized).
 //  * Providers are scoped to this subtree.
-//  * Shared navigatorKey keeps AuthProvider redirects working.
+//  * Package-local navigatorKey (app_navigator.dart) for AuthProvider 401 redirects.
+//  * Session storage is isolated via StorageService prefix "nf_" (not shared with FundiApp).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -51,7 +52,9 @@ class NearbyFundiMiniApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(navigatorKey: navigatorKey),
+        ),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => RequestProvider()),
         ChangeNotifierProvider(create: (_) => TechnicianProvider()),

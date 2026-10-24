@@ -1,5 +1,5 @@
 // FILE: lib/screens/home/nearby_screen.dart
-// Nearby Fundi - Simple UI (logic unchanged)
+// Nearby Fundi - Attractive UI (logic unchanged)
 
 import 'dart:async';
 import 'dart:convert';
@@ -169,6 +169,22 @@ class NearbyStrings {
   static const searchFailed =
       'Search failed. Please check your connection and try again.';
 }
+
+// ================================================================
+// UI HELPERS (visual only)
+// ================================================================
+
+/// Warm accent used for highlights (search button, rings, badges).
+const Color _gold = Color(0xFFF2B93B);
+
+/// Soft grey used for thin default borders.
+const Color _hairline = Color(0xFFD0D5DD);
+
+OutlineInputBorder _thin(Color c, {double w = 1, double r = 16}) =>
+    OutlineInputBorder(
+      borderRadius: BorderRadius.circular(r),
+      borderSide: BorderSide(color: c, width: w),
+    );
 
 // ================================================================
 // SCREEN
@@ -723,7 +739,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.fromLTRB(60, 260, 60, 120),
+        padding: const EdgeInsets.fromLTRB(60, 260, 60, 200),
       ),
     );
   }
@@ -783,7 +799,7 @@ class _NearbyScreenState extends State<NearbyScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.18),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -819,7 +835,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       builder: (context, child) {
         final value = _pulseController.value;
         final scale = 0.8 + (value * 0.45);
-        final opacity = 0.40 * (1 - value);
+        final opacity = 0.50 * (1 - value);
 
         return Stack(
           alignment: Alignment.center,
@@ -832,24 +848,52 @@ class _NearbyScreenState extends State<NearbyScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppTheme.primary
-                        .withOpacity(opacity.clamp(0.0, 1.0)),
+                    color: _gold.withValues(alpha: opacity.clamp(0.0, 1.0)),
                     width: 3,
                   ),
                 ),
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(2),
+              padding: const EdgeInsets.all(2.5),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppTheme.primary,
+                color: _gold,
               ),
               child: _buildAvatar(tech, size: size, iconSize: size * 0.48),
             ),
           ],
         );
       },
+    );
+  }
+
+  // ==============================================================
+  // SMALL INFO CHIP (distance / time / rating)
+  // ==============================================================
+
+  Widget _infoChip(IconData icon, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -873,9 +917,9 @@ class _NearbyScreenState extends State<NearbyScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) {
         return DraggableScrollableSheet(
@@ -899,27 +943,44 @@ class _NearbyScreenState extends State<NearbyScreen>
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.fromLTRB(pad + 4, 14, pad - 4, 8),
+                  padding: EdgeInsets.fromLTRB(pad + 6, 16, pad - 2, 10),
                   child: Row(
                     children: [
+                      Container(
+                        width: 5,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: _gold,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           '${sorted.length} ${l10n.fundisFound}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
+                            color: AppTheme.primary,
                           ),
                         ),
                       ),
-                      IconButton(
-                        tooltip: MaterialLocalizations.of(context)
-                            .closeButtonTooltip,
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
+                      Material(
+                        color: AppTheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context),
+                          child: const SizedBox(
+                            width: 38,
+                            height: 38,
+                            child: Icon(Icons.close_rounded,
+                                size: 20, color: AppTheme.primary),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
                 Expanded(
                   child: columns > 1
                       ? GridView.builder(
@@ -948,7 +1009,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     padding: EdgeInsets.all(pad),
                     itemCount: sorted.length,
                     separatorBuilder: (_, __) =>
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     itemBuilder: (_, index) {
                       final tech = sorted[index];
                       return _buildListTile(
@@ -968,7 +1029,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   // ==============================================================
-  // LIST TILE (one simple card for list + grid)
+  // LIST TILE (one card for list + grid)
   // ==============================================================
 
   Widget _buildListTile(
@@ -986,9 +1047,11 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     return Material(
       color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         onTap: () {
           setState(() {
             _selectedTechnicianId = tech.id;
@@ -1004,19 +1067,25 @@ class _NearbyScreenState extends State<NearbyScreen>
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: selected
-                  ? AppTheme.accent
-                  : recommended
-                  ? AppTheme.primary.withOpacity(0.4)
-                  : theme.dividerColor.withOpacity(0.35),
-              width: selected ? 1.5 : 1,
+              color: selected ? _gold : Colors.transparent,
+              width: 2,
             ),
           ),
           child: Row(
             children: [
-              _buildAvatar(tech, size: 48, iconSize: 24),
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: recommended ? _gold : _hairline,
+                    width: 2,
+                  ),
+                ),
+                child: _buildAvatar(tech, size: 50, iconSize: 24),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1033,6 +1102,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
+                              color: AppTheme.primary,
                             ),
                           ),
                         ),
@@ -1044,64 +1114,252 @@ class _NearbyScreenState extends State<NearbyScreen>
                           ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      [
-                        if (tech.area != null && tech.area!.isNotEmpty)
-                          tech.area!,
-                        '${distance.toStringAsFixed(1)} km',
-                        if (duration != null)
-                          '~${duration.toStringAsFixed(0)} min',
-                      ].join('  •  '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: theme.hintColor,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    if (recommended || tech.rating > 0) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          if (tech.rating > 0) ...[
-                            const Icon(Icons.star_rounded,
-                                color: AppTheme.secondary, size: 15),
-                            const SizedBox(width: 2),
-                            Text(
-                              tech.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          if (recommended)
-                            const Flexible(
-                              child: Text(
-                                'Near you',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppTheme.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                        ],
+                    if (tech.area != null && tech.area!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        tech.area!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: theme.hintColor,
+                          fontSize: 12.5,
+                        ),
                       ),
                     ],
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _infoChip(
+                          Icons.directions_car_rounded,
+                          '${distance.toStringAsFixed(1)} km',
+                          AppTheme.primary,
+                        ),
+                        if (duration != null)
+                          _infoChip(
+                            Icons.access_time_rounded,
+                            '~${duration.toStringAsFixed(0)} min',
+                            AppTheme.accent,
+                          ),
+                        if (tech.rating > 0)
+                          _infoChip(
+                            Icons.star_rounded,
+                            tech.rating.toStringAsFixed(1),
+                            AppTheme.secondary,
+                          ),
+                        if (recommended)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _gold.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Near you',
+                              style: TextStyle(
+                                color: Color(0xFF8A6200),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: selected ? AppTheme.accent : theme.hintColor,
+              const SizedBox(width: 6),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.chevron_right_rounded,
+                    color: AppTheme.primary, size: 22),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ==============================================================
+  // BOTTOM CAROUSEL CARD (tap = same as tapping a map marker)
+  // Responsive: width adapts to the screen, content scales down
+  // instead of ever overflowing.
+  // ==============================================================
+
+  Widget _buildTechCard(
+      Technician tech,
+      bool recommended,
+      LatLng origin,
+      double cardWidth,
+      ) {
+    final theme = Theme.of(context);
+
+    final route = _routesData[tech.id];
+    final distance = route?.distanceKm ?? tech.distanceKm;
+    final duration = route?.durationMin;
+    final selected = _selectedTechnicianId == tech.id;
+
+    final compact = cardWidth < 290;
+    final avatarSize = compact ? 46.0 : 52.0;
+
+    final subtitle = recommended
+        ? 'Near you'
+        : (tech.area != null && tech.area!.isNotEmpty ? tech.area! : '');
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTechnicianId = selected ? null : tech.id;
+        });
+
+        _showTechnicianModal(context, tech, origin, recommended);
+      },
+      child: Container(
+        width: cardWidth,
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected ? _gold : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withValues(alpha: 0.16),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: recommended ? _gold : _hairline,
+                  width: 2,
+                ),
+              ),
+              child: _buildAvatar(
+                tech,
+                size: avatarSize,
+                iconSize: avatarSize * 0.5,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  // FittedBox scales the text block down if the card is
+                  // ever shorter than its content (large fonts, small phones)
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: box.maxWidth,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  tech.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppTheme.primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14.5,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              if (tech.verified)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 4),
+                                  child: Icon(Icons.verified_rounded,
+                                      color: AppTheme.accent, size: 15),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              if (tech.rating > 0) ...[
+                                const Icon(Icons.star_rounded,
+                                    color: AppTheme.secondary, size: 15),
+                                const SizedBox(width: 2),
+                                Text(
+                                  tech.rating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  subtitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: recommended
+                                        ? const Color(0xFF8A6200)
+                                        : theme.hintColor,
+                                    fontSize: 12,
+                                    height: 1.2,
+                                    fontWeight: recommended
+                                        ? FontWeight.w800
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              _infoChip(
+                                Icons.directions_car_rounded,
+                                '${distance.toStringAsFixed(1)} km',
+                                AppTheme.primary,
+                              ),
+                              if (duration != null)
+                                _infoChip(
+                                  Icons.access_time_rounded,
+                                  '~${duration.toStringAsFixed(0)} min',
+                                  AppTheme.accent,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1137,6 +1395,9 @@ class _NearbyScreenState extends State<NearbyScreen>
         .map((t) => t.id)
         .toSet();
 
+    final sortedByDistance = [...validTechnicians]
+      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+
     final mq = MediaQuery.of(context);
     final clampedScaler = mq.textScaler.clamp(
       minScaleFactor: 0.9,
@@ -1146,6 +1407,20 @@ class _NearbyScreenState extends State<NearbyScreen>
     final hasFilters =
         _locationController.text.isNotEmpty || _selectedServiceId != null;
     final hasTechnicians = techProvider.technicians.isNotEmpty;
+
+    final showCarousel =
+        techProvider.hasSearchOrigin && sortedByDistance.isNotEmpty;
+    final carouselOrigin = showCarousel
+        ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
+        : NearbyConstants.defaultMapCenter;
+
+    // responsive carousel sizing (grows with the user's font size)
+    final fontScale = clampedScaler.scale(1.0);
+    final carouselHeight = (116.0 * fontScale).clamp(116.0, 142.0);
+    final cardWidth = (mq.size.width * 0.8).clamp(264.0, 340.0);
+
+    // lifts the map controls above the carousel when it is visible
+    final controlsBottom = showCarousel ? carouselHeight + 20 : 20.0;
 
     return MediaQuery(
       data: mq.copyWith(textScaler: clampedScaler),
@@ -1192,7 +1467,7 @@ class _NearbyScreenState extends State<NearbyScreen>
             // ZOOM CONTROLS
             Positioned(
               right: 12,
-              bottom: 20,
+              bottom: controlsBottom,
               child: Column(
                 children: [
                   _MapControlButton(
@@ -1211,6 +1486,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     icon: Icons.my_location_rounded,
                     tooltip: NearbyStrings.fitTechnicians,
                     onPressed: _updateMapBounds,
+                    highlighted: true,
                   ),
                 ],
               ),
@@ -1220,13 +1496,14 @@ class _NearbyScreenState extends State<NearbyScreen>
             if (hasTechnicians)
               Positioned(
                 left: 12,
-                bottom: 20,
+                bottom: controlsBottom,
                 child: Row(
                   children: [
                     _PillButton(
                       icon: Icons.list_rounded,
                       label: '${techProvider.technicians.length}',
                       tooltip: NearbyStrings.showList,
+                      filled: true,
                       onPressed: () => _showTechniciansList(
                         context,
                         techProvider.technicians,
@@ -1250,10 +1527,34 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ),
               ),
 
+            // FUNDI CAROUSEL
+            if (showCarousel)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 8,
+                height: carouselHeight,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  padding: const EdgeInsets.fromLTRB(12, 4, 2, 8),
+                  itemCount: sortedByDistance.length,
+                  itemBuilder: (_, index) {
+                    final tech = sortedByDistance[index];
+                    return _buildTechCard(
+                      tech,
+                      recommendedIds.contains(tech.id),
+                      carouselOrigin,
+                      cardWidth,
+                    );
+                  },
+                ),
+              ),
+
             // ROUTE LOADING
             if (_isFetchingRoutes)
               Positioned(
-                bottom: 80,
+                bottom: showCarousel ? carouselHeight + 78 : 80,
                 left: 0,
                 right: 0,
                 child: Center(child: _routeLoadingBadge()),
@@ -1278,6 +1579,7 @@ class _NearbyScreenState extends State<NearbyScreen>
           icon: Icons.search_rounded,
           label: 'Search',
           tooltip: 'Show search',
+          filled: true,
           onPressed: () => setState(() => _isHeaderVisible = true),
         ),
       ),
@@ -1297,285 +1599,343 @@ class _NearbyScreenState extends State<NearbyScreen>
     return Container(
       key: const ValueKey('visible-search'),
       margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: AppTheme.primary.withValues(alpha: 0.20),
+            blurRadius: 28,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // LOCATION SEARCH
-          Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.58,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest
-                        .withOpacity(0.6),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: TextField(
-                    controller: _locationController,
-                    focusNode: _locationFocus,
-                    textInputAction: TextInputAction.search,
-                    style: const TextStyle(fontSize: 14.5),
-                    decoration: InputDecoration(
-                      hintText: l10n.searchLocation,
-                      hintStyle:
-                      TextStyle(color: theme.hintColor, fontSize: 14),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: AppTheme.primary, size: 22),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_locationController.text.isNotEmpty)
-                            IconButton(
-                              tooltip: NearbyStrings.clear,
-                              icon: const Icon(Icons.close_rounded, size: 18),
-                              onPressed: () {
-                                _locationController.clear();
-                                _suggestionDebounce?.cancel();
-
-                                setState(() {
-                                  _placeSuggestions = [];
-                                  _showSuggestions = _searchHistory.isNotEmpty;
-                                });
-                              },
-                            ),
-                          IconButton(
-                            tooltip: NearbyStrings.chooseOnMap,
-                            icon: const Icon(Icons.map_outlined,
-                                color: AppTheme.primary, size: 22),
-                            onPressed: _openMapPicker,
-                          ),
-                        ],
-                      ),
-                      border: InputBorder.none,
-                      contentPadding:
-                      const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onChanged: _onLocationQueryChanged,
-                    onTap: () {
-                      setState(() {
-                        _showSuggestions = true;
-                      });
-                    },
-                    onSubmitted: (_) => _performSearch(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 46,
-                width: 46,
-                child: ElevatedButton(
-                  onPressed: _isSearching ? null : _performSearch,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: _isSearching
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                      : const Icon(Icons.search_rounded, size: 22),
-                ),
-              ),
-            ],
-          ),
-
-          // SUGGESTIONS
-          if (_showSuggestions)
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: _buildSuggestions(context, theme),
-            ),
-
-          // RESULT SUMMARY
-          if (_searchedArea.isNotEmpty && techProvider.technicians.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
+              // HEADING + HIDE
+              Row(
                 children: [
-                  const Icon(Icons.location_on_rounded,
-                      color: AppTheme.error, size: 16),
-                  const SizedBox(width: 4),
-                  Expanded(
+                  Container(
+                    width: 5,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: _gold,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
                     child: Text(
-                      _searchedArea,
+                      'Find a fundi near you',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
-                  Text(
-                    '${techProvider.technicians.length} found',
-                    style: TextStyle(
-                      color: theme.hintColor,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
+                  Tooltip(
+                    message: 'Hide search',
+                    child: Material(
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setState(() => _isHeaderVisible = false),
+                        child: const SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Icon(Icons.keyboard_arrow_up_rounded,
+                              color: AppTheme.primary, size: 22),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 12),
 
-          const SizedBox(height: 8),
+              // LOCATION SEARCH
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _locationController,
+                      focusNode: _locationFocus,
+                      textInputAction: TextInputAction.search,
+                      style: const TextStyle(fontSize: 14.5),
+                      decoration: InputDecoration(
+                        hintText: l10n.searchLocation,
+                        hintStyle: TextStyle(color: theme.hintColor, fontSize: 14),
+                        prefixIcon: const Icon(Icons.search_rounded,
+                            color: AppTheme.primary, size: 22),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_locationController.text.isNotEmpty)
+                              IconButton(
+                                tooltip: NearbyStrings.clear,
+                                icon: const Icon(Icons.close_rounded, size: 18),
+                                onPressed: () {
+                                  _locationController.clear();
+                                  _suggestionDebounce?.cancel();
 
-          // SERVICE FILTER
-          SizedBox(
-            height: 40,
-            child: TextField(
-              controller: _serviceSearchController,
-              style: const TextStyle(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: NearbyStrings.filterByService,
-                hintStyle: const TextStyle(fontSize: 13.5),
-                prefixIcon: const Icon(Icons.build_outlined,
-                    color: AppTheme.primary, size: 18),
-                suffixIcon: _serviceSearchQuery.isNotEmpty
-                    ? IconButton(
-                  tooltip: NearbyStrings.clear,
-                  icon: const Icon(Icons.close_rounded, size: 16),
-                  onPressed: () {
-                    _serviceSearchController.clear();
-                    setState(() {
-                      _serviceSearchQuery = '';
-                    });
-                  },
-                )
-                    : null,
-                filled: true,
-                fillColor:
-                theme.colorScheme.surfaceContainerHighest.withOpacity(0.6),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _serviceSearchQuery = value;
-                });
-              },
-            ),
-          ),
-
-          // SERVICE CHIPS
-          if (services.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: SizedBox(
-                height: 36,
-                child: ListView(
-                  controller: _serviceChipScrollController,
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _buildChip(
-                      label: 'All',
-                      isSelected: _selectedServiceId == null,
+                                  setState(() {
+                                    _placeSuggestions = [];
+                                    _showSuggestions = _searchHistory.isNotEmpty;
+                                  });
+                                },
+                              ),
+                            IconButton(
+                              tooltip: NearbyStrings.chooseOnMap,
+                              icon: const Icon(Icons.map_outlined,
+                                  color: AppTheme.primary, size: 22),
+                              onPressed: _openMapPicker,
+                            ),
+                          ],
+                        ),
+                        filled: true,
+                        fillColor: theme.colorScheme.surface,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        border: _thin(_hairline),
+                        enabledBorder: _thin(_hairline),
+                        focusedBorder: _thin(AppTheme.primary, w: 1.5),
+                      ),
+                      onChanged: _onLocationQueryChanged,
                       onTap: () {
                         setState(() {
-                          _selectedServiceId = null;
-                          _selectedCategoryId = null;
+                          _showSuggestions = true;
                         });
                       },
+                      onSubmitted: (_) => _performSearch(),
                     ),
-                    ...services.map((service) {
-                      final selected = _selectedServiceId == service.id;
-
-                      return _buildChip(
-                        label: service.name,
-                        isSelected: selected,
-                        onTap: () {
-                          setState(() {
-                            _selectedServiceId = selected ? null : service.id;
-                            _selectedCategoryId = null;
-                          });
-                        },
-                      );
-                    }),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 50,
+                    width: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSearching ? null : _performSearch,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _gold,
+                        foregroundColor: AppTheme.primary,
+                        disabledBackgroundColor: _gold.withValues(alpha: 0.55),
+                        elevation: 0,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: _isSearching
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: AppTheme.primary,
+                        ),
+                      )
+                          : const Icon(Icons.search_rounded, size: 24),
+                    ),
+                  ),
+                ],
               ),
-            ),
 
-          // CATEGORY CHIPS
-          if (categories.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: SizedBox(
-                height: 34,
-                child: ListView(
-                  controller: _categoryChipScrollController,
-                  scrollDirection: Axis.horizontal,
-                  children: categories.map((category) {
-                    final selected = _selectedCategoryId == category.id;
-
-                    return _buildChip(
-                      label: category.name,
-                      isSelected: selected,
-                      outlined: true,
-                      onTap: () {
-                        setState(() {
-                          _selectedCategoryId = selected ? null : category.id;
-                        });
-                      },
-                    );
-                  }).toList(),
+              // SUGGESTIONS
+              if (_showSuggestions)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: _buildSuggestions(context, theme),
                 ),
-              ),
-            ),
 
-          // FOOTER: clear + hide
-          Row(
-            children: [
-              if (hasFilters)
-                TextButton.icon(
-                  onPressed: _clearAllFilters,
-                  icon: const Icon(Icons.clear_all_rounded, size: 18),
-                  label: const Text(NearbyStrings.clearFilters),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.primary,
-                    visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w700),
+              // RESULT SUMMARY
+              if (_searchedArea.isNotEmpty && techProvider.technicians.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: AppTheme.error.withValues(alpha: 0.10),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.location_on_rounded,
+                            color: AppTheme.error, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _searchedArea,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _gold.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${techProvider.technicians.length} found',
+                          style: const TextStyle(
+                            color: Color(0xFF8A6200),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              const Spacer(),
-              IconButton(
-                tooltip: 'Hide search',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                color: theme.hintColor,
-                onPressed: () => setState(() => _isHeaderVisible = false),
+
+              const SizedBox(height: 10),
+
+              // SERVICE FILTER
+              SizedBox(
+                height: 42,
+                child: TextField(
+                  controller: _serviceSearchController,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: NearbyStrings.filterByService,
+                    hintStyle: TextStyle(color: theme.hintColor, fontSize: 13.5),
+                    prefixIcon: const Icon(Icons.build_outlined,
+                        color: AppTheme.primary, size: 18),
+                    suffixIcon: _serviceSearchQuery.isNotEmpty
+                        ? IconButton(
+                      tooltip: NearbyStrings.clear,
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      onPressed: () {
+                        _serviceSearchController.clear();
+                        setState(() {
+                          _serviceSearchQuery = '';
+                        });
+                      },
+                    )
+                        : null,
+                    filled: true,
+                    fillColor: theme.colorScheme.surface,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    border: _thin(_hairline, r: 14),
+                    enabledBorder: _thin(_hairline, r: 14),
+                    focusedBorder: _thin(AppTheme.primary, w: 1.5, r: 14),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _serviceSearchQuery = value;
+                    });
+                  },
+                ),
               ),
+
+              // SERVICE CHIPS
+              if (services.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: SizedBox(
+                    height: 38,
+                    child: ListView(
+                      controller: _serviceChipScrollController,
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildChip(
+                          label: 'All',
+                          isSelected: _selectedServiceId == null,
+                          onTap: () {
+                            setState(() {
+                              _selectedServiceId = null;
+                              _selectedCategoryId = null;
+                            });
+                          },
+                        ),
+                        ...services.map((service) {
+                          final selected = _selectedServiceId == service.id;
+
+                          return _buildChip(
+                            label: service.name,
+                            isSelected: selected,
+                            onTap: () {
+                              setState(() {
+                                _selectedServiceId = selected ? null : service.id;
+                                _selectedCategoryId = null;
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // CATEGORY CHIPS
+              if (categories.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: SizedBox(
+                    height: 34,
+                    child: ListView(
+                      controller: _categoryChipScrollController,
+                      scrollDirection: Axis.horizontal,
+                      children: categories.map((category) {
+                        final selected = _selectedCategoryId == category.id;
+
+                        return _buildChip(
+                          label: category.name,
+                          isSelected: selected,
+                          outlined: true,
+                          onTap: () {
+                            setState(() {
+                              _selectedCategoryId = selected ? null : category.id;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+
+              // CLEAR FILTERS
+              if (hasFilters)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: TextButton.icon(
+                    onPressed: _clearAllFilters,
+                    icon: const Icon(Icons.clear_all_rounded, size: 18),
+                    label: const Text(NearbyStrings.clearFilters),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      textStyle: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1590,12 +1950,13 @@ class _NearbyScreenState extends State<NearbyScreen>
         !_isLoadingSuggestions;
 
     return Container(
-      margin: const EdgeInsets.only(top: 6),
+      margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _hairline.withValues(alpha: 0.7)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: ListView(
         shrinkWrap: true,
         padding: EdgeInsets.zero,
@@ -1742,16 +2103,18 @@ class _NearbyScreenState extends State<NearbyScreen>
       polylines.add(
         Polyline(
           points: route.points,
-          strokeWidth: selected ? 9.0 : 7.0,
-          color: Colors.white.withOpacity(0.85),
+          strokeWidth: selected ? 10.0 : 7.0,
+          color: Colors.white.withValues(alpha: 0.9),
         ),
       );
 
       polylines.add(
         Polyline(
           points: route.points,
-          strokeWidth: selected ? 6.0 : 4.5,
-          color: selected ? AppTheme.accent : AppTheme.primary,
+          strokeWidth: selected ? 6.0 : 4.0,
+          color: selected
+              ? _gold
+              : AppTheme.primary.withValues(alpha: 0.65),
         ),
       );
     }
@@ -1795,8 +2158,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected ? AppTheme.accent : Colors.white,
-                        width: 2.5,
+                        color: selected ? _gold : AppTheme.primary,
+                        width: 3,
                       ),
                     ),
                     child: _buildAvatar(
@@ -1806,25 +2169,25 @@ class _NearbyScreenState extends State<NearbyScreen>
                     ),
                   ),
                 if (distance > 0) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isRecommended ? AppTheme.primary : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      color: isRecommended ? _gold : AppTheme.primary,
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 4,
+                          color: Colors.black.withValues(alpha: 0.22),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: Text(
                       '${distance.toStringAsFixed(1)} km',
                       style: TextStyle(
-                        color:
-                        isRecommended ? Colors.white : AppTheme.primary,
+                        color: isRecommended ? AppTheme.primary : Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1838,7 +2201,36 @@ class _NearbyScreenState extends State<NearbyScreen>
       );
     }).toList();
 
-    // USER MARKER
+    // USER MARKER (pulse)
+    final originPulse = Marker(
+      point: origin,
+      width: 90,
+      height: 90,
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, child) {
+            final v = _pulseController.value;
+            return Center(
+              child: Container(
+                width: 28 + (v * 56),
+                height: 28 + (v * 56),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.error.withValues(alpha: 0.22 * (1 - v)),
+                  border: Border.all(
+                    color: AppTheme.error.withValues(alpha: 0.5 * (1 - v)),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    // USER MARKER (pin)
     final originMarker = Marker(
       point: origin,
       width: 60,
@@ -1854,12 +2246,18 @@ class _NearbyScreenState extends State<NearbyScreen>
               Icons.location_on_rounded,
               color: AppTheme.error,
               size: isDesktop ? 48 : (isTablet ? 42 : 38),
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                ),
+              ],
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: AppTheme.error,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
                 NearbyStrings.you,
@@ -1902,9 +2300,23 @@ class _NearbyScreenState extends State<NearbyScreen>
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.example.nearbyfundi',
         ),
+        // search radius ring
+        CircleLayer(
+          circles: [
+            CircleMarker(
+              point: origin,
+              radius: _searchRadiusKm * 1000.0,
+              useRadiusInMeter: true,
+              color: AppTheme.primary.withValues(alpha: 0.05),
+              borderColor: AppTheme.primary.withValues(alpha: 0.25),
+              borderStrokeWidth: 1.5,
+            ),
+          ],
+        ),
         PolylineLayer(polylines: polylines),
-        MarkerLayer(markers: [originMarker, ...markers]),
+        MarkerLayer(markers: [originPulse, originMarker, ...markers]),
         RichAttributionWidget(
+          alignment: AttributionAlignment.bottomLeft,
           attributions: [
             TextSourceAttribution(
               '© OpenStreetMap contributors',
@@ -1931,7 +2343,7 @@ class _NearbyScreenState extends State<NearbyScreen>
         bool showExpandRadius = false,
       }) {
     return Container(
-      color: theme.colorScheme.surfaceContainerLowest,
+      color: theme.scaffoldBackgroundColor,
       alignment: Alignment.center,
       padding: const EdgeInsets.only(top: 140, left: 24, right: 24),
       child: SingleChildScrollView(
@@ -1939,47 +2351,80 @@ class _NearbyScreenState extends State<NearbyScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primary.withOpacity(0.08),
+            SizedBox(
+              width: 170,
+              height: 170,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 170,
+                    height: 170,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primary.withValues(alpha: 0.04),
+                    ),
+                  ),
+                  Container(
+                    width: 125,
+                    height: 125,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primary.withValues(alpha: 0.07),
+                    ),
+                  ),
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primary,
+                      border: Border.all(color: _gold, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.30),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 38, color: Colors.white),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 36, color: AppTheme.primary),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             Text(
               message,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               'Within your area.',
-              style: TextStyle(color: theme.hintColor, fontSize: 13),
+              style: TextStyle(color: theme.hintColor, fontSize: 13.5),
             ),
             if (showExpandRadius &&
                 _searchRadiusKm < NearbyConstants.maxRadiusKm) ...[
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
+              const SizedBox(height: 18),
+              FilledButton.icon(
                 onPressed: _retryWithLargerRadius,
                 icon: const Icon(Icons.add_location_alt_outlined, size: 18),
                 label: Text(
                   '${NearbyStrings.expandSearchRadius} (+${NearbyConstants.radiusStepKm} km)',
                   style: const TextStyle(fontSize: 13),
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.primary,
-                  side: const BorderSide(color: AppTheme.primary),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
@@ -1996,10 +2441,17 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   Widget _routeLoadingBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(20),
+        color: AppTheme.primary,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -2009,16 +2461,16 @@ class _NearbyScreenState extends State<NearbyScreen>
             height: 14,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: Colors.white,
+              color: _gold,
             ),
           ),
-          SizedBox(width: 8),
+          SizedBox(width: 10),
           Text(
             NearbyStrings.findingRoutes,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -2040,6 +2492,46 @@ class _NearbyScreenState extends State<NearbyScreen>
   // TECHNICIAN MODAL
   // ==============================================================
 
+  Widget _statTile(
+      IconData icon,
+      String value,
+      String label,
+      Color color,
+      ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: Theme.of(context).hintColor,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showTechnicianModal(
       BuildContext context,
       Technician tech,
@@ -2057,12 +2549,35 @@ class _NearbyScreenState extends State<NearbyScreen>
       isScrollControlled: true,
       backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       builder: (sheetContext) {
+        final stats = <Widget>[
+          _statTile(
+            Icons.directions_car_rounded,
+            '${distance.toStringAsFixed(1)} km',
+            'Distance',
+            AppTheme.primary,
+          ),
+          if (duration != null)
+            _statTile(
+              Icons.access_time_rounded,
+              '~${duration.toStringAsFixed(0)} min',
+              'Drive time',
+              AppTheme.accent,
+            ),
+          if (tech.rating > 0)
+            _statTile(
+              Icons.star_rounded,
+              tech.rating.toStringAsFixed(1),
+              'Rating',
+              AppTheme.secondary,
+            ),
+        ];
+
         return SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2077,13 +2592,20 @@ class _NearbyScreenState extends State<NearbyScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
                 // HEADER
                 Row(
                   children: [
-                    _buildAvatar(tech, size: 56, iconSize: 28),
-                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: _gold, width: 2.5),
+                      ),
+                      child: _buildAvatar(tech, size: 62, iconSize: 30),
+                    ),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2097,7 +2619,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 18,
+                                    fontSize: 19,
+                                    color: AppTheme.primary,
                                   ),
                                 ),
                               ),
@@ -2105,17 +2628,17 @@ class _NearbyScreenState extends State<NearbyScreen>
                                 const Padding(
                                   padding: EdgeInsets.only(left: 6),
                                   child: Icon(Icons.verified_rounded,
-                                      color: AppTheme.accent, size: 18),
+                                      color: AppTheme.accent, size: 19),
                                 ),
                             ],
                           ),
                           if (tech.area != null && tech.area!.isNotEmpty)
                             Padding(
-                              padding: const EdgeInsets.only(top: 3),
+                              padding: const EdgeInsets.only(top: 4),
                               child: Row(
                                 children: [
                                   const Icon(Icons.location_on_rounded,
-                                      color: AppTheme.error, size: 14),
+                                      color: AppTheme.error, size: 15),
                                   const SizedBox(width: 3),
                                   Expanded(
                                     child: Text(
@@ -2124,7 +2647,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: theme.hintColor,
-                                        fontSize: 13,
+                                        fontSize: 13.5,
                                       ),
                                     ),
                                   ),
@@ -2134,66 +2657,82 @@ class _NearbyScreenState extends State<NearbyScreen>
                         ],
                       ),
                     ),
-                    IconButton(
-                      tooltip: MaterialLocalizations.of(context)
-                          .closeButtonTooltip,
-                      onPressed: () => Navigator.pop(sheetContext),
-                      icon: const Icon(Icons.close_rounded),
+                    Material(
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.pop(sheetContext),
+                        child: const SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: Icon(Icons.close_rounded,
+                              size: 20, color: AppTheme.primary),
+                        ),
+                      ),
                     ),
                   ],
                 ),
 
                 if (recommended)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      NearbyStrings.recommendedReason,
-                      style: const TextStyle(
-                        color: AppTheme.primary,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _gold.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.auto_awesome_rounded,
+                            color: Color(0xFF8A6200), size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            NearbyStrings.recommendedReason,
+                            style: TextStyle(
+                              color: Color(0xFF8A6200),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // INFO ROW
-                Wrap(
-                  spacing: 18,
-                  runSpacing: 8,
+                // STATS
+                Row(
                   children: [
-                    _modalInfo(Icons.directions_car_rounded,
-                        '${distance.toStringAsFixed(1)} km'),
-                    if (duration != null)
-                      _modalInfo(Icons.access_time_rounded,
-                          '~${duration.toStringAsFixed(0)} min'),
-                    if (tech.rating > 0)
-                      _modalInfo(Icons.star_rounded,
-                          tech.rating.toStringAsFixed(1),
-                          color: AppTheme.secondary),
+                    for (var i = 0; i < stats.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      stats[i],
+                    ],
                   ],
                 ),
 
                 if (tech.services.isNotEmpty) ...[
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: tech.services.map((service) {
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          color: AppTheme.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           service,
                           style: const TextStyle(
                             color: AppTheme.primary,
                             fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       );
@@ -2201,14 +2740,14 @@ class _NearbyScreenState extends State<NearbyScreen>
                   ),
                 ],
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
                 // BUTTONS
                 Row(
                   children: [
                     Expanded(
                       child: SizedBox(
-                        height: 48,
+                        height: 52,
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(sheetContext);
@@ -2223,14 +2762,14 @@ class _NearbyScreenState extends State<NearbyScreen>
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                           child: const Text(
                             NearbyStrings.viewProfile,
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
                             ),
                           ),
                         ),
@@ -2239,9 +2778,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                     if (tech.latitude != null && tech.longitude != null) ...[
                       const SizedBox(width: 10),
                       SizedBox(
-                        height: 48,
-                        width: 52,
-                        child: OutlinedButton(
+                        height: 52,
+                        width: 56,
+                        child: ElevatedButton(
                           onPressed: () {
                             _openDirectionsInGoogleMaps(
                               context,
@@ -2250,17 +2789,18 @@ class _NearbyScreenState extends State<NearbyScreen>
                               LatLng(tech.latitude!, tech.longitude!),
                             );
                           },
-                          style: OutlinedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _gold,
                             foregroundColor: AppTheme.primary,
-                            side: const BorderSide(color: AppTheme.primary),
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             padding: EdgeInsets.zero,
                           ),
                           child: const Tooltip(
                             message: NearbyStrings.directions,
-                            child: Icon(Icons.directions_rounded),
+                            child: Icon(Icons.directions_rounded, size: 26),
                           ),
                         ),
                       ),
@@ -2272,25 +2812,6 @@ class _NearbyScreenState extends State<NearbyScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _modalInfo(IconData icon, String value, {Color? color}) {
-    final c = color ?? AppTheme.accent;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: c, size: 18),
-        const SizedBox(width: 5),
-        Text(
-          value,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
-        ),
-      ],
     );
   }
 
@@ -2341,37 +2862,54 @@ class _NearbyScreenState extends State<NearbyScreen>
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.only(right: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
             alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: isSelected
                   ? (outlined
-                  ? AppTheme.primary.withOpacity(0.10)
+                  ? AppTheme.primary.withValues(alpha: 0.10)
                   : AppTheme.primary)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
+                  : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected
-                    ? AppTheme.primary
-                    : theme.dividerColor.withOpacity(0.5),
+                color: isSelected ? AppTheme.primary : _hairline,
               ),
+              boxShadow: isSelected && !outlined
+                  ? [
+                BoxShadow(
+                  color: AppTheme.primary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+                  : null,
             ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected
-                    ? (outlined ? AppTheme.primary : Colors.white)
-                    : theme.colorScheme.onSurface,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected && !outlined) ...[
+                  const Icon(Icons.check_rounded, size: 15, color: _gold),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected
+                        ? (outlined ? AppTheme.primary : Colors.white)
+                        : theme.colorScheme.onSurface,
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -2388,23 +2926,30 @@ class _MapControlButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+  final bool highlighted;
 
   const _MapControlButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.highlighted = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.surface,
+      color: highlighted ? AppTheme.primary : Theme.of(context).colorScheme.surface,
       shape: const CircleBorder(),
-      elevation: 3,
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
       child: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        icon: Icon(icon, color: AppTheme.primary, size: 22),
+        icon: Icon(
+          icon,
+          color: highlighted ? _gold : AppTheme.primary,
+          size: 22,
+        ),
         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       ),
     );
@@ -2420,6 +2965,7 @@ class _PillButton extends StatelessWidget {
   final String? label;
   final String tooltip;
   final VoidCallback onPressed;
+  final bool filled;
 
   const _PillButton({
     super.key,
@@ -2427,15 +2973,19 @@ class _PillButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.label,
+    this.filled = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final fg = filled ? Colors.white : AppTheme.primary;
+
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        elevation: 3,
+        color: filled ? AppTheme.primary : Theme.of(context).colorScheme.surface,
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
@@ -2448,13 +2998,13 @@ class _PillButton extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: AppTheme.primary, size: 22),
+                Icon(icon, color: filled ? _gold : fg, size: 22),
                 if (label != null) ...[
                   const SizedBox(width: 6),
                   Text(
                     label!,
-                    style: const TextStyle(
-                      color: AppTheme.primary,
+                    style: TextStyle(
+                      color: fg,
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
                     ),

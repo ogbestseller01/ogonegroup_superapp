@@ -1,3 +1,4 @@
+// lib/screens/fundi/profile/fundi_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,18 @@ import '../../../providers/technician_provider.dart';
 import '../../../widgets/app_network_image.dart';
 import '../../../widgets/confirmation_dialog.dart';
 import '../../../widgets/custom_button.dart';
+
+// ─── Shared look helpers ─────────────────────────────────────────────────
+/// Navy is unreadable on the dark background, so gold is used in dark mode.
+Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
+Color _cardBg(bool isDark) => isDark ? AppTheme.darkSurface : Colors.white;
+Color _cardBorder(bool isDark) =>
+    isDark ? AppTheme.darkBorder : AppTheme.borderLight.withValues(alpha: 0.30);
+Color _ink(bool isDark) => isDark ? Colors.white : AppTheme.primary;
+Color _muted(bool isDark) =>
+    isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
+double _hPad(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < 360 ? 12.0 : 16.0;
 
 class FundiProfileScreen extends StatefulWidget {
   const FundiProfileScreen({super.key});
@@ -43,6 +56,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
         content: Text(message),
         backgroundColor: error ? AppTheme.error : AppTheme.primary,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -62,6 +76,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: 560),
       builder: (_) => _ServicesEditorSheet(
         current: tech.technician?.servicePrices ?? const [],
         catalog: catalog,
@@ -117,206 +132,418 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
 
   // ───────────── SECTIONS ─────────────
 
-  Widget _header(ThemeData theme, AuthProvider auth, Technician? t) {
+  Widget _titleRow(AppLocalizations l10n, bool isDark) {
+    final h = _hPad(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(h + 2, 16, h, 4),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppTheme.secondary,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              l10n.profile,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                inherit: true,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                color: _ink(isDark),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _header(bool isDark, AuthProvider auth, Technician? t) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
     final user = auth.user;
     final name = user?.name ?? '';
     final email = user?.email ?? '';
     final phone = user?.phone ?? '';
+    final avatarSize = compact ? 68.0 : 84.0;
 
     final initial = Container(
-      color: Colors.white.withValues(alpha: 0.2),
+      color: Colors.white,
       alignment: Alignment.center,
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : 'F',
-        style: const TextStyle(
-            fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white),
+        style: TextStyle(
+          inherit: true,
+          fontSize: compact ? 30 : 38,
+          fontWeight: FontWeight.w800,
+          color: AppTheme.primary,
+        ),
       ),
     );
 
     final verified = t?.verified ?? false;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: EdgeInsets.all(compact ? 16 : 22),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.primary.withValues(alpha: 0.7),
-          ],
+        gradient: const LinearGradient(
+          colors: [AppTheme.primary, AppTheme.primaryLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                    shape: BoxShape.circle, color: Colors.white),
-                child: ClipOval(
-                  child: AppNetworkImage(
-                    path: t?.profilePhoto,
-                    fallback: initial,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: _goToEditProfile,
-                child: const CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.edit, size: 16, color: AppTheme.primary),
-                ),
-              ),
-            ],
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.30),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                if (email.isNotEmpty)
-                  Text(email,
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.85))),
-                if (phone.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(phone,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.85))),
-                  ),
-                if (t != null) ...[
-                  const SizedBox(height: 8),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            top: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.secondary.withValues(alpha: 0.30),
+                    AppTheme.secondary.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
                   Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: verified
-                          ? AppTheme.success.withValues(alpha: 0.9)
-                          : Colors.orange.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTheme.secondary, width: 2),
                     ),
-                    child: Text(
-                      verified
-                          ? '✓ VERIFIED'
-                          : (t.verificationStatus ?? 'pending').toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11),
+                    child: SizedBox(
+                      width: avatarSize,
+                      height: avatarSize,
+                      child: ClipOval(
+                        child: AppNetworkImage(
+                          path: t?.profilePhoto,
+                          fallback: initial,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Material(
+                      color: AppTheme.secondary,
+                      shape: const CircleBorder(
+                        side: BorderSide(color: AppTheme.primary, width: 2),
+                      ),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _goToEditProfile,
+                        child: const SizedBox(
+                          width: 30,
+                          height: 30,
+                          child: Icon(Icons.edit_rounded,
+                              size: 16, color: AppTheme.primary),
+                        ),
+                      ),
                     ),
                   ),
                 ],
-              ],
-            ),
+              ),
+              SizedBox(width: compact ? 12 : 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        inherit: true,
+                        fontSize: compact ? 17 : 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(Icons.mail_outline_rounded,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.75)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                inherit: true,
+                                fontSize: 12.5,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (phone.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Icon(Icons.phone_outlined,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.75)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              phone,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                inherit: true,
+                                fontSize: 12.5,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (t != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: verified
+                              ? AppTheme.success
+                              : AppTheme.secondary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          verified
+                              ? '✓ VERIFIED'
+                              : (t.verificationStatus ?? 'pending')
+                              .toUpperCase(),
+                          style: TextStyle(
+                            inherit: true,
+                            color: verified ? Colors.white : AppTheme.primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _servicesCard(ThemeData theme, AppLocalizations l10n, Technician? t,
+  /// Card shell. Uses Material so ink splashes of children stay visible
+  /// (this is what fixes the "ListTile background color or ink splashes may
+  /// be invisible" assertion).
+  Widget _card(bool isDark, {required Widget child}) {
+    return Material(
+      color: _cardBg(isDark),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      shadowColor: Colors.black,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: _cardBorder(isDark)),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _servicesCard(bool isDark, AppLocalizations l10n, Technician? t,
       List<Service> catalog) {
     final prices = t?.servicePrices ?? const <TechnicianServicePrice>[];
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.build_circle_outlined,
-                  color: theme.colorScheme.primary),
-            ),
-            title: Text('${l10n.servicesIOffer} (${prices.length})',
-                style: theme.textTheme.titleMedium),
-            trailing: const Icon(Icons.edit_outlined, size: 20),
-            onTap: _editServices,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: prices.isEmpty
-                ? Text(l10n.noServicesSelected, style: theme.textTheme.bodySmall)
-                : Column(
-              children: [
-                for (final sp in prices)
-                  _servicePriceTile(
-                      theme, sp, _categoryLabel(catalog, sp.id)),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
+      ),
+      child: _card(
+        isDark,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: _editServices,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _accent(isDark).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Icon(Icons.build_circle_outlined,
+                          color: _accent(isDark)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${l10n.servicesIOffer} (${prices.length})',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          inherit: true,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: _ink(isDark),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _accent(isDark).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Icon(Icons.edit_outlined,
+                          size: 19, color: _accent(isDark)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: prices.isEmpty
+                  ? Text(
+                l10n.noServicesSelected,
+                style: TextStyle(
+                  inherit: true,
+                  fontSize: 13,
+                  color: _muted(isDark),
+                ),
+              )
+                  : Column(
+                children: [
+                  for (final sp in prices)
+                    _servicePriceTile(
+                        isDark, sp, _categoryLabel(catalog, sp.id)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _servicePriceTile(
-      ThemeData theme, TechnicianServicePrice sp, String? category) {
+      bool isDark, TechnicianServicePrice sp, String? category) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border:
-        Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : AppTheme.navy50.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accent(isDark).withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 4,
+            spacing: 10,
             children: [
-              Expanded(
-                child: Text(sp.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-              ),
               Text(
-                'TZS ${sp.minPrice.toStringAsFixed(0)} - ${sp.maxPrice.toStringAsFixed(0)}',
+                sp.name,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+                  inherit: true,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: _ink(isDark),
+                ),
+              ),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _accent(isDark).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'TZS ${sp.minPrice.toStringAsFixed(0)} - ${sp.maxPrice.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: _accent(isDark),
+                  ),
                 ),
               ),
             ],
           ),
           if (category != null) ...[
-            const SizedBox(height: 4),
-            Text(category,
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color:
-                    theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+            const SizedBox(height: 5),
+            Text(
+              category,
+              style: TextStyle(
+                inherit: true,
+                fontSize: 12,
+                color: _muted(isDark),
+              ),
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _detailsCard(ThemeData theme, AppLocalizations l10n, Technician? t) {
+  Widget _detailsCard(bool isDark, AppLocalizations l10n, Technician? t) {
     final rows = <MapEntry<String, String>>[];
 
     if (t != null) {
@@ -336,34 +563,126 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       ));
     }
 
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final labelW = compact ? 86.0 : 108.0;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+        color: _cardBg(isDark),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _cardBorder(isDark)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.profileDetails, style: theme.textTheme.titleMedium),
-          const Divider(height: 24),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.profileDetails,
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: _ink(isDark),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           for (var i = 0; i < rows.length; i++) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                    width: 100,
-                    child: Text(rows[i].key, style: theme.textTheme.bodySmall)),
+                  width: labelW,
+                  child: Text(
+                    rows[i].key,
+                    style: TextStyle(
+                      inherit: true,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: _muted(isDark),
+                    ),
+                  ),
+                ),
                 Expanded(
-                    child:
-                    Text(rows[i].value, style: theme.textTheme.bodyMedium)),
+                  child: Text(
+                    rows[i].value,
+                    style: TextStyle(
+                      inherit: true,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                      color: _ink(isDark),
+                    ),
+                  ),
+                ),
               ],
             ),
-            if (i < rows.length - 1) const Divider(height: 16),
+            if (i < rows.length - 1)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                child: Divider(
+                  height: 1,
+                  color: _cardBorder(isDark),
+                ),
+              ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _actionButton({
+    required bool isDark,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    Color? color,
+  }) {
+    final c = color ?? _ink(isDark);
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 19),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: c,
+          minimumSize: const Size(0, 52),
+          backgroundColor: _cardBg(isDark),
+          side: BorderSide(
+            color: color != null ? color.withValues(alpha: 0.5) : _cardBorder(isDark),
+          ),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          textStyle: const TextStyle(
+            inherit: true,
+            fontWeight: FontWeight.w700,
+            fontSize: 14.5,
+          ),
+        ),
       ),
     );
   }
@@ -375,74 +694,72 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     final catalog = context.watch<ServiceProvider>().services;
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final t = tech.technician;
+    final h = _hPad(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(l10n.profile),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () =>
-              Navigator.pushReplacementNamed(context, AppRoutes.home),
-        ),
-      ),
-      body: tech.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-        onRefresh: _refreshAll,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+    return MediaQuery.withClampedTextScaling(
+      minScaleFactor: 0.85,
+      maxScaleFactor: 1.25,
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              _header(theme, auth, t),
-              const SizedBox(height: 20),
-              _servicesCard(theme, l10n, t, catalog),
-              const SizedBox(height: 20),
-              _detailsCard(theme, l10n, t),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.settings),
-                  icon: const Icon(Icons.settings_outlined, size: 18),
-                  label: Text(l10n.settings),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: theme.dividerColor),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+              _titleRow(l10n, isDark),
+              Expanded(
+                child: tech.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                  onRefresh: _refreshAll,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(h, 12, h, 24),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: Column(
+                          children: [
+                            _header(isDark, auth, t),
+                            const SizedBox(height: 18),
+                            _servicesCard(isDark, l10n, t, catalog),
+                            const SizedBox(height: 18),
+                            _detailsCard(isDark, l10n, t),
+                            const SizedBox(height: 22),
+                            _actionButton(
+                              isDark: isDark,
+                              icon: Icons.settings_outlined,
+                              label: l10n.settings,
+                              onPressed: () => Navigator.pushNamed(
+                                  context, AppRoutes.settings),
+                            ),
+                            const SizedBox(height: 12),
+                            _actionButton(
+                              isDark: isDark,
+                              icon: Icons.logout_rounded,
+                              label: l10n.logout,
+                              color: AppTheme.error,
+                              onPressed: _logout,
+                            ),
+                            const SizedBox(height: 10),
+                            TextButton.icon(
+                              onPressed: _deleteAccount,
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 18),
+                              label: Text(l10n.deleteAccount),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.error,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout_rounded, size: 18),
-                  label: Text(l10n.logout),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.error,
-                    side: BorderSide(
-                        color: AppTheme.error.withValues(alpha: 0.5)),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: _deleteAccount,
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: Text(l10n.deleteAccount),
-                style: TextButton.styleFrom(
-                    foregroundColor: AppTheme.error),
-              ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -520,18 +837,39 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
     Navigator.pop(context, result);
   }
 
-  Widget _priceField(TextEditingController c, String label) {
+  Widget _priceField(TextEditingController c, String label, bool isDark) {
     return Expanded(
       child: TextField(
         controller: c,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         onChanged: (_) => setState(() => _error = null),
+        cursorColor: _accent(isDark),
+        style: TextStyle(
+          inherit: true,
+          fontWeight: FontWeight.w700,
+          color: _ink(isDark),
+        ),
         decoration: InputDecoration(
           labelText: label,
           prefixText: 'TZS ',
           isDense: true,
-          border: const OutlineInputBorder(),
+          filled: true,
+          fillColor: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: _cardBorder(isDark)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: _cardBorder(isDark)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(color: _accent(isDark), width: 2),
+          ),
         ),
       ),
     );
@@ -540,96 +878,139 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
-    final height = MediaQuery.of(context).size.height * 0.8;
+    final height = MediaQuery.sizeOf(context).height * 0.8;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SizedBox(
-        height: height,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Edit services & prices',
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800)),
-              ),
-            ),
-            Expanded(
-              child: widget.catalog.isEmpty
-                  ? const Center(child: Text('No services available.'))
-                  : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: widget.catalog.length,
-                itemBuilder: (context, i) {
-                  final s = widget.catalog[i];
-                  final on = _selected.contains(s.id);
-                  final category = s.categories.isNotEmpty
-                      ? s.categories.map((c) => c.name).join(', ')
-                      : null;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: on
-                          ? theme.colorScheme.primary
-                          .withValues(alpha: 0.05)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: on
-                            ? theme.colorScheme.primary
-                            .withValues(alpha: 0.3)
-                            : theme.dividerColor.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(s.name),
-                          subtitle: category != null
-                              ? Text(category,
-                              style: theme.textTheme.bodySmall)
-                              : null,
-                          value: on,
-                          onChanged: (v) => _toggle(s.id, v == true),
-                        ),
-                        if (on)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                            child: Row(
-                              children: [
-                                _priceField(_min[s.id]!, 'From'),
-                                const SizedBox(width: 10),
-                                _priceField(_max[s.id]!, 'To'),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            if (_error != null)
+    return MediaQuery.withClampedTextScaling(
+      minScaleFactor: 0.85,
+      maxScaleFactor: 1.25,
+      child: Padding(
+        padding:
+        EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: SizedBox(
+          height: height,
+          child: Column(
+            children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                child: Text(_error!,
-                    style: TextStyle(color: theme.colorScheme.error)),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Edit services & prices',
+                    style: TextStyle(
+                      inherit: true,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      color: _ink(isDark),
+                    ),
+                  ),
+                ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: CustomButton(
-                text: l10n.saveChanges,
-                onPressed: _submit,
+              Expanded(
+                child: widget.catalog.isEmpty
+                    ? Center(
+                  child: Text(
+                    'No services available.',
+                    style: TextStyle(color: _muted(isDark)),
+                  ),
+                )
+                    : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: widget.catalog.length,
+                  itemBuilder: (context, i) {
+                    final s = widget.catalog[i];
+                    final on = _selected.contains(s.id);
+                    final category = s.categories.isNotEmpty
+                        ? s.categories.map((c) => c.name).join(', ')
+                        : null;
+
+                    // Material (not Container) so the checkbox tile's
+                    // ink splash is visible – fixes the ListTile assertion.
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Material(
+                        color: on
+                            ? _accent(isDark).withValues(alpha: 0.07)
+                            : Colors.transparent,
+                        clipBehavior: Clip.antiAlias,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          side: BorderSide(
+                            color: on
+                                ? _accent(isDark).withValues(alpha: 0.4)
+                                : _cardBorder(isDark),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            CheckboxListTile(
+                              contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                              activeColor: _accent(isDark),
+                              checkColor:
+                              isDark ? AppTheme.primary : Colors.white,
+                              title: Text(
+                                s.name,
+                                style: TextStyle(
+                                  inherit: true,
+                                  fontWeight: FontWeight.w700,
+                                  color: _ink(isDark),
+                                ),
+                              ),
+                              subtitle: category != null
+                                  ? Text(
+                                category,
+                                style: TextStyle(
+                                  inherit: true,
+                                  fontSize: 12,
+                                  color: _muted(isDark),
+                                ),
+                              )
+                                  : null,
+                              value: on,
+                              onChanged: (v) => _toggle(s.id, v == true),
+                            ),
+                            if (on)
+                              Padding(
+                                padding:
+                                const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Row(
+                                  children: [
+                                    _priceField(_min[s.id]!, 'From', isDark),
+                                    const SizedBox(width: 10),
+                                    _priceField(_max[s.id]!, 'To', isDark),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: CustomButton(
+                  text: l10n.saveChanges,
+                  onPressed: _submit,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

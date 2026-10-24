@@ -1,4 +1,4 @@
 import 'package:flutter/material.dart';
 
-/// Shared navigator key for MaterialApp, FCM, and NotificationProvider.
+/// Owned only by NearbyFundi MaterialApp (standalone + mini).
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

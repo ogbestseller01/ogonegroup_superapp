@@ -7,7 +7,8 @@
 //  * Nested MaterialApp so the SDK has its own localizations, theme, and routes.
 //  * Host still owns Firebase init (main.dart skips if already initialized).
 //  * Providers are scoped to this subtree.
-//  * Shared navigatorKey keeps AuthProvider redirects working.
+//  * Package-local navigatorKey (app_navigator.dart) for AuthProvider 401 redirects.
+//  * Session storage is isolated via StorageService prefix "fa_" (not shared with NearbyFundi).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

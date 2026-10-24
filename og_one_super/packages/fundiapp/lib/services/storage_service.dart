@@ -1,20 +1,20 @@
-// lib/services/storage_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
-  static const String _tokenKey = 'auth_token';
-  static const String _userKey = 'user';
-  static const String _localeKey = 'locale';
-  static const String _notificationsKey = 'notifications_enabled';
+  static const String _p = 'fa_';
 
-  // Technician registration data
-  static const String _technicianIdKey = 'technician_id';
-  static const String _technicianEmailKey = 'technician_email';
+  static const String _tokenKey = '${_p}auth_token';
+  static const String _userKey = '${_p}user';
+  static const String _localeKey = '${_p}locale';
+  static const String _notificationsKey = '${_p}notifications_enabled';
+  static const String _technicianIdKey = '${_p}technician_id';
+  static const String _technicianEmailKey = '${_p}technician_email';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }
+
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
@@ -24,6 +24,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userKey, json);
   }
+
   static Future<String?> getUserJson() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_userKey);
@@ -33,6 +34,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_localeKey, locale);
   }
+
   static Future<String?> getLocale() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_localeKey);
@@ -42,16 +44,17 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_notificationsKey, enabled);
   }
+
   static Future<bool?> getNotificationsEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_notificationsKey);
   }
 
-  // ---- Technician Data ----
   static Future<void> saveTechnicianId(int id) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_technicianIdKey, id);
   }
+
   static Future<int?> getTechnicianId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_technicianIdKey);
@@ -61,6 +64,7 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_technicianEmailKey, email);
   }
+
   static Future<String?> getTechnicianEmail() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_technicianEmailKey);
@@ -74,6 +78,9 @@ class StorageService {
 
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_technicianIdKey);
+    await prefs.remove(_technicianEmailKey);
   }
 }

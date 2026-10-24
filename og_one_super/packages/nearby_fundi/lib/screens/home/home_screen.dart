@@ -23,6 +23,9 @@ import '../requests/my_requests_screen.dart';
 import '../profile/profile_screen.dart';
 import '../chat/chat_list_screen.dart';
 
+/// Warm accent used for highlights (title bar, selected icons, badges).
+const Color _gold = Color(0xFFF2B93B);
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -158,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
         behavior: SnackBarBehavior.floating,
         duration: duration,
         backgroundColor: color,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
@@ -184,9 +187,9 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (sheetContext, scrollController) {
             return Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
+                color: theme.scaffoldBackgroundColor,
                 borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+                const BorderRadius.vertical(top: Radius.circular(30)),
               ),
               child: Column(
                 children: [
@@ -195,17 +198,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.18),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 12, 10),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
                     child: Consumer<NotificationProvider>(
                       builder: (context, provider, child) {
                         final unread = provider.unreadCount;
                         return Row(
                           children: [
+                            Container(
+                              width: 5,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: _gold,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +226,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     l10n.notifications,
                                     style: theme.textTheme.titleLarge
                                         ?.copyWith(
-                                        fontWeight: FontWeight.w800),
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.primary,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -225,6 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: unread > 0
                                           ? theme.primaryColor
                                           : theme.hintColor,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -235,15 +250,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () async {
                                   await provider.markAllAsRead();
                                 },
-                                child: Text(l10n.markAllAsRead),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppTheme.primary,
+                                  backgroundColor:
+                                  AppTheme.primary.withValues(alpha: 0.08),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.markAllAsRead,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12.5),
+                                ),
                               ),
                           ],
                         );
                       },
                     ),
                   ),
-                  Divider(
-                      height: 1, color: theme.dividerColor.withOpacity(0.4)),
                   Expanded(
                     child: Consumer<NotificationProvider>(
                       builder: (context, provider, child) {
@@ -265,10 +291,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: ListView.separated(
                             controller: scrollController,
                             padding:
-                            const EdgeInsets.fromLTRB(16, 12, 16, 30),
+                            const EdgeInsets.fromLTRB(16, 4, 16, 30),
                             itemCount: provider.notifications.length,
                             separatorBuilder: (_, __) =>
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               final notification =
                               provider.notifications[index];
@@ -358,26 +384,45 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        border: Border(
-          right: BorderSide(color: theme.dividerColor.withOpacity(0.35)),
-        ),
+        borderRadius: const BorderRadius.horizontal(right: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(4, 0),
+          ),
+        ],
       ),
       child: NavigationRail(
+        backgroundColor: Colors.transparent,
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
           if (_currentIndex == index) return;
           setState(() => _currentIndex = index);
         },
         labelType: NavigationRailLabelType.all,
-        minWidth: 82,
+        minWidth: 86,
         groupAlignment: -0.75,
+        indicatorColor: AppTheme.primary,
+        indicatorShape: const StadiumBorder(),
+        selectedIconTheme: const IconThemeData(color: _gold),
+        selectedLabelTextStyle: const TextStyle(
+          color: AppTheme.primary,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          color: theme.hintColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
         destinations: _railDestinations(l10n, chatProvider),
       ),
     );
   }
 
   // ================================================================
-  // APP BAR (single, simple, no drawer / no menu icon)
+  // APP BAR (rounded, with tonal action buttons)
   // ================================================================
 
   PreferredSizeWidget _buildAppBar(ThemeData theme, AppLocalizations l10n) {
@@ -386,42 +431,65 @@ class _HomeScreenState extends State<HomeScreen> {
       foregroundColor: Colors.white,
       elevation: 0,
       scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      toolbarHeight: 66,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      titleSpacing: 20,
+      titleSpacing: 18,
       iconTheme: const IconThemeData(color: Colors.white),
-      title: Text(
-        l10n.appTitle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.nunito(
-          fontSize: 20,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
-        ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+      ),
+      title: Row(
+        children: [
+          Container(
+            width: 5,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _gold,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              l10n.appTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.nunito(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
       actions: [
-        IconButton(
-          onPressed: _refreshCurrentScreen,
+        _BarButton(
           tooltip: l10n.refresh,
-          icon: const Icon(Icons.refresh_rounded),
+          onTap: _refreshCurrentScreen,
+          child: const Icon(Icons.refresh_rounded,
+              color: Colors.white, size: 22),
         ),
+        const SizedBox(width: 8),
         Consumer<NotificationProvider>(
           builder: (context, provider, child) {
             final unread = provider.unreadCount;
-            return IconButton(
-              onPressed: () => _showNotifications(context),
+            return _BarButton(
               tooltip: l10n.notifications,
-              icon: Badge(
+              onTap: () => _showNotifications(context),
+              child: Badge(
                 isLabelVisible: unread > 0,
                 backgroundColor: AppTheme.error,
                 label: Text(unread > 9 ? '9+' : '$unread'),
-                child: const Icon(Icons.notifications_none_rounded),
+                child: const Icon(Icons.notifications_none_rounded,
+                    color: Colors.white, size: 22),
               ),
             );
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 14),
       ],
     );
   }
@@ -485,58 +553,124 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // BOTTOM NAVIGATION (Material 3, simple)
+  // BOTTOM NAVIGATION (rounded top, navy pill indicator, gold icon)
   // ================================================================
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
     return Consumer<ChatProvider>(
       builder: (context, chatProvider, child) {
-        return NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (index) {
-            if (_currentIndex == index) return;
-            setState(() => _currentIndex = index);
-          },
-          height: 68,
-          elevation: 0,
-          backgroundColor: theme.colorScheme.surface,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: AppTheme.primary.withOpacity(0.12),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon:
-              const Icon(Icons.home_rounded, color: AppTheme.primary),
-              label: l10n.nearby,
+        return Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primary.withValues(alpha: 0.16),
+                blurRadius: 22,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            child: NavigationBarTheme(
+              data: NavigationBarThemeData(
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  final selected = states.contains(WidgetState.selected);
+                  return TextStyle(
+                    fontSize: 12,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color: selected ? AppTheme.primary : theme.hintColor,
+                  );
+                }),
+              ),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) {
+                  if (_currentIndex == index) return;
+                  setState(() => _currentIndex = index);
+                },
+                height: 70,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                indicatorColor: AppTheme.primary,
+                indicatorShape: const StadiumBorder(),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                destinations: [
+                  NavigationDestination(
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon:
+                    const Icon(Icons.home_rounded, color: _gold),
+                    label: l10n.nearby,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.article_outlined),
+                    selectedIcon:
+                    const Icon(Icons.article_rounded, color: _gold),
+                    label: l10n.blog,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.list_alt_outlined),
+                    selectedIcon:
+                    const Icon(Icons.list_alt_rounded, color: _gold),
+                    label: l10n.requests,
+                  ),
+                  NavigationDestination(
+                    icon: _ChatIcon(
+                        unread: chatProvider.totalUnread, active: false),
+                    selectedIcon: _ChatIcon(
+                        unread: chatProvider.totalUnread, active: true),
+                    label: l10n.chat,
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon:
+                    const Icon(Icons.person_rounded, color: _gold),
+                    label: l10n.profile,
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: const Icon(Icons.article_outlined),
-              selectedIcon:
-              const Icon(Icons.article_rounded, color: AppTheme.primary),
-              label: l10n.blog,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.list_alt_outlined),
-              selectedIcon:
-              const Icon(Icons.list_alt_rounded, color: AppTheme.primary),
-              label: l10n.requests,
-            ),
-            NavigationDestination(
-              icon: _ChatIcon(unread: chatProvider.totalUnread, active: false),
-              selectedIcon:
-              _ChatIcon(unread: chatProvider.totalUnread, active: true),
-              label: l10n.chat,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.person_outline),
-              selectedIcon:
-              const Icon(Icons.person_rounded, color: AppTheme.primary),
-              label: l10n.profile,
-            ),
-          ],
+          ),
         );
       },
+    );
+  }
+}
+
+// ==================================================================
+// APP BAR BUTTON (soft tonal square)
+// ==================================================================
+
+class _BarButton extends StatelessWidget {
+  final Widget child;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  const _BarButton({
+    required this.child,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            width: 42,
+            height: 42,
+            child: Center(child: child),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -559,7 +693,7 @@ class _ChatIcon extends StatelessWidget {
       label: Text(unread > 9 ? '9+' : '$unread'),
       child: Icon(
         active ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
-        color: active ? AppTheme.primary : null,
+        color: active ? _gold : null,
       ),
     );
   }
@@ -583,14 +717,24 @@ class _EmptyNotifications extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_none_rounded,
-                size: 56, color: theme.hintColor),
-            const SizedBox(height: 16),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.notifications_none_rounded,
+                  size: 44, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 18),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppTheme.primary,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -731,30 +875,33 @@ class _NotificationTile extends StatelessWidget {
     final iconColor = _getIconColor(type, theme);
 
     return Material(
-      color: isRead
-          ? theme.colorScheme.surface
-          : theme.primaryColor.withOpacity(0.05),
-      borderRadius: BorderRadius.circular(14),
+      color: theme.colorScheme.surface,
+      elevation: isRead ? 1 : 3,
+      shadowColor: Colors.black.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isRead ? Colors.transparent : _gold.withValues(alpha: 0.7),
+              width: 1.5,
+            ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.10),
+                  color: iconColor.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_getIcon(type), color: iconColor, size: 20),
+                child: Icon(_getIcon(type), color: iconColor, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -771,18 +918,19 @@ class _NotificationTile extends StatelessWidget {
                             style: GoogleFonts.nunito(
                               fontSize: 14.5,
                               height: 1.25,
+                              color: AppTheme.primary,
                               fontWeight:
-                              isRead ? FontWeight.w500 : FontWeight.w800,
+                              isRead ? FontWeight.w600 : FontWeight.w800,
                             ),
                           ),
                         ),
                         if (!isRead)
                           Container(
-                            width: 8,
-                            height: 8,
+                            width: 9,
+                            height: 9,
                             margin: const EdgeInsets.only(left: 8),
-                            decoration: BoxDecoration(
-                              color: theme.primaryColor,
+                            decoration: const BoxDecoration(
+                              color: _gold,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -797,21 +945,43 @@ class _NotificationTile extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           height: 1.35,
                           color: theme.textTheme.bodySmall?.color
-                              ?.withOpacity(0.72),
+                              ?.withValues(alpha: 0.72),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 6),
-                    Text(
-                      [
-                        if (type.isNotEmpty) _getTypeLabel(type),
-                        if (relativeTime.isNotEmpty) relativeTime,
-                      ].join('  •  '),
-                      style: GoogleFonts.nunito(
-                        color: theme.hintColor,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (type.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: iconColor.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              _getTypeLabel(type),
+                              style: GoogleFonts.nunito(
+                                color: iconColor,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        if (relativeTime.isNotEmpty)
+                          Text(
+                            relativeTime,
+                            style: GoogleFonts.nunito(
+                              color: theme.hintColor,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),

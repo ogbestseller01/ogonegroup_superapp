@@ -16,6 +16,45 @@ import '../../widgets/custom_button.dart';
 const int _maxImages = 10;
 const double _maxCardWidth = 640;
 
+/// Accent used for the heading bar / avatar ring. Swap for your AppTheme accent if you have one.
+const Color _gold = Color(0xFFF2B93B);
+
+OutlineInputBorder _pill([Color c = Colors.transparent]) => OutlineInputBorder(
+  borderRadius: BorderRadius.circular(24),
+  borderSide: BorderSide(color: c),
+);
+
+OutlineInputBorder _thin(Color c, [double w = 1]) => OutlineInputBorder(
+  borderRadius: BorderRadius.circular(14),
+  borderSide: BorderSide(color: c, width: w),
+);
+
+/// Form fields: thin grey border by default, primary on focus, red on error.
+InputDecoration _formDecoration(
+    BuildContext context, {
+      required String label,
+      String? hint,
+      Widget? prefixIcon,
+      bool alignLabelWithHint = false,
+    }) {
+  final base = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.25);
+  return InputDecoration(
+    labelText: label,
+    hintText: hint,
+    prefixIcon: prefixIcon,
+    alignLabelWithHint: alignLabelWithHint,
+    filled: true,
+    fillColor: Theme.of(context).colorScheme.surface,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: _thin(base),
+    enabledBorder: _thin(base),
+    disabledBorder: _thin(base.withValues(alpha: 0.12)),
+    focusedBorder: _thin(AppTheme.primary, 1.5),
+    errorBorder: _thin(AppTheme.error),
+    focusedErrorBorder: _thin(AppTheme.error, 1.5),
+  );
+}
+
 // ═══════════════════════════ MAIN SCREEN ═══════════════════════════════════
 
 class FundiPostsScreen extends StatefulWidget {
@@ -142,46 +181,60 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverAppBar(
-                pinned: true,
-                elevation: 0,
-                backgroundColor: theme.scaffoldBackgroundColor,
-                surfaceTintColor: Colors.transparent,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, AppRoutes.home),
-                ),
-                title: Text(l10n.myPosts,
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
-                actions: [
-                  IconButton(
-                    tooltip: 'Refresh',
-                    icon: provider.isLoading
-                        ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                        : const Icon(Icons.refresh_rounded),
-                    onPressed:
-                    provider.isLoading ? null : () => provider.fetchMyPosts(),
-                  ),
-                  IconButton(
-                    tooltip: l10n.createPost,
-                    icon: const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppTheme.primary,
-                      child: Icon(Icons.add_rounded, color: Colors.white),
-                    ),
-                    onPressed: () => _openForm(),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-              ),
+              // ── Heading (matches Requests screen) ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Row(
+                    children: [
+                      _SoftIconButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        tooltip: 'Back',
+                        onTap: () => Navigator.pushReplacementNamed(
+                            context, AppRoutes.home),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 5,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: _gold,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.myPosts,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
+                      _SoftIconButton(
+                        icon: Icons.refresh_rounded,
+                        tooltip: 'Refresh',
+                        loading: provider.isLoading,
+                        onTap: provider.isLoading
+                            ? null
+                            : () => provider.fetchMyPosts(),
+                      ),
+                      const SizedBox(width: 8),
+                      _SoftIconButton(
+                        icon: Icons.add_rounded,
+                        tooltip: l10n.createPost,
+                        filled: true,
+                        onTap: () => _openForm(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // ── Search ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: TextField(
                     controller: _searchC,
                     onChanged: (v) => setState(() => _query = v),
@@ -197,6 +250,13 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                           setState(() => _query = '');
                         },
                       ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      border: _pill(),
+                      enabledBorder: _pill(),
+                      focusedBorder:
+                      _pill(AppTheme.primary.withValues(alpha: 0.35)),
                     ),
                   ),
                 ),
@@ -226,7 +286,7 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                             (context, i) {
@@ -241,8 +301,9 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                                 onImageTap: _openImage,
                                 onEdit: () => _openForm(post: post),
                                 onDelete: () => _confirmDelete(post),
-                                onLike: () =>
-                                    context.read<PostProvider>().likePost(post.id),
+                                onLike: () => context
+                                    .read<PostProvider>()
+                                    .likePost(post.id),
                               ),
                             ),
                           );
@@ -253,6 +314,54 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                   ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ───────────── SOFT ICON BUTTON ─────────────
+
+class _SoftIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final bool filled;
+  final bool loading;
+  const _SoftIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.filled = false,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = filled ? Colors.white : AppTheme.primary;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: filled
+            ? AppTheme.primary
+            : AppTheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Center(
+              child: loading
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : Icon(icon, size: 22, color: fg),
+            ),
           ),
         ),
       ),
@@ -274,12 +383,20 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.dynamic_feed_rounded,
-                size: 56, color: AppTheme.primary.withValues(alpha: 0.7)),
-            const SizedBox(height: 16),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.dynamic_feed_rounded,
+                  size: 44, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 20),
             Text(title,
                 style: theme.textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                    ?.copyWith(fontWeight: FontWeight.w800),
                 textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Text(
@@ -288,8 +405,14 @@ class _EmptyState extends StatelessWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                minimumSize: const Size(160, 52),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+              ),
               onPressed: onCreate,
               icon: const Icon(Icons.add_rounded),
               label: const Text('New post'),
@@ -374,7 +497,8 @@ class _PostFormSheetState extends State<_PostFormSheet> {
   TextEditingController(text: widget.post?.youtubeUrl ?? '');
 
   /// Photos already on the server (the ones the fundi chose to keep).
-  late final List<String> _kept = List<String>.of(widget.post?.images ?? const []);
+  late final List<String> _kept =
+  List<String>.of(widget.post?.images ?? const []);
 
   /// Newly picked local files.
   final List<String> _new = [];
@@ -503,7 +627,7 @@ class _PostFormSheetState extends State<_PostFormSheet> {
               TextFormField(
                 controller: _titleC,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: _formDecoration(context, label: 'Title'),
                 validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Title is required' : null,
               ),
@@ -513,10 +637,11 @@ class _PostFormSheetState extends State<_PostFormSheet> {
                 minLines: 4,
                 maxLines: 8,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Content',
+                decoration: _formDecoration(
+                  context,
+                  label: 'Content',
                   alignLabelWithHint: true,
-                  hintText: 'Describe the work, add links or phone numbers…',
+                  hint: 'Describe the work, add links or phone numbers…',
                 ),
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Content is required'
@@ -526,10 +651,11 @@ class _PostFormSheetState extends State<_PostFormSheet> {
               TextFormField(
                 controller: _youtubeC,
                 keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  labelText: 'YouTube link (optional)',
-                  prefixIcon:
-                  Icon(Icons.play_circle_outline, color: Colors.red.shade700),
+                decoration: _formDecoration(
+                  context,
+                  label: 'YouTube link (optional)',
+                  prefixIcon: Icon(Icons.play_circle_outline,
+                      color: Colors.red.shade700),
                 ),
               ),
               const SizedBox(height: 18),
@@ -621,53 +747,60 @@ class _PostCardState extends State<_PostCard> {
     final video = _videoSource(post);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       clipBehavior: Clip.antiAlias,
       color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.6)),
-      ),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PostHeader(
               post: post, onEdit: widget.onEdit, onDelete: widget.onDelete),
           if (post.hasImages || video != null)
-            GestureDetector(
-              onDoubleTap: post.hasImages ? _doubleTapLike : null,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  _MediaSection(
-                    images: post.images,
-                    videoUrl: video,
-                    postId: post.id,
-                    onImageTap: widget.onImageTap,
-                  ),
-                  IgnorePointer(
-                    child: AnimatedOpacity(
-                      opacity: _heart ? 1 : 0,
-                      duration: const Duration(milliseconds: 150),
-                      child: AnimatedScale(
-                        scale: _heart ? 1.15 : 0.6,
-                        duration: const Duration(milliseconds: 250),
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          size: 90,
-                          color: Colors.white,
-                          shadows: [Shadow(color: Colors.black38, blurRadius: 16)],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: GestureDetector(
+                  onDoubleTap: post.hasImages ? _doubleTapLike : null,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _MediaSection(
+                        images: post.images,
+                        videoUrl: video,
+                        postId: post.id,
+                        onImageTap: widget.onImageTap,
+                      ),
+                      IgnorePointer(
+                        child: AnimatedOpacity(
+                          opacity: _heart ? 1 : 0,
+                          duration: const Duration(milliseconds: 150),
+                          child: AnimatedScale(
+                            scale: _heart ? 1.15 : 0.6,
+                            duration: const Duration(milliseconds: 250),
+                            child: const Icon(
+                              Icons.favorite_rounded,
+                              size: 90,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(color: Colors.black38, blurRadius: 16)
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           _PostFooter(post: post, onLike: widget.onLike),
           _PostContent(title: post.title, content: post.content),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
         ],
       ),
     );
@@ -693,34 +826,42 @@ class _PostHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final initial =
-    post.technicianName.isNotEmpty ? post.technicianName[0].toUpperCase() : 'F';
+    final initial = post.technicianName.isNotEmpty
+        ? post.technicianName[0].toUpperCase()
+        : 'F';
 
     final initialAvatar = Container(
       color: AppTheme.primary.withValues(alpha: 0.1),
       alignment: Alignment.center,
       child: Text(initial,
           style: const TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppTheme.primary)),
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+      padding: const EdgeInsets.fromLTRB(14, 14, 8, 12),
       child: Row(
         children: [
-          ClipOval(
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: AppNetworkImage(
-                path: post.technicianAvatar,
-                fallback: initialAvatar,
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: _gold, width: 2),
+            ),
+            child: ClipOval(
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: AppNetworkImage(
+                  path: post.technicianAvatar,
+                  fallback: initialAvatar,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,14 +869,38 @@ class _PostHeader extends StatelessWidget {
                 Text(post.technicianName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
-                Text(_ago(post.createdAt), style: theme.textTheme.bodySmall),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.primary)),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(Icons.schedule_rounded,
+                        size: 13,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.5)),
+                    const SizedBox(width: 4),
+                    Text(_ago(post.createdAt),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6))),
+                  ],
+                ),
               ],
             ),
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_horiz_rounded),
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.more_horiz_rounded,
+                  size: 20, color: AppTheme.primary),
+            ),
             onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
             itemBuilder: (_) => const [
               PopupMenuItem(
@@ -1017,33 +1182,64 @@ class _PostFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.75);
+    final muted = theme.colorScheme.onSurface.withValues(alpha: 0.7);
+    final liked = post.likedByUser;
+
+    Widget chip({
+      required IconData icon,
+      required Color color,
+      required Color bg,
+      required int count,
+      VoidCallback? onTap,
+    }) {
+      return Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(width: 6),
+                Text('$count',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700, color: color)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(
-              post.likedByUser
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: post.likedByUser ? Colors.red : muted,
-            ),
-            onPressed: () {
+          chip(
+            icon: liked
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            color: liked ? Colors.red : muted,
+            bg: liked
+                ? Colors.red.withValues(alpha: 0.1)
+                : theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            count: post.likesCount,
+            onTap: () {
               HapticFeedback.selectionClick();
               onLike();
             },
           ),
-          Text('${post.likesCount}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(width: 16),
-          Icon(Icons.chat_bubble_outline_rounded, size: 20, color: muted),
-          const SizedBox(width: 6),
-          Text('${post.commentsCount}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(width: 10),
+          chip(
+            icon: Icons.chat_bubble_outline_rounded,
+            color: muted,
+            bg: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+            count: post.commentsCount,
+          ),
         ],
       ),
     );
@@ -1068,38 +1264,46 @@ class _PostContentState extends State<_PostContent> {
     final isLong = widget.content.length > 120;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(widget.title,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 3),
+              style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800, color: AppTheme.primary)),
+          const SizedBox(height: 8),
           GestureDetector(
             onTap: isLong ? () => setState(() => _expanded = !_expanded) : null,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: widget.content),
-                  if (isLong)
-                    TextSpan(
-                      text: _expanded ? '  Show less' : '  more',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.45),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
               ),
-              maxLines: _expanded ? null : 4,
-              overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.4,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: widget.content),
+                    if (isLong)
+                      TextSpan(
+                        text: _expanded ? '  Show less' : '  more',
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
+                ),
+                maxLines: _expanded ? null : 4,
+                overflow:
+                _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.4,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
               ),
             ),
           ),

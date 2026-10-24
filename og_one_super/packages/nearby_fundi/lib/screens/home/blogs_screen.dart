@@ -29,7 +29,6 @@ class _BlogsScreenState extends State<BlogsScreen> {
   @override
   void initState() {
     super.initState();
-    // Same pattern as FundiPostsScreen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<PostProvider>().fetchPosts(refresh: true);
     });
@@ -117,8 +116,8 @@ class _BlogsScreenState extends State<BlogsScreen> {
                 else
                   SliverPadding(
                     padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 24.0 : 12.0,
-                      vertical: 4.0,
+                      horizontal: isTablet ? 24.0 : 16.0,
+                      vertical: 8.0,
                     ),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -133,8 +132,9 @@ class _BlogsScreenState extends State<BlogsScreen> {
                                 post: post,
                                 onImageTap: _openImage,
                                 onTechnicianTap: _goToTechnicianDetail,
-                                onLike: () =>
-                                    context.read<PostProvider>().likePost(post.id),
+                                onLike: () => context
+                                    .read<PostProvider>()
+                                    .likePost(post.id),
                               ),
                             ),
                           );
@@ -143,7 +143,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
                       ),
                     ),
                   ),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           ),
         ),
@@ -156,17 +156,20 @@ class _BlogsScreenState extends State<BlogsScreen> {
     final theme = Theme.of(context);
     return SliverAppBar(
       pinned: true,
+      floating: true,
       elevation: 0,
+      scrolledUnderElevation: 1,
       backgroundColor: theme.scaffoldBackgroundColor,
       surfaceTintColor: Colors.transparent,
+      centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         onPressed: () =>
             Navigator.pushReplacementNamed(context, AppRoutes.home),
       ),
       title: Text(
         l10n.blog,
-        style: const TextStyle(fontWeight: FontWeight.w800),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
       ),
       actions: [
         IconButton(
@@ -178,10 +181,11 @@ class _BlogsScreenState extends State<BlogsScreen> {
             child: CircularProgressIndicator(strokeWidth: 2),
           )
               : const Icon(Icons.refresh_rounded),
-          onPressed:
-          provider.isLoading ? null : () => provider.fetchPosts(refresh: true),
+          onPressed: provider.isLoading
+              ? null
+              : () => provider.fetchPosts(refresh: true),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -192,42 +196,62 @@ class _BlogsScreenState extends State<BlogsScreen> {
     final filteredCount = _filteredPosts.length;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _filterController,
-              onChanged: (v) => setState(() => _filterQuery = v),
-              decoration: InputDecoration(
-                hintText: 'Search posts...',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _filterQuery.isEmpty
-                    ? null
-                    : IconButton(
-                  icon: const Icon(Icons.clear_rounded),
-                  onPressed: () {
-                    _filterController.clear();
-                    setState(() => _filterQuery = '');
-                  },
+            child: Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _filterController,
+                onChanged: (v) => setState(() => _filterQuery = v),
+                decoration: InputDecoration(
+                  hintText: 'Search posts...',
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 15,
+                  ),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                  suffixIcon: _filterQuery.isEmpty
+                      ? null
+                      : IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 20),
+                    onPressed: () {
+                      _filterController.clear();
+                      setState(() => _filterQuery = '');
+                    },
+                  ),
+                  border: InputBorder.none,
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 ),
               ),
             ),
           ),
           if (postCount > 0) ...[
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppTheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(23),
+                borderRadius: BorderRadius.circular(30),
               ),
               child: Text(
                 _filterQuery.isNotEmpty ? '$filteredCount' : '$postCount',
                 style: const TextStyle(
                   color: AppTheme.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -245,13 +269,20 @@ class _BlogsScreenState extends State<BlogsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.article_rounded,
-                size: 56, color: AppTheme.primary.withOpacity(0.7)),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.article_rounded,
+                  size: 48, color: AppTheme.primary.withOpacity(0.8)),
+            ),
+            const SizedBox(height: 24),
             Text(
               l10n.noBlogPosts,
               style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
+                  ?.copyWith(fontWeight: FontWeight.w800),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -277,11 +308,12 @@ class _BlogsScreenState extends State<BlogsScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.search_off_rounded,
-                size: 48, color: theme.colorScheme.onSurface.withOpacity(0.3)),
-            const SizedBox(height: 12),
+                size: 56, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+            const SizedBox(height: 16),
             Text(
               'No posts match "$_filterQuery"',
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.6)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -399,41 +431,50 @@ class _BlogPostCardState extends State<_BlogPostCard> {
     final video = _videoSource(post);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
       clipBehavior: Clip.antiAlias,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.dividerColor.withOpacity(0.6)),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
             child: Row(
               children: [
                 GestureDetector(
                   onTap: () => widget.onTechnicianTap(post.technicianId),
-                  child: ClipOval(
-                    child: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: AppNetworkImage(
-                        path: post.technicianAvatar,
-                        fallback: Container(
-                          color: AppTheme.primary.withOpacity(0.1),
-                          alignment: Alignment.center,
-                          child: Text(
-                            post.technicianName.isNotEmpty
-                                ? post.technicianName[0].toUpperCase()
-                                : 'F',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primary,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: SizedBox(
+                        width: 42,
+                        height: 42,
+                        child: AppNetworkImage(
+                          path: post.technicianAvatar,
+                          fallback: Container(
+                            color: AppTheme.primary.withOpacity(0.1),
+                            alignment: Alignment.center,
+                            child: Text(
+                              post.technicianName.isNotEmpty
+                                  ? post.technicianName[0].toUpperCase()
+                                  : 'F',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
                             ),
                           ),
                         ),
@@ -441,7 +482,7 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: GestureDetector(
                     onTap: () => widget.onTechnicianTap(post.technicianId),
@@ -453,18 +494,22 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                              ?.copyWith(fontWeight: FontWeight.w800),
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           _ago(post.createdAt),
-                          style: theme.textTheme.bodySmall,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_horiz_rounded),
+                  icon: Icon(Icons.more_horiz_rounded,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
                   onSelected: (v) {
                     if (v == 'profile') {
                       widget.onTechnicianTap(post.technicianId);
@@ -504,14 +549,15 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                       opacity: _heart ? 1 : 0,
                       duration: const Duration(milliseconds: 150),
                       child: AnimatedScale(
-                        scale: _heart ? 1.15 : 0.6,
-                        duration: const Duration(milliseconds: 250),
+                        scale: _heart ? 1.2 : 0.5,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutBack,
                         child: const Icon(
                           Icons.favorite_rounded,
-                          size: 90,
+                          size: 100,
                           color: Colors.white,
                           shadows: [
-                            Shadow(color: Colors.black38, blurRadius: 16)
+                            Shadow(color: Colors.black38, blurRadius: 20)
                           ],
                         ),
                       ),
@@ -521,9 +567,9 @@ class _BlogPostCardState extends State<_BlogPostCard> {
               ),
             ),
 
-          // Footer
+          // Footer Actions
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
             child: Row(
               children: [
                 IconButton(
@@ -533,7 +579,8 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                         : Icons.favorite_border_rounded,
                     color: post.likedByUser
                         ? Colors.red
-                        : theme.colorScheme.onSurface.withOpacity(0.75),
+                        : theme.colorScheme.onSurface.withOpacity(0.7),
+                    size: 26,
                   ),
                   onPressed: () {
                     HapticFeedback.selectionClick();
@@ -542,21 +589,21 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                 ),
                 Text(
                   '${post.likesCount}',
-                  style: theme.textTheme.bodySmall
+                  style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(width: 16),
                 IconButton(
                   icon: Icon(
                     Icons.chat_bubble_outline_rounded,
-                    size: 20,
-                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                    size: 24,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                   onPressed: _openPostModal,
                 ),
                 Text(
                   '${post.commentsCount}',
-                  style: theme.textTheme.bodySmall
+                  style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
@@ -565,7 +612,7 @@ class _BlogPostCardState extends State<_BlogPostCard> {
 
           // Content
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -574,19 +621,19 @@ class _BlogPostCardState extends State<_BlogPostCard> {
                     post.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w800),
                   ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
                 GestureDetector(
                   onTap: _openPostModal,
                   child: Text(
                     post.content,
-                    maxLines: 4,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       height: 1.4,
-                      color: theme.colorScheme.onSurface.withOpacity(0.75),
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -672,26 +719,26 @@ class _MediaSectionState extends State<_MediaSection> {
         ),
         if (images.length > 1) ...[
           Positioned(
-            top: 10,
-            right: 10,
+            top: 12,
+            right: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 '${_page + 1}/${images.length}',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
           ),
           Positioned(
-            bottom: 10,
+            bottom: 12,
             left: 0,
             right: 0,
             child: Row(
@@ -701,8 +748,8 @@ class _MediaSectionState extends State<_MediaSection> {
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: _page == i ? 8 : 6,
-                    height: _page == i ? 8 : 6,
+                    width: _page == i ? 10 : 6,
+                    height: _page == i ? 10 : 6,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _page == i
@@ -716,8 +763,8 @@ class _MediaSectionState extends State<_MediaSection> {
         ],
         if (widget.videoUrl != null)
           Positioned(
-            top: 10,
-            left: 10,
+            top: 12,
+            left: 12,
             child: GestureDetector(
               onTap: () => showModalBottomSheet(
                 context: context,
@@ -732,9 +779,9 @@ class _MediaSectionState extends State<_MediaSection> {
               ),
               child: Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black54,
+                  color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
@@ -742,11 +789,11 @@ class _MediaSectionState extends State<_MediaSection> {
                   children: [
                     Icon(Icons.play_circle_fill_rounded,
                         color: Colors.white, size: 16),
-                    SizedBox(width: 4),
+                    SizedBox(width: 6),
                     Text('Video',
                         style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ],
                 ),
@@ -835,17 +882,20 @@ class _YouTubeThumbnail extends StatelessWidget {
             ),
             const Center(
               child: CircleAvatar(
-                radius: 30,
+                radius: 32,
                 backgroundColor: Colors.white24,
                 child: Icon(Icons.play_arrow_rounded,
-                    color: Colors.white, size: 44),
+                    color: Colors.white, size: 48),
               ),
             ),
             const Positioned(
               bottom: 12,
               left: 12,
               child: Text('Tap to play on YouTube',
-                  style: TextStyle(color: Colors.white, fontSize: 11)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500)),
             ),
           ],
         ),

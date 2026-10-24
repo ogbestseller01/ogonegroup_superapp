@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/app_routes.dart';
@@ -97,7 +96,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
         currentUser: ChatUser(
           id: user.id,
           name: user.name,
-          email: user.email ?? '', // ✅ FIX: email is now nullable
+          email: user.email ?? '',
           phone: user.phone,
           avatar: null,
         ),
@@ -114,106 +113,8 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
   }
 
   // ============================================================
-  // DRAWER – OG ONE GROUP + Mini Apps (Partnerships)
+  // NOTIFICATIONS SHEET
   // ============================================================
-  Drawer _buildDrawer(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDark ? Colors.white : AppTheme.primary;
-    final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
-
-    return Drawer(
-      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppTheme.primary, AppTheme.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(6),
-                    child: Image.asset(
-                      'assets/images/nearbyfundi-logov1.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.business_rounded,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'OG ONE GROUP',
-                          style: TextStyle(
-                            inherit: true,
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Other Services',
-                          style: TextStyle(
-                            inherit: true,
-                            color: AppTheme.secondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            Divider(color: isDark ? AppTheme.darkBorder : AppTheme.borderLight),
-            ListTile(
-              leading: const Icon(Icons.info_outline_rounded,
-                  color: AppTheme.primary),
-              title: Text(
-                'About OG ONEGROUP',
-                style: TextStyle(
-                  inherit: true,
-                  color: primaryText,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                launchUrl(
-                  Uri.parse('https://ogonegroup.com'),
-                  mode: LaunchMode.externalApplication,
-                ).catchError((_) => false);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showNotifications(BuildContext context) {
     final provider = context.read<NotificationProvider>();
     final theme = Theme.of(context);
@@ -233,9 +134,9 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
           builder: (context, scrollController) {
             return Container(
               decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkSurface : theme.cardColor,
+                color: isDark ? AppTheme.darkSurface : Colors.white,
                 borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+                const BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.12),
@@ -248,11 +149,11 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                 children: [
                   const SizedBox(height: 12),
                   Container(
-                    width: 42,
-                    height: 4,
+                    width: 44,
+                    height: 4.5,
                     decoration: BoxDecoration(
                       color: (isDark ? AppTheme.darkBorder : theme.dividerColor)
-                          .withOpacity(0.6),
+                          .withOpacity(0.7),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -277,21 +178,31 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                             Navigator.pop(ctx);
                           },
                           style: TextButton.styleFrom(
-                            foregroundColor: AppTheme.primary,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            foregroundColor:
+                            isDark ? AppTheme.secondary : AppTheme.primary,
+                            backgroundColor: (isDark
+                                ? AppTheme.secondary
+                                : AppTheme.primary)
+                                .withOpacity(0.08),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
                           child: Text(
                             l10n.markAllAsRead,
                             style: const TextStyle(
                               inherit: true,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.5,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Expanded(
                     child: Consumer<NotificationProvider>(
                       builder: (context, notificationProvider, _) {
@@ -306,12 +217,20 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.notifications_off_outlined,
-                                  size: 68,
-                                  color: isDark
-                                      ? AppTheme.darkTextSecondary
-                                      : theme.hintColor.withOpacity(0.6),
+                                Container(
+                                  width: 88,
+                                  height: 88,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppTheme.primary.withOpacity(0.06),
+                                  ),
+                                  child: Icon(
+                                    Icons.notifications_off_outlined,
+                                    size: 42,
+                                    color: isDark
+                                        ? AppTheme.darkTextSecondary
+                                        : theme.hintColor.withOpacity(0.7),
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -321,7 +240,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                                     color: isDark
                                         ? AppTheme.darkTextSecondary
                                         : theme.hintColor,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -332,7 +251,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                           controller: scrollController,
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: notificationProvider.notifications.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 8),
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final notification =
                             notificationProvider.notifications[index];
@@ -381,14 +300,14 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
               child: Text(
                 '$feature ${AppLocalizations.of(context)!.comingSoon} 🚀',
                 style: const TextStyle(
-                    inherit: true, fontWeight: FontWeight.w500),
+                    inherit: true, fontWeight: FontWeight.w600),
               ),
             ),
           ],
         ),
         backgroundColor: AppTheme.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -409,180 +328,110 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     }
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBackground : theme.scaffoldBackgroundColor,
-      drawer: _buildDrawer(context),
-      appBar: AppBar(
-        title: Text(
-          l10n.fundiDashboard,
-          style: const TextStyle(
-            inherit: true,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: -0.3,
-          ),
-        ),
-        elevation: 0,
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.2,
-                color: Colors.white,
-              ),
-            )
-                : const Icon(Icons.refresh_rounded, color: Colors.white),
-            tooltip: 'Refresh',
-            onPressed: _isRefreshing ? null : _manualRefresh,
-          ),
-          NotificationBellIcon(onTap: () => _showNotifications(context)),
-          IconButton(
-            icon: const Icon(Icons.smart_toy_rounded,
-                color: Colors.white, size: 26),
-            onPressed: () => _showComingSoon(context, l10n.aiAssistant),
-            tooltip: '${l10n.aiAssistant} (${l10n.comingSoon})',
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-            offset: const Offset(0, 50),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 10,
-            color: isDark ? AppTheme.darkSurface : Colors.white,
-            itemBuilder: (context) => _buildMenuItems(context),
-          ),
-        ],
-      ),
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.darkSurface : theme.cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.35 : 0.07),
-              blurRadius: 12,
-              offset: const Offset(0, -3),
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compact = screenWidth < 360;
+
+    // Text scale is clamped so large system fonts never break the layout.
+    return MediaQuery.withClampedTextScaling(
+      minScaleFactor: 0.85,
+      maxScaleFactor: 1.25,
+      child: Scaffold(
+        backgroundColor:
+        isDark ? AppTheme.darkBackground : theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          centerTitle: false,
+          titleSpacing: compact ? 12 : 20,
+          title: Text(
+            l10n.fundiDashboard,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              inherit: true,
+              color: Colors.white,
+              fontSize: compact ? 18 : 21,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
             ),
+          ),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: AppTheme.primary,
+          foregroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+          ),
+          actions: [
+            IconButton(
+              icon: _isRefreshing
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
+                ),
+              )
+                  : const Icon(Icons.refresh_rounded, color: Colors.white),
+              visualDensity:
+              compact ? VisualDensity.compact : VisualDensity.standard,
+              tooltip: 'Refresh',
+              onPressed: _isRefreshing ? null : _manualRefresh,
+            ),
+            NotificationBellIcon(onTap: () => _showNotifications(context)),
+            IconButton(
+              icon: const Icon(Icons.smart_toy_rounded,
+                  color: Colors.white, size: 25),
+              onPressed: () => _showComingSoon(context, l10n.aiAssistant),
+              visualDensity:
+              compact ? VisualDensity.compact : VisualDensity.standard,
+              tooltip: '${l10n.aiAssistant} (${l10n.comingSoon})',
+            ),
+            PopupMenuButton<String>(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
+              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+              offset: const Offset(0, 50),
+              shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              elevation: 10,
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              itemBuilder: (context) => _buildMenuItems(context),
+            ),
+            SizedBox(width: compact ? 0 : 4),
           ],
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? AppTheme.darkBorder
-                  : theme.dividerColor.withOpacity(0.45),
-              width: 0.5,
-            ),
-          ),
         ),
-        child: Consumer<ChatProvider>(
-          builder: (context, chatProvider, _) {
-            return BottomNavigationBar(
-              currentIndex: _currentIndex,
-              selectedItemColor: AppTheme.primary,
-              unselectedItemColor: isDark
-                  ? AppTheme.darkTextSecondary
-                  : AppTheme.greyText,
-              onTap: (i) => setState(() => _currentIndex = i),
-              type: BottomNavigationBarType.fixed,
-              backgroundColor: isDark ? AppTheme.darkSurface : theme.cardColor,
-              elevation: 0,
-              selectedFontSize: 12,
-              unselectedFontSize: 11,
-              items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.home_outlined),
-                  activeIcon: const Icon(Icons.home_rounded),
-                  label: l10n.home,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.article_outlined),
-                  activeIcon: const Icon(Icons.article_rounded),
-                  label: l10n.blog,
-                ),
-                BottomNavigationBarItem(
-                  icon: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      const Icon(Icons.list_alt_outlined),
-                      if (chatProvider.totalUnread > 0)
-                        _buildBadge(chatProvider.totalUnread),
-                    ],
-                  ),
-                  activeIcon: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      const Icon(Icons.list_alt_rounded),
-                      if (chatProvider.totalUnread > 0)
-                        _buildBadge(chatProvider.totalUnread),
-                    ],
-                  ),
-                  label: l10n.requests,
-                ),
-                BottomNavigationBarItem(
-                  icon: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      const Icon(Icons.chat_bubble_outline_rounded),
-                      if (chatProvider.totalUnread > 0)
-                        _buildBadge(chatProvider.totalUnread),
-                    ],
-                  ),
-                  activeIcon: Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      const Icon(Icons.chat_bubble_rounded),
-                      if (chatProvider.totalUnread > 0)
-                        _buildBadge(chatProvider.totalUnread),
-                    ],
-                  ),
-                  label: l10n.chat,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.person_outline),
-                  activeIcon: const Icon(Icons.person_rounded),
-                  label: l10n.profile,
-                ),
-              ],
+        // On tablets / large screens the content is centered with a max width.
+        body: LayoutBuilder(
+          builder: (context, c) {
+            final w = c.maxWidth > 900 ? 900.0 : c.maxWidth;
+            return Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: w,
+                height: c.maxHeight,
+                child: _screens[_currentIndex],
+              ),
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(int count) {
-    return Container(
-      padding: const EdgeInsets.all(3.5),
-      decoration: const BoxDecoration(
-        color: AppTheme.secondary,
-        shape: BoxShape.circle,
-      ),
-      constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-      child: Text(
-        count > 9 ? '9+' : '$count',
-        style: const TextStyle(
-          inherit: true,
-          color: AppTheme.primary,
-          fontSize: 8.5,
-          fontWeight: FontWeight.bold,
+        bottomNavigationBar: _FloatingNavBar(
+          currentIndex: _currentIndex,
+          onTap: (i) => setState(() => _currentIndex = i),
+          homeLabel: l10n.home,
+          blogLabel: l10n.blog,
+          requestsLabel: l10n.requests,
+          chatLabel: l10n.chat,
+          profileLabel: l10n.profile,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
@@ -632,152 +481,252 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
         bool isDestructive = false,
       }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDestructive ? AppTheme.error : AppTheme.primary;
+    final color = isDestructive
+        ? AppTheme.error
+        : (isDark ? Colors.white : AppTheme.primary);
     return PopupMenuItem<String>(
       value: key,
       onTap: onTap,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  inherit: true,
-                  color: isDestructive
-                      ? AppTheme.error
-                      : (isDark ? Colors.white : AppTheme.primary),
-                  fontWeight:
-                  isDestructive ? FontWeight.w600 : FontWeight.normal,
-                ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                inherit: true,
+                color: color,
+                fontWeight: isDestructive ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================================================================
+// FLOATING BOTTOM NAV
+// ================================================================
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  final String homeLabel;
+  final String blogLabel;
+  final String requestsLabel;
+  final String chatLabel;
+  final String profileLabel;
+
+  const _FloatingNavBar({
+    required this.currentIndex,
+    required this.onTap,
+    required this.homeLabel,
+    required this.blogLabel,
+    required this.requestsLabel,
+    required this.chatLabel,
+    required this.profileLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final compact = MediaQuery.sizeOf(context).width < 360;
+    final sideMargin = compact ? 8.0 : 14.0;
+
+    return SafeArea(
+      top: false,
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Container(
+            margin: EdgeInsets.fromLTRB(sideMargin, 6, sideMargin, 10),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: isDark
+                    ? AppTheme.darkBorder
+                    : AppTheme.borderLight.withOpacity(0.35),
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.40 : 0.10),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Consumer<ChatProvider>(
+              builder: (context, chatProvider, _) {
+                final unread = chatProvider.totalUnread;
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.home_outlined,
+                        activeIcon: Icons.home_rounded,
+                        label: homeLabel,
+                        active: currentIndex == 0,
+                        onTap: () => onTap(0),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.article_outlined,
+                        activeIcon: Icons.article_rounded,
+                        label: blogLabel,
+                        active: currentIndex == 1,
+                        onTap: () => onTap(1),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.list_alt_outlined,
+                        activeIcon: Icons.list_alt_rounded,
+                        label: requestsLabel,
+                        active: currentIndex == 2,
+                        badge: unread,
+                        onTap: () => onTap(2),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        activeIcon: Icons.chat_bubble_rounded,
+                        label: chatLabel,
+                        active: currentIndex == 3,
+                        badge: unread,
+                        onTap: () => onTap(3),
+                      ),
+                    ),
+                    Expanded(
+                      child: _NavItem(
+                        icon: Icons.person_outline,
+                        activeIcon: Icons.person_rounded,
+                        label: profileLabel,
+                        active: currentIndex == 4,
+                        onTap: () => onTap(4),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Mini apps models / tiles (gold hover) ──────────────────────
-
-class _MiniAppItem {
-  final String name;
-  final String subtitle;
+class _NavItem extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final IconData activeIcon;
+  final String label;
+  final bool active;
+  final int badge;
   final VoidCallback onTap;
 
-  const _MiniAppItem({
-    required this.name,
-    required this.subtitle,
+  const _NavItem({
     required this.icon,
-    required this.color,
+    required this.activeIcon,
+    required this.label,
+    required this.active,
     required this.onTap,
+    this.badge = 0,
   });
-}
-
-class _MiniAppTile extends StatefulWidget {
-  final _MiniAppItem item;
-  const _MiniAppTile({required this.item});
-
-  @override
-  State<_MiniAppTile> createState() => _MiniAppTileState();
-}
-
-class _MiniAppTileState extends State<_MiniAppTile> {
-  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = _hovered
-        ? AppTheme.secondary.withOpacity(isDark ? 0.22 : 0.18)
-        : Colors.transparent;
-    final border = _hovered
-        ? AppTheme.secondary
-        : (isDark
-        ? AppTheme.darkBorder
-        : AppTheme.borderLight.withOpacity(0.4));
+    final activeColor = isDark ? AppTheme.secondary : AppTheme.primary;
+    final idleColor = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
+    final color = active ? activeColor : idleColor;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: Material(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            onTap: widget.item.onTap,
-            onHighlightChanged: (v) => setState(() => _hovered = v),
-            borderRadius: BorderRadius.circular(14),
-            splashColor: AppTheme.secondary.withOpacity(0.25),
-            highlightColor: AppTheme.secondary.withOpacity(0.12),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: border, width: _hovered ? 1.5 : 1),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.sizeOf(context).width < 360 ? 10 : 16,
+                vertical: 6,
               ),
-              child: Row(
+              decoration: BoxDecoration(
+                color: active
+                    ? activeColor.withOpacity(isDark ? 0.16 : 0.10)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: widget.item.color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(widget.item.icon,
-                        color: widget.item.color, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.item.name,
-                          style: TextStyle(
-                            inherit: true,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            color: isDark ? Colors.white : AppTheme.primary,
+                  Icon(active ? activeIcon : icon, size: 23, color: color),
+                  if (badge > 0)
+                    Positioned(
+                      top: -6,
+                      right: -9,
+                      child: Container(
+                        padding: const EdgeInsets.all(3.5),
+                        constraints:
+                        const BoxConstraints(minWidth: 16, minHeight: 16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color:
+                            isDark ? AppTheme.darkSurface : Colors.white,
+                            width: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.item.subtitle,
-                          style: TextStyle(
+                        child: Text(
+                          badge > 9 ? '9+' : '$badge',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
                             inherit: true,
-                            fontSize: 12,
-                            color: isDark
-                                ? AppTheme.darkTextSecondary
-                                : AppTheme.greyText,
+                            color: AppTheme.primary,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 14,
-                    color: _hovered
-                        ? AppTheme.secondary
-                        : (isDark
-                        ? AppTheme.darkTextSecondary
-                        : AppTheme.greyText),
-                  ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                inherit: true,
+                fontSize: 11,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -814,36 +763,36 @@ class _NotificationTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: isRead
-                ? (isDark ? AppTheme.darkSurface : theme.cardColor)
-                : AppTheme.primary.withOpacity(isDark ? 0.15 : 0.06),
-            borderRadius: BorderRadius.circular(16),
+                ? (isDark ? AppTheme.darkSurface : Colors.white)
+                : AppTheme.primary.withOpacity(isDark ? 0.15 : 0.05),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isRead
                   ? (isDark
                   ? AppTheme.darkBorder
-                  : theme.dividerColor.withOpacity(0.45))
-                  : AppTheme.primary.withOpacity(0.18),
+                  : theme.dividerColor.withOpacity(0.4))
+                  : AppTheme.primary.withOpacity(0.16),
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   color: isRead
                       ? (isDark
                       ? AppTheme.darkSurfaceLight
-                      : theme.dividerColor.withOpacity(0.25))
-                      : AppTheme.primary.withOpacity(0.12),
-                  shape: BoxShape.circle,
+                      : theme.dividerColor.withOpacity(0.22))
+                      : AppTheme.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
                   _getIcon(type),
@@ -860,7 +809,7 @@ class _NotificationTile extends StatelessWidget {
                       notification['title']?.toString() ?? '',
                       style: TextStyle(
                         inherit: true,
-                        fontWeight: isRead ? FontWeight.w500 : FontWeight.w700,
+                        fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
                         height: 1.25,
                         color: primaryText,
                       ),
@@ -991,194 +940,101 @@ class _HomeDashboardContent extends StatelessWidget {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-    final padding = isTablet ? 24.0 : 16.0;
-    final cardPadding = isTablet ? 22.0 : 18.0;
+    final compactScreen = screenWidth < 360;
+    final padding = isTablet ? 24.0 : (compactScreen ? 12.0 : 16.0);
     final gap = isTablet ? 16.0 : 12.0;
 
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
-    final cardBg = isDark ? AppTheme.darkSurface : theme.cardColor;
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
 
     return SafeArea(
-      bottom: true,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final bottomPadding = MediaQuery.of(context).padding.bottom + 80.0;
-          return RefreshIndicator(
-            color: AppTheme.primary,
-            onRefresh: () async {
-              await context.read<RequestProvider>().loadMyRequests();
-              await context.read<TechnicianProvider>().fetchMyProfile();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.only(
-                left: padding,
-                right: padding,
-                top: padding,
-                bottom: bottomPadding,
+      bottom: false,
+      child: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: () async {
+          await context.read<RequestProvider>().loadMyRequests();
+          await context.read<TechnicianProvider>().fetchMyProfile();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(padding, 18, padding, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Hero card ─────────────────────────────────
+              _HeroCard(
+                name: user?.name ?? 'Fundi',
+                initial: user?.name.isNotEmpty == true
+                    ? user!.name[0].toUpperCase()
+                    : 'F',
+                greeting: l10n.hello,
+                onlineLabel: l10n.online,
+                online: online,
+                pendingText: pendingRequests > 0
+                    ? '$pendingRequests ${l10n.pending}'
+                    : null,
+                isTablet: isTablet,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              SizedBox(height: gap + 6),
+
+              // ── Stats ─────────────────────────────────────
+              Row(
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(cardPadding),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.primaryDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withOpacity(0.32),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: isTablet ? 36 : 30,
-                          backgroundColor: Colors.white,
-                          child: Text(
-                            user?.name.isNotEmpty == true
-                                ? user!.name[0].toUpperCase()
-                                : 'F',
-                            style: TextStyle(
-                              inherit: true,
-                              color: AppTheme.primary,
-                              fontSize: isTablet ? 28 : 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${l10n.hello}, ${user?.name ?? 'Fundi'}! 👋',
-                                style: const TextStyle(
-                                  inherit: true,
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  if (online) ...[
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.success,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.wifi_rounded,
-                                              color: Colors.white, size: 13),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            l10n.online,
-                                            style: const TextStyle(
-                                              inherit: true,
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  if (pendingRequests > 0)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.warning,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        '$pendingRequests ${l10n.pending}',
-                                        style: const TextStyle(
-                                          inherit: true,
-                                          color: AppTheme.primary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.check_circle_rounded,
-                            color: Colors.white, size: 28),
-                      ],
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.list_alt_rounded,
+                      label: l10n.totalRequests,
+                      value: requests.length.toString(),
+                      color: AppTheme.accent,
+                      isTablet: isTablet,
+                      onTap: () => _navigateToTab(context, 2),
                     ),
                   ),
-                  SizedBox(height: gap + 8),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.pending_rounded,
+                      label: l10n.pending,
+                      value: pendingRequests.toString(),
+                      color: AppTheme.gold600,
+                      isTablet: isTablet,
+                      onTap: () => _navigateToTab(context, 2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatCard(
+                      context,
+                      icon: Icons.check_circle_rounded,
+                      label: l10n.completed,
+                      value: completedRequests.toString(),
+                      color: AppTheme.success,
+                      isTablet: isTablet,
+                      onTap: () => _navigateToTab(context, 2),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: gap + 14),
+
+              // ── Section header ────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   Row(
                     children: [
-                      Flexible(
-                        child: _buildStatCard(
-                          context,
-                          icon: Icons.list_alt_rounded,
-                          label: l10n.totalRequests,
-                          value: requests.length.toString(),
-                          color: AppTheme.accent,
-                          isTablet: isTablet,
-                          onTap: () => _navigateToTab(context, 2),
+                      Container(
+                        width: 4,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: AppTheme.secondary,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Flexible(
-                        child: _buildStatCard(
-                          context,
-                          icon: Icons.pending_rounded,
-                          label: l10n.pending,
-                          value: pendingRequests.toString(),
-                          color: AppTheme.warning,
-                          isTablet: isTablet,
-                          onTap: () => _navigateToTab(context, 2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: _buildStatCard(
-                          context,
-                          icon: Icons.check_circle_rounded,
-                          label: l10n.completed,
-                          value: completedRequests.toString(),
-                          color: AppTheme.success,
-                          isTablet: isTablet,
-                          onTap: () => _navigateToTab(context, 2),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: gap + 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
                       Text(
                         'Latest Requests',
                         style: theme.textTheme.titleLarge?.copyWith(
@@ -1188,63 +1044,104 @@ class _HomeDashboardContent extends StatelessWidget {
                           color: primaryText,
                         ),
                       ),
-                      if (requests.isNotEmpty)
-                        TextButton(
-                          onPressed: () => _navigateToTab(context, 2),
-                          child: const Text(
-                            'View All',
-                            style: TextStyle(
-                              inherit: true,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  if (topFiveRequests.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 36, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isDark
-                              ? AppTheme.darkBorder
-                              : theme.dividerColor.withOpacity(0.5),
+                  if (requests.isNotEmpty)
+                    TextButton(
+                      onPressed: () => _navigateToTab(context, 2),
+                      style: TextButton.styleFrom(
+                        foregroundColor:
+                        isDark ? AppTheme.secondary : AppTheme.primary,
+                        backgroundColor: (isDark
+                            ? AppTheme.secondary
+                            : AppTheme.primary)
+                            .withOpacity(0.08),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.inbox_outlined,
-                              size: 48, color: mutedText),
-                          const SizedBox(height: 14),
-                          Text(
-                            l10n.noRequests,
-                            style: TextStyle(
-                              inherit: true,
-                              color: mutedText,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(
+                          inherit: true,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
                       ),
-                    )
-                  else
-                    Column(
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // ── Requests list ─────────────────────────────
+              if (topFiveRequests.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding:
+                  const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark
+                          ? AppTheme.darkBorder
+                          : AppTheme.borderLight.withOpacity(0.35),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.primary.withOpacity(0.06),
+                        ),
+                        child: Icon(Icons.inbox_outlined,
+                            size: 36, color: mutedText),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        l10n.noRequests,
+                        style: TextStyle(
+                          inherit: true,
+                          color: mutedText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                LayoutBuilder(
+                  builder: (context, c) {
+                    // Wide screens show requests in two columns.
+                    if (c.maxWidth >= 640) {
+                      const spacing = 12.0;
+                      final itemW = (c.maxWidth - spacing) / 2;
+                      return Wrap(
+                        spacing: spacing,
+                        children: topFiveRequests
+                            .map((r) => SizedBox(
+                          width: itemW,
+                          child: _buildLatestRequest(context, r),
+                        ))
+                            .toList(),
+                      );
+                    }
+                    return Column(
                       children: topFiveRequests
                           .map((r) => _buildLatestRequest(context, r))
                           .toList(),
-                    ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          );
-        },
+                    );
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1257,31 +1154,31 @@ class _HomeDashboardContent extends StatelessWidget {
     final created = _formatRequestDate(request);
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
-    final cardBg = isDark ? AppTheme.darkSurface : theme.cardColor;
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _navigateToTab(context, 2),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(22),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: cardBg,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: isDark
                     ? AppTheme.darkBorder
-                    : theme.dividerColor.withOpacity(0.5),
+                    : AppTheme.borderLight.withOpacity(0.30),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
@@ -1289,14 +1186,14 @@ class _HomeDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.13),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(_requestStatusIcon(status),
-                      color: statusColor, size: 22),
+                      color: statusColor, size: 24),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1310,7 +1207,8 @@ class _HomeDashboardContent extends StatelessWidget {
                               request.serviceName.toString(),
                               style: TextStyle(
                                 inherit: true,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
                                 color: primaryText,
                               ),
                               maxLines: 1,
@@ -1320,7 +1218,7 @@ class _HomeDashboardContent extends StatelessWidget {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 4),
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.13),
                               borderRadius: BorderRadius.circular(20),
@@ -1331,18 +1229,18 @@ class _HomeDashboardContent extends StatelessWidget {
                                 inherit: true,
                                 color: statusColor,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 7),
                       Row(
                         children: [
                           Icon(Icons.person_outline_rounded,
-                              size: 14, color: mutedText),
+                              size: 15, color: mutedText),
                           const SizedBox(width: 5),
                           Expanded(
                             child: Text(
@@ -1350,6 +1248,7 @@ class _HomeDashboardContent extends StatelessWidget {
                               style: TextStyle(
                                   inherit: true,
                                   color: mutedText,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 13),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1362,7 +1261,7 @@ class _HomeDashboardContent extends StatelessWidget {
                         Row(
                           children: [
                             Icon(Icons.access_time_rounded,
-                                size: 13, color: mutedText),
+                                size: 14, color: mutedText),
                             const SizedBox(width: 5),
                             Text(
                               created,
@@ -1463,62 +1362,67 @@ class _HomeDashboardContent extends StatelessWidget {
         required bool isTablet,
         required VoidCallback onTap,
       }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardBg = isDark ? AppTheme.darkSurface : theme.cardColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
           padding: EdgeInsets.symmetric(
-            vertical: isTablet ? 16.0 : 14.0,
-            horizontal: isTablet ? 12.0 : 8.0,
+            vertical: isTablet ? 18.0 : 14.0,
+            horizontal: 8,
           ),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: isDark
-                ? Border.all(color: AppTheme.darkBorder)
-                : null,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark
+                  ? AppTheme.darkBorder
+                  : AppTheme.borderLight.withOpacity(0.30),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.25 : 0.07),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
               ),
             ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: isTablet ? 20 : 16, color: color),
-                  const SizedBox(width: 5),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      inherit: true,
-                      fontSize: isTablet ? 20 : 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                ],
+              Container(
+                width: isTablet ? 42 : 36,
+                height: isTablet ? 42 : 36,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, size: isTablet ? 22 : 19, color: color),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                value,
+                style: TextStyle(
+                  inherit: true,
+                  fontSize: isTablet ? 24 : 21,
+                  fontWeight: FontWeight.w800,
+                  height: 1.0,
+                  color: isDark ? Colors.white : AppTheme.primary,
+                ),
               ),
               const SizedBox(height: 5),
               Text(
                 label,
                 style: TextStyle(
                   inherit: true,
-                  fontSize: isTablet ? 11 : 10,
+                  fontSize: isTablet ? 11.5 : 10.5,
                   color: mutedText,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -1527,6 +1431,196 @@ class _HomeDashboardContent extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ================================================================
+// HERO CARD
+// ================================================================
+class _HeroCard extends StatelessWidget {
+  final String name;
+  final String initial;
+  final String greeting;
+  final String onlineLabel;
+  final bool online;
+  final String? pendingText;
+  final bool isTablet;
+
+  const _HeroCard({
+    required this.name,
+    required this.initial,
+    required this.greeting,
+    required this.onlineLabel,
+    required this.online,
+    required this.pendingText,
+    required this.isTablet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 360;
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: EdgeInsets.all(isTablet ? 24 : (compact ? 14 : 20)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.primary, AppTheme.primaryLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withOpacity(0.30),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            top: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.secondary.withOpacity(0.30),
+                    AppTheme.secondary.withOpacity(0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 14,
+            bottom: -34,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.08),
+                  width: 1.4,
+                ),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppTheme.secondary, width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: isTablet ? 34 : (compact ? 24 : 29),
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    initial,
+                    style: TextStyle(
+                      inherit: true,
+                      color: AppTheme.primary,
+                      fontSize: isTablet ? 28 : 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting 👋',
+                      style: TextStyle(
+                        inherit: true,
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        inherit: true,
+                        color: Colors.white,
+                        fontSize: compact ? 17 : 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (online)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.success,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.wifi_rounded,
+                                    color: Colors.white, size: 13),
+                                const SizedBox(width: 4),
+                                Text(
+                                  onlineLabel,
+                                  style: const TextStyle(
+                                    inherit: true,
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (pendingText != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.warning,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              pendingText!,
+                              style: const TextStyle(
+                                inherit: true,
+                                color: AppTheme.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -148,8 +151,179 @@ class _SecurityGateState extends State<_SecurityGate> with WidgetsBindingObserve
       return const _DebugBlockerScreen();
     }
 
-    // Debug mode OFF → normal app
-    return widget.child;
+    // Debug mode OFF → normal app, guarded by the internet check
+    return _ConnectivityGate(child: widget.child);
+  }
+}
+
+/// Blocks the app behind a modal dialog while the device has no internet.
+/// The dialog disappears by itself as soon as internet is back, and the app
+/// is not opened (nor usable) while the device is offline.
+class _ConnectivityGate extends StatefulWidget {
+  final Widget child;
+  const _ConnectivityGate({required this.child});
+
+  @override
+  State<_ConnectivityGate> createState() => _ConnectivityGateState();
+}
+
+class _ConnectivityGateState extends State<_ConnectivityGate>
+    with WidgetsBindingObserver {
+  bool? _online; // null = first check still running
+  bool _checking = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+    // Keep watching: dialog shows when internet drops, hides when it returns.
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _check());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  Future<bool> _hasInternet() async {
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 4));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _check() async {
+    if (_checking) return;
+    _checking = true;
+    final online = await _hasInternet();
+    _checking = false;
+    if (!mounted) return;
+    if (_online != online) setState(() => _online = online);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // First check not finished yet → do not open the app yet.
+    if (_online == null) {
+      return const ColoredBox(color: Colors.black);
+    }
+
+    // Online → normal app.
+    if (_online == true) {
+      return widget.child;
+    }
+
+    // Offline → app is never opened, only the modal dialog is shown.
+    return PopScope(
+      canPop: false,
+      child: Stack(
+        fit: StackFit.expand,
+        children: const [
+          ColoredBox(color: Color(0xFF0F1A2E)),
+          ModalBarrier(color: Colors.black54, dismissible: false),
+          _NoInternetDialog(),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoInternetDialog extends StatelessWidget {
+  const _NoInternetDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFFFB300).withValues(alpha: 0.16),
+                ),
+                child: const Icon(
+                  Icons.wifi_off_rounded,
+                  size: 44,
+                  color: Color(0xFF1A2B4A),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text(
+                'No Internet Connection',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF1A2B4A),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Please connect to the internet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF5B6B82),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 22),
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Color(0xFFFFB300),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Waiting for connection…',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF5B6B82),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
