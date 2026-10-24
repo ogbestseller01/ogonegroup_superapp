@@ -28,6 +28,10 @@ class TechnicianRouteData {
 
 const Color _gold = Color(0xFFF2B93B);
 
+/// Text/icon color that stays readable in both light and dark mode.
+Color _ink(ThemeData theme) =>
+    theme.brightness == Brightness.dark ? Colors.white : AppTheme.primary;
+
 class NearbyMapScreen extends StatefulWidget {
   const NearbyMapScreen({super.key});
 
@@ -40,6 +44,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   final MapController _mapController = MapController();
   static const double _minZoom = 4;
   static const double _maxZoom = 18;
+  static const int _routeBatchSize = 4;
+  static const double _cardGap = 12;
 
   final Map<int, TechnicianRouteData> _routesData = {};
   bool _isFetchingRoutes = false;
@@ -47,6 +53,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
 
   late AnimationController _pulseController;
   final ScrollController _bottomScrollController = ScrollController();
+
+  // Latest values from build(), used to scroll the card list to a fundi.
+  List<Technician> _lastSorted = [];
+  double _lastCardWidth = 260;
 
   @override
   void initState() {
@@ -65,6 +75,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   void dispose() {
     _pulseController.dispose();
     _bottomScrollController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -83,15 +94,23 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     setState(() => _isFetchingRoutes = true);
 
     final Map<int, TechnicianRouteData> fetched = {};
-    final targets = techPoints.take(12);
+    final targets = techPoints.take(12).toList();
 
-    await Future.wait(targets.map((tech) async {
-      final dest = LatLng(tech.latitude!, tech.longitude!);
-      final routeData = await _getOsrmRouteData(origin, dest, tech.distanceKm);
-      if (routeData != null) {
-        fetched[tech.id] = routeData;
-      }
-    }));
+    // Small batches so the public OSRM server is not hit with 12 calls at once.
+    for (var i = 0; i < targets.length; i += _routeBatchSize) {
+      final batch = targets.skip(i).take(_routeBatchSize);
+
+      await Future.wait(batch.map((tech) async {
+        final dest = LatLng(tech.latitude!, tech.longitude!);
+        final routeData =
+        await _getOsrmRouteData(origin, dest, tech.distanceKm);
+        if (routeData != null) {
+          fetched[tech.id] = routeData;
+        }
+      }));
+
+      if (!mounted) return;
+    }
 
     if (mounted) {
       // Sort by distance so nearest comes first in the horizontal list
@@ -186,13 +205,30 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.fromLTRB(50, 90, 50, 180),
+        padding: const EdgeInsets.fromLTRB(50, 90, 50, 200),
       ),
+    );
+  }
+
+  /// Slides the bottom card list so the chosen fundi's card is visible.
+  void _scrollCardIntoView(int techId) {
+    if (!_bottomScrollController.hasClients) return;
+    final index = _lastSorted.indexWhere((t) => t.id == techId);
+    if (index < 0) return;
+
+    final target = index * (_lastCardWidth + _cardGap);
+    final max = _bottomScrollController.position.maxScrollExtent;
+
+    _bottomScrollController.animateTo(
+      target.clamp(0.0, max),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
     );
   }
 
   void _selectTechnician(Technician tech, LatLng? searchPoint) {
     setState(() => _selectedTechId = tech.id);
+    _scrollCardIntoView(tech.id);
 
     if (searchPoint != null) {
       final bounds = LatLngBounds.fromPoints([
@@ -200,7 +236,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         LatLng(tech.latitude!, tech.longitude!),
       ]);
       _mapController.fitCamera(
-        CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(70)),
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.fromLTRB(70, 110, 70, 230),
+        ),
       );
     }
   }
@@ -263,6 +302,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         return da.compareTo(db);
       });
 
+    _lastSorted = sortedTechs;
+
     final LatLng center;
     double zoom = 13;
 
@@ -283,11 +324,14 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           techProvider.searchPlace != null
               ? '${l10n.near} "${techProvider.searchPlace}"'
               : l10n.nearbyMap,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
         ),
         elevation: 0,
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
@@ -323,9 +367,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
 
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.map_outlined, size: 64, color: theme.hintColor.withOpacity(0.4)),
@@ -354,6 +399,18 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       LatLng center,
       double zoom,
       ) {
+    final mq = MediaQuery.of(context);
+    final ink = _ink(theme);
+    final safeBottom = mq.padding.bottom;
+
+    // Responsive card width, remembered so the list can scroll to a card.
+    final cardWidth = (mq.size.width * 0.78).clamp(250.0, 320.0);
+    _lastCardWidth = cardWidth;
+
+    const cardsHeight = 118.0;
+    final cardsBottom = 26.0 + safeBottom;
+    final controlsBottom = cardsHeight + cardsBottom + 14;
+
     return Stack(
       children: [
         // ── Map ───────────────────────────────────────────────────────
@@ -364,7 +421,11 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             initialZoom: zoom,
             minZoom: _minZoom,
             maxZoom: _maxZoom,
-            onTap: (_, __) {},
+            onTap: (_, __) {
+              if (_selectedTechId != null) {
+                setState(() => _selectedTechId = null);
+              }
+            },
           ),
           children: [
             TileLayer(
@@ -429,6 +490,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             ),
 
             RichAttributionWidget(
+              alignment: AttributionAlignment.bottomLeft,
               attributions: [
                 TextSourceAttribution(
                   '© OpenStreetMap contributors',
@@ -444,41 +506,43 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           top: 12,
           left: 16,
           right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.location_on_rounded, size: 16, color: AppTheme.primary),
-                const SizedBox(width: 6),
-                Text(
-                  '${sortedTechs.length} technician${sortedTechs.length > 1 ? 's' : ''} on map',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primary,
-                    fontSize: 13,
-                  ),
-                ),
-                if (_isFetchingRoutes) ...[
-                  const SizedBox(width: 10),
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.10),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
-              ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on_rounded, size: 16, color: ink),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${sortedTechs.length} technician${sortedTechs.length > 1 ? 's' : ''} on map',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: ink,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (_isFetchingRoutes) ...[
+                    const SizedBox(width: 10),
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -486,7 +550,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         // ── Map controls ──────────────────────────────────────────────
         Positioned(
           right: 14,
-          bottom: 175,
+          bottom: controlsBottom,
           child: Column(
             children: [
               _MapControlButton(
@@ -515,19 +579,24 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         Positioned(
           left: 0,
           right: 0,
-          bottom: 16,
+          bottom: cardsBottom,
           child: SizedBox(
-            height: 118,
+            height: cardsHeight,
             child: ListView.separated(
               controller: _bottomScrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 14),
               itemCount: sortedTechs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              separatorBuilder: (_, __) => const SizedBox(width: _cardGap),
               itemBuilder: (context, index) {
                 final tech = sortedTechs[index];
                 final isSelected = _selectedTechId == tech.id;
-                return _buildHorizontalCard(tech, searchPoint, isSelected);
+                return _buildHorizontalCard(
+                  tech,
+                  searchPoint,
+                  isSelected,
+                  cardWidth,
+                );
               },
             ),
           ),
@@ -612,70 +681,83 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       width: 90,
       height: 110,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => _selectTechnician(tech, searchPoint),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(
+        child: AnimatedScale(
+          scale: isSelected ? 1.12 : 1.0,
+          duration: const Duration(milliseconds: 180),
+          alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(
+                    color: isSelected ? _gold : AppTheme.primary,
+                    width: isSelected ? 2.8 : 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: tech.profilePhoto != null
+                    ? ClipOval(
+                  child: Image.network(
+                    ImageUtils.getFullImageUrl(tech.profilePhoto!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.build_rounded, color: AppTheme.primary, size: 22),
+                  ),
+                )
+                    : const Icon(Icons.build_rounded, color: AppTheme.primary, size: 22),
+              ),
+              const SizedBox(height: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
                   color: isSelected ? _gold : AppTheme.primary,
-                  width: isSelected ? 2.8 : 2,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                child: Text(
+                  '${distance.toStringAsFixed(1)} km',
+                  style: TextStyle(
+                    color: isSelected ? AppTheme.primary : Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              ),
-              child: tech.profilePhoto != null
-                  ? ClipOval(
-                child: Image.network(
-                  ImageUtils.getFullImageUrl(tech.profilePhoto!),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.build_rounded, color: AppTheme.primary, size: 22),
-                ),
-              )
-                  : const Icon(Icons.build_rounded, color: AppTheme.primary, size: 22),
-            ),
-            const SizedBox(height: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: isSelected ? _gold : AppTheme.primary,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${distance.toStringAsFixed(1)} km',
-                style: TextStyle(
-                  color: isSelected ? AppTheme.primary : Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ── HORIZONTAL CARD ─────────────────────────────────────────────────────
-  Widget _buildHorizontalCard(Technician tech, LatLng? searchPoint, bool isSelected) {
+  Widget _buildHorizontalCard(
+      Technician tech,
+      LatLng? searchPoint,
+      bool isSelected,
+      double cardWidth,
+      ) {
+    final theme = Theme.of(context);
+    final ink = _ink(theme);
     final route = _routesData[tech.id];
     final distance = route?.distanceKm ?? tech.distanceKm;
     final duration = route?.durationMin;
@@ -684,10 +766,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       onTap: () => _selectTechnician(tech, searchPoint),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 260,
-        padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+        width: cardWidth,
+        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected ? _gold : Colors.transparent,
@@ -695,7 +777,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isSelected ? 0.14 : 0.08),
+              color: Colors.black.withOpacity(isSelected ? 0.16 : 0.08),
               blurRadius: isSelected ? 14 : 10,
               offset: const Offset(0, 4),
             ),
@@ -737,10 +819,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                       Flexible(
                         child: Text(
                           tech.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14,
-                            color: AppTheme.primary,
+                            color: ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -749,50 +831,81 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                       if (tech.verified)
                         const Padding(
                           padding: EdgeInsets.only(left: 3),
-                          child: Icon(Icons.verified_rounded, color: AppTheme.accent, size: 14),
+                          child: Icon(Icons.verified_rounded, color: Color(0xFF3B9BE8), size: 14),
                         ),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(
                     tech.area ?? 'Near you',
-                    style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 11.5, color: theme.hintColor),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 5),
-                  Row(
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
                     children: [
                       _miniChip(Icons.directions_car_rounded, '${distance.toStringAsFixed(1)} km'),
-                      if (duration != null) ...[
-                        const SizedBox(width: 5),
+                      if (duration != null)
                         _miniChip(Icons.access_time_rounded, '~${duration.toStringAsFixed(0)}m'),
-                      ],
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Profile button
-            Material(
-              color: AppTheme.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.technicianDetail,
-                    arguments: tech.id,
-                  );
-                },
-                child: const SizedBox(
-                  width: 38,
-                  height: 38,
-                  child: Icon(Icons.arrow_forward_ios_rounded, color: AppTheme.primary, size: 16),
+            const SizedBox(width: 6),
+
+            // Actions: profile + directions
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Tooltip(
+                  message: 'View profile',
+                  child: Material(
+                    color: AppTheme.primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.technicianDetail,
+                          arguments: tech.id,
+                        );
+                      },
+                      child: SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: Icon(Icons.arrow_forward_ios_rounded, color: ink, size: 16),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 6),
+                Tooltip(
+                  message: 'Get directions',
+                  child: Material(
+                    color: _gold,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _openDirectionsInGoogleMaps(
+                        context,
+                        origin: searchPoint,
+                        destination: LatLng(tech.latitude!, tech.longitude!),
+                      ),
+                      child: const SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: Icon(Icons.directions_rounded, color: AppTheme.primary, size: 20),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -801,23 +914,26 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   }
 
   Widget _miniChip(IconData icon, String text) {
+    final theme = Theme.of(context);
+    final ink = _ink(theme);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: AppTheme.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: AppTheme.primary),
+          Icon(icon, size: 11, color: ink),
           const SizedBox(width: 3),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.primary,
+              color: ink,
             ),
           ),
         ],
@@ -841,8 +957,10 @@ class _MapControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Material(
-      color: highlighted ? AppTheme.primary : Colors.white,
+      color: highlighted ? AppTheme.primary : theme.colorScheme.surface,
       shape: const CircleBorder(),
       elevation: 4,
       shadowColor: Colors.black.withOpacity(0.2),
@@ -851,7 +969,7 @@ class _MapControlButton extends StatelessWidget {
         onPressed: onPressed,
         icon: Icon(
           icon,
-          color: highlighted ? _gold : AppTheme.primary,
+          color: highlighted ? _gold : _ink(theme),
           size: 22,
         ),
         constraints: const BoxConstraints(minWidth: 46, minHeight: 46),

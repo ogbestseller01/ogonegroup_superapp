@@ -97,8 +97,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
+      // The list is reversed, so the newest message (bottom) is offset 0.
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -245,6 +246,7 @@ class _ChatScreenState extends State<ChatScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      constraints: const BoxConstraints(maxWidth: 600),
       builder: (sheetContext) {
         return SafeArea(
           child: Wrap(
@@ -337,14 +339,25 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final width = MediaQuery.of(context).size.width;
+    final isTablet = width > 600;
 
     return Scaffold(
+      backgroundColor: theme.brightness == Brightness.dark
+          ? theme.scaffoldBackgroundColor
+          : const Color(0xFFF5F7FB),
       appBar: AppBar(
-        titleSpacing: 8,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.white),
+          onPressed: () => Navigator.maybePop(context),
+        ),
+        titleSpacing: 4,
         title: Row(
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: isTablet ? 22 : 20,
               backgroundColor: Colors.white.withOpacity(0.15),
               child: Text(
                 widget.conversation.otherParty.name.isNotEmpty
@@ -366,10 +379,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     widget.conversation.otherParty.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: isTablet ? 18 : 16,
                     ),
                   ),
                   Consumer<ChatProvider>(
@@ -404,129 +417,165 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         backgroundColor: AppTheme.primary,
         foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         elevation: 0,
       ),
 
-      body: Column(
-        children: [
-          Expanded(
-            child: Consumer<ChatProvider>(
-              builder: (context, provider, child) {
-                if (provider.isLoading &&
-                    provider.currentMessages.isEmpty) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      // Tap outside the keyboard to dismiss it.
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Consumer<ChatProvider>(
+                    builder: (context, provider, child) {
+                      if (provider.isLoading &&
+                          provider.currentMessages.isEmpty) {
+                        return const Center(
+                            child: CircularProgressIndicator());
+                      }
 
-                if (provider.currentMessages.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withOpacity(0.08),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.chat_bubble_outline,
-                              size: 48,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            l10n.noMessagesYet,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.sayHelloToStart,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: theme.hintColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                return NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification.metrics.pixels <= 0 &&
-                        !_isLoadingMore &&
-                        _hasMoreMessages) {
-                      _loadMoreMessages();
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    reverse: true,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 8,
-                    ),
-                    itemCount: provider.currentMessages.length +
-                        (_isLoadingMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_isLoadingMore &&
-                          index == provider.currentMessages.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
+                      if (provider.currentMessages.isEmpty) {
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight),
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          width: 90,
+                                          height: 90,
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.primary
+                                                .withOpacity(0.08),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.chat_bubble_outline,
+                                            size: 48,
+                                            color: AppTheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Text(
+                                          l10n.noMessagesYet,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          l10n.sayHelloToStart,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: theme.hintColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       }
 
-                      final message = provider.currentMessages[
-                      provider.currentMessages.length - 1 - index];
-
-                      final isCurrentUser =
-                          message.senderId == provider.currentUser?.id;
-
-                      return MessageBubble(
-                        message: message,
-                        isCurrentUser: isCurrentUser,
-                        onLongPress: () {
-                          _showMessageOptions(context, message);
+                      return NotificationListener<ScrollNotification>(
+                        onNotification: (notification) {
+                          // Reversed list: older messages are at maxScrollExtent.
+                          if (notification.metrics.pixels >=
+                              notification.metrics.maxScrollExtent - 80 &&
+                              !_isLoadingMore &&
+                              _hasMoreMessages) {
+                            _loadMoreMessages();
+                          }
+                          return false;
                         },
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          reverse: true,
+                          keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: isTablet ? 16 : 8,
+                          ),
+                          itemCount: provider.currentMessages.length +
+                              (_isLoadingMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (_isLoadingMore &&
+                                index == provider.currentMessages.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final message = provider.currentMessages[
+                            provider.currentMessages.length - 1 - index];
+
+                            final isCurrentUser =
+                                message.senderId == provider.currentUser?.id;
+
+                            return MessageBubble(
+                              message: message,
+                              isCurrentUser: isCurrentUser,
+                              onLongPress: () {
+                                _showMessageOptions(context, message);
+                              },
+                            );
+                          },
+                        ),
                       );
                     },
                   ),
-                );
-              },
+                ),
+
+                Consumer<ChatProvider>(
+                  builder: (context, provider, child) {
+                    if (!provider.isTyping) return const SizedBox.shrink();
+                    return const Padding(
+                      padding:
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TypingIndicator(),
+                      ),
+                    );
+                  },
+                ),
+
+                _buildMessageInput(context),
+              ],
             ),
           ),
-
-          Consumer<ChatProvider>(
-            builder: (context, provider, child) {
-              if (!provider.isTyping) return const SizedBox.shrink();
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: TypingIndicator(),
-              );
-            },
-          ),
-
-          _buildMessageInput(context),
-        ],
+        ),
       ),
     );
   }
@@ -557,6 +606,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             IconButton(
               tooltip: 'Photo',
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 Icons.photo_outlined,
                 color: _isSending ? theme.hintColor : AppTheme.primary,
@@ -567,6 +617,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
             IconButton(
               tooltip: 'Attach file',
+              visualDensity: VisualDensity.compact,
               icon: Icon(
                 Icons.attach_file,
                 color: _isSending ? theme.hintColor : AppTheme.primary,
@@ -582,6 +633,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 maxLines: 5,
                 minLines: 1,
                 textCapitalization: TextCapitalization.sentences,
+                style: TextStyle(fontSize: isTablet ? 16 : 15),
                 onChanged: (text) {
                   setState(() {});
                   _sendTypingStatus(text.trim().isNotEmpty);
@@ -597,34 +649,39 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   fillColor: theme.colorScheme.surfaceContainerHighest,
                   filled: true,
+                  isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 10,
+                    vertical: 12,
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
 
-            Material(
-              color: hasText && !_isSending
-                  ? AppTheme.primary
-                  : theme.dividerColor,
-              shape: const CircleBorder(),
-              child: IconButton(
-                tooltip: 'Send',
-                icon: _isSending
-                    ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                    : const Icon(Icons.send_rounded, color: Colors.white),
-                onPressed: hasText && !_isSending ? _sendMessage : null,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Material(
+                color: hasText && !_isSending
+                    ? AppTheme.primary
+                    : theme.dividerColor,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  tooltip: 'Send',
+                  icon: _isSending
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                      : const Icon(Icons.send_rounded, color: Colors.white),
+                  onPressed: hasText && !_isSending ? _sendMessage : null,
+                ),
               ),
             ),
           ],

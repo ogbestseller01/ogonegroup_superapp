@@ -1,5 +1,6 @@
 // home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,10 @@ import '../chat/chat_list_screen.dart';
 /// Warm accent used for highlights (title bar, selected icons, badges).
 const Color _gold = Color(0xFFF2B93B);
 
+/// Text/icon color that stays readable in both light and dark mode.
+Color _ink(ThemeData theme) =>
+    theme.brightness == Brightness.dark ? Colors.white : AppTheme.primary;
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -41,6 +46,10 @@ class _HomeScreenState extends State<HomeScreen> {
   static const double _tabletBreakpoint = 700;
   static const double _desktopBreakpoint = 1100;
 
+  /// Tabs that draw their own AppBar (so Home hides its own to avoid a
+  /// double header) and their own pull-to-refresh.
+  static const Set<int> _selfContainedTabs = {2, 3};
+
   // ================================================================
   // INIT
   // ================================================================
@@ -49,12 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    _screens = const [
-      NearbyScreen(),
-      BlogsScreen(),
-      MyRequestsScreen(),
-      ChatListScreen(),
-      ProfileScreen(),
+    _screens = [
+      const NearbyScreen(),
+      const BlogsScreen(),
+      const MyRequestsScreen(),
+      ChatListScreen(onBack: () => _selectTab(0)),
+      const ProfileScreen(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -95,6 +104,16 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint('Notification loading error: $e');
     }
+  }
+
+  // ================================================================
+  // TAB SELECTION
+  // ================================================================
+
+  void _selectTab(int index) {
+    if (_currentIndex == index) return;
+    HapticFeedback.selectionClick();
+    setState(() => _currentIndex = index);
   }
 
   // ================================================================
@@ -146,7 +165,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showSnack(
       String message, Color color, IconData icon, Duration duration) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -161,6 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
         behavior: SnackBarBehavior.floating,
         duration: duration,
         backgroundColor: color,
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
@@ -173,11 +195,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showNotifications(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
+    final ink = _ink(theme);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: const BoxConstraints(maxWidth: 640),
       builder: (ctx) {
         return DraggableScrollableSheet(
           initialChildSize: 0.78,
@@ -227,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: theme.textTheme.titleLarge
                                         ?.copyWith(
                                       fontWeight: FontWeight.w800,
-                                      color: AppTheme.primary,
+                                      color: ink,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -237,9 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : 'You are all caught up',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: unread > 0
-                                          ? theme.primaryColor
+                                          ? _gold
                                           : theme.hintColor,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -251,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   await provider.markAllAsRead();
                                 },
                                 style: TextButton.styleFrom(
-                                  foregroundColor: AppTheme.primary,
+                                  foregroundColor: ink,
                                   backgroundColor:
                                   AppTheme.primary.withValues(alpha: 0.08),
                                   shape: RoundedRectangleBorder(
@@ -290,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onRefresh: provider.loadNotifications,
                           child: ListView.separated(
                             controller: scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding:
                             const EdgeInsets.fromLTRB(16, 4, 16, 30),
                             itemCount: provider.notifications.length,
@@ -330,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final type = notification['type']?.toString() ?? '';
 
     if (type == 'chat_message') {
-      setState(() => _currentIndex = 3);
+      _selectTab(3);
       return;
     }
 
@@ -339,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
         type == 'request_rejected' ||
         type == 'request_in_progress' ||
         type == 'request_completed') {
-      setState(() => _currentIndex = 2);
+      _selectTab(2);
     }
   }
 
@@ -381,6 +406,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildLargeNavigation(
       ThemeData theme, AppLocalizations l10n, ChatProvider chatProvider) {
+    final ink = _ink(theme);
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -396,18 +423,16 @@ class _HomeScreenState extends State<HomeScreen> {
       child: NavigationRail(
         backgroundColor: Colors.transparent,
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (_currentIndex == index) return;
-          setState(() => _currentIndex = index);
-        },
+        onDestinationSelected: _selectTab,
         labelType: NavigationRailLabelType.all,
         minWidth: 86,
         groupAlignment: -0.75,
         indicatorColor: AppTheme.primary,
         indicatorShape: const StadiumBorder(),
         selectedIconTheme: const IconThemeData(color: _gold),
-        selectedLabelTextStyle: const TextStyle(
-          color: AppTheme.primary,
+        unselectedIconTheme: IconThemeData(color: theme.hintColor),
+        selectedLabelTextStyle: TextStyle(
+          color: ink,
           fontWeight: FontWeight.w800,
           fontSize: 12,
         ),
@@ -437,6 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
       centerTitle: false,
       titleSpacing: 18,
       iconTheme: const IconThemeData(color: Colors.white),
+      systemOverlayStyle: SystemUiOverlayStyle.light,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
@@ -517,36 +543,53 @@ class _HomeScreenState extends State<HomeScreen> {
         final width = constraints.maxWidth;
         final largeScreen = width >= _tabletBreakpoint;
         final veryLarge = width >= _desktopBreakpoint;
+        final selfContained = _selfContainedTabs.contains(_currentIndex);
 
-        return Scaffold(
-          appBar: _buildAppBar(theme, l10n),
-          body: Row(
-            children: [
-              if (largeScreen)
-                Consumer<ChatProvider>(
-                  builder: (context, chatProvider, child) {
-                    return _buildLargeNavigation(theme, l10n, chatProvider);
-                  },
-                ),
-              Expanded(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: veryLarge ? 1400 : double.infinity,
-                    ),
-                    child: RefreshIndicator(
-                      onRefresh: _refreshCurrentScreen,
-                      color: theme.primaryColor,
-                      backgroundColor: theme.colorScheme.surface,
-                      child: _screens[_currentIndex],
+        // System back from any tab returns to the first tab before exiting.
+        return PopScope(
+          canPop: _currentIndex == 0,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) _selectTab(0);
+          },
+          child: Scaffold(
+            appBar: selfContained ? null : _buildAppBar(theme, l10n),
+            body: Row(
+              children: [
+                if (largeScreen)
+                  Consumer<ChatProvider>(
+                    builder: (context, chatProvider, child) {
+                      return _buildLargeNavigation(theme, l10n, chatProvider);
+                    },
+                  ),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: veryLarge ? 1400 : double.infinity,
+                      ),
+                      child: RefreshIndicator(
+                        onRefresh: _refreshCurrentScreen,
+                        color: theme.primaryColor,
+                        backgroundColor: theme.colorScheme.surface,
+                        // Tabs with their own pull-to-refresh must not
+                        // trigger a second, duplicate refresh here.
+                        notificationPredicate: (notification) =>
+                        !selfContained && notification.depth == 0,
+                        // IndexedStack keeps every tab alive so the Nearby
+                        // search/map and scroll positions survive tab changes.
+                        child: IndexedStack(
+                          index: _currentIndex,
+                          children: _screens,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            bottomNavigationBar:
+            largeScreen ? null : _buildBottomNavigation(theme, l10n),
           ),
-          bottomNavigationBar:
-          largeScreen ? null : _buildBottomNavigation(theme, l10n),
         );
       },
     );
@@ -557,6 +600,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
+    final ink = _ink(theme);
+
     return Consumer<ChatProvider>(
       builder: (context, chatProvider, child) {
         return Container(
@@ -580,16 +625,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   return TextStyle(
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: selected ? AppTheme.primary : theme.hintColor,
+                    color: selected ? ink : theme.hintColor,
+                  );
+                }),
+                iconTheme: WidgetStateProperty.resolveWith((states) {
+                  final selected = states.contains(WidgetState.selected);
+                  return IconThemeData(
+                    color: selected ? _gold : theme.hintColor,
                   );
                 }),
               ),
               child: NavigationBar(
                 selectedIndex: _currentIndex,
-                onDestinationSelected: (index) {
-                  if (_currentIndex == index) return;
-                  setState(() => _currentIndex = index);
-                },
+                onDestinationSelected: _selectTab,
                 height: 70,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
@@ -665,8 +713,8 @@ class _BarButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: SizedBox(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             child: Center(child: child),
           ),
         ),
@@ -690,7 +738,7 @@ class _ChatIcon extends StatelessWidget {
     return Badge(
       isLabelVisible: unread > 0,
       backgroundColor: AppTheme.error,
-      label: Text(unread > 9 ? '9+' : '$unread'),
+      label: Text(unread > 99 ? '99+' : (unread > 9 ? '9+' : '$unread')),
       child: Icon(
         active ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
         color: active ? _gold : null,
@@ -711,10 +759,13 @@ class _EmptyNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = _ink(theme);
+
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
@@ -724,8 +775,8 @@ class _EmptyNotifications extends StatelessWidget {
                 color: AppTheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.notifications_none_rounded,
-                  size: 44, color: AppTheme.primary),
+              child: Icon(Icons.notifications_none_rounded,
+                  size: 44, color: ink),
             ),
             const SizedBox(height: 18),
             Text(
@@ -733,7 +784,7 @@ class _EmptyNotifications extends StatelessWidget {
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: AppTheme.primary,
+                color: ink,
               ),
             ),
             const SizedBox(height: 6),
@@ -815,9 +866,11 @@ class _NotificationTile extends StatelessWidget {
       case 'request_in_progress':
         return AppTheme.warning;
       case 'chat_message':
-        return AppTheme.accent;
+        return theme.brightness == Brightness.dark
+            ? const Color(0xFF6DB6F2)
+            : AppTheme.accent;
       default:
-        return theme.primaryColor;
+        return _ink(theme);
     }
   }
 
@@ -864,6 +917,7 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ink = _ink(theme);
     final isReadValue = notification['is_read'];
     final isRead =
         isReadValue == true || isReadValue == 1 || isReadValue == '1';
@@ -918,7 +972,7 @@ class _NotificationTile extends StatelessWidget {
                             style: GoogleFonts.nunito(
                               fontSize: 14.5,
                               height: 1.25,
-                              color: AppTheme.primary,
+                              color: ink,
                               fontWeight:
                               isRead ? FontWeight.w600 : FontWeight.w800,
                             ),

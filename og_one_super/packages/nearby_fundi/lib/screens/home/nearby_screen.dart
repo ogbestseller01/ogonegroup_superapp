@@ -1,5 +1,5 @@
 // FILE: lib/screens/home/nearby_screen.dart
-// Nearby Fundi - Attractive UI (logic unchanged)
+// Nearby Fundi - Clean, borderless UI (logic unchanged)
 
 import 'dart:async';
 import 'dart:convert';
@@ -177,14 +177,23 @@ class NearbyStrings {
 /// Warm accent used for highlights (search button, rings, badges).
 const Color _gold = Color(0xFFF2B93B);
 
-/// Soft grey used for thin default borders.
-const Color _hairline = Color(0xFFD0D5DD);
+/// Readable brown for text placed on a soft gold background.
+const Color _goldInk = Color(0xFF8A6200);
 
-OutlineInputBorder _thin(Color c, {double w = 1, double r = 16}) =>
-    OutlineInputBorder(
-      borderRadius: BorderRadius.circular(r),
-      borderSide: BorderSide(color: c, width: w),
-    );
+/// Text/icon color that stays readable in both light and dark mode.
+Color _ink(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppTheme.primary;
+
+/// Soft fill used for inputs and unselected chips (no borders needed).
+Color _softFill(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFF1F5F9);
+
+/// Borderless input border.
+const InputBorder _noBorder = InputBorder.none;
 
 // ================================================================
 // SCREEN
@@ -204,6 +213,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   final FocusNode _locationFocus = FocusNode();
   final ScrollController _serviceChipScrollController = ScrollController();
   final ScrollController _categoryChipScrollController = ScrollController();
+  final ScrollController _carouselController = ScrollController();
   final MapController _mapController = MapController();
 
   late AnimationController _pulseController;
@@ -232,6 +242,11 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   Timer? _suggestionDebounce;
   int _suggestionRequestId = 0;
+
+  // Latest carousel data from build(), used to scroll to a selected fundi.
+  List<Technician> _carouselTechs = [];
+  double _carouselCardWidth = 264;
+  static const double _carouselGap = 10;
 
   @override
   void initState() {
@@ -265,6 +280,8 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     _serviceChipScrollController.dispose();
     _categoryChipScrollController.dispose();
+    _carouselController.dispose();
+    _mapController.dispose();
 
     super.dispose();
   }
@@ -480,6 +497,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     }
 
     await _fetchRoutesForTechnicians();
+    _collapsePanelIfResults();
   }
 
   // ==============================================================
@@ -544,6 +562,16 @@ class _NearbyScreenState extends State<NearbyScreen>
     }
 
     await _fetchRoutesForTechnicians();
+    _collapsePanelIfResults();
+  }
+
+  /// After a successful search, tuck the search panel away so the map and
+  /// the fundi cards are fully visible.
+  void _collapsePanelIfResults() {
+    if (!mounted) return;
+    if (context.read<TechnicianProvider>().technicians.isNotEmpty) {
+      setState(() => _isHeaderVisible = false);
+    }
   }
 
   Future<void> _retryWithLargerRadius() async {
@@ -744,6 +772,23 @@ class _NearbyScreenState extends State<NearbyScreen>
     );
   }
 
+  /// Slides the bottom carousel so the given fundi's card is on screen.
+  void _scrollCarouselTo(int techId) {
+    if (!_carouselController.hasClients) return;
+
+    final index = _carouselTechs.indexWhere((t) => t.id == techId);
+    if (index < 0) return;
+
+    final target = index * (_carouselCardWidth + _carouselGap);
+    final max = _carouselController.position.maxScrollExtent;
+
+    _carouselController.animateTo(
+      target.clamp(0.0, max).toDouble(),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   // ==============================================================
   // FILTER SERVICES
   // ==============================================================
@@ -793,7 +838,6 @@ class _NearbyScreenState extends State<NearbyScreen>
     return Container(
       width: contextSize,
       height: contextSize,
-      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
@@ -873,21 +917,28 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   Widget _infoChip(IconData icon, String text, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Navy tones are unreadable on dark surfaces, so lift them.
+    Color tone = color;
+    if (isDark && color == AppTheme.primary) tone = Colors.white;
+    if (isDark && color == AppTheme.accent) tone = const Color(0xFF6DB6F2);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: tone.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 13, color: tone),
           const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(
-              color: color,
+              color: tone,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -910,6 +961,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     final l10n = AppLocalizations.of(context)!;
     final isTablet = ResponsiveConstants.isTablet(context);
     final isDesktop = ResponsiveConstants.isDesktop(context);
+    final ink = _ink(context);
 
     final sorted = [...technicians]
       ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
@@ -918,6 +970,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: theme.scaffoldBackgroundColor,
+      constraints: const BoxConstraints(maxWidth: 900),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -960,21 +1013,21 @@ class _NearbyScreenState extends State<NearbyScreen>
                           '${sorted.length} ${l10n.fundisFound}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.primary,
+                            color: ink,
                           ),
                         ),
                       ),
                       Material(
-                        color: AppTheme.primary.withValues(alpha: 0.08),
+                        color: _softFill(context),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () => Navigator.pop(context),
-                          child: const SizedBox(
+                          child: SizedBox(
                             width: 38,
                             height: 38,
                             child: Icon(Icons.close_rounded,
-                                size: 20, color: AppTheme.primary),
+                                size: 20, color: ink),
                           ),
                         ),
                       ),
@@ -1039,6 +1092,7 @@ class _NearbyScreenState extends State<NearbyScreen>
         bool inGrid = false,
       }) {
     final theme = Theme.of(context);
+    final ink = _ink(context);
 
     final route = _routesData[tech.id];
     final distance = route?.distanceKm ?? tech.distanceKm;
@@ -1046,7 +1100,13 @@ class _NearbyScreenState extends State<NearbyScreen>
     final selected = _selectedTechnicianId == tech.id;
 
     return Material(
-      color: theme.colorScheme.surface,
+      // Selection is shown with a soft gold tint instead of an outline.
+      color: selected
+          ? Color.alphaBlend(
+        _gold.withValues(alpha: 0.14),
+        theme.colorScheme.surface,
+      )
+          : theme.colorScheme.surface,
       elevation: 2,
       shadowColor: Colors.black.withValues(alpha: 0.10),
       borderRadius: BorderRadius.circular(22),
@@ -1064,28 +1124,20 @@ class _NearbyScreenState extends State<NearbyScreen>
             arguments: tech.id,
           );
         },
-        child: Container(
+        child: Padding(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: selected ? _gold : Colors.transparent,
-              width: 2,
-            ),
-          ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
+              recommended
+                  ? Container(
+                padding: const EdgeInsets.all(2.5),
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: recommended ? _gold : _hairline,
-                    width: 2,
-                  ),
+                  color: _gold,
                 ),
                 child: _buildAvatar(tech, size: 50, iconSize: 24),
-              ),
+              )
+                  : _buildAvatar(tech, size: 54, iconSize: 26),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1102,7 +1154,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
-                              color: AppTheme.primary,
+                              color: ink,
                             ),
                           ),
                         ),
@@ -1110,7 +1162,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                           const Padding(
                             padding: EdgeInsets.only(left: 5),
                             child: Icon(Icons.verified_rounded,
-                                color: AppTheme.accent, size: 16),
+                                color: Color(0xFF3B9BE8), size: 16),
                           ),
                       ],
                     ),
@@ -1160,7 +1212,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                             child: const Text(
                               'Near you',
                               style: TextStyle(
-                                color: Color(0xFF8A6200),
+                                color: _goldInk,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -1176,11 +1228,11 @@ class _NearbyScreenState extends State<NearbyScreen>
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  color: _softFill(context),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.chevron_right_rounded,
-                    color: AppTheme.primary, size: 22),
+                child: Icon(Icons.chevron_right_rounded,
+                    color: ink, size: 22),
               ),
             ],
           ),
@@ -1202,6 +1254,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       double cardWidth,
       ) {
     final theme = Theme.of(context);
+    final ink = _ink(context);
 
     final route = _routesData[tech.id];
     final distance = route?.distanceKm ?? tech.distanceKm;
@@ -1221,23 +1274,31 @@ class _NearbyScreenState extends State<NearbyScreen>
           _selectedTechnicianId = selected ? null : tech.id;
         });
 
+        // Bring the fundi into view on the map, then show details.
+        if (tech.latitude != null && tech.longitude != null) {
+          _mapController.move(LatLng(tech.latitude!, tech.longitude!), 15);
+        }
+
         _showTechnicianModal(context, tech, origin, recommended);
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: cardWidth,
-        margin: const EdgeInsets.only(right: 10),
+        margin: const EdgeInsets.only(right: _carouselGap),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
+          // Selection = soft gold tint + stronger shadow (no outline).
+          color: selected
+              ? Color.alphaBlend(
+            _gold.withValues(alpha: 0.16),
+            theme.colorScheme.surface,
+          )
+              : theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: selected ? _gold : Colors.transparent,
-            width: 2,
-          ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.16),
-              blurRadius: 18,
+              color: Colors.black.withValues(alpha: selected ? 0.22 : 0.14),
+              blurRadius: selected ? 20 : 16,
               offset: const Offset(0, 6),
             ),
           ],
@@ -1245,20 +1306,23 @@ class _NearbyScreenState extends State<NearbyScreen>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
+            recommended
+                ? Container(
+              padding: const EdgeInsets.all(2.5),
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: recommended ? _gold : _hairline,
-                  width: 2,
-                ),
+                color: _gold,
               ),
               child: _buildAvatar(
                 tech,
                 size: avatarSize,
                 iconSize: avatarSize * 0.5,
               ),
+            )
+                : _buildAvatar(
+              tech,
+              size: avatarSize + 4,
+              iconSize: avatarSize * 0.5,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -1282,8 +1346,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                                   tech.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppTheme.primary,
+                                  style: TextStyle(
+                                    color: ink,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14.5,
                                     height: 1.2,
@@ -1294,7 +1358,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                                 const Padding(
                                   padding: EdgeInsets.only(left: 4),
                                   child: Icon(Icons.verified_rounded,
-                                      color: AppTheme.accent, size: 15),
+                                      color: Color(0xFF3B9BE8), size: 15),
                                 ),
                             ],
                           ),
@@ -1322,7 +1386,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: recommended
-                                        ? const Color(0xFF8A6200)
+                                        ? (theme.brightness == Brightness.dark
+                                        ? _gold
+                                        : _goldInk)
                                         : theme.hintColor,
                                     fontSize: 12,
                                     height: 1.2,
@@ -1418,6 +1484,10 @@ class _NearbyScreenState extends State<NearbyScreen>
     final fontScale = clampedScaler.scale(1.0);
     final carouselHeight = (116.0 * fontScale).clamp(116.0, 142.0);
     final cardWidth = (mq.size.width * 0.8).clamp(264.0, 340.0);
+
+    // remembered so a marker tap can slide the carousel to that fundi
+    _carouselTechs = sortedByDistance;
+    _carouselCardWidth = cardWidth;
 
     // lifts the map controls above the carousel when it is visible
     final controlsBottom = showCarousel ? carouselHeight + 20 : 20.0;
@@ -1535,6 +1605,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                 bottom: 8,
                 height: carouselHeight,
                 child: ListView.builder(
+                  controller: _carouselController,
                   scrollDirection: Axis.horizontal,
                   clipBehavior: Clip.none,
                   padding: const EdgeInsets.fromLTRB(12, 4, 2, 8),
@@ -1595,6 +1666,11 @@ class _NearbyScreenState extends State<NearbyScreen>
       bool hasFilters,
       ) {
     final l10n = AppLocalizations.of(context)!;
+    final ink = _ink(context);
+    final media = MediaQuery.of(context);
+
+    // The panel never grows taller than the space left above the keyboard.
+    final availableHeight = media.size.height - media.viewInsets.bottom;
 
     return Container(
       key: const ValueKey('visible-search'),
@@ -1605,7 +1681,7 @@ class _NearbyScreenState extends State<NearbyScreen>
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.20),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 28,
             offset: const Offset(0, 10),
           ),
@@ -1613,7 +1689,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.58,
+          maxHeight: availableHeight * 0.58,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -1632,13 +1708,13 @@ class _NearbyScreenState extends State<NearbyScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Find a fundi near you',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppTheme.primary,
+                        color: ink,
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                       ),
@@ -1647,16 +1723,16 @@ class _NearbyScreenState extends State<NearbyScreen>
                   Tooltip(
                     message: 'Hide search',
                     child: Material(
-                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      color: _softFill(context),
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => setState(() => _isHeaderVisible = false),
-                        child: const SizedBox(
+                        child: SizedBox(
                           width: 34,
                           height: 34,
                           child: Icon(Icons.keyboard_arrow_up_rounded,
-                              color: AppTheme.primary, size: 22),
+                              color: ink, size: 22),
                         ),
                       ),
                     ),
@@ -1677,8 +1753,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                       decoration: InputDecoration(
                         hintText: l10n.searchLocation,
                         hintStyle: TextStyle(color: theme.hintColor, fontSize: 14),
-                        prefixIcon: const Icon(Icons.search_rounded,
-                            color: AppTheme.primary, size: 22),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            color: ink, size: 22),
                         suffixIcon: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1698,19 +1774,19 @@ class _NearbyScreenState extends State<NearbyScreen>
                               ),
                             IconButton(
                               tooltip: NearbyStrings.chooseOnMap,
-                              icon: const Icon(Icons.map_outlined,
-                                  color: AppTheme.primary, size: 22),
+                              icon: Icon(Icons.map_outlined,
+                                  color: ink, size: 22),
                               onPressed: _openMapPicker,
                             ),
                           ],
                         ),
                         filled: true,
-                        fillColor: theme.colorScheme.surface,
+                        fillColor: _softFill(context),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                        border: _thin(_hairline),
-                        enabledBorder: _thin(_hairline),
-                        focusedBorder: _thin(AppTheme.primary, w: 1.5),
+                        border: _borderless(16),
+                        enabledBorder: _borderless(16),
+                        focusedBorder: _borderless(16),
                       ),
                       onChanged: _onLocationQueryChanged,
                       onTap: () {
@@ -1733,6 +1809,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                         disabledBackgroundColor: _gold.withValues(alpha: 0.55),
                         elevation: 0,
                         padding: EdgeInsets.zero,
+                        minimumSize: const Size(50, 50),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -1781,8 +1858,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                           _searchedArea,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppTheme.primary,
+                          style: TextStyle(
+                            color: ink,
                             fontWeight: FontWeight.w800,
                             fontSize: 13.5,
                           ),
@@ -1798,8 +1875,10 @@ class _NearbyScreenState extends State<NearbyScreen>
                         ),
                         child: Text(
                           '${techProvider.technicians.length} found',
-                          style: const TextStyle(
-                            color: Color(0xFF8A6200),
+                          style: TextStyle(
+                            color: theme.brightness == Brightness.dark
+                                ? _gold
+                                : _goldInk,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1820,8 +1899,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                   decoration: InputDecoration(
                     hintText: NearbyStrings.filterByService,
                     hintStyle: TextStyle(color: theme.hintColor, fontSize: 13.5),
-                    prefixIcon: const Icon(Icons.build_outlined,
-                        color: AppTheme.primary, size: 18),
+                    prefixIcon: Icon(Icons.build_outlined,
+                        color: ink, size: 18),
                     suffixIcon: _serviceSearchQuery.isNotEmpty
                         ? IconButton(
                       tooltip: NearbyStrings.clear,
@@ -1835,12 +1914,12 @@ class _NearbyScreenState extends State<NearbyScreen>
                     )
                         : null,
                     filled: true,
-                    fillColor: theme.colorScheme.surface,
+                    fillColor: _softFill(context),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    border: _thin(_hairline, r: 14),
-                    enabledBorder: _thin(_hairline, r: 14),
-                    focusedBorder: _thin(AppTheme.primary, w: 1.5, r: 14),
+                    border: _borderless(14),
+                    enabledBorder: _borderless(14),
+                    focusedBorder: _borderless(14),
                   ),
                   onChanged: (value) {
                     setState(() {
@@ -1925,7 +2004,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     icon: const Icon(Icons.clear_all_rounded, size: 18),
                     label: const Text(NearbyStrings.clearFilters),
                     style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.primary,
+                      foregroundColor: ink,
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       textStyle: const TextStyle(
@@ -1940,11 +2019,18 @@ class _NearbyScreenState extends State<NearbyScreen>
     );
   }
 
+  /// Rounded input shape without any outline.
+  InputBorder _borderless(double radius) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(radius),
+    borderSide: BorderSide.none,
+  );
+
   // ==============================================================
   // SUGGESTIONS
   // ==============================================================
 
   Widget _buildSuggestions(BuildContext context, ThemeData theme) {
+    final ink = _ink(context);
     final showHistoryHeader = _searchHistory.isNotEmpty &&
         _placeSuggestions.isEmpty &&
         !_isLoadingSuggestions;
@@ -1952,9 +2038,8 @@ class _NearbyScreenState extends State<NearbyScreen>
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: _softFill(context),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _hairline.withValues(alpha: 0.7)),
       ),
       clipBehavior: Clip.antiAlias,
       child: ListView(
@@ -1981,9 +2066,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       minimumSize: const Size(0, 28),
                     ),
-                    child: const Text(
+                    child: Text(
                       NearbyStrings.clear,
-                      style: TextStyle(color: AppTheme.primary, fontSize: 12),
+                      style: TextStyle(color: ink, fontSize: 12),
                     ),
                   ),
                 ],
@@ -2142,6 +2227,8 @@ class _NearbyScreenState extends State<NearbyScreen>
               _selectedTechnicianId = selected ? null : tech.id;
             });
 
+            if (!selected) _scrollCarouselTo(tech.id);
+
             _showTechnicianModal(context, tech, origin, isRecommended);
           },
           child: FittedBox(
@@ -2155,12 +2242,10 @@ class _NearbyScreenState extends State<NearbyScreen>
                   _buildRecommendationPulse(tech, avatarSize)
                 else
                   Container(
+                    padding: const EdgeInsets.all(2.5),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: selected ? _gold : AppTheme.primary,
-                        width: 3,
-                      ),
+                      color: selected ? _gold : AppTheme.primary,
                     ),
                     child: _buildAvatar(
                       tech,
@@ -2174,7 +2259,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                     padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isRecommended ? _gold : AppTheme.primary,
+                      color: isRecommended || selected
+                          ? _gold
+                          : AppTheme.primary,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -2187,7 +2274,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                     child: Text(
                       '${distance.toStringAsFixed(1)} km',
                       style: TextStyle(
-                        color: isRecommended ? AppTheme.primary : Colors.white,
+                        color: isRecommended || selected
+                            ? AppTheme.primary
+                            : Colors.white,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -2342,6 +2431,8 @@ class _NearbyScreenState extends State<NearbyScreen>
       String message, {
         bool showExpandRadius = false,
       }) {
+    final ink = _ink(context);
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       alignment: Alignment.center,
@@ -2379,7 +2470,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppTheme.primary,
-                      border: Border.all(color: _gold, width: 3),
                       boxShadow: [
                         BoxShadow(
                           color: AppTheme.primary.withValues(alpha: 0.30),
@@ -2388,7 +2478,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                         ),
                       ],
                     ),
-                    child: Icon(icon, size: 38, color: Colors.white),
+                    child: Icon(icon, size: 38, color: _gold),
                   ),
                 ],
               ),
@@ -2396,8 +2486,8 @@ class _NearbyScreenState extends State<NearbyScreen>
             const SizedBox(height: 18),
             Text(
               message,
-              style: const TextStyle(
-                color: AppTheme.primary,
+              style: TextStyle(
+                color: ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -2421,6 +2511,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 48),
                   padding:
                   const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -2498,16 +2589,22 @@ class _NearbyScreenState extends State<NearbyScreen>
       String label,
       Color color,
       ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Color tone = color;
+    if (isDark && color == AppTheme.primary) tone = Colors.white;
+    if (isDark && color == AppTheme.accent) tone = const Color(0xFF6DB6F2);
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
+          color: tone.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 22),
+            Icon(icon, color: tone, size: 22),
             const SizedBox(height: 6),
             Text(
               value,
@@ -2539,6 +2636,8 @@ class _NearbyScreenState extends State<NearbyScreen>
       bool recommended,
       ) {
     final theme = Theme.of(context);
+    final ink = _ink(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final route = _routesData[tech.id];
     final distance = route?.distanceKm ?? tech.distanceKm;
@@ -2548,6 +2647,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: theme.colorScheme.surface,
+      constraints: const BoxConstraints(maxWidth: 640),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
@@ -2599,9 +2699,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                   children: [
                     Container(
                       padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: _gold, width: 2.5),
+                        color: _gold,
                       ),
                       child: _buildAvatar(tech, size: 62, iconSize: 30),
                     ),
@@ -2620,7 +2720,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 19,
-                                    color: AppTheme.primary,
+                                    color: ink,
                                   ),
                                 ),
                               ),
@@ -2628,7 +2728,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                                 const Padding(
                                   padding: EdgeInsets.only(left: 6),
                                   child: Icon(Icons.verified_rounded,
-                                      color: AppTheme.accent, size: 19),
+                                      color: Color(0xFF3B9BE8), size: 19),
                                 ),
                             ],
                           ),
@@ -2658,16 +2758,16 @@ class _NearbyScreenState extends State<NearbyScreen>
                       ),
                     ),
                     Material(
-                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      color: _softFill(context),
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => Navigator.pop(sheetContext),
-                        child: const SizedBox(
+                        child: SizedBox(
                           width: 38,
                           height: 38,
                           child: Icon(Icons.close_rounded,
-                              size: 20, color: AppTheme.primary),
+                              size: 20, color: ink),
                         ),
                       ),
                     ),
@@ -2683,16 +2783,16 @@ class _NearbyScreenState extends State<NearbyScreen>
                       color: _gold.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(Icons.auto_awesome_rounded,
-                            color: Color(0xFF8A6200), size: 18),
-                        SizedBox(width: 8),
+                            color: isDark ? _gold : _goldInk, size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             NearbyStrings.recommendedReason,
                             style: TextStyle(
-                              color: Color(0xFF8A6200),
+                              color: isDark ? _gold : _goldInk,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w800,
                             ),
@@ -2724,13 +2824,13 @@ class _NearbyScreenState extends State<NearbyScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.08),
+                          color: _softFill(context),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           service,
-                          style: const TextStyle(
-                            color: AppTheme.primary,
+                          style: TextStyle(
+                            color: ink,
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                           ),
@@ -2793,6 +2893,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                             backgroundColor: _gold,
                             foregroundColor: AppTheme.primary,
                             elevation: 0,
+                            minimumSize: const Size(56, 52),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -2850,7 +2951,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   // ==============================================================
-  // CHIP (used for services and categories)
+  // CHIP (used for services and categories) - borderless
   // ==============================================================
 
   Widget _buildChip({
@@ -2860,6 +2961,22 @@ class _NearbyScreenState extends State<NearbyScreen>
     bool outlined = false,
   }) {
     final theme = Theme.of(context);
+    final ink = _ink(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // `outlined` is kept for the category row: it uses a soft tint instead
+    // of the solid navy fill, but still has no border.
+    final Color background = isSelected
+        ? (outlined
+        ? (isDark
+        ? Colors.white.withValues(alpha: 0.18)
+        : AppTheme.primary.withValues(alpha: 0.12))
+        : AppTheme.primary)
+        : _softFill(context);
+
+    final Color foreground = isSelected
+        ? (outlined ? ink : Colors.white)
+        : theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -2873,24 +2990,8 @@ class _NearbyScreenState extends State<NearbyScreen>
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? (outlined
-                  ? AppTheme.primary.withValues(alpha: 0.10)
-                  : AppTheme.primary)
-                  : theme.colorScheme.surface,
+              color: background,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isSelected ? AppTheme.primary : _hairline,
-              ),
-              boxShadow: isSelected && !outlined
-                  ? [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.25),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -2902,9 +3003,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected
-                        ? (outlined ? AppTheme.primary : Colors.white)
-                        : theme.colorScheme.onSurface,
+                    color: foreground,
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -2947,7 +3046,7 @@ class _MapControlButton extends StatelessWidget {
         onPressed: onPressed,
         icon: Icon(
           icon,
-          color: highlighted ? _gold : AppTheme.primary,
+          color: highlighted ? _gold : _ink(context),
           size: 22,
         ),
         constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
@@ -2978,7 +3077,7 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = filled ? Colors.white : AppTheme.primary;
+    final fg = filled ? Colors.white : _ink(context);
 
     return Tooltip(
       message: tooltip,
