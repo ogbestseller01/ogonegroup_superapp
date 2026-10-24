@@ -115,8 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (!_termsAccepted) {
-      _snack(AppLocalizations.of(context)!.pleaseAcceptTerms,
-          error: false);
+      _snack(AppLocalizations.of(context)!.pleaseAcceptTerms, error: false);
       return;
     }
 
@@ -216,10 +215,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // Language / Theme sheets
+  // Language change (FIXED)
   // ─────────────────────────────────────────────
   Future<void> _changeLanguage(
-      BuildContext sheetCtx,
       String code,
       SettingsProvider settings,
       AuthProvider auth,
@@ -231,8 +229,10 @@ class _LoginScreenState extends State<LoginScreen> {
       await serviceProvider.fetchServices(locale: code);
     } catch (e) {
       debugPrint('⚠️ Language change to "$code" failed: $e');
+      if (mounted) {
+        _snack('Failed to change language: $e');
+      }
     }
-    if (sheetCtx.mounted) Navigator.pop(sheetCtx);
   }
 
   void _showLanguageSheet(
@@ -243,29 +243,76 @@ class _LoginScreenState extends State<LoginScreen> {
       ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    _showAppSheet(
-      title: l10n.language,
-      isDark: isDark,
-      children: [
-        _SheetTile(
-          title: 'English',
-          leading: const FlagIcon(emoji: '🇬🇧', height: 18),
-          selected: settings.locale == 'en',
-          onTap: () => _changeLanguage(
-              context, 'en', settings, auth, serviceProvider),
-        ),
-        const SizedBox(height: 10),
-        _SheetTile(
-          title: 'Kiswahili',
-          leading: const FlagIcon(emoji: '🇹🇿', height: 18),
-          selected: settings.locale == 'sw',
-          onTap: () => _changeLanguage(
-              context, 'sw', settings, auth, serviceProvider),
-        ),
-      ],
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        // Use the real modal context so we can safely pop it
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.darkBorder : Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  l10n.language,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppTheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // English
+                _SheetTile(
+                  title: 'English',
+                  leading: const FlagIcon(emoji: '🇬🇧', height: 18),
+                  selected: settings.locale == 'en',
+                  onTap: () async {
+                    // 1. Close the sheet first (using the correct context)
+                    Navigator.pop(sheetContext);
+                    // 2. Then change the language
+                    await _changeLanguage(
+                        'en', settings, auth, serviceProvider);
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // Kiswahili
+                _SheetTile(
+                  title: 'Kiswahili',
+                  leading: const FlagIcon(emoji: '🇹🇿', height: 18),
+                  selected: settings.locale == 'sw',
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await _changeLanguage(
+                        'sw', settings, auth, serviceProvider);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
+  // ─────────────────────────────────────────────
+  // Theme sheet (unchanged)
+  // ─────────────────────────────────────────────
   void _showThemeSheet(ThemeProvider themeProvider, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -409,8 +456,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 right: -60,
                 child: _Blob(
                   size: 220,
-                  color:
-                  AppTheme.primary.withOpacity(isDark ? 0.12 : 0.06),
+                  color: AppTheme.primary.withOpacity(isDark ? 0.12 : 0.06),
                 ),
               ),
               Positioned(
@@ -418,8 +464,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 left: -80,
                 child: _Blob(
                   size: 260,
-                  color:
-                  AppTheme.primary.withOpacity(isDark ? 0.08 : 0.05),
+                  color: AppTheme.primary.withOpacity(isDark ? 0.08 : 0.05),
                 ),
               ),
 
@@ -489,15 +534,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(
-                                    isDark ? 0.35 : 0.08),
+                                color: Colors.black
+                                    .withOpacity(isDark ? 0.35 : 0.08),
                                 blurRadius: 40,
                                 offset: const Offset(0, 16),
                                 spreadRadius: -4,
                               ),
                               BoxShadow(
-                                color:
-                                AppTheme.primary.withOpacity(0.06),
+                                color: AppTheme.primary.withOpacity(0.06),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -506,8 +550,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Form(
                             key: _formKey,
                             child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.stretch,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 // NearbyFundi brand lockup
                                 const _BrandHeader(),
@@ -557,10 +600,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   TextFormField(
                                     controller: _identifierController,
                                     enabled: !_isLoading,
-                                    keyboardType:
-                                    TextInputType.emailAddress,
-                                    textInputAction:
-                                    TextInputAction.next,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
                                     style: const TextStyle(fontSize: 15),
                                     decoration: _modernInputDecoration(
                                       context,
@@ -595,21 +636,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: TextFormField(
-                                          controller:
-                                          _identifierController,
+                                          controller: _identifierController,
                                           enabled: !_isLoading,
-                                          keyboardType:
-                                          TextInputType.phone,
+                                          keyboardType: TextInputType.phone,
                                           textInputAction:
                                           TextInputAction.next,
-                                          style: const TextStyle(
-                                              fontSize: 15),
-                                          decoration:
-                                          _modernInputDecoration(
+                                          style: const TextStyle(fontSize: 15),
+                                          decoration: _modernInputDecoration(
                                             context,
                                             hint: '679117291',
-                                            icon:
-                                            Icons.phone_outlined,
+                                            icon: Icons.phone_outlined,
                                           ),
                                           validator: (v) {
                                             if (v == null ||
@@ -619,11 +655,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                             var digits = v
                                                 .trim()
                                                 .replaceAll(
-                                                RegExp(r'[^0-9]'),
-                                                '');
+                                                RegExp(r'[^0-9]'), '');
                                             if (digits.startsWith('0')) {
-                                              digits =
-                                                  digits.substring(1);
+                                              digits = digits.substring(1);
                                             }
                                             if (!RegExp(r'^[67]\d{8}$')
                                                 .hasMatch(digits)) {
@@ -651,8 +685,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     suffix: IconButton(
                                       icon: Icon(
                                         _obscurePassword
-                                            ? Icons
-                                            .visibility_off_rounded
+                                            ? Icons.visibility_off_rounded
                                             : Icons.visibility_rounded,
                                         size: 20,
                                         color: mutedText,
@@ -683,16 +716,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       onChanged: _isLoading
                                           ? null
                                           : (v) => setState(
-                                              () => _rememberMe =
-                                              v ?? false),
+                                              () => _rememberMe = v ?? false),
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       'Remember me',
                                       style: TextStyle(
                                         fontSize: 13.5,
-                                        color: primaryText
-                                            .withOpacity(0.75),
+                                        color: primaryText.withOpacity(0.75),
                                       ),
                                     ),
                                     const Spacer(),
@@ -704,14 +735,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         AppRoutes.forgot,
                                       ),
                                       style: TextButton.styleFrom(
-                                        padding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal: 4,
-                                            vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4, vertical: 4),
                                         minimumSize: Size.zero,
                                         tapTargetSize:
-                                        MaterialTapTargetSize
-                                            .shrinkWrap,
+                                        MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       child: Text(
                                         l10n.forgotPassword,
@@ -749,18 +777,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 SizedBox(
                                   height: 54,
                                   child: ElevatedButton(
-                                    onPressed: _isLoading
-                                        ? null
-                                        : _handleLogin,
+                                    onPressed:
+                                    _isLoading ? null : _handleLogin,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppTheme.primary,
                                       disabledBackgroundColor:
-                                      AppTheme.primary
-                                          .withOpacity(0.55),
+                                      AppTheme.primary.withOpacity(0.55),
                                       foregroundColor: Colors.white,
                                       elevation: 0,
-                                      shadowColor: AppTheme.primary
-                                          .withOpacity(0.3),
+                                      shadowColor:
+                                      AppTheme.primary.withOpacity(0.3),
                                       shape: RoundedRectangleBorder(
                                         borderRadius:
                                         BorderRadius.circular(16),
@@ -770,8 +796,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? const SizedBox(
                                       width: 24,
                                       height: 24,
-                                      child:
-                                      CircularProgressIndicator(
+                                      child: CircularProgressIndicator(
                                         strokeWidth: 2.6,
                                         valueColor:
                                         AlwaysStoppedAnimation(
@@ -791,7 +816,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 const SizedBox(height: 14),
 
-                                // Google sign-in (secondary)
+                                // Google sign-in
                                 _GoogleButton(
                                   enabled: !_isLoading,
                                   onPressed: _handleGoogleSignIn,
@@ -801,8 +826,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 // Sign up
                                 Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       l10n.dontHaveAccount,
@@ -819,13 +843,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         AppRoutes.register,
                                       ),
                                       style: TextButton.styleFrom(
-                                        padding:
-                                        const EdgeInsets.symmetric(
+                                        padding: const EdgeInsets.symmetric(
                                             horizontal: 6),
                                         minimumSize: Size.zero,
                                         tapTargetSize:
-                                        MaterialTapTargetSize
-                                            .shrinkWrap,
+                                        MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       child: Text(
                                         l10n.signUp,
@@ -847,7 +869,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 14),
 
-                        // Footer brand line — reinforces NearbyFundi
+                        // Footer
                         Text(
                           'NearbyFundi • trusted technicians near you',
                           style: TextStyle(
@@ -872,7 +894,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // ============================================================
-//  BRAND HEADER  — this is what makes it clearly NearbyFundi
+//  BRAND HEADER
 // ============================================================
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
@@ -883,7 +905,6 @@ class _BrandHeader extends StatelessWidget {
 
     return Column(
       children: [
-        // Circular badge with NearbyFundi logo (falls back to location pin)
         Container(
           width: 92,
           height: 92,
@@ -915,8 +936,6 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Wordmark
         Text(
           'NearbyFundi',
           style: TextStyle(
@@ -928,8 +947,6 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-
-        // Tagline
         Text(
           'Trusted technicians near you',
           style: TextStyle(
@@ -1306,8 +1323,7 @@ class _SheetTile extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontSize: 15.5,
-                  fontWeight:
-                  selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   color: selected ? activeColor : textColor,
                 ),
               ),
@@ -1334,7 +1350,7 @@ class _Blob extends StatelessWidget {
 }
 
 // ============================================================
-//  COUNTRY SHEET  (searchable)
+//  COUNTRY SHEET (searchable)
 // ============================================================
 class _CountrySheet extends StatefulWidget {
   final List<Country> countries;
@@ -1406,9 +1422,8 @@ class _CountrySheetState extends State<_CountrySheet> {
                   hintText: 'Search country...',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor: isDark
-                      ? Colors.white.withOpacity(0.05)
-                      : _kFieldTint,
+                  fillColor:
+                  isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -1429,9 +1444,8 @@ class _CountrySheetState extends State<_CountrySheet> {
                 itemCount: _filtered.length,
                 itemBuilder: (context, i) {
                   final c = _filtered[i];
-                  final isSelected =
-                      c.name == widget.selected.name &&
-                          c.dialCode == widget.selected.dialCode;
+                  final isSelected = c.name == widget.selected.name &&
+                      c.dialCode == widget.selected.dialCode;
                   return ListTile(
                     leading: FlagIcon(emoji: c.flag, height: 24),
                     title: Text(
@@ -1493,8 +1507,7 @@ InputDecoration _modernInputDecoration(
     suffixIcon: suffix,
     filled: true,
     fillColor: isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
-    contentPadding:
-    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide.none,
