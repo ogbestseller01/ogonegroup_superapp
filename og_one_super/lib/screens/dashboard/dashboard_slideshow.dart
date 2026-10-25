@@ -28,8 +28,8 @@ class DashboardSlideshow extends StatefulWidget {
 class _DashboardSlideshowState extends State<DashboardSlideshow>
     with SingleTickerProviderStateMixin {
   static const double _gap = 6;
-  static const double _baseHeight = 128;
-  static const double _dotsGap = 4;
+  static const double _baseHeight = 100; // was 128
+  static const double _dotsGap = 0;
 
   static const Duration _autoPlayEvery = Duration(seconds: 5);
   static const Duration _slideDuration = Duration(milliseconds: 500);
@@ -122,7 +122,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   Widget build(BuildContext context) {
     final scale =
     MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
-    final height = _baseHeight + (scale - 1) * 70;
+    final height = _baseHeight + (scale - 1) * 56;
     final ctrl = _ctrl!;
 
     return Column(
@@ -161,7 +161,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: _gap,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   child: _SlideCard(slide: widget.slides[i]),
                 ),
@@ -184,6 +184,8 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
 }
 
 class _SlideCard extends StatelessWidget {
+  static const double _radius = 22;
+
   final Slide slide;
   const _SlideCard({required this.slide});
 
@@ -202,45 +204,45 @@ class _SlideCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(_radius),
           boxShadow: [
             BoxShadow(
-              color: s.colors.last.withValues(alpha: 0.30),
-              blurRadius: 20,
+              color: s.colors.last.withValues(alpha: 0.28),
+              blurRadius: 16,
               spreadRadius: -4,
-              offset: const Offset(0, 9),
+              offset: const Offset(0, 7),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(_radius),
           child: Stack(
             children: [
               Positioned(
-                right: -26,
-                top: -40,
-                child: _Orb(size: 130, color: s.ink.withValues(alpha: 0.09)),
+                right: -22,
+                top: -36,
+                child: _Orb(size: 104, color: s.ink.withValues(alpha: 0.09)),
               ),
               Positioned(
-                left: -24,
-                bottom: -48,
+                left: -20,
+                bottom: -40,
                 child: _Orb(
-                    size: 96, color: Colors.white.withValues(alpha: 0.08)),
+                    size: 78, color: Colors.white.withValues(alpha: 0.08)),
               ),
               Positioned(
-                right: 6,
-                bottom: -26,
+                right: 4,
+                bottom: -22,
                 child: Transform.rotate(
                   angle: -0.2,
                   child: Icon(
                     s.icon,
-                    size: 118,
+                    size: 92,
                     color: s.ink.withValues(alpha: 0.13),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+                padding: const EdgeInsets.fromLTRB(16, 10, 14, 10),
                 child: Row(
                   children: [
                     Expanded(
@@ -254,40 +256,40 @@ class _SlideCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: s.ink,
-                              fontSize: 18,
+                              fontSize: 15.5,
                               fontWeight: FontWeight.w800,
-                              height: 1.2,
-                              letterSpacing: -0.3,
+                              height: 1.18,
+                              letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 4),
                           Text(
                             s.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: s.ink.withValues(alpha: 0.9),
-                              fontSize: 12.5,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w600,
-                              height: 1.3,
+                              height: 1.28,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Container(
-                      width: 54,
-                      height: 54,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: s.ink.withValues(alpha: 0.18),
                         border: Border.all(
                           color: s.ink.withValues(alpha: 0.25),
-                          width: 1.2,
+                          width: 1.1,
                         ),
                       ),
-                      child: Icon(s.icon, size: 27, color: s.ink),
+                      child: Icon(s.icon, size: 22, color: s.ink),
                     ),
                   ],
                 ),
@@ -353,8 +355,8 @@ class _PageDots extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
-                width: on ? 24 : 7,
-                height: 7,
+                width: on ? 22 : 6,
+                height: 6,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: on ? track : idle,

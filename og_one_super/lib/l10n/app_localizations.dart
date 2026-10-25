@@ -937,6 +937,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get started'**
   String get getStarted;
+
+  /// No description provided for @dalaliOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Dalali Online'**
+  String get dalaliOnline;
 }
 
 class _AppLocalizationsDelegate

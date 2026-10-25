@@ -28,6 +28,8 @@ class $AssetsImagesGen {
 class $AssetsAppsGen {
   const $AssetsAppsGen();
 
+  final AssetGenImage dalaliOnlineHomeFinderIcon = const AssetGenImage(
+      'assets/images/apps/dalali_online.png');
   final AssetGenImage dumaApp =
       const AssetGenImage('assets/images/apps/duma_app.png');
   final AssetGenImage fundiApp =

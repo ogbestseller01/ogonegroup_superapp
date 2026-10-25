@@ -441,4 +441,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get getStarted => 'Get started';
+
+  @override
+  String get dalaliOnline => 'Dalali Online';
 }

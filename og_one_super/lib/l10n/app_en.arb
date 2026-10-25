@@ -161,5 +161,7 @@
       "onboardingAllInOneBody": "Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.",
       "skip": "Skip",
       "next": "Next",
-      "getStarted": "Get started"
+      "getStarted": "Get started",
+
+       "dalaliOnline": "Dalali Online"
 }

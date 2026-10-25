@@ -86,6 +86,18 @@ const List<MiniApp> miniApps = [
     isComingSoon: true,
     imageAsset: 'assets/images/apps/duma_app.png',
   ),
+
+  // Dalali Online sits right before Nimepoteza App.
+  MiniApp(
+    id: 13,
+    slug: 'dalali',
+    name: 'Dalali Online',
+    subtitle: 'Find & list houses for rent',
+    icon: 'home_work',
+    color: '#0E8F6E',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/dalali_online.png',
+  ),
   MiniApp(
     id: 10,
     slug: 'nimepoteza',

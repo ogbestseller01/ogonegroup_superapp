@@ -442,4 +442,7 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get getStarted => 'Anza';
+
+  @override
+  String get dalaliOnline => 'Dalali Online';
 }

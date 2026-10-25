@@ -47,6 +47,7 @@ const _icons = <String, IconData>{
   'pets': Icons.pets_rounded,
   'delivery_dining': Icons.delivery_dining_rounded,
   'directions_car': Icons.directions_car_rounded,
+  'home_work': Icons.home_work_rounded,
 };
 
 IconData _iconFor(String name) => _icons[name] ?? Icons.apps_rounded;
@@ -57,6 +58,8 @@ Color _appColor(MiniApp a) {
       return const Color(0xFF2B7BFF);
     case 'fundiapp':
       return const Color(0xFFFFB300);
+    case 'dalali':
+      return const Color(0xFF0E8F6E);
     default:
       return Color(int.parse(a.color.replaceFirst('#', '0xFF')));
   }
@@ -77,17 +80,20 @@ List<MiniApp> _availableFirst(List<MiniApp> apps) => [
   ...apps.where((a) => a.isComingSoon),
 ];
 
-const double _labelFont = 12;
-const double _labelMinFont = 10.0;
-const double _labelLineHeight = 1.25;
+const double _labelFont = 11.5; // was 12
+const double _labelMinFont = 9.5;
+const double _labelLineHeight = 1.2;
 const double _compactWidth = 370;
 
 bool _isCompact(BuildContext context) =>
     MediaQuery.sizeOf(context).width < _compactWidth;
 
+/// Grid sizing. Icons are now smaller (38-46 dp instead of 44-52 dp) and the
+/// cells are tighter, so more fits on screen while staying easy to tap.
 class _GridLayout {
-  static const double colSpacing = 8;
-  static const double _minCellWidth = 76;
+  static const double colSpacing = 6;
+  static const double rowSpacing = 8;
+  static const double _minCellWidth = 70;
 
   final double hPad;
   final int columns;
@@ -104,8 +110,8 @@ class _GridLayout {
     final textScale =
     MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
 
-    final sideInset = max(safe.left, safe.right) + 14;
-    final baseH = width < 360 ? 16.0 : 22.0;
+    final sideInset = max(safe.left, safe.right) + 12;
+    final baseH = width < 360 ? 14.0 : 18.0;
     final hPad = width > 800
         ? max((width - 760) / 2, sideInset)
         : max(baseH, sideInset);
@@ -117,7 +123,7 @@ class _GridLayout {
         .clamp(3, 6);
 
     final cellW = (contentW - (columns - 1) * colSpacing) / columns;
-    final icon = (cellW * 0.55).clamp(44.0, 52.0).toDouble();
+    final icon = (cellW * 0.52).clamp(38.0, 46.0).toDouble();
     final labelH =
     (_labelFont * _labelLineHeight * 2 * textScale).ceilToDouble();
 
@@ -126,7 +132,7 @@ class _GridLayout {
       columns,
       contentW / columns,
       icon,
-      8 + icon + 12 + labelH + 6,
+      6 + icon + 8 + labelH + 4,
     );
   }
 }
@@ -428,7 +434,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
       AppLocalizations t, _GridLayout layout, bool isDark) {
     final apps = _filtered(t);
     return [
-      _section(layout.hPad, t.allServices, apps.length, isDark, top: 24),
+      _section(layout.hPad, t.allServices, apps.length, isDark, top: 20),
       if (apps.isEmpty)
         SliverToBoxAdapter(
             child: _EmptyState(message: t.noResults, isDark: isDark))
@@ -444,11 +450,11 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
     final apps = _filtered(t);
 
     return [
-      _section(hPad, t.featured, apps.length, isDark, top: 26),
+      _section(hPad, t.featured, apps.length, isDark, top: 20),
       ..._appSlivers(t, layout, apps, isDark, startIndex: 1),
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.only(top: 18),
+          padding: const EdgeInsets.only(top: 14),
           child: _Reveal(
             index: 5,
             animate: _intro,
@@ -456,7 +462,7 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           ),
         ),
       ),
-      _section(hPad, t.partnerApps, null, isDark, top: 14),
+      _section(hPad, t.partnerApps, null, isDark, top: 8),
       SliverPadding(
         padding: EdgeInsets.symmetric(horizontal: hPad),
         sliver: SliverToBoxAdapter(
@@ -476,14 +482,14 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
   }
 
   Widget _bottomSpacer() => SliverToBoxAdapter(
-    child: SizedBox(height: _BottomBar.heightOf(context) + 18),
+    child: SizedBox(height: _BottomBar.heightOf(context) + 14),
   );
 
   Widget _section(double hPad, String title, int? count, bool isDark,
-      {double top = 22}) {
+      {double top = 18}) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 14),
+        padding: EdgeInsets.fromLTRB(hPad, top, hPad, 10),
         child: _SectionTitle(title: title, count: count, isDark: isDark),
       ),
     );
@@ -503,8 +509,8 @@ class _SuperAppDashboardState extends State<SuperAppDashboard> {
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: layout.columns,
             mainAxisExtent: layout.mainAxisExtent,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 10,
+            mainAxisSpacing: _GridLayout.rowSpacing,
+            crossAxisSpacing: _GridLayout.colSpacing,
           ),
           delegate: SliverChildBuilderDelegate(
                 (context, i) {
@@ -563,7 +569,7 @@ class _AppCard extends StatelessWidget {
       label: soon ? '$title, $soonLabel' : title,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: 6),
         child: Column(
           children: [
             SizedBox(
@@ -590,9 +596,9 @@ class _AppCard extends StatelessWidget {
                       boxShadow: [
                         BoxShadow(
                           color: color.withValues(alpha: isDark ? 0.25 : 0.2),
-                          blurRadius: 14,
+                          blurRadius: 10,
                           spreadRadius: -2,
-                          offset: const Offset(0, 6),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -600,7 +606,7 @@ class _AppCard extends StatelessWidget {
                         ? Padding(
                       // Slight padding prevents the 3D icon from
                       // clipping at the edges.
-                      padding: EdgeInsets.all(size * 0.05),
+                      padding: EdgeInsets.all(size * 0.04),
                       child: Image.asset(
                         app.imageAsset!,
                         fit: BoxFit.contain,
@@ -620,15 +626,15 @@ class _AppCard extends StatelessWidget {
                   ),
                   if (soon)
                     Positioned(
-                      top: -7,
-                      right: -9,
+                      top: -5,
+                      right: -8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                            horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: AppTheme.secondary,
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(color: _pageBg(isDark), width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _pageBg(isDark), width: 1.6),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.1),
@@ -642,7 +648,7 @@ class _AppCard extends StatelessWidget {
                           maxLines: 1,
                           softWrap: false,
                           style: const TextStyle(
-                            fontSize: 8.5,
+                            fontSize: 8,
                             height: 1.1,
                             fontWeight: FontWeight.w800,
                             color: _navy,
@@ -653,7 +659,7 @@ class _AppCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
@@ -692,7 +698,7 @@ class _SectionTitle extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 19,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
               color: _ink(isDark),
@@ -701,8 +707,8 @@ class _SectionTitle extends StatelessWidget {
         ),
         if (count != null)
           Container(
-            constraints: const BoxConstraints(minWidth: 30),
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+            constraints: const BoxConstraints(minWidth: 26),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: AppTheme.secondary.withValues(alpha: 0.15),
@@ -712,7 +718,7 @@ class _SectionTitle extends StatelessWidget {
               '$count',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
-                fontSize: 12.5,
+                fontSize: 11.5,
                 color: _accent(isDark),
               ),
             ),
@@ -731,12 +737,12 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 60),
+      padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
         children: [
           Container(
-            width: 76,
-            height: 76,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.06)
@@ -745,16 +751,16 @@ class _EmptyState extends StatelessWidget {
             ),
             child: Icon(
               Icons.search_off_rounded,
-              size: 34,
+              size: 30,
               color: isDark ? Colors.white38 : Colors.grey.shade500,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white60 : Colors.grey.shade700,
             ),
@@ -791,14 +797,14 @@ class _AppDrawer extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const _Logo(size: 46),
+                    const _Logo(size: 44),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         t.appName,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16.5,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -889,17 +895,17 @@ class _SoftButton extends StatelessWidget {
         color: light
             ? Colors.white.withValues(alpha: 0.14)
             : _navy.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () {
             HapticFeedback.selectionClick();
             onTap();
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, color: light ? Colors.white : _navy, size: 22),
+            width: 40,
+            height: 40,
+            child: Icon(icon, color: light ? Colors.white : _navy, size: 21),
           ),
         ),
       ),
@@ -920,7 +926,7 @@ class _AiAgentButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(compact ? 16 : 24);
+    final radius = BorderRadius.circular(compact ? 14 : 22);
 
     return Tooltip(
       message: tooltip,
@@ -935,8 +941,8 @@ class _AiAgentButton extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: _gold.withValues(alpha: 0.38),
-                blurRadius: 14,
-                offset: const Offset(0, 5),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -951,25 +957,25 @@ class _AiAgentButton extends StatelessWidget {
                 onTap();
               },
               child: SizedBox(
-                height: compact ? 44 : 40,
-                width: compact ? 44 : null,
+                height: compact ? 40 : 36,
+                width: compact ? 40 : null,
                 child: compact
                     ? const Icon(Icons.auto_awesome_rounded,
-                    size: 22, color: _navy)
+                    size: 20, color: _navy)
                     : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.auto_awesome_rounded,
-                          size: 18, color: _navy),
-                      const SizedBox(width: 6),
+                          size: 16, color: _navy),
+                      const SizedBox(width: 5),
                       Text(
                         context.t.aiAgent,
                         maxLines: 1,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: _navy,
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -1120,8 +1126,8 @@ class _FitLabel extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  static const double _searchHeight = 56;
-  static const double _overlap = 28;
+  static const double _searchHeight = 50; // was 56
+  static const double _overlap = 25; // was 28
 
   final AppLocalizations t;
   final double hPad;
@@ -1182,7 +1188,7 @@ class _Header extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: const BoxDecoration(
         gradient: _headerGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(38)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Stack(
         children: [
@@ -1190,8 +1196,8 @@ class _Header extends StatelessWidget {
             top: -60,
             right: -40,
             child: Container(
-              width: 190,
-              height: 190,
+              width: 170,
+              height: 170,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
@@ -1204,28 +1210,28 @@ class _Header extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 60,
+            top: 50,
             right: 20,
-            child: _ring(90, Colors.white.withValues(alpha: 0.08)),
+            child: _ring(76, Colors.white.withValues(alpha: 0.08)),
           ),
           Positioned(
             bottom: 6,
             left: -50,
-            child: _ring(170, Colors.white.withValues(alpha: 0.07)),
+            child: _ring(140, Colors.white.withValues(alpha: 0.07)),
           ),
           Positioned(
             right: 18,
-            bottom: _overlap + 8,
+            bottom: _overlap + 6,
             child: Icon(
               Icons.grid_view_rounded,
-              size: 74,
+              size: 62,
               color: Colors.white.withValues(alpha: 0.07),
             ),
           ),
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(hPad, 10, hPad, _overlap + 22),
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, _overlap + 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1237,9 +1243,9 @@ class _Header extends StatelessWidget {
                         onTap: onMenu,
                         onDark: true,
                       ),
-                      SizedBox(width: compact ? 8 : 12),
-                      _Logo(size: compact ? 34 : 38),
-                      SizedBox(width: compact ? 8 : 11),
+                      SizedBox(width: compact ? 8 : 10),
+                      _Logo(size: compact ? 32 : 36),
+                      SizedBox(width: compact ? 8 : 10),
                       Expanded(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
@@ -1250,7 +1256,7 @@ class _Header extends StatelessWidget {
                             softWrap: false,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 15.5,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.1,
                             ),
@@ -1265,7 +1271,7 @@ class _Header extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: narrow ? 20 : 26),
+                  SizedBox(height: narrow ? 14 : 18),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -1274,25 +1280,25 @@ class _Header extends StatelessWidget {
                       maxLines: 1,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: narrow ? 26 : 31,
+                        fontSize: narrow ? 22 : 26,
                         fontWeight: FontWeight.w800,
                         height: 1.15,
-                        letterSpacing: -0.8,
+                        letterSpacing: -0.6,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Container(
-                        width: 4,
-                        height: 18,
+                        width: 3.5,
+                        height: 15,
                         decoration: BoxDecoration(
                           gradient: _goldGradient,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      const SizedBox(width: 9),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           t.chooseService,
@@ -1301,7 +1307,7 @@ class _Header extends StatelessWidget {
                           style: TextStyle(
                             color: const Color(0xFFFFD54F)
                                 .withValues(alpha: 0.95),
-                            fontSize: narrow ? 13 : 14,
+                            fontSize: narrow ? 12 : 13,
                             fontWeight: FontWeight.w600,
                             height: 1.3,
                           ),
@@ -1327,15 +1333,15 @@ class _Header extends StatelessWidget {
       height: _searchHeight,
       decoration: BoxDecoration(
         color: fieldColor,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(25),
         border: isDark
             ? Border.all(color: Colors.white.withValues(alpha: 0.08))
             : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.12),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -1346,38 +1352,38 @@ class _Header extends StatelessWidget {
         cursorColor: isDark ? AppTheme.secondary : AppTheme.primary,
         style: TextStyle(
           color: textColor,
-          fontSize: 15.5,
+          fontSize: 14.5,
           fontWeight: FontWeight.w600,
         ),
         decoration: InputDecoration(
           hintText: t.searchHint,
           hintStyle: TextStyle(color: hintColor, fontWeight: FontWeight.w500),
-          prefixIcon: Icon(Icons.search_rounded, color: textColor, size: 23),
+          prefixIcon: Icon(Icons.search_rounded, color: textColor, size: 21),
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (hasText)
                 IconButton(
                   onPressed: onClear,
-                  icon: Icon(Icons.close_rounded, color: textColor, size: 20),
-                  splashRadius: 20,
+                  icon: Icon(Icons.close_rounded, color: textColor, size: 19),
+                  splashRadius: 18,
                 ),
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: 7),
                 child: Material(
                   color: _gold.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                     onTap: () {
                       HapticFeedback.selectionClick();
                       onScan();
                     },
                     child: SizedBox(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       child: Icon(Icons.qr_code_scanner_rounded,
-                          color: _accent(isDark), size: 21),
+                          color: _accent(isDark), size: 19),
                     ),
                   ),
                 ),
@@ -1388,7 +1394,7 @@ class _Header extends StatelessWidget {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(vertical: 15),
         ),
       ),
     );
@@ -1410,13 +1416,13 @@ class _ComingSoonBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = _accent(isDark);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
+      borderRadius: BorderRadius.circular(22),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: isDark ? AppTheme.darkSurface : const Color(0xFFFFF4D6),
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.07)
@@ -1426,29 +1432,29 @@ class _ComingSoonBox extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: -24,
-              bottom: -34,
+              right: -20,
+              bottom: -30,
               child: Icon(
                 Icons.hourglass_top_rounded,
-                size: 120,
+                size: 100,
                 color: _gold.withValues(alpha: isDark ? 0.10 : 0.18),
               ),
             ),
             Row(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(15),
                     color: isDark
                         ? AppTheme.secondary.withValues(alpha: 0.16)
                         : Colors.white,
                   ),
                   child: Icon(Icons.hourglass_top_rounded,
-                      size: 26, color: accent),
+                      size: 22, color: accent),
                 ),
-                const SizedBox(width: 15),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1458,18 +1464,18 @@ class _ComingSoonBox extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 15.5,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w800,
                           color: _ink(isDark),
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color:
                           isDark ? AppTheme.darkTextSecondary : _hintGrey,
@@ -1478,7 +1484,7 @@ class _ComingSoonBox extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 40),
+                const SizedBox(width: 36),
               ],
             ),
           ],
@@ -1489,9 +1495,9 @@ class _ComingSoonBox extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  static const double _barH = 66;
-  static const double _lift = 26;
-  static const double _fab = 62;
+  static const double _barH = 60; // was 66
+  static const double _lift = 22; // was 26
+  static const double _fab = 56; // was 62
 
   static double heightOf(BuildContext context) =>
       _barH + _lift + MediaQuery.paddingOf(context).bottom;
@@ -1533,7 +1539,7 @@ class _BottomBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: surface,
                 borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+                const BorderRadius.vertical(top: Radius.circular(26)),
                 border: isDark
                     ? Border(
                   top: BorderSide(
@@ -1544,8 +1550,8 @@ class _BottomBar extends StatelessWidget {
                   BoxShadow(
                     color:
                     Colors.black.withValues(alpha: isDark ? 0.40 : 0.08),
-                    blurRadius: 24,
-                    offset: const Offset(0, -6),
+                    blurRadius: 22,
+                    offset: const Offset(0, -5),
                   ),
                 ],
               ),
@@ -1561,7 +1567,7 @@ class _BottomBar extends StatelessWidget {
                         onTap: onHome,
                       ),
                     ),
-                    const SizedBox(width: _fab + 36),
+                    const SizedBox(width: _fab + 32),
                     Expanded(
                       child: _NavItem(
                         icon: Icons.settings_rounded,
@@ -1578,7 +1584,7 @@ class _BottomBar extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            bottom: safeBottom + 9,
+            bottom: safeBottom + 8,
             child: IgnorePointer(
               child: Text(
                 scanLabel,
@@ -1586,7 +1592,7 @@ class _BottomBar extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 11.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: labelColor,
                 ),
@@ -1607,19 +1613,19 @@ class _BottomBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: _goldGradient,
-                    border: Border.all(color: surface, width: 5),
+                    border: Border.all(color: surface, width: 4.5),
                     boxShadow: [
                       BoxShadow(
                         color: _gold.withValues(alpha: isDark ? 0.35 : 0.45),
-                        blurRadius: 18,
-                        offset: const Offset(0, 7),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: const Icon(
                     Icons.qr_code_scanner_rounded,
                     color: _navy,
-                    size: 28,
+                    size: 25,
                   ),
                 ),
               ),
@@ -1659,24 +1665,24 @@ class _NavItem extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               color: active
                   ? (isDark
                   ? AppTheme.secondary.withValues(alpha: 0.16)
                   : AppTheme.primary.withValues(alpha: 0.08))
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 24, color: color),
+            child: Icon(icon, size: 22, color: color),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11.5,
+              fontSize: 11,
               fontWeight: active ? FontWeight.w800 : FontWeight.w600,
               color: color,
             ),
@@ -1716,41 +1722,41 @@ class _SettingsSheet extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: isDark
             ? Border.all(color: Colors.white.withValues(alpha: 0.07))
             : null,
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
-            20, 14, 20, MediaQuery.paddingOf(context).bottom + 22),
+            18, 12, 18, MediaQuery.paddingOf(context).bottom + 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 42,
-                height: 4.5,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
             Text(
               t.selectLanguage,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 18.5,
+                fontSize: 17.5,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
                 color: textColor,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             for (final o in options)
               _LangTile(
                 option: o,
@@ -1760,14 +1766,14 @@ class _SettingsSheet extends StatelessWidget {
                   settings.setLocale(Locale(o.code));
                 },
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Material(
               color: isDark
                   ? AppTheme.darkSurfaceLight
                   : AppTheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               child: InkWell(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 onTap: () {
                   // Grab the navigator first, then close the sheet and open
                   // settings, so no context is used after the pop.
@@ -1776,29 +1782,29 @@ class _SettingsSheet extends StatelessWidget {
                   nav.pushNamed(AppRoutes.settings);
                 },
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
                   child: Row(
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(13),
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.12)
                               : Colors.white,
                         ),
                         child: Icon(Icons.settings_rounded,
-                            color: textColor, size: 23),
+                            color: textColor, size: 21),
                       ),
-                      const SizedBox(width: 15),
+                      const SizedBox(width: 13),
                       Expanded(
                         child: Text(
                           t.settings,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15.5,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w700,
                             color: textColor,
                           ),
@@ -1828,7 +1834,7 @@ class _FlagBadge extends StatelessWidget {
     required this.isDark,
   });
 
-  static const double _size = 44;
+  static const double _size = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -1841,7 +1847,7 @@ class _FlagBadge extends StatelessWidget {
       child: Text(
         option.badge,
         style: TextStyle(
-          fontSize: 13.5,
+          fontSize: 12.5,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.4,
           color: textColor,
@@ -1902,11 +1908,11 @@ class _LangTile extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 11),
-        padding: const EdgeInsets.fromLTRB(13, 11, 15, 11),
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.fromLTRB(12, 9, 14, 9),
         decoration: BoxDecoration(
           color: tileColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: selected ? accent : Colors.transparent,
             width: 1.6,
@@ -1915,14 +1921,14 @@ class _LangTile extends StatelessWidget {
         child: Row(
           children: [
             _FlagBadge(option: option, selected: selected, isDark: isDark),
-            const SizedBox(width: 15),
+            const SizedBox(width: 13),
             Expanded(
               child: Text(
                 option.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 15.5,
+                  fontSize: 14.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
                   color: textColor,
                 ),
@@ -1932,7 +1938,7 @@ class _LangTile extends StatelessWidget {
               selected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked_rounded,
-              size: 25,
+              size: 23,
               color: selected
                   ? accent
                   : (isDark ? Colors.white30 : AppTheme.navy200),

@@ -5,10 +5,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../config/app_prefs.dart';
-import '../config/app_routes.dart';
-import '../config/app_strings.dart';
-import '../config/app_theme.dart';
+import '../../config/app_prefs.dart';
+import '../../config/app_routes.dart';
+import '../../config/app_strings.dart';
+import '../../config/app_theme.dart';
 
 // ══════════════════════════════════════════════════════════════
 // Constants
@@ -35,6 +35,7 @@ const _icons = <String, IconData>{
   'pets': Icons.pets_rounded,
   'delivery_dining': Icons.delivery_dining_rounded,
   'directions_car': Icons.directions_car_rounded,
+  'home_work': Icons.home_work_rounded,
 };
 
 IconData _iconFor(String name) => _icons[name] ?? Icons.apps_rounded;
@@ -66,6 +67,7 @@ const _duma = _AppTile('duma', 'delivery_dining', Color(0xFF6D4C41), imageAsset:
 const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1), imageAsset: 'assets/images/apps/laundry.png');
 const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png');
 const _hama = _AppTile('hama', 'local_shipping', Color(0xFF6A3FB5), imageAsset: 'assets/images/apps/hama_chap_chap.png');
+const _dalali = _AppTile('dalali', 'home_work', Color(0xFF0E8F6E), imageAsset: 'assets/images/apps/dalali_online.png');
 const _nimepoteza = _AppTile('nimepoteza', 'find_in_page', Color(0xFFE6B422), imageAsset: 'assets/images/apps/nimepoteza.png');
 
 enum StepType { welcome, trustedHelp, food, everyday, allInOne }
@@ -108,7 +110,8 @@ const _steps = <_Step>[
   _Step(type: StepType.food, tiles: [_msosi, _duma]),
   _Step(
     type: StepType.everyday,
-    tiles: [_laundry, _osha, _hama, _safariPoa, _nimepoteza],
+    // Dalali Online sits right before Nimepoteza.
+    tiles: [_laundry, _osha, _hama, _safariPoa, _dalali, _nimepoteza],
     columns: 3,
   ),
   _Step(
@@ -122,9 +125,11 @@ const _steps = <_Step>[
       _hama,
       _safariPoa,
       _duma,
+      _dalali,
       _nimepoteza,
     ],
-    columns: 3,
+    // 10 apps: 4 columns = 3 rows, so the card stays compact.
+    columns: 4,
   ),
 ];
 
@@ -540,6 +545,7 @@ class _WelcomeVisual extends StatelessWidget {
     _osha,
     _hama,
     _fundiApp,
+    _dalali,
     _nimepoteza,
   ];
 
@@ -567,20 +573,20 @@ class _WelcomeVisual extends StatelessWidget {
               ),
             ),
           ),
-          // Orbit icons
+          // Orbit icons (10 now, slightly smaller so they never touch)
           for (var i = 0; i < _preview.length; i++)
             _OrbitIcon(
               tile: _preview[i],
               index: i,
               total: _preview.length,
-              radius: size * 0.355,
-              iconSize: size * 0.125,
+              radius: size * 0.37,
+              iconSize: size * 0.11,
               isDark: isDark,
             ),
           // Center gold badge
           Container(
-            width: size * 0.30,
-            height: size * 0.30,
+            width: size * 0.28,
+            height: size * 0.28,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: _goldGradient,
@@ -597,7 +603,7 @@ class _WelcomeVisual extends StatelessWidget {
                 'OG',
                 style: TextStyle(
                   color: _navy,
-                  fontSize: 20,
+                  fontSize: 19,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.4,
                 ),
@@ -680,8 +686,8 @@ class _OrbitIcon extends StatelessWidget {
 
 class _TilesHero extends StatelessWidget {
   static const double _pad = 16;
-  static const double _gap = 12;
-  static const double _runGap = 14;
+  static const double _gap = 10;
+  static const double _runGap = 12;
   static const double _labelH = 28;
 
   final _Step step;
@@ -830,7 +836,7 @@ class _TileView extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: isDark ? Colors.white : AppTheme.primary,
-            fontSize: compact ? 10.5 : 11.5,
+            fontSize: compact ? 10 : 11.5,
             fontWeight: FontWeight.w700,
             height: 1.2,
           ),

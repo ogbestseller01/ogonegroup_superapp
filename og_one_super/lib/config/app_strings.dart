@@ -31,6 +31,8 @@ extension ServiceTitles on AppLocalizations {
         return safariPoa;
       case 'duma':
         return duma;
+      case 'dalali':
+        return dalaliOnline;
       case 'coming_soon':
       default:
         return comingSoon;
