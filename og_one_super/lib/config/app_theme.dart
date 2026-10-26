@@ -1,6 +1,4 @@
-// lib/config/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // ─────────────────────────────────────────────
@@ -71,7 +69,8 @@ class AppTheme {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.nunito(
+    return TextStyle(
+      fontFamily: 'Nunito',
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
@@ -114,91 +113,75 @@ class AppTheme {
   // TEXT THEME
   // ─────────────────────────────────────────────
   static TextTheme _buildTextTheme(Color primaryText, Color secondaryText) {
-    final base = GoogleFonts.nunitoTextTheme();
-
-    return base.copyWith(
-      displayLarge: base.displayLarge?.copyWith(
-        inherit: true,
+    return TextTheme(
+      displayLarge: _nunito(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         color: primaryText,
         letterSpacing: -0.5,
       ),
-      displayMedium: base.displayMedium?.copyWith(
-        inherit: true,
+      displayMedium: _nunito(
         fontSize: 28,
         fontWeight: FontWeight.w700,
         color: primaryText,
         letterSpacing: -0.3,
       ),
-      displaySmall: base.displaySmall?.copyWith(
-        inherit: true,
+      displaySmall: _nunito(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         color: primaryText,
       ),
-      headlineMedium: base.headlineMedium?.copyWith(
-        inherit: true,
+      headlineMedium: _nunito(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: primaryText,
       ),
-      headlineSmall: base.headlineSmall?.copyWith(
-        inherit: true,
+      headlineSmall: _nunito(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: primaryText,
       ),
-      titleLarge: base.titleLarge?.copyWith(
-        inherit: true,
+      titleLarge: _nunito(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: primaryText,
       ),
-      titleMedium: base.titleMedium?.copyWith(
-        inherit: true,
+      titleMedium: _nunito(
         fontSize: 16,
         fontWeight: FontWeight.w600,
         color: primaryText,
       ),
-      titleSmall: base.titleSmall?.copyWith(
-        inherit: true,
+      titleSmall: _nunito(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: primaryText,
       ),
-      bodyLarge: base.bodyLarge?.copyWith(
-        inherit: true,
+      bodyLarge: _nunito(
         fontSize: 16,
         color: primaryText,
         height: 1.5,
       ),
-      bodyMedium: base.bodyMedium?.copyWith(
-        inherit: true,
+      bodyMedium: _nunito(
         fontSize: 14,
         color: secondaryText,
         height: 1.5,
       ),
-      bodySmall: base.bodySmall?.copyWith(
-        inherit: true,
+      bodySmall: _nunito(
         fontSize: 12,
         color: secondaryText,
         height: 1.4,
       ),
-      labelLarge: base.labelLarge?.copyWith(
-        inherit: true,
+      labelLarge: _nunito(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: primaryText,
       ),
-      labelMedium: base.labelMedium?.copyWith(
-        inherit: true,
+      labelMedium: _nunito(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: primaryText,
       ),
-      labelSmall: base.labelSmall?.copyWith(
-        inherit: true,
+      labelSmall: _nunito(
         fontSize: 11,
         fontWeight: FontWeight.w500,
         color: secondaryText,
@@ -214,9 +197,8 @@ class AppTheme {
     brightness: Brightness.light,
     primaryColor: primary,
     scaffoldBackgroundColor: scaffoldLight,
-    fontFamily: GoogleFonts.nunito().fontFamily,
+    fontFamily: 'Nunito',
     textTheme: _buildTextTheme(primary, greyText),
-
     colorScheme: const ColorScheme.light(
       primary: primary,
       onPrimary: Colors.white,
@@ -236,13 +218,11 @@ class AppTheme {
       outline: borderLight,
       outlineVariant: navy100,
     ),
-
     dividerTheme: const DividerThemeData(
       color: dividerColor,
       thickness: 0.8,
       space: 1,
     ),
-
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: primary,
@@ -256,7 +236,6 @@ class AppTheme {
       ),
       iconTheme: const IconThemeData(color: primary, size: 24),
     ),
-
     listTileTheme: ListTileThemeData(
       textColor: primary,
       iconColor: primary,
@@ -271,7 +250,6 @@ class AppTheme {
         color: greyText,
       ),
     ),
-
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
@@ -304,7 +282,6 @@ class AppTheme {
       hintStyle: _nunito(color: greyText.withValues(alpha: 0.7), fontSize: 14),
       errorStyle: _nunito(color: error, fontSize: 12),
     ),
-
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
@@ -320,7 +297,6 @@ class AppTheme {
         elevation: 0,
       ),
     ),
-
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primary,
@@ -333,7 +309,6 @@ class AppTheme {
         textStyle: _nunito(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
-
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: primary,
@@ -341,7 +316,6 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),
     ),
-
     cardTheme: CardThemeData(
       elevation: 0,
       color: Colors.white,
@@ -351,7 +325,6 @@ class AppTheme {
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
     ),
-
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
       selectedItemColor: primary,
@@ -361,7 +334,6 @@ class AppTheme {
       selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
       unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
     ),
-
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.white,
       indicatorColor: navy50,
@@ -378,7 +350,6 @@ class AppTheme {
         return const IconThemeData(color: greyText, size: 24);
       }),
     ),
-
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) return primary;
@@ -391,7 +362,6 @@ class AppTheme {
         return Colors.grey.shade300;
       }),
     ),
-
     chipTheme: ChipThemeData(
       backgroundColor: navy50,
       selectedColor: primary,
@@ -404,7 +374,6 @@ class AppTheme {
       ),
       side: BorderSide.none,
     ),
-
     dialogTheme: DialogThemeData(
       backgroundColor: Colors.white,
       elevation: 8,
@@ -414,7 +383,6 @@ class AppTheme {
       titleTextStyle: _nunito(fontSize: 20, fontWeight: FontWeight.w700, color: primary),
       contentTextStyle: _nunito(fontSize: 15, color: greyText, height: 1.5),
     ),
-
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: primary,
@@ -423,19 +391,16 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusMd),
       ),
     ),
-
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: primary,
       linearTrackColor: navy100,
     ),
-
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: secondary,
       foregroundColor: primary,
       elevation: 4,
       shape: CircleBorder(),
     ),
-
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
         color: primary,
@@ -453,9 +418,8 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: primary,
     scaffoldBackgroundColor: darkBackground,
-    fontFamily: GoogleFonts.nunito().fontFamily,
+    fontFamily: 'Nunito',
     textTheme: _buildTextTheme(darkTextPrimary, darkTextSecondary),
-
     colorScheme: const ColorScheme.dark(
       primary: primary,
       onPrimary: Colors.white,
@@ -475,13 +439,11 @@ class AppTheme {
       outline: darkBorder,
       outlineVariant: navy800,
     ),
-
     dividerTheme: const DividerThemeData(
       color: darkBorder,
       thickness: 0.6,
       space: 1,
     ),
-
     appBarTheme: AppBarTheme(
       backgroundColor: darkSurface,
       foregroundColor: Colors.white,
@@ -495,7 +457,6 @@ class AppTheme {
       ),
       iconTheme: const IconThemeData(color: Colors.white, size: 24),
     ),
-
     listTileTheme: ListTileThemeData(
       textColor: Colors.white,
       iconColor: Colors.white,
@@ -510,7 +471,6 @@ class AppTheme {
         color: darkTextSecondary,
       ),
     ),
-
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: darkSurfaceLight,
@@ -543,7 +503,6 @@ class AppTheme {
       hintStyle: _nunito(color: darkTextSecondary.withValues(alpha: 0.7), fontSize: 14),
       errorStyle: _nunito(color: error, fontSize: 12),
     ),
-
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
@@ -559,7 +518,6 @@ class AppTheme {
         elevation: 0,
       ),
     ),
-
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: secondary,
@@ -572,7 +530,6 @@ class AppTheme {
         textStyle: _nunito(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     ),
-
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: secondary,
@@ -580,7 +537,6 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       ),
     ),
-
     cardTheme: CardThemeData(
       elevation: 0,
       color: darkSurface,
@@ -590,7 +546,6 @@ class AppTheme {
       ),
       margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
     ),
-
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       type: BottomNavigationBarType.fixed,
       selectedItemColor: secondary,
@@ -600,7 +555,6 @@ class AppTheme {
       selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
       unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
     ),
-
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: darkSurface,
       indicatorColor: darkSurfaceLight,
@@ -617,7 +571,6 @@ class AppTheme {
         return const IconThemeData(color: darkTextSecondary, size: 24);
       }),
     ),
-
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) return secondary;
@@ -630,7 +583,6 @@ class AppTheme {
         return Colors.grey.shade700;
       }),
     ),
-
     chipTheme: ChipThemeData(
       backgroundColor: darkSurfaceLight,
       selectedColor: secondary,
@@ -643,7 +595,6 @@ class AppTheme {
       ),
       side: BorderSide.none,
     ),
-
     dialogTheme: DialogThemeData(
       backgroundColor: darkSurface,
       elevation: 8,
@@ -654,7 +605,6 @@ class AppTheme {
       titleTextStyle: _nunito(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
       contentTextStyle: _nunito(fontSize: 15, color: darkTextSecondary, height: 1.5),
     ),
-
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       backgroundColor: darkSurfaceLight,
@@ -663,22 +613,18 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusMd),
       ),
     ),
-
     progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: secondary,
       linearTrackColor: darkSurfaceLight,
     ),
-
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: secondary,
       foregroundColor: primary,
       elevation: 4,
       shape: CircleBorder(),
     ),
-
     iconTheme: const IconThemeData(color: Colors.white),
     primaryIconTheme: const IconThemeData(color: Colors.white),
-
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
         color: darkSurfaceLight,

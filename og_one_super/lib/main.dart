@@ -1,9 +1,11 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:developer' as dev;
+import 'dart:ui' show PlatformDispatcher;
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:google_fonts/google_fonts.dart'; // ← added
 import 'package:provider/provider.dart';
 
 import 'config/app_routes.dart';
@@ -14,22 +16,59 @@ import 'providers/settings_provider.dart';
 import 'screens/dashboard/super_app_dashboard.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/internet_checker.dart';
 import 'services/security_service.dart';
+import 'widgets/app_gates.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
-Future<void> main() async {
+/// Block the app while USB / developer debugging is ON.
+/// Use `kReleaseMode` (from foundation.dart) to enforce only in release.
+const bool _kEnforceSecurityGate = true;
+
+/// Backend health endpoint, injected at build time so each environment
+/// (dev / staging / prod) can use its own URL:
+///
+///   flutter run   --dart-define=API_HEALTH_URL=http://10.0.2.2:8000/health
+///   flutter build apk --dart-define=API_HEALTH_URL=https://api.yourdomain.com/health
+///
+/// Empty → the connection check uses public probes only.
+const String _kApiHealthUrl = String.fromEnvironment('API_HEALTH_URL');
+
+void main() {
+  // One safety net for every kind of uncaught error.
+  runZonedGuarded(_bootstrap, _reportError);
+}
+
+Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SecurityService.instance.init();
+  // Disable runtime font downloading – use only the fonts declared in assets
+  GoogleFonts.config.allowRuntimeFetching = false; // ← added
 
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
+  // Flutter framework errors (build / layout / paint).
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    _reportError(details.exception, details.stack);
+  };
 
-  await SystemChrome.setPreferredOrientations([
+  // Errors outside the Flutter framework (platform channels, isolates).
+  PlatformDispatcher.instance.onError = (error, stack) {
+    _reportError(error, stack);
+    return true;
+  };
+
+  await _safeInit('SecurityService', () => SecurityService.instance.init());
+
+  await _safeInit('Firebase', () async {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  });
+
+  await SystemChrome.setPreferredOrientations(const [
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
@@ -49,8 +88,32 @@ Future<void> main() async {
   );
 }
 
+/// Runs a startup step without letting one failure kill the whole launch.
+Future<void> _safeInit(String name, Future<void> Function() init) async {
+  try {
+    await init();
+  } catch (e, st) {
+    _reportError(e, st, context: 'Init failed: $name');
+  }
+}
+
+/// Central error sink.
+/// TODO(production): forward to Crashlytics / Sentry here, e.g.
+///   FirebaseCrashlytics.instance.recordError(error, stack, reason: context);
+void _reportError(Object error, StackTrace? stack, {String? context}) {
+  dev.log(
+    context ?? 'Uncaught error',
+    name: 'OgOneSuper',
+    error: error,
+    stackTrace: stack,
+  );
+}
+
 class OgOneSuperApp extends StatelessWidget {
   const OgOneSuperApp({super.key});
+
+  static const InternetChecker _checker =
+  InternetChecker(apiHealthUrl: _kApiHealthUrl);
 
   @override
   Widget build(BuildContext context) {
@@ -68,337 +131,37 @@ class OgOneSuperApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       initialRoute: AppRoutes.splash,
       builder: (context, child) {
-        // This gate completely blocks the app when debug mode is ON
-        return _SecurityGate(child: child ?? const SizedBox.shrink());
+        // Keep layouts intact when users set extreme system font sizes.
+        return MediaQuery.withClampedTextScaling(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.3,
+          child: SecurityGate(
+            enforce: _kEnforceSecurityGate,
+            checker: _checker,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
       },
-      onGenerateRoute: (route) {
-        switch (route.name) {
-          case AppRoutes.splash:
-            return MaterialPageRoute(
-              settings: route,
-              builder: (_) => const SplashScreen(),
-            );
-          case AppRoutes.dashboard:
-            return MaterialPageRoute(
-              settings: route,
-              builder: (_) => const SuperAppDashboard(),
-            );
-          case AppRoutes.settings:
-            return MaterialPageRoute(
-              settings: route,
-              builder: (_) => const SettingsScreen(),
-            );
-          default:
-            return MaterialPageRoute(
-              settings: route,
-              builder: (_) => _UnknownRoutePage(route.name),
-            );
-        }
-      },
+      onGenerateRoute: _onGenerateRoute,
     );
   }
-}
 
-/// Full-screen permanent blocker.
-/// When debug mode is ON the real app is never shown.
-class _SecurityGate extends StatefulWidget {
-  final Widget child;
-  const _SecurityGate({required this.child});
+  static Route<dynamic> _onGenerateRoute(RouteSettings route) {
+    final Widget page = switch (route.name) {
+      AppRoutes.splash => const SplashScreen(),
+      AppRoutes.dashboard => const SuperAppDashboard(),
+      AppRoutes.settings => const SettingsScreen(),
+      _ => _UnknownRoutePage(route.name),
+    };
 
-  @override
-  State<_SecurityGate> createState() => _SecurityGateState();
-}
-
-class _SecurityGateState extends State<_SecurityGate> with WidgetsBindingObserver {
-  bool? _blocked; // null = still checking
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _check();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  // Re-check when user returns from Settings (after turning debug off)
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _check();
-    }
-  }
-
-  Future<void> _check() async {
-    final isDebugOn = await SecurityService.instance.isDebugModeEnabled();
-    if (!mounted) return;
-    setState(() => _blocked = isDebugOn);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Still checking → show nothing (or a black screen)
-    if (_blocked == null) {
-      return const ColoredBox(color: Colors.black);
-    }
-
-    // Debug mode ON → permanent full-screen alert (no navigation possible)
-    if (_blocked == true) {
-      return const _DebugBlockerScreen();
-    }
-
-    // Debug mode OFF → normal app, guarded by the internet check
-    return _ConnectivityGate(child: widget.child);
-  }
-}
-
-/// Blocks the app behind a modal dialog while the device has no internet.
-/// The dialog disappears by itself as soon as internet is back, and the app
-/// is not opened (nor usable) while the device is offline.
-class _ConnectivityGate extends StatefulWidget {
-  final Widget child;
-  const _ConnectivityGate({required this.child});
-
-  @override
-  State<_ConnectivityGate> createState() => _ConnectivityGateState();
-}
-
-class _ConnectivityGateState extends State<_ConnectivityGate>
-    with WidgetsBindingObserver {
-  bool? _online; // null = first check still running
-  bool _checking = false;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _check();
-    // Keep watching: dialog shows when internet drops, hides when it returns.
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _check());
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _check();
-  }
-
-  Future<bool> _hasInternet() async {
-    try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 4));
-      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> _check() async {
-    if (_checking) return;
-    _checking = true;
-    final online = await _hasInternet();
-    _checking = false;
-    if (!mounted) return;
-    if (_online != online) setState(() => _online = online);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // First check not finished yet → do not open the app yet.
-    if (_online == null) {
-      return const ColoredBox(color: Colors.black);
-    }
-
-    // Online → normal app.
-    if (_online == true) {
-      return widget.child;
-    }
-
-    // Offline → app is never opened, only the modal dialog is shown.
-    return PopScope(
-      canPop: false,
-      child: Stack(
-        fit: StackFit.expand,
-        children: const [
-          ColoredBox(color: Color(0xFF0F1A2E)),
-          ModalBarrier(color: Colors.black54, dismissible: false),
-          _NoInternetDialog(),
-        ],
-      ),
-    );
-  }
-}
-
-class _NoInternetDialog extends StatelessWidget {
-  const _NoInternetDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 28),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          constraints: const BoxConstraints(maxWidth: 380),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 30,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFFFB300).withValues(alpha: 0.16),
-                ),
-                child: const Icon(
-                  Icons.wifi_off_rounded,
-                  size: 44,
-                  color: Color(0xFF1A2B4A),
-                ),
-              ),
-              const SizedBox(height: 22),
-              const Text(
-                'No Internet Connection',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF1A2B4A),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Please connect to the internet.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF5B6B82),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 22),
-              const SizedBox(
-                width: 26,
-                height: 26,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Color(0xFFFFB300),
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Waiting for connection…',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF5B6B82),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Full screen that never goes away until debug mode is turned off
-class _DebugBlockerScreen extends StatelessWidget {
-  const _DebugBlockerScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF0F1A2E),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.security_rounded,
-                size: 72,
-                color: Color(0xFFE5484D),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Security Alert',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Please turn off your phone debug mode.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 36),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE5484D),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => SystemNavigator.pop(),
-                  child: const Text(
-                    'Close App',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Turn off Developer Options / USB Debugging\nthen reopen the app.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white38, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return MaterialPageRoute(settings: route, builder: (_) => page);
   }
 }
 
 class _UnknownRoutePage extends StatelessWidget {
-  final String? name;
   const _UnknownRoutePage(this.name);
+
+  final String? name;
 
   @override
   Widget build(BuildContext context) {

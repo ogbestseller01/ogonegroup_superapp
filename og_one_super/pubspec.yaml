@@ -55,6 +55,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/apps/
+    - google_fonts/
   config:
     enable-swift-package-manager: false
 
@@ -79,3 +80,7 @@ dependency_overrides:
   record_web: ^2.1.0
   record_windows: ^2.3.0
   record_macos: ^2.0.0
+
+  # ===== Fix image + archive conflict =====
+  archive: 3.6.1
+  image: 4.3.0

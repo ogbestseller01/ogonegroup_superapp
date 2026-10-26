@@ -161,6 +161,33 @@
       "next": "Endelea",
       "getStarted": "Anza",
 
-      "dalaliOnline": "Dalali Online"
+      "dalaliOnline": "Dalali Online",
+
+        "navApps": "Programu",
+        "navAccount": "Akaunti",
+        "appsSubtitle": "Huduma zote mahali pamoja",
+        "accountSubtitle": "Lugha na mipangilio ya programu",
+        "recentApps": "Hivi karibuni",
+        "favoriteApps": "Vipendwa",
+        "seeAll": "Tazama zote",
+        "filterAll": "Zote",
+        "favoritesHint": "Bonyeza kwa muda programu yoyote ili kuiweka kwenye vipendwa.",
+        "addedFavorite": "Imeongezwa kwenye vipendwa",
+        "removedFavorite": "Imeondolewa kwenye vipendwa",
+        "noAppsHere": "Hakuna programu bado",
+        "categoryFood": "Chakula",
+        "categoryCleaning": "Usafi",
+        "categoryDelivery": "Usafirishaji",
+        "categoryPartners": "Washirika",
+
+
+
+            "navActivity": "Shughuli",
+            "activitySubtitle": "Oda na huduma kutoka programu zote",
+            "filterActive": "Zinazoendelea",
+            "filterDone": "Zilizokamilika",
+            "activityEmptyTitle": "Hakuna shughuli bado",
+            "activityEmptySub": "Oda, huduma na maombi yako kutoka programu zote yataonekana hapa.",
+            "browseApps": "Tazama programu"
 
 }

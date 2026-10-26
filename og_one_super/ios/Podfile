@@ -1,5 +1,5 @@
-# Global platform for the project (required by firebase_core)
-platform :ios, '15.5'
+# Global platform for the project (required by firebase_core / firebase_messaging)
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -31,6 +31,7 @@ target 'Runner' do
   use_frameworks!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -40,7 +41,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # Make sure no pod builds for an older iOS than the app itself.
+    # Force every pod to use at least iOS 15.5
     target.build_configurations.each do |config|
       current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
       if current.nil? || current.to_f < 15.5

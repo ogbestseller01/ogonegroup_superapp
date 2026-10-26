@@ -444,4 +444,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dalaliOnline => 'Dalali Online';
+
+  @override
+  String get navApps => 'Apps';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String get appsSubtitle => 'Every service in one place';
+
+  @override
+  String get accountSubtitle => 'Language and app settings';
+
+  @override
+  String get recentApps => 'Recent';
+
+  @override
+  String get favoriteApps => 'Favorites';
+
+  @override
+  String get seeAll => 'See all';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get favoritesHint => 'Long-press any app to add it to your favorites.';
+
+  @override
+  String get addedFavorite => 'Added to favorites';
+
+  @override
+  String get removedFavorite => 'Removed from favorites';
+
+  @override
+  String get noAppsHere => 'No apps here yet';
+
+  @override
+  String get categoryFood => 'Food';
+
+  @override
+  String get categoryCleaning => 'Cleaning';
+
+  @override
+  String get categoryDelivery => 'Delivery';
+
+  @override
+  String get categoryPartners => 'Partners';
+
+  @override
+  String get navActivity => 'Activity';
+
+  @override
+  String get activitySubtitle => 'Bookings and orders from all apps';
+
+  @override
+  String get filterActive => 'Active';
+
+  @override
+  String get filterDone => 'Completed';
+
+  @override
+  String get activityEmptyTitle => 'No activity yet';
+
+  @override
+  String get activityEmptySub =>
+      'Your bookings, orders and requests from every app will show up here.';
+
+  @override
+  String get browseApps => 'Browse apps';
 }

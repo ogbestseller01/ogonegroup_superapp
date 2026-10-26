@@ -445,4 +445,75 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get dalaliOnline => 'Dalali Online';
+
+  @override
+  String get navApps => 'Programu';
+
+  @override
+  String get navAccount => 'Akaunti';
+
+  @override
+  String get appsSubtitle => 'Huduma zote mahali pamoja';
+
+  @override
+  String get accountSubtitle => 'Lugha na mipangilio ya programu';
+
+  @override
+  String get recentApps => 'Hivi karibuni';
+
+  @override
+  String get favoriteApps => 'Vipendwa';
+
+  @override
+  String get seeAll => 'Tazama zote';
+
+  @override
+  String get filterAll => 'Zote';
+
+  @override
+  String get favoritesHint =>
+      'Bonyeza kwa muda programu yoyote ili kuiweka kwenye vipendwa.';
+
+  @override
+  String get addedFavorite => 'Imeongezwa kwenye vipendwa';
+
+  @override
+  String get removedFavorite => 'Imeondolewa kwenye vipendwa';
+
+  @override
+  String get noAppsHere => 'Hakuna programu bado';
+
+  @override
+  String get categoryFood => 'Chakula';
+
+  @override
+  String get categoryCleaning => 'Usafi';
+
+  @override
+  String get categoryDelivery => 'Usafirishaji';
+
+  @override
+  String get categoryPartners => 'Washirika';
+
+  @override
+  String get navActivity => 'Shughuli';
+
+  @override
+  String get activitySubtitle => 'Oda na huduma kutoka programu zote';
+
+  @override
+  String get filterActive => 'Zinazoendelea';
+
+  @override
+  String get filterDone => 'Zilizokamilika';
+
+  @override
+  String get activityEmptyTitle => 'Hakuna shughuli bado';
+
+  @override
+  String get activityEmptySub =>
+      'Oda, huduma na maombi yako kutoka programu zote yataonekana hapa.';
+
+  @override
+  String get browseApps => 'Tazama programu';
 }

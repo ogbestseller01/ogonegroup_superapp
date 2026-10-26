@@ -163,5 +163,32 @@
       "next": "Next",
       "getStarted": "Get started",
 
-       "dalaliOnline": "Dalali Online"
+       "dalaliOnline": "Dalali Online",
+
+         "navApps": "Apps",
+         "navAccount": "Account",
+         "appsSubtitle": "Every service in one place",
+         "accountSubtitle": "Language and app settings",
+         "recentApps": "Recent",
+         "favoriteApps": "Favorites",
+         "seeAll": "See all",
+         "filterAll": "All",
+         "favoritesHint": "Long-press any app to add it to your favorites.",
+         "addedFavorite": "Added to favorites",
+         "removedFavorite": "Removed from favorites",
+         "noAppsHere": "No apps here yet",
+         "categoryFood": "Food",
+         "categoryCleaning": "Cleaning",
+         "categoryDelivery": "Delivery",
+         "categoryPartners": "Partners",
+
+
+
+             "navActivity": "Activity",
+             "activitySubtitle": "Bookings and orders from all apps",
+             "filterActive": "Active",
+             "filterDone": "Completed",
+             "activityEmptyTitle": "No activity yet",
+             "activityEmptySub": "Your bookings, orders and requests from every app will show up here.",
+             "browseApps": "Browse apps"
 }

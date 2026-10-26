@@ -54,19 +54,19 @@ PODS:
   - file_picker (0.0.1):
     - DKImagePickerController/PhotoGallery
     - Flutter
-  - Firebase/CoreOnly (12.19.0):
-    - FirebaseCore (~> 12.19.0)
-  - Firebase/Messaging (12.19.0):
+  - Firebase/CoreOnly (12.19.3):
+    - FirebaseCore (~> 12.19.3)
+  - Firebase/Messaging (12.19.3):
     - Firebase/CoreOnly
     - FirebaseMessaging (~> 12.19.0)
-  - firebase_core (4.15.0):
-    - Firebase/CoreOnly (= 12.19.0)
+  - firebase_core (4.15.2):
+    - Firebase/CoreOnly (= 12.19.3)
     - Flutter
-  - firebase_messaging (16.7.0):
-    - Firebase/Messaging (= 12.19.0)
+  - firebase_messaging (16.7.1):
+    - Firebase/Messaging (= 12.19.3)
     - firebase_core
     - Flutter
-  - FirebaseCore (12.19.0):
+  - FirebaseCore (12.19.3):
     - FirebaseCoreInternal (~> 12.19.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GoogleUtilities/Logger (~> 8.1)
@@ -340,10 +340,10 @@ SPEC CHECKSUMS:
   DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
   emoji_picker_flutter: ece213fc274bdddefb77d502d33080dc54e616cc
   file_picker: a0560bc09d61de87f12d246fc47d2119e6ef37be
-  Firebase: 7ca191e43724142f79fae653547b3382c45413cc
-  firebase_core: 55de508663ceda7d1dc369a32b327a5655019ae2
-  firebase_messaging: df68cb5feefa02766144a50fa5348362a0127008
-  FirebaseCore: c990214798d7c568ad436a15ba7da25c7a278c9a
+  Firebase: e3c5ab38229ae085490d02398d97b9f5374bbe6e
+  firebase_core: 4d065e808a89f0eaa0df16660666783f9ea13d38
+  firebase_messaging: d66dd9b68ca259955678628aa4f3e4294d055790
+  FirebaseCore: ab948de5d99e69aeed3cd6f5ace263ce795b2559
   FirebaseCoreInternal: 656b1c2fd5a1c5976183dc54b73deda78fb26ee3
   FirebaseInstallations: f70a49eed611f5602f373e40974b3b01556ac217
   FirebaseMessaging: c15f48126adbe8b4d3238a5e1fa24bab3ad3e472
@@ -360,7 +360,7 @@ SPEC CHECKSUMS:
   GoogleUtilities: 7dc09b3fa9ecb5c2298b952313d14628b61b9da3
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
-  image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
+  image_picker_ios: 9285ee31b06d6e15629dd5713b890f0c457a0a8b
   libwebp: af5937a13536ef73f3784d69cc342b98961acf33
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
@@ -380,11 +380,11 @@ SPEC CHECKSUMS:
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   share_plus: 50da8cb520a8f0f65671c6c6a99b3617ed10a58a
-  shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  shared_preferences_foundation: a7c3904f2dedb3701dd1903cb152ef5e7df92422
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
-PODFILE CHECKSUM: a637eb1612483f312e9918654b375349d2c04cd1
+PODFILE CHECKSUM: 24bfb12e51b3de91ae82e486b173a9fa28649990
 
 COCOAPODS: 1.17.0

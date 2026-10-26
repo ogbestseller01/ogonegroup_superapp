@@ -943,6 +943,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dalali Online'**
   String get dalaliOnline;
+
+  /// No description provided for @navApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps'**
+  String get navApps;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
+  /// No description provided for @appsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every service in one place'**
+  String get appsSubtitle;
+
+  /// No description provided for @accountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language and app settings'**
+  String get accountSubtitle;
+
+  /// No description provided for @recentApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentApps;
+
+  /// No description provided for @favoriteApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get favoriteApps;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @favoritesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press any app to add it to your favorites.'**
+  String get favoritesHint;
+
+  /// No description provided for @addedFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to favorites'**
+  String get addedFavorite;
+
+  /// No description provided for @removedFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from favorites'**
+  String get removedFavorite;
+
+  /// No description provided for @noAppsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'No apps here yet'**
+  String get noAppsHere;
+
+  /// No description provided for @categoryFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get categoryFood;
+
+  /// No description provided for @categoryCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get categoryCleaning;
+
+  /// No description provided for @categoryDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get categoryDelivery;
+
+  /// No description provided for @categoryPartners.
+  ///
+  /// In en, this message translates to:
+  /// **'Partners'**
+  String get categoryPartners;
+
+  /// No description provided for @navActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get navActivity;
+
+  /// No description provided for @activitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings and orders from all apps'**
+  String get activitySubtitle;
+
+  /// No description provided for @filterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get filterActive;
+
+  /// No description provided for @filterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterDone;
+
+  /// No description provided for @activityEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get activityEmptyTitle;
+
+  /// No description provided for @activityEmptySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Your bookings, orders and requests from every app will show up here.'**
+  String get activityEmptySub;
+
+  /// No description provided for @browseApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse apps'**
+  String get browseApps;
 }
 
 class _AppLocalizationsDelegate
