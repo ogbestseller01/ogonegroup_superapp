@@ -47,9 +47,11 @@ class HomeTabState extends State<HomeTab> {
   /// Called by the shell when Home is tapped while already on Home.
   void scrollToTop() {
     if (!_scroll.hasClients) return;
-    _scroll.animateTo(0,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic);
+    _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Future<void> _onRefresh() async {
@@ -82,18 +84,34 @@ class HomeTabState extends State<HomeTab> {
   }
 
   List<Slide> _slides(AppLocalizations t) => [
-    Slide(t.bannerTitle, t.bannerSubtitle,
-        const [Color(0xFFFFD54F), Color(0xFFFFB300)], AppTheme.primary,
-        Icons.grid_view_rounded),
-    Slide(t.bannerFundiTitle, t.bannerFundiSubtitle,
-        const [Color(0xFF1A3A75), Color(0xFF2B5AA8)], Colors.white,
-        Icons.handyman_rounded),
-    Slide(t.bannerFoodTitle, t.bannerFoodSubtitle,
-        const [Color(0xFFE85D04), Color(0xFFF48C06)], Colors.white,
-        Icons.delivery_dining_rounded),
-    Slide(t.adsBannersTitle, t.adsBannersSubtitle,
-        const [Color(0xFF7B2CBF), Color(0xFF9D4EDD)], Colors.white,
-        Icons.campaign_rounded),
+    Slide(
+      t.bannerTitle,
+      t.bannerSubtitle,
+      const [Color(0xFFFFD54F), Color(0xFFFFB300)],
+      AppTheme.primary,
+      Icons.grid_view_rounded,
+    ),
+    Slide(
+      t.bannerFundiTitle,
+      t.bannerFundiSubtitle,
+      const [Color(0xFF1A3A75), Color(0xFF2B5AA8)],
+      Colors.white,
+      Icons.handyman_rounded,
+    ),
+    Slide(
+      t.bannerFoodTitle,
+      t.bannerFoodSubtitle,
+      const [Color(0xFFE85D04), Color(0xFFF48C06)],
+      Colors.white,
+      Icons.delivery_dining_rounded,
+    ),
+    Slide(
+      t.adsBannersTitle,
+      t.adsBannersSubtitle,
+      const [Color(0xFF7B2CBF), Color(0xFF9D4EDD)],
+      Colors.white,
+      Icons.campaign_rounded,
+    ),
   ];
 
   @override
@@ -111,25 +129,33 @@ class HomeTabState extends State<HomeTab> {
         controller: _scroll,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics()),
+          parent: BouncingScrollPhysics(),
+        ),
         slivers: [
-          SliverToBoxAdapter(
-            child: DashHeader(
-              headline: t.welcome,
-              subline: t.chooseService,
-              hPad: layout.hPad,
-              onMenu: widget.onMenu,
-              onAiAgent: () => AppLauncher.snack(context, t.comingSoonMessage),
-              searchBox: DashSearchBox(
-                controller: _search,
-                hint: t.searchHint,
-                hasText: _query.isNotEmpty,
-                onChanged: (v) => setState(() => _query = v),
-                onClear: _clearSearch,
-                onScan: () => AppLauncher.scan(context),
+          // Header
+          StreamBuilder(
+            stream: null,
+            builder: (_, __) => SliverToBoxAdapter(
+              child: DashHeader(
+                headline: t.welcome,
+                subline: t.chooseService,
+                hPad: layout.hPad,
+                onMenu: widget.onMenu,
+                onAiAgent: () =>
+                    AppLauncher.snack(context, t.comingSoonMessage),
+                searchBox: DashSearchBox(
+                  controller: _search,
+                  hint: t.searchHint,
+                  hasText: _query.isNotEmpty,
+                  onChanged: (v) => setState(() => _query = v),
+                  onClear: _clearSearch,
+                  onScan: () => AppLauncher.scan(context),
+                ),
               ),
             ),
           ),
+
+          // Content
           ...(searching
               ? _searchSlivers(t, layout, isDark)
               : _homeSlivers(t, layout, isDark)),
@@ -139,11 +165,19 @@ class HomeTabState extends State<HomeTab> {
   }
 
   List<Widget> _searchSlivers(
-      AppLocalizations t, DashGrid layout, bool isDark) {
+      AppLocalizations t,
+      DashGrid layout,
+      bool isDark,
+      ) {
     final apps = _filtered(t);
     return [
-      dashSection(layout.hPad, t.allServices, isDark,
-          count: apps.length, top: 20),
+      dashSection(
+        layout.hPad,
+        t.allServices,
+        isDark,
+        count: apps.length,
+        top: 20,
+      ),
       if (apps.isEmpty)
         SliverToBoxAdapter(
           child: DashEmptyState(
@@ -153,24 +187,32 @@ class HomeTabState extends State<HomeTab> {
           ),
         )
       else
-        SliverAppGrid(apps: apps, layout: layout),
+        StreamBuilder(
+          stream: null,
+          builder: (_, __) => SliverAppGrid(apps: apps, layout: layout),
+        ),
       const SliverToBoxAdapter(child: SizedBox(height: 28)),
     ];
   }
 
-  List<Widget> _homeSlivers(AppLocalizations t, DashGrid layout, bool isDark) {
+  List<Widget> _homeSlivers(
+      AppLocalizations t,
+      DashGrid layout,
+      bool isDark,
+      ) {
     final hPad = layout.hPad;
     final all = _filtered(t);
     final featured = all.take(_featuredCount).toList();
 
     return [
+      // ── Featured section + always visible "View All" ──
       dashSection(
         hPad,
         t.featured,
         isDark,
         count: all.length,
         top: 20,
-        actionLabel: all.length > _featuredCount ? t.seeAll : null,
+        actionLabel: t.seeAll, // ← always show View All
         onAction: widget.onSeeAllApps,
       ),
       SliverAppGrid(
@@ -179,16 +221,23 @@ class HomeTabState extends State<HomeTab> {
         animate: widget.intro,
         startIndex: 1,
       ),
+
+      // ── Slideshow ──
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(top: 14),
           child: Reveal(
             index: 5,
             animate: widget.intro,
-            child: DashboardSlideshow(slides: _slides(t), hPad: hPad),
+            child: DashboardSlideshow(
+              slides: _slides(t),
+              hPad: hPad,
+            ),
           ),
         ),
       ),
+
+      // ── Partner Apps ──
       dashSection(hPad, t.partnerApps, isDark, top: 8),
       SliverPadding(
         padding: EdgeInsets.symmetric(horizontal: hPad),
@@ -204,6 +253,7 @@ class HomeTabState extends State<HomeTab> {
           ),
         ),
       ),
+
       const SliverToBoxAdapter(child: SizedBox(height: 28)),
     ];
   }

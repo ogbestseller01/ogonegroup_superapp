@@ -696,19 +696,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
-
-                        // Footer
-                        Text(
-                          'FundiApp • powered by Netsaf',
-                          style: TextStyle(
-                            inherit: true,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.4,
-                            color: mutedText.withOpacity(0.8),
-                          ),
-                        ),
                       ],
                     ),
                   ),
