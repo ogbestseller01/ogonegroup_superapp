@@ -1,7 +1,7 @@
 import '../models/mini_app.dart';
 
 const List<MiniApp> miniApps = [
-  // Featured (live)
+  // ── Live apps ──────────────────────────────────
   MiniApp(
     id: 1,
     slug: 'nearbyfundi',
@@ -23,7 +23,17 @@ const List<MiniApp> miniApps = [
     imageAsset: 'assets/images/apps/fundi_app.png',
   ),
 
-  // Partner’s apps
+  // ── Top coming-soon (appear on Home – top 10) ──
+  MiniApp(
+    id: 13,
+    slug: 'dalali',
+    name: 'Dalali Online',
+    subtitle: 'Find & list houses for rent',
+    icon: 'home_work',
+    color: '#0E8F6E',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/dalali_online.png',
+  ),
   MiniApp(
     id: 3,
     slug: 'msosi',
@@ -33,16 +43,6 @@ const List<MiniApp> miniApps = [
     color: '#E65100',
     isComingSoon: true,
     imageAsset: 'assets/images/apps/msosi_chap_chap.png',
-  ),
-  MiniApp(
-    id: 5,
-    slug: 'laundry',
-    name: 'Mfua Nguo',
-    subtitle: 'Laundry near you',
-    icon: 'local_laundry_service',
-    color: '#0277BD',
-    isComingSoon: true,
-    imageAsset: 'assets/images/apps/laundry.png',
   ),
   MiniApp(
     id: 6,
@@ -64,8 +64,6 @@ const List<MiniApp> miniApps = [
     isComingSoon: true,
     imageAsset: 'assets/images/apps/hama_chap_chap.png',
   ),
-
-  // Safari Poa sits right before Duma App.
   MiniApp(
     id: 12,
     slug: 'safaripoa',
@@ -86,18 +84,6 @@ const List<MiniApp> miniApps = [
     isComingSoon: true,
     imageAsset: 'assets/images/apps/duma_app.png',
   ),
-
-  // Dalali Online sits right before Nimepoteza App.
-  MiniApp(
-    id: 13,
-    slug: 'dalali',
-    name: 'Dalali Online',
-    subtitle: 'Find & list houses for rent',
-    icon: 'home_work',
-    color: '#0E8F6E',
-    isComingSoon: true,
-    imageAsset: 'assets/images/apps/dalali_online.png',
-  ),
   MiniApp(
     id: 10,
     slug: 'nimepoteza',
@@ -107,5 +93,17 @@ const List<MiniApp> miniApps = [
     color: '#F5C30E',
     isComingSoon: true,
     imageAsset: 'assets/images/apps/nimepoteza.png',
+  ),
+
+  // ── Lower priority (only appears in Apps tab) ──
+  MiniApp(
+    id: 5,
+    slug: 'laundry',
+    name: 'Mfua Nguo',
+    subtitle: 'Laundry near you',
+    icon: 'local_laundry_service',
+    color: '#0277BD',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/laundry.png',
   ),
 ];

@@ -7,8 +7,8 @@
 //  * refresh() asks Laravel (GET /v24/mini-apps) and applies what the server
 //    says: which apps are active, their order, name/subtitle and the
 //    "coming soon" flag.
-//  * The server can only switch apps on/off or change labels. A mini app
-//    that is not compiled into this build can never be opened.
+//  * Local apps that the server does not know yet are still kept
+//    (so new apps like Dalali Online appear immediately).
 
 import 'package:flutter/foundation.dart';
 
@@ -36,31 +36,40 @@ class MiniAppService {
   /// Returns true when the server list was applied.
   Future<bool> refresh() async {
     try {
-      // Short timeout so a dead server never keeps the skeleton on screen
-      // for the full 20 s Dio timeout.
       final res = await ApiService.instance
           .getMiniApps()
           .timeout(const Duration(seconds: 4));
+
       if (!res.success || res.data is! List) return false;
 
-      final result = <MiniApp>[];
+      // Map of what the server returned (slug → data)
+      final serverMap = <String, Map>{};
       for (final item in res.data as List) {
         if (item is! Map) continue;
         final slug = (item['slug'] ?? '').toString().toLowerCase();
         if (slug.isEmpty) continue;
-
-        final local = miniApps.where((a) => a.slug == slug);
-        if (local.isEmpty) continue; // not compiled into this build
-
-        result.add(local.first.copyWith(
-          name: item['name']?.toString(),
-          subtitle: item['subtitle']?.toString(),
-          isComingSoon:
-          item['is_coming_soon'] == true || item['is_coming_soon'] == 1,
-        ));
+        serverMap[slug] = item;
       }
 
-      // Empty / unseeded server: keep the built-in list.
+      // Start from the full local list and apply server overrides
+      final result = <MiniApp>[];
+      for (final local in miniApps) {
+        final server = serverMap[local.slug];
+
+        if (server != null) {
+          // Server knows this app → use its labels & coming-soon flag
+          result.add(local.copyWith(
+            name: server['name']?.toString(),
+            subtitle: server['subtitle']?.toString(),
+            isComingSoon: server['is_coming_soon'] == true ||
+                server['is_coming_soon'] == 1,
+          ));
+        } else {
+          // Server does not know this app yet → keep the local version
+          result.add(local);
+        }
+      }
+
       if (result.isEmpty) return false;
 
       _apps = List.unmodifiable(result);
