@@ -11,17 +11,11 @@ const Color _gold = Color(0xFFF2B93B);
 class AuthGuard {
   AuthGuard._();
 
-  /// True when the user is logged in (read once, no rebuild).
   static bool isLoggedIn(BuildContext context) {
     return context.read<AuthProvider>().isLoggedIn;
   }
 
-  /// Call before any action that needs an account:
-  ///
-  ///   if (!AuthGuard.ensure(context)) return;
-  ///
-  /// true  -> logged in, continue
-  /// false -> modal shown, stop
+  /// Returns true if logged in, false if the modal was shown.
   static bool ensure(BuildContext context, {String? message}) {
     if (isLoggedIn(context)) return true;
     showLoginRequired(context, message: message);
@@ -35,11 +29,15 @@ class AuthGuard {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final ink = isDark ? Colors.white : AppTheme.primary;
-    final navigator = Navigator.of(context);
+
+    // Capture the root navigator (same as LoginScreen back arrow)
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
 
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: theme.colorScheme.surface,
       constraints: const BoxConstraints(maxWidth: 520),
       shape: const RoundedRectangleBorder(
@@ -48,19 +46,34 @@ class AuthGuard {
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 22),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.dividerColor,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+                // Handle + Close (X)
+                Row(
+                  children: [
+                    const Spacer(),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.dividerColor,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: Icon(Icons.close_rounded, color: theme.hintColor),
+                      tooltip: 'Close',
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
+
+                const SizedBox(height: 8),
+
+                // Lock icon
                 Container(
                   width: 84,
                   height: 84,
@@ -75,10 +88,15 @@ class AuthGuard {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.lock_person_rounded,
-                      size: 40, color: _gold),
+                  child: const Icon(
+                    Icons.lock_person_rounded,
+                    size: 40,
+                    color: _gold,
+                  ),
                 ),
+
                 const SizedBox(height: 18),
+
                 Text(
                   'Please create an account',
                   textAlign: TextAlign.center,
@@ -88,7 +106,9 @@ class AuthGuard {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
                 Text(
                   message ??
                       'Sign in or create a free account to search for '
@@ -100,16 +120,17 @@ class AuthGuard {
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 22),
 
-                // Login button
+                const SizedBox(height: 28),
+
+                // Login
                 SizedBox(
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(sheetContext);
-                      navigator.pushNamed(AppRoutes.login);
+                      rootNavigator.pushNamed(AppRoutes.login);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
@@ -128,30 +149,52 @@ class AuthGuard {
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+
+                const SizedBox(height: 12),
 
                 // Create account
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    navigator.pushNamed(AppRoutes.register);
-                  },
-                  child: Text(
-                    'Create account',
-                    style: TextStyle(
-                      color: ink,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      rootNavigator.pushNamed(AppRoutes.register);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ink,
+                      side: BorderSide(color: theme.dividerColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Create account',
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 16),
+
+                // ========== GO HOME (same as Login back arrow) ==========
                 TextButton(
-                  onPressed: () => Navigator.pop(sheetContext),
+                  onPressed: () {
+                    // 1. Close the modal first
+                    Navigator.pop(sheetContext);
+
+                    // 2. Exactly the same as LoginScreen top-left arrow
+                    rootNavigator.maybePop();
+                  },
                   child: Text(
-                    'Maybe later',
+                    'Go Home',
                     style: TextStyle(
                       color: theme.hintColor,
                       fontWeight: FontWeight.w600,
+                      fontSize: 14.5,
                     ),
                   ),
                 ),
