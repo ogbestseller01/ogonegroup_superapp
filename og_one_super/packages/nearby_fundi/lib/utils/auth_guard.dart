@@ -15,7 +15,6 @@ class AuthGuard {
     return context.read<AuthProvider>().isLoggedIn;
   }
 
-  /// Returns true if logged in, false if the modal was shown.
   static bool ensure(BuildContext context, {String? message}) {
     if (isLoggedIn(context)) return true;
     showLoginRequired(context, message: message);
@@ -29,9 +28,6 @@ class AuthGuard {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final ink = isDark ? Colors.white : AppTheme.primary;
-
-    // Capture the root navigator (same as LoginScreen back arrow)
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
 
     return showModalBottomSheet<void>(
       context: context,
@@ -50,7 +46,7 @@ class AuthGuard {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle + Close (X)
+                // Handle + Close
                 Row(
                   children: [
                     const Spacer(),
@@ -123,14 +119,15 @@ class AuthGuard {
 
                 const SizedBox(height: 28),
 
-                // Login
+                // ========== LOGIN ==========
                 SizedBox(
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(sheetContext);
-                      rootNavigator.pushNamed(AppRoutes.login);
+                      // Use LOCAL navigator (important for Mini App)
+                      Navigator.of(context).pushNamed(AppRoutes.login);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
@@ -152,14 +149,15 @@ class AuthGuard {
 
                 const SizedBox(height: 12),
 
-                // Create account
+                // ========== CREATE ACCOUNT ==========
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.pop(sheetContext);
-                      rootNavigator.pushNamed(AppRoutes.register);
+                      // Use LOCAL navigator
+                      Navigator.of(context).pushNamed(AppRoutes.register);
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ink,
@@ -180,14 +178,17 @@ class AuthGuard {
 
                 const SizedBox(height: 16),
 
-                // ========== GO HOME (same as Login back arrow) ==========
+                // ========== GO HOME ==========
                 TextButton(
                   onPressed: () {
-                    // 1. Close the modal first
                     Navigator.pop(sheetContext);
 
-                    // 2. Exactly the same as LoginScreen top-left arrow
-                    rootNavigator.maybePop();
+                    // Same behaviour as the Login back arrow
+                    final rootNav = Navigator.of(context, rootNavigator: true);
+                    if (rootNav.canPop()) {
+                      rootNav.maybePop(); // exit mini-app if embedded
+                    }
+                    // else stay on Home (standalone)
                   },
                   child: Text(
                     'Go Home',
