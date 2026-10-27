@@ -16,6 +16,7 @@ import '../../providers/settings_provider.dart';
 
 import '../../models/chat_user.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/auth_guard.dart';
 
 import 'nearby_screen.dart';
 import 'blogs_screen.dart';
@@ -40,7 +41,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  late final List<Widget> _screens;
   String _currentLocale = 'en';
 
   static const double _tabletBreakpoint = 700;
@@ -50,6 +50,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// double header) and their own pull-to-refresh.
   static const Set<int> _selfContainedTabs = {2, 3};
 
+  /// Every menu tab except Nearby needs an account.
+  static const Set<int> _guardedTabs = {1, 2, 3, 4};
+
+  /// Tabs that call private APIs (not built for guests).
+  static const Set<int> _privateTabs = {2, 3, 4};
+
   // ================================================================
   // INIT
   // ================================================================
@@ -58,24 +64,38 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
-    _screens = [
-      const NearbyScreen(),
-      const BlogsScreen(),
-      const MyRequestsScreen(),
-      ChatListScreen(onBack: () => _selectTab(0)),
-      const ProfileScreen(),
-    ];
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       final settings = context.read<SettingsProvider>();
       _currentLocale = settings.locale;
 
+      // Public data: always load.
       context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
-      _loadNotifications();
-      _initializeChat();
+
+      // Private data: only when logged in.
+      if (AuthGuard.isLoggedIn(context)) {
+        _loadNotifications();
+        _initializeChat();
+      }
     });
+  }
+
+  /// Guests get an empty placeholder for private tabs so those screens
+  /// never run API calls without a token.
+  List<Widget> _buildScreens(bool loggedIn) {
+    Widget tab(int index, Widget child) =>
+        (!loggedIn && _privateTabs.contains(index))
+            ? const SizedBox.shrink()
+            : child;
+
+    return [
+      const NearbyScreen(),
+      const BlogsScreen(),
+      tab(2, const MyRequestsScreen()),
+      tab(3, ChatListScreen(onBack: () => _selectTab(0))),
+      tab(4, const ProfileScreen()),
+    ];
   }
 
   void _initializeChat() {
@@ -107,11 +127,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // TAB SELECTION
+  // TAB SELECTION (with login check)
   // ================================================================
+
+  String _tabMessage(int index) {
+    switch (index) {
+      case 1:
+        return 'Sign in or create an account to read our blog and tips.';
+      case 2:
+        return 'Sign in or create an account to send and track '
+            'your service requests.';
+      case 3:
+        return 'Sign in or create an account to chat with fundis.';
+      case 4:
+        return 'Sign in or create an account to see and edit your profile.';
+      default:
+        return 'Please sign in or create an account to continue.';
+    }
+  }
 
   void _selectTab(int index) {
     if (_currentIndex == index) return;
+
+    if (_guardedTabs.contains(index) &&
+        !AuthGuard.ensure(context, message: _tabMessage(index))) {
+      return;
+    }
+
     HapticFeedback.selectionClick();
     setState(() => _currentIndex = index);
   }
@@ -120,7 +162,21 @@ class _HomeScreenState extends State<HomeScreen> {
   // REFRESH
   // ================================================================
 
+  /// Refresh button: guests see the login modal.
+  void _onRefreshTap() {
+    if (!AuthGuard.ensure(
+      context,
+      message: 'Sign in or create an account to refresh your data.',
+    )) {
+      return;
+    }
+    _refreshCurrentScreen();
+  }
+
   Future<void> _refreshCurrentScreen() async {
+    // Pull-to-refresh by a guest does nothing (no modal on every pull).
+    if (!AuthGuard.isLoggedIn(context)) return;
+
     final l10n = AppLocalizations.of(context)!;
 
     try {
@@ -193,6 +249,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
 
   void _showNotifications(BuildContext context) {
+    if (!AuthGuard.ensure(
+      context,
+      message: 'Sign in or create an account to see your notifications.',
+    )) {
+      return;
+    }
+
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final ink = _ink(theme);
@@ -494,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         _BarButton(
           tooltip: l10n.refresh,
-          onTap: _refreshCurrentScreen,
+          onTap: _onRefreshTap,
           child: const Icon(Icons.refresh_rounded,
               color: Colors.white, size: 22),
         ),
@@ -529,6 +592,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final settings = context.watch<SettingsProvider>();
+    final loggedIn = context.watch<AuthProvider>().isLoggedIn;
+
+    // If the user logs out while on another tab, fall back to Nearby.
+    if (!loggedIn && _currentIndex != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _currentIndex = 0);
+      });
+    }
 
     if (_currentLocale != settings.locale) {
       _currentLocale = settings.locale;
@@ -537,6 +608,8 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
       });
     }
+
+    final screens = _buildScreens(loggedIn);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -579,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // search/map and scroll positions survive tab changes.
                         child: IndexedStack(
                           index: _currentIndex,
-                          children: _screens,
+                          children: screens,
                         ),
                       ),
                     ),

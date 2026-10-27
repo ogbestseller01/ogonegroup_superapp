@@ -69,8 +69,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  /// Open the dashboard. Login is requested later, only when the user
+  /// tries something that needs an account.
   void _getStarted() {
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   @override
@@ -118,7 +120,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: Image.asset(
                         logoPath,
-                        package: _kAssetPackage, // ← resolves SDK asset
+                        package: _kAssetPackage,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.handyman_rounded,

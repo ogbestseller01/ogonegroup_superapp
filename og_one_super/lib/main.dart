@@ -5,13 +5,14 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart'; // ← added
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'config/app_routes.dart';
 import 'config/app_theme.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
+import 'providers/banner_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/dashboard/super_app_dashboard.dart';
 import 'screens/settings/settings_screen.dart';
@@ -44,7 +45,7 @@ Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Disable runtime font downloading – use only the fonts declared in assets
-  GoogleFonts.config.allowRuntimeFetching = false; // ← added
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Flutter framework errors (build / layout / paint).
   FlutterError.onError = (details) {
@@ -81,8 +82,11 @@ Future<void> _bootstrap() async {
   );
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => SettingsProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => BannerProvider()..fetchBanners()),
+      ],
       child: const OgOneSuperApp(),
     ),
   );

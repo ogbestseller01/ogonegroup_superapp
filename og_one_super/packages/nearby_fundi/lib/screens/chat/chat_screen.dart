@@ -33,6 +33,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
 
+  /// Cached so dispose() never needs a BuildContext.
+  late final ChatProvider _chat;
+
   bool _isSending = false;
   bool _isLoadingMore = false;
   int _currentOffset = 0;
@@ -41,24 +44,30 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMessages();
-    _markConversationAsRead();
-    _subscribeToUser();
+    _chat = context.read<ChatProvider>();
+
+    // initState runs during build. Loading messages notifies listeners,
+    // so it must wait until the first frame is finished.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _subscribeToUser();
+      _loadMessages();
+      _markConversationAsRead();
+    });
   }
 
   @override
   void dispose() {
+    _chat.unsubscribeFromUser(widget.conversation.otherParty.id);
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
-    _unsubscribeFromUser();
     super.dispose();
   }
 
   Future<void> _loadMessages() async {
     try {
-      final provider = context.read<ChatProvider>();
-      await provider.getMessages(
+      await _chat.getMessages(
         conversationId: widget.conversation.id,
         limit: 50,
         offset: 0,
@@ -79,8 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isLoadingMore = true);
 
     try {
-      final provider = context.read<ChatProvider>();
-      final messages = await provider.getMessages(
+      final messages = await _chat.getMessages(
         conversationId: widget.conversation.id,
         limit: 50,
         offset: _currentOffset,
@@ -96,7 +104,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
+      if (!mounted || !_scrollController.hasClients) return;
       // The list is reversed, so the newest message (bottom) is offset 0.
       _scrollController.animateTo(
         0,
@@ -108,24 +116,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _markConversationAsRead() async {
     try {
-      await context.read<ChatProvider>().markConversationAsRead(
-        widget.conversation.id,
-      );
+      await _chat.markConversationAsRead(widget.conversation.id);
     } catch (e) {
       debugPrint('Error marking conversation as read: $e');
     }
   }
 
   void _subscribeToUser() {
-    context.read<ChatProvider>().subscribeToUser(
-      widget.conversation.otherParty.id,
-    );
-  }
-
-  void _unsubscribeFromUser() {
-    context.read<ChatProvider>().unsubscribeFromUser(
-      widget.conversation.otherParty.id,
-    );
+    _chat.subscribeToUser(widget.conversation.otherParty.id);
   }
 
   Future<void> _sendMessage() async {
@@ -136,7 +134,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) setState(() => _isSending = true);
 
     try {
-      await context.read<ChatProvider>().sendMessage(
+      await _chat.sendMessage(
         conversationId: widget.conversation.id,
         content: text,
         messageType: 'text',
@@ -158,7 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _sendTypingStatus(bool typing) async {
     try {
-      await context.read<ChatProvider>().sendTypingStatus(
+      await _chat.sendTypingStatus(
         conversationId: widget.conversation.id,
         typing: typing,
       );
@@ -218,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (mounted) setState(() => _isSending = true);
 
     try {
-      await context.read<ChatProvider>().sendMessage(
+      await _chat.sendMessage(
         conversationId: widget.conversation.id,
         file: file,
         messageType: type,
@@ -271,8 +269,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.delete_outline,
-                    color: AppTheme.error),
+                leading:
+                const Icon(Icons.delete_outline, color: AppTheme.error),
                 title: Text(
                   l10n.delete,
                   style: const TextStyle(color: AppTheme.error),
@@ -306,9 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 try {
-                  await context
-                      .read<ChatProvider>()
-                      .deleteMessage(message.id);
+                  await _chat.deleteMessage(message.id);
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -477,7 +473,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                           style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.w600,
-                                            color: theme.colorScheme.onSurface,
+                                            color:
+                                            theme.colorScheme.onSurface,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
@@ -614,7 +611,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               onPressed: _isSending ? null : _pickImage,
             ),
-
             IconButton(
               tooltip: 'Attach file',
               visualDensity: VisualDensity.compact,
@@ -625,7 +621,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               onPressed: _isSending ? null : _pickFile,
             ),
-
             Expanded(
               child: TextField(
                 controller: _textController,
@@ -657,9 +652,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             ),
-
             const SizedBox(width: 6),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Material(

@@ -1,5 +1,5 @@
 // FILE: lib/screens/home/nearby_screen.dart
-// Nearby Fundi - Clean, borderless UI (logic unchanged)
+// Nearby Fundi - Clean, borderless UI (login-guarded actions + road routes)
 
 import 'dart:async';
 import 'dart:convert';
@@ -19,24 +19,11 @@ import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/image_utils.dart';
+import '../../utils/auth_guard.dart';
+import '../../services/route_service.dart'; // ← ROUTE
+import '../../widgets/route_polylines.dart'; // ← ROUTE
 import 'nearby_map_screen.dart';
 import 'map_location_picker_screen.dart';
-
-// ================================================================
-// ROUTE DATA
-// ================================================================
-
-class TechnicianRouteData {
-  final List<LatLng> points;
-  final double distanceKm;
-  final double durationMin;
-
-  TechnicianRouteData({
-    required this.points,
-    required this.distanceKm,
-    required this.durationMin,
-  });
-}
 
 // ================================================================
 // RESPONSIVE CONSTANTS
@@ -140,7 +127,6 @@ class NearbyConstants {
   static const int radiusStepKm = 20;
   static const Duration suggestionDebounce = Duration(milliseconds: 400);
   static const Duration placeSearchTimeout = Duration(seconds: 6);
-  static const Duration routeSearchTimeout = Duration(seconds: 8);
 
   static const String historyPrefsKey = 'location_search_history';
 }
@@ -169,6 +155,12 @@ class NearbyStrings {
   static const searchFailed =
       'Search failed. Please check your connection and try again.';
 }
+
+// Messages shown in the "create account" modal
+const String _kSearchLoginMessage =
+    'Sign in or create an account to search for fundis near you.';
+const String _kFilterLoginMessage =
+    'Sign in or create an account to filter fundis by service.';
 
 // ================================================================
 // UI HELPERS (visual only)
@@ -218,6 +210,10 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   late AnimationController _pulseController;
 
+  /// True once FlutterMap has been rendered and attached to the controller.
+  /// Using the controller before this throws an exception.
+  bool _mapReady = false;
+
   bool _isHeaderVisible = true;
   bool _isSearching = false;
   bool _isFetchingRoutes = false;
@@ -233,6 +229,9 @@ class _NearbyScreenState extends State<NearbyScreen>
   int _searchRadiusKm = NearbyConstants.defaultRadiusKm;
 
   final Map<int, TechnicianRouteData> _routesData = {};
+
+  // ← ROUTE: lets a new search cancel routes still loading from the old one
+  int _routeRequestId = 0;
 
   List<String> _searchHistory = [];
   List<Map<String, dynamic>> _placeSuggestions = [];
@@ -271,6 +270,8 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   @override
   void dispose() {
+    _routeRequestId++; // ← ROUTE: stop any route loading
+    _mapReady = false;
     _pulseController.dispose();
     _suggestionDebounce?.cancel();
 
@@ -284,6 +285,16 @@ class _NearbyScreenState extends State<NearbyScreen>
     _mapController.dispose();
 
     super.dispose();
+  }
+
+  // ==============================================================
+  // SAFE MAP CONTROL
+  // ==============================================================
+
+  /// Moves the map only if FlutterMap is rendered.
+  void _moveMap(LatLng center, double zoom) {
+    if (!_mapReady || !mounted) return;
+    _mapController.move(center, zoom);
   }
 
   // ==============================================================
@@ -418,6 +429,8 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   Future<void> _openMapPicker() async {
+    if (!AuthGuard.ensure(context, message: _kSearchLoginMessage)) return;
+
     final techProvider = context.read<TechnicianProvider>();
 
     final result = await Navigator.push<Map<String, dynamic>>(
@@ -445,10 +458,12 @@ class _NearbyScreenState extends State<NearbyScreen>
     _locationController.text = name;
     await _saveToHistory(name);
 
+    if (!mounted) return;
+
     setState(() {
       _isSearching = true;
       _searchedArea = name;
-      _routesData.clear();
+      _resetRoutes(); // ← ROUTE
       _selectedTechnicianId = null;
       _showSuggestions = false;
     });
@@ -505,6 +520,10 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   Future<void> _performSearch() async {
+    // Covers search button, keyboard submit, suggestions,
+    // history taps and "expand radius".
+    if (!AuthGuard.ensure(context, message: _kSearchLoginMessage)) return;
+
     final place = _locationController.text.trim();
     final l10n = AppLocalizations.of(context)!;
 
@@ -522,12 +541,14 @@ class _NearbyScreenState extends State<NearbyScreen>
     setState(() {
       _showSuggestions = false;
       _isSearching = true;
-      _routesData.clear();
+      _resetRoutes(); // ← ROUTE
       _selectedTechnicianId = null;
       _searchedArea = place;
     });
 
     await _saveToHistory(place);
+
+    if (!mounted) return;
 
     final techProvider = context.read<TechnicianProvider>();
     techProvider.clearTechnicians();
@@ -600,10 +621,22 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   // ==============================================================
-  // ROUTES
+  // ROAD ROUTES  ← ROUTE
   // ==============================================================
 
+  /// Cancels any route loading and removes the drawn lines.
+  /// Call inside setState.
+  void _resetRoutes() {
+    _routeRequestId++;
+    _routesData.clear();
+    _isFetchingRoutes = false;
+  }
+
+  /// Draws a road line from the picked point to each technician.
+  /// Lines appear one by one as they arrive.
   Future<void> _fetchRoutesForTechnicians() async {
+    if (!mounted) return;
+
     final techProvider = context.read<TechnicianProvider>();
 
     if (!techProvider.hasSearchOrigin) return;
@@ -612,105 +645,51 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final technicians = techProvider.technicians
         .where((t) => t.latitude != null && t.longitude != null)
-        .toList();
+        .toList()
+      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
 
-    if (technicians.isEmpty) return;
+    if (technicians.isEmpty) {
+      // No fundis found: still show the searched place on the map.
+      _moveMap(origin, 13);
+      return;
+    }
 
-    if (!mounted) return;
+    final requestId = ++_routeRequestId;
 
     setState(() {
       _isFetchingRoutes = true;
     });
 
-    final targets = technicians.take(NearbyConstants.maxRouteTargets).toList();
-    final Map<int, TechnicianRouteData> fetched = {};
+    // Nearest first, so the closest fundis get their line first.
+    final targets = technicians
+        .take(NearbyConstants.maxRouteTargets)
+        .map((t) => RouteTarget(
+      id: t.id,
+      point: LatLng(t.latitude!, t.longitude!),
+      fallbackKm: t.distanceKm,
+    ))
+        .toList();
 
-    for (var i = 0; i < targets.length; i += NearbyConstants.routeFetchBatchSize) {
-      final batch = targets.skip(i).take(NearbyConstants.routeFetchBatchSize);
+    bool cancelled() => !mounted || requestId != _routeRequestId;
 
-      await Future.wait(
-        batch.map((tech) async {
-          final destination = LatLng(tech.latitude!, tech.longitude!);
-          final route = await _getOsrmRouteData(
-            origin,
-            destination,
-            tech.distanceKm,
-          );
+    await RouteService.instance.fetchMany(
+      origin: origin,
+      targets: targets,
+      batchSize: NearbyConstants.routeFetchBatchSize,
+      isCancelled: cancelled,
+      onRoute: (id, route) {
+        if (cancelled()) return;
+        setState(() => _routesData[id] = route);
+      },
+    );
 
-          if (route != null) {
-            fetched[tech.id] = route;
-          }
-        }),
-      );
-    }
-
-    if (!mounted) return;
+    if (cancelled()) return;
 
     setState(() {
-      _routesData.addAll(fetched);
       _isFetchingRoutes = false;
     });
 
     _updateMapBounds();
-  }
-
-  Future<TechnicianRouteData?> _getOsrmRouteData(
-      LatLng origin,
-      LatLng destination,
-      double fallbackKm,
-      ) async {
-    try {
-      final url = Uri.parse(
-        'https://router.project-osrm.org/route/v1/driving/'
-            '${origin.longitude},${origin.latitude};'
-            '${destination.longitude},${destination.latitude}'
-            '?overview=full&geometries=geojson',
-      );
-
-      final response = await http.get(url).timeout(NearbyConstants.routeSearchTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final routes = data['routes'];
-
-        if (routes is List && routes.isNotEmpty) {
-          final route = routes.first as Map<String, dynamic>;
-          final geometry = route['geometry'] as Map<String, dynamic>;
-          final coordinates = geometry['coordinates'] as List<dynamic>;
-
-          final points = coordinates.map<LatLng>((coord) {
-            final values = coord as List<dynamic>;
-            return LatLng(
-              (values[1] as num).toDouble(),
-              (values[0] as num).toDouble(),
-            );
-          }).toList();
-
-          final distanceMeters = (route['distance'] as num).toDouble();
-          final durationSeconds = (route['duration'] as num).toDouble();
-
-          return TechnicianRouteData(
-            points: points,
-            distanceKm: distanceMeters / 1000,
-            durationMin: durationSeconds / 60,
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('OSRM error: $e');
-    }
-
-    final straightKm = fallbackKm > 0
-        ? fallbackKm
-        : const Distance().as(LengthUnit.Kilometer, origin, destination);
-
-    const assumedAverageSpeedKmh = 30.0;
-
-    return TechnicianRouteData(
-      points: [origin, destination],
-      distanceKm: straightKm,
-      durationMin: (straightKm / assumedAverageSpeedKmh) * 60,
-    );
   }
 
   // ==============================================================
@@ -726,7 +705,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       _selectedCategoryId = null;
       _selectedTechnicianId = null;
       _serviceSearchQuery = '';
-      _routesData.clear();
+      _resetRoutes(); // ← ROUTE
       _searchedArea = '';
       _showSuggestions = false;
       _placeSuggestions = [];
@@ -737,7 +716,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     _locationFocus.unfocus();
 
-    _mapController.move(NearbyConstants.defaultMapCenter, 11);
+    _moveMap(NearbyConstants.defaultMapCenter, 11);
   }
 
   // ==============================================================
@@ -745,6 +724,8 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   void _updateMapBounds() {
+    if (!_mapReady || !mounted) return;
+
     final techProvider = context.read<TechnicianProvider>();
 
     if (!techProvider.hasSearchOrigin) return;
@@ -1276,7 +1257,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
         // Bring the fundi into view on the map, then show details.
         if (tech.latitude != null && tech.longitude != null) {
-          _mapController.move(LatLng(tech.latitude!, tech.longitude!), 15);
+          _moveMap(LatLng(tech.latitude!, tech.longitude!), 15);
         }
 
         _showTechnicianModal(context, tech, origin, recommended);
@@ -1669,6 +1650,9 @@ class _NearbyScreenState extends State<NearbyScreen>
     final ink = _ink(context);
     final media = MediaQuery.of(context);
 
+    // Guests get read-only fields that open the modal on tap
+    final loggedIn = AuthGuard.isLoggedIn(context);
+
     // The panel never grows taller than the space left above the keyboard.
     final availableHeight = media.size.height - media.viewInsets.bottom;
 
@@ -1748,6 +1732,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     child: TextField(
                       controller: _locationController,
                       focusNode: _locationFocus,
+                      readOnly: !loggedIn,
                       textInputAction: TextInputAction.search,
                       style: const TextStyle(fontSize: 14.5),
                       decoration: InputDecoration(
@@ -1776,7 +1761,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                               tooltip: NearbyStrings.chooseOnMap,
                               icon: Icon(Icons.map_outlined,
                                   color: ink, size: 22),
-                              onPressed: _openMapPicker,
+                              onPressed: _openMapPicker, // guarded inside
                             ),
                           ],
                         ),
@@ -1790,6 +1775,14 @@ class _NearbyScreenState extends State<NearbyScreen>
                       ),
                       onChanged: _onLocationQueryChanged,
                       onTap: () {
+                        if (!loggedIn) {
+                          _locationFocus.unfocus();
+                          AuthGuard.showLoginRequired(
+                            context,
+                            message: _kSearchLoginMessage,
+                          );
+                          return;
+                        }
                         setState(() {
                           _showSuggestions = true;
                         });
@@ -1802,7 +1795,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     height: 50,
                     width: 50,
                     child: ElevatedButton(
-                      onPressed: _isSearching ? null : _performSearch,
+                      onPressed: _isSearching ? null : _performSearch, // guarded inside
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _gold,
                         foregroundColor: AppTheme.primary,
@@ -1895,6 +1888,16 @@ class _NearbyScreenState extends State<NearbyScreen>
                 height: 42,
                 child: TextField(
                   controller: _serviceSearchController,
+                  readOnly: !loggedIn,
+                  onTap: () {
+                    if (!loggedIn) {
+                      FocusScope.of(context).unfocus();
+                      AuthGuard.showLoginRequired(
+                        context,
+                        message: _kFilterLoginMessage,
+                      );
+                    }
+                  },
                   style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
                     hintText: NearbyStrings.filterByService,
@@ -2091,7 +2094,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                   setState(() {
                     _showSuggestions = false;
                   });
-                  _performSearch();
+                  _performSearch(); // guarded inside
                 },
               ),
             ),
@@ -2132,7 +2135,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                 });
 
                 await _saveToHistory(name);
-                _performSearch();
+                if (!mounted) return;
+                _performSearch(); // guarded inside
               },
             );
           }),
@@ -2145,6 +2149,9 @@ class _NearbyScreenState extends State<NearbyScreen>
   // MAP
   // ==============================================================
 
+  /// FlutterMap is ALWAYS rendered, so the zoom / fit buttons and the
+  /// MapController always work. The empty states are shown as an overlay
+  /// on top of the map instead of replacing it.
   Widget _buildMapView(
       ThemeData theme,
       TechnicianProvider techProvider,
@@ -2153,22 +2160,28 @@ class _NearbyScreenState extends State<NearbyScreen>
     final isTablet = ResponsiveConstants.isTablet(context);
     final isDesktop = ResponsiveConstants.isDesktop(context);
 
-    if (!techProvider.hasSearchOrigin) {
-      return _emptyMapState(
+    final hasOrigin = techProvider.hasSearchOrigin;
+
+    final origin = hasOrigin
+        ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
+        : NearbyConstants.defaultMapCenter;
+
+    final technicians = hasOrigin
+        ? techProvider.technicians
+        .where((t) => t.latitude != null && t.longitude != null)
+        .toList()
+        : <Technician>[];
+
+    // Which empty state (if any) to draw over the map.
+    Widget? overlay;
+    if (!hasOrigin) {
+      overlay = _emptyMapState(
         theme,
         Icons.map_outlined,
         NearbyStrings.searchForTechnicians,
       );
-    }
-
-    final origin = LatLng(techProvider.searchLat!, techProvider.searchLng!);
-
-    final technicians = techProvider.technicians
-        .where((t) => t.latitude != null && t.longitude != null)
-        .toList();
-
-    if (technicians.isEmpty) {
-      return _emptyMapState(
+    } else if (technicians.isEmpty) {
+      overlay = _emptyMapState(
         theme,
         Icons.person_search_rounded,
         NearbyStrings.noTechniciansNearby,
@@ -2176,33 +2189,16 @@ class _NearbyScreenState extends State<NearbyScreen>
       );
     }
 
-    // ROAD POLYLINES
-    final List<Polyline> polylines = [];
-
-    for (final tech in technicians) {
-      final route = _routesData[tech.id];
-      if (route == null || route.points.length < 2) continue;
-
-      final selected = _selectedTechnicianId == tech.id;
-
-      polylines.add(
-        Polyline(
-          points: route.points,
-          strokeWidth: selected ? 10.0 : 7.0,
-          color: Colors.white.withValues(alpha: 0.9),
-        ),
-      );
-
-      polylines.add(
-        Polyline(
-          points: route.points,
-          strokeWidth: selected ? 6.0 : 4.0,
-          color: selected
-              ? _gold
-              : AppTheme.primary.withValues(alpha: 0.65),
-        ),
-      );
-    }
+    // ROAD LINES: picked point -> each technician  ← ROUTE
+    final polylines = buildRoutePolylines(
+      routes: {
+        for (final tech in technicians)
+          if (_routesData[tech.id] != null) tech.id: _routesData[tech.id]!,
+      },
+      selectedId: _selectedTechnicianId,
+      lineColor: AppTheme.primary,
+      selectedColor: _gold,
+    );
 
     // TECHNICIAN MARKERS
     final markerWidth = ResponsiveConstants.getMarkerWidth(context);
@@ -2362,13 +2358,19 @@ class _NearbyScreenState extends State<NearbyScreen>
       ),
     );
 
-    return FlutterMap(
+    final map = FlutterMap(
       mapController: _mapController,
       options: MapOptions(
         initialCenter: origin,
-        initialZoom: isDesktop ? 14 : (isTablet ? 13.5 : 13),
+        initialZoom: hasOrigin
+            ? (isDesktop ? 14 : (isTablet ? 13.5 : 13))
+            : 11,
         minZoom: 4,
         maxZoom: 18,
+        // The controller can be used safely only after this fires.
+        onMapReady: () {
+          _mapReady = true;
+        },
         onTap: (_, __) {
           if (_selectedTechnicianId != null) {
             setState(() {
@@ -2390,20 +2392,26 @@ class _NearbyScreenState extends State<NearbyScreen>
           userAgentPackageName: 'com.example.nearbyfundi',
         ),
         // search radius ring
-        CircleLayer(
-          circles: [
-            CircleMarker(
-              point: origin,
-              radius: _searchRadiusKm * 1000.0,
-              useRadiusInMeter: true,
-              color: AppTheme.primary.withValues(alpha: 0.05),
-              borderColor: AppTheme.primary.withValues(alpha: 0.25),
-              borderStrokeWidth: 1.5,
-            ),
+        if (hasOrigin)
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: origin,
+                radius: _searchRadiusKm * 1000.0,
+                useRadiusInMeter: true,
+                color: AppTheme.primary.withValues(alpha: 0.05),
+                borderColor: AppTheme.primary.withValues(alpha: 0.25),
+                borderStrokeWidth: 1.5,
+              ),
+            ],
+          ),
+        PolylineLayer(polylines: polylines),
+        MarkerLayer(
+          markers: [
+            if (hasOrigin) ...[originPulse, originMarker],
+            ...markers,
           ],
         ),
-        PolylineLayer(polylines: polylines),
-        MarkerLayer(markers: [originPulse, originMarker, ...markers]),
         RichAttributionWidget(
           alignment: AttributionAlignment.bottomLeft,
           attributions: [
@@ -2417,6 +2425,15 @@ class _NearbyScreenState extends State<NearbyScreen>
             ),
           ],
         ),
+      ],
+    );
+
+    // Same widget structure every time, so the map is never rebuilt
+    // from scratch when the overlay appears or disappears.
+    return Stack(
+      children: [
+        Positioned.fill(child: map),
+        if (overlay != null) Positioned.fill(child: overlay),
       ],
     );
   }
@@ -2574,6 +2591,8 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   void _zoomBy(double amount) {
+    if (!_mapReady || !mounted) return;
+
     final camera = _mapController.camera;
     final zoom = (camera.zoom + amount).clamp(4.0, 18.0);
     _mapController.move(camera.center, zoom);
@@ -2984,7 +3003,13 @@ class _NearbyScreenState extends State<NearbyScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
+          // Guests see the modal instead of changing filters
+          onTap: () {
+            if (!AuthGuard.ensure(context, message: _kFilterLoginMessage)) {
+              return;
+            }
+            onTap();
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             alignment: Alignment.center,

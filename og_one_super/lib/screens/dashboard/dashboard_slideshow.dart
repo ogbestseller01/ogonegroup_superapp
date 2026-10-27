@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class Slide {
-  final String title;
-  final String subtitle;
-  final List<Color> colors;
-  final Color ink;
-  final IconData icon;
-
-  const Slide(this.title, this.subtitle, this.colors, this.ink, this.icon);
-}
+import '../../models/banner.dart';
 
 class DashboardSlideshow extends StatefulWidget {
-  final List<Slide> slides;
+  final List<BannerItem> banners;
   final double hPad;
+  final bool loading;
 
   const DashboardSlideshow({
     super.key,
-    required this.slides,
+    required this.banners,
     this.hPad = 20,
+    this.loading = false,
   });
 
   @override
@@ -28,7 +23,7 @@ class DashboardSlideshow extends StatefulWidget {
 class _DashboardSlideshowState extends State<DashboardSlideshow>
     with SingleTickerProviderStateMixin {
   static const double _gap = 6;
-  static const double _baseHeight = 100; // was 128
+  static const double _baseHeight = 120;
   static const double _dotsGap = 0;
 
   static const Duration _autoPlayEvery = Duration(seconds: 5);
@@ -42,7 +37,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
 
   late final AnimationController _progress;
 
-  bool get _canAutoPlay => widget.slides.length > 1;
+  bool get _canAutoPlay => widget.banners.length > 1;
 
   @override
   void initState() {
@@ -74,10 +69,10 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   @override
   void didUpdateWidget(covariant DashboardSlideshow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_page >= widget.slides.length) {
-      _page = widget.slides.isEmpty ? 0 : widget.slides.length - 1;
+    if (_page >= widget.banners.length) {
+      _page = widget.banners.isEmpty ? 0 : widget.banners.length - 1;
     }
-    if (oldWidget.slides.length != widget.slides.length) _restart();
+    if (oldWidget.banners.length != widget.banners.length) _restart();
   }
 
   @override
@@ -108,8 +103,8 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   void _next() {
     if (!mounted) return;
     final c = _ctrl;
-    if (c == null || !c.hasClients || widget.slides.isEmpty) return;
-    _goTo((_page + 1) % widget.slides.length);
+    if (c == null || !c.hasClients || widget.banners.isEmpty) return;
+    _goTo((_page + 1) % widget.banners.length);
   }
 
   void _goTo(int index) {
@@ -118,11 +113,51 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
     c.animateToPage(index, duration: _slideDuration, curve: _slideCurve);
   }
 
+  Future<void> _openLink(String? url) async {
+    if (url == null || url.trim().isEmpty) return;
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) return;
+
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open link')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open link')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Loading skeleton
+    if (widget.loading && widget.banners.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: widget.hPad),
+        child: Container(
+          height: _baseHeight,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(22),
+          ),
+        ),
+      );
+    }
+
+    // No banners → hide the whole slider
+    if (widget.banners.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final scale =
     MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3).scale(1.0);
-    final height = _baseHeight + (scale - 1) * 56;
+    final height = _baseHeight + (scale - 1) * 40;
     final ctrl = _ctrl!;
 
     return Column(
@@ -137,7 +172,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
               controller: ctrl,
               clipBehavior: Clip.none,
               physics: const BouncingScrollPhysics(),
-              itemCount: widget.slides.length,
+              itemCount: widget.banners.length,
               onPageChanged: (i) {
                 setState(() => _page = i);
                 if (!_holding) HapticFeedback.selectionClick();
@@ -163,16 +198,19 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
                     horizontal: _gap,
                     vertical: 4,
                   ),
-                  child: _SlideCard(slide: widget.slides[i]),
+                  child: _BannerCard(
+                    banner: widget.banners[i],
+                    onTap: () => _openLink(widget.banners[i].link),
+                  ),
                 ),
               ),
             ),
           ),
         ),
-        if (widget.slides.length > 1) ...[
+        if (widget.banners.length > 1) ...[
           const SizedBox(height: _dotsGap),
           _PageDots(
-            count: widget.slides.length,
+            count: widget.banners.length,
             current: _page,
             progress: _progress,
             onSelect: _goTo,
@@ -183,118 +221,92 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
   }
 }
 
-class _SlideCard extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────
+// Banner card (image only)
+// ─────────────────────────────────────────────────────────────
+class _BannerCard extends StatelessWidget {
   static const double _radius = 22;
 
-  final Slide slide;
-  const _SlideCard({required this.slide});
+  final BannerItem banner;
+  final VoidCallback onTap;
+
+  const _BannerCard({
+    required this.banner,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final s = slide;
-
     return Semantics(
-      container: true,
-      label: '${s.title}. ${s.subtitle}',
-      excludeSemantics: true,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: s.colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+      button: banner.hasLink,
+      label: banner.hasLink ? 'Open banner link' : 'Banner',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: banner.hasLink ? onTap : null,
           borderRadius: BorderRadius.circular(_radius),
-          boxShadow: [
-            BoxShadow(
-              color: s.colors.last.withValues(alpha: 0.28),
-              blurRadius: 16,
-              spreadRadius: -4,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_radius),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -22,
-                top: -36,
-                child: _Orb(size: 104, color: s.ink.withValues(alpha: 0.09)),
-              ),
-              Positioned(
-                left: -20,
-                bottom: -40,
-                child: _Orb(
-                    size: 78, color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              Positioned(
-                right: 4,
-                bottom: -22,
-                child: Transform.rotate(
-                  angle: -0.2,
-                  child: Icon(
-                    s.icon,
-                    size: 92,
-                    color: s.ink.withValues(alpha: 0.13),
-                  ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_radius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  spreadRadius: -4,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 14, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            s.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: s.ink,
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w800,
-                              height: 1.18,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            s.subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: s.ink.withValues(alpha: 0.9),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              height: 1.28,
-                            ),
-                          ),
-                        ],
-                      ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_radius),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Image
+                  Image.network(
+                    banner.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.broken_image_outlined, size: 40),
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 42,
-                      height: 42,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Soft bottom gradient for better contrast (optional)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 40,
+                    child: DecoratedBox(
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: s.ink.withValues(alpha: 0.18),
-                        border: Border.all(
-                          color: s.ink.withValues(alpha: 0.25),
-                          width: 1.1,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.25),
+                          ],
                         ),
                       ),
-                      child: Icon(s.icon, size: 22, color: s.ink),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -302,19 +314,9 @@ class _SlideCard extends StatelessWidget {
   }
 }
 
-class _Orb extends StatelessWidget {
-  final double size;
-  final Color color;
-  const _Orb({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-  );
-}
-
+// ─────────────────────────────────────────────────────────────
+// Dots (same as before)
+// ─────────────────────────────────────────────────────────────
 class _PageDots extends StatelessWidget {
   final int count;
   final int current;

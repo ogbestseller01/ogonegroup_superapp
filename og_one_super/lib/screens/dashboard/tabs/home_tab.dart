@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../../../config/app_strings.dart';
 import '../../../config/app_theme.dart';
 import '../../../models/mini_app.dart';
+import '../../../providers/banner_provider.dart';
 import '../../../services/mini_app_service.dart';
 import '../core/app_launcher.dart';
 import '../core/dash_theme.dart';
@@ -59,6 +61,7 @@ class HomeTabState extends State<HomeTab> {
     try {
       await Future.wait([
         MiniAppService.instance.refresh(),
+        context.read<BannerProvider>().fetchBanners(),
         Future<void>.delayed(const Duration(milliseconds: 600)),
       ]);
     } catch (_) {}
@@ -82,37 +85,6 @@ class HomeTabState extends State<HomeTab> {
         a.name.toLowerCase().contains(q))
         .toList();
   }
-
-  List<Slide> _slides(AppLocalizations t) => [
-    Slide(
-      t.bannerTitle,
-      t.bannerSubtitle,
-      const [Color(0xFFFFD54F), Color(0xFFFFB300)],
-      AppTheme.primary,
-      Icons.grid_view_rounded,
-    ),
-    Slide(
-      t.bannerFundiTitle,
-      t.bannerFundiSubtitle,
-      const [Color(0xFF1A3A75), Color(0xFF2B5AA8)],
-      Colors.white,
-      Icons.handyman_rounded,
-    ),
-    Slide(
-      t.bannerFoodTitle,
-      t.bannerFoodSubtitle,
-      const [Color(0xFFE85D04), Color(0xFFF48C06)],
-      Colors.white,
-      Icons.delivery_dining_rounded,
-    ),
-    Slide(
-      t.adsBannersTitle,
-      t.adsBannersSubtitle,
-      const [Color(0xFF7B2CBF), Color(0xFF9D4EDD)],
-      Colors.white,
-      Icons.campaign_rounded,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +184,7 @@ class HomeTabState extends State<HomeTab> {
         isDark,
         count: all.length,
         top: 20,
-        actionLabel: t.seeAll, // ← always show View All
+        actionLabel: t.seeAll,
         onAction: widget.onSeeAllApps,
       ),
       SliverAppGrid(
@@ -222,16 +194,21 @@ class HomeTabState extends State<HomeTab> {
         startIndex: 1,
       ),
 
-      // ── Slideshow ──
+      // ── Banners slideshow (from API) ──
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(top: 14),
           child: Reveal(
             index: 5,
             animate: widget.intro,
-            child: DashboardSlideshow(
-              slides: _slides(t),
-              hPad: hPad,
+            child: Consumer<BannerProvider>(
+              builder: (context, bannerProvider, _) {
+                return DashboardSlideshow(
+                  banners: bannerProvider.banners,
+                  loading: bannerProvider.loading,
+                  hPad: hPad,
+                );
+              },
             ),
           ),
         ),

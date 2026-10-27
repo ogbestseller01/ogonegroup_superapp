@@ -30,6 +30,7 @@ class FundiHomeScreen extends StatefulWidget {
 
 class _FundiHomeScreenState extends State<FundiHomeScreen>
     with WidgetsBindingObserver {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
   late final List<Widget> _screens;
   bool _isRefreshing = false;
@@ -71,7 +72,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     context.read<TechnicianProvider>().fetchMyProfile();
     context.read<RequestProvider>().loadMyRequests();
     _initializeChat();
-    _loadNotifications();
+    context.read<NotificationProvider>().loadNotifications();
   }
 
   Future<void> _manualRefresh() async {
@@ -104,17 +105,13 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     }
   }
 
-  void _loadNotifications() {
-    context.read<NotificationProvider>().loadNotifications();
-  }
-
   void _navigateToTab(int index) {
     setState(() => _currentIndex = index);
   }
 
-  // ============================================================
-  // NOTIFICATIONS SHEET
-  // ============================================================
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
+  // ── Notifications sheet ─────────────────────────────────────
   void _showNotifications(BuildContext context) {
     final provider = context.read<NotificationProvider>();
     final theme = Theme.of(context);
@@ -251,7 +248,8 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                           controller: scrollController,
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: notificationProvider.notifications.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final notification =
                             notificationProvider.notifications[index];
@@ -288,31 +286,6 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     );
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.construction_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '$feature ${AppLocalizations.of(context)!.comingSoon} 🚀',
-                style: const TextStyle(
-                    inherit: true, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppTheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   Future<void> _logoutWithConfirmation(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await showConfirmationDialog(
@@ -328,29 +301,34 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     }
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
+  // ── BUILD ───────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final isDark = theme.brightness == Brightness.dark;
-
     final screenWidth = MediaQuery.sizeOf(context).width;
     final compact = screenWidth < 360;
 
-    // Text scale is clamped so large system fonts never break the layout.
     return MediaQuery.withClampedTextScaling(
       minScaleFactor: 0.85,
       maxScaleFactor: 1.25,
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor:
         isDark ? AppTheme.darkBackground : theme.scaffoldBackgroundColor,
+        drawer: _FundiDrawer(
+          onLogout: () => _logoutWithConfirmation(context),
+        ),
         appBar: AppBar(
           automaticallyImplyLeading: false,
           centerTitle: false,
-          titleSpacing: compact ? 12 : 20,
+          titleSpacing: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu_rounded, color: Colors.white),
+            onPressed: _openDrawer,
+            tooltip: 'Menu',
+          ),
           title: Text(
             l10n.fundiDashboard,
             maxLines: 1,
@@ -388,20 +366,12 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
               onPressed: _isRefreshing ? null : _manualRefresh,
             ),
             NotificationBellIcon(onTap: () => _showNotifications(context)),
-            IconButton(
-              icon: const Icon(Icons.smart_toy_rounded,
-                  color: Colors.white, size: 25),
-              onPressed: () => _showComingSoon(context, l10n.aiAssistant),
-              visualDensity:
-              compact ? VisualDensity.compact : VisualDensity.standard,
-              tooltip: '${l10n.aiAssistant} (${l10n.comingSoon})',
-            ),
             PopupMenuButton<String>(
               padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
               icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
               offset: const Offset(0, 50),
-              shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
               elevation: 10,
               color: isDark ? AppTheme.darkSurface : Colors.white,
               itemBuilder: (context) => _buildMenuItems(context),
@@ -409,7 +379,6 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
             SizedBox(width: compact ? 0 : 4),
           ],
         ),
-        // On tablets / large screens the content is centered with a max width.
         body: LayoutBuilder(
           builder: (context, c) {
             final w = c.maxWidth > 900 ? 900.0 : c.maxWidth;
@@ -516,6 +485,363 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
 }
 
 // ================================================================
+// LEFT DRAWER
+// ================================================================
+class _FundiDrawer extends StatelessWidget {
+  final VoidCallback onLogout;
+
+  const _FundiDrawer({required this.onLogout});
+
+  void _showComingSoon(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.secondary.withOpacity(0.25),
+                      AppTheme.primary.withOpacity(0.15),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 36,
+                  color: AppTheme.primary,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Subscription',
+                style: TextStyle(
+                  inherit: true,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : AppTheme.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Premium version — Coming soon 🚀\nUnlock more features and grow your business.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  inherit: true,
+                  fontSize: 14,
+                  height: 1.4,
+                  color: isDark
+                      ? AppTheme.darkTextSecondary
+                      : AppTheme.greyText,
+                ),
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    l10n.comingSoon,
+                    style: const TextStyle(
+                      inherit: true,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = theme.brightness == Brightness.dark;
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
+    final tech = context.watch<TechnicianProvider>().technician;
+    final online = tech?.isOnline ?? false;
+
+    final name = user?.name ?? 'Fundi';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'F';
+
+    return Drawer(
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.primary, AppTheme.primaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border:
+                          Border.all(color: AppTheme.secondary, width: 2),
+                        ),
+                        child: CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.white,
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              inherit: true,
+                              color: AppTheme.primary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (online)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppTheme.success,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.wifi_rounded,
+                                  color: Colors.white, size: 13),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.online,
+                                style: const TextStyle(
+                                  inherit: true,
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      inherit: true,
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (user?.phone != null && user!.phone!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      user.phone!,
+                      style: TextStyle(
+                        inherit: true,
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Menu items only
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                children: [
+                  _DrawerItem(
+                    icon: Icons.settings_outlined,
+                    label: l10n.settings,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.settings);
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.photo_library_outlined,
+                    label: l10n.portfolio,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.portfolio);
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.file_download_rounded,
+                    label: 'Downloads',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.downloads);
+                    },
+                  ),
+                  _DrawerItem(
+                    icon: Icons.workspace_premium_rounded,
+                    label: 'Subscription',
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.secondary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        l10n.comingSoon,
+                        style: const TextStyle(
+                          inherit: true,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showComingSoon(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Logout
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Material(
+                color: AppTheme.error.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    onLogout();
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: AppTheme.error.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.logout_rounded,
+                              color: AppTheme.error, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          l10n.logout,
+                          style: const TextStyle(
+                            inherit: true,
+                            color: AppTheme.error,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? Colors.white : AppTheme.primary;
+
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: color, size: 22),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          inherit: true,
+          fontWeight: FontWeight.w600,
+          color: isDark ? Colors.white : AppTheme.primary,
+        ),
+      ),
+      trailing: trailing,
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+    );
+  }
+}
+
+// ================================================================
 // FLOATING BOTTOM NAV
 // ================================================================
 class _FloatingNavBar extends StatelessWidget {
@@ -540,7 +866,6 @@ class _FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final compact = MediaQuery.sizeOf(context).width < 360;
     final sideMargin = compact ? 8.0 : 14.0;
 
@@ -599,7 +924,6 @@ class _FloatingNavBar extends StatelessWidget {
                         activeIcon: Icons.list_alt_rounded,
                         label: requestsLabel,
                         active: currentIndex == 2,
-                        badge: unread,
                         onTap: () => onTap(2),
                       ),
                     ),
@@ -962,7 +1286,6 @@ class _HomeDashboardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Hero card ─────────────────────────────────
               _HeroCard(
                 name: user?.name ?? 'Fundi',
                 initial: user?.name.isNotEmpty == true
@@ -977,8 +1300,6 @@ class _HomeDashboardContent extends StatelessWidget {
                 isTablet: isTablet,
               ),
               SizedBox(height: gap + 6),
-
-              // ── Stats ─────────────────────────────────────
               Row(
                 children: [
                   Expanded(
@@ -1019,8 +1340,6 @@ class _HomeDashboardContent extends StatelessWidget {
                 ],
               ),
               SizedBox(height: gap + 14),
-
-              // ── Section header ────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1074,8 +1393,6 @@ class _HomeDashboardContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // ── Requests list ─────────────────────────────
               if (topFiveRequests.isEmpty)
                 Container(
                   width: double.infinity,
@@ -1117,7 +1434,6 @@ class _HomeDashboardContent extends StatelessWidget {
               else
                 LayoutBuilder(
                   builder: (context, c) {
-                    // Wide screens show requests in two columns.
                     if (c.maxWidth >= 640) {
                       const spacing = 12.0;
                       final itemW = (c.maxWidth - spacing) / 2;

@@ -95,6 +95,15 @@ class ApiService {
   Future<ApiResponse> sendFeedback(Map<String, dynamic> data) =>
       _post('/v23/feedback', data: data);
 
+
+  // ============================================================
+// BANNERS (public)
+// ============================================================
+
+  /// GET /v25/banners – only active + not expired banners (image + link).
+  Future<ApiResponse> getBanners({String? type}) =>
+      _get('/v25/banners', query: type != null ? {'type': type} : null);
+
   // ============================================================
   // PRIVATE HELPERS
   // ============================================================

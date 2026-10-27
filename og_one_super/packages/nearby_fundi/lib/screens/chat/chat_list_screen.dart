@@ -31,7 +31,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeChat();
+
+    // initState runs during build. Anything that notifies listeners must
+    // wait until the first frame is finished.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _initializeChat();
+    });
   }
 
   @override
@@ -49,24 +55,25 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final user = authProvider.user;
     final token = authProvider.token;
 
-    if (user != null && token != null && !_isInitialized) {
-      _isInitialized = true;
+    if (user == null || token == null) return;
 
-      final chatUser = ChatUser(
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.profilePhoto,
-      );
+    _isInitialized = true;
 
-      chatProvider.initialize(
-        token: token,
-        currentUser: chatUser,
-      );
+    final chatUser = ChatUser(
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatar: user.profilePhoto,
+    );
 
-      await chatProvider.refreshConversations();
-    }
+    // Safe to call twice: the provider ignores repeat initialization.
+    chatProvider.initialize(
+      token: token,
+      currentUser: chatUser,
+    );
+
+    await chatProvider.refreshConversations();
   }
 
   /// Same behaviour as the back arrow on the My Requests screen.
@@ -282,8 +289,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           const SizedBox(height: 80),
                           Icon(Icons.search_off_rounded,
                               size: 56,
-                              color:
-                              theme.hintColor.withOpacity(0.45)),
+                              color: theme.hintColor.withOpacity(0.45)),
                           const SizedBox(height: 14),
                           Center(
                             child: Text(
@@ -296,8 +302,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       )
                           : ListView.builder(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding:
-                        EdgeInsets.fromLTRB(hPad, 8, hPad, 28),
+                        padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 28),
                         itemCount: conversations.length,
                         itemBuilder: (context, index) {
                           final conversation = conversations[index];
@@ -313,8 +318,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                   ),
                                 ),
                               );
-                              await chatProvider
-                                  .refreshConversations();
+                              if (!mounted) return;
+                              await chatProvider.refreshConversations();
                             },
                           );
                         },
@@ -429,8 +434,7 @@ class _ConversationTile extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final hasUnread = conversation.unreadCount > 0;
-    final titleColor =
-    isDark ? Colors.white : const Color(0xFF1E293B);
+    final titleColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

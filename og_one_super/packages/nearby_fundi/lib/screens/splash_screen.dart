@@ -1,12 +1,10 @@
 // packages/nearby_fundi/lib/screens/splash_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
-import '../providers/auth_provider.dart';
 
 /// Package name of this SDK (must match `name:` in pubspec.yaml).
 /// Needed so assets resolve when this code runs inside the super app.
@@ -85,10 +83,12 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
+  /// First launch  -> onboarding (which then opens the dashboard)
+  /// Every launch after -> dashboard directly (guest or logged in).
+  /// Login is only opened later, when the user tries a protected action.
   Future<void> _navigate() async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
-    final auth = context.read<AuthProvider>();
 
     await Future.delayed(const Duration(milliseconds: 2800));
 
@@ -96,11 +96,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (isFirstLaunch) {
       await prefs.setBool('is_first_launch', false);
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
-    } else if (auth.isLoggedIn) {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
     }
   }
 
@@ -159,9 +158,9 @@ class _SplashScreenState extends State<SplashScreen>
                               padding: const EdgeInsets.all(24),
                               child: Image.asset(
                                 logoPath,
-                                package: _kAssetPackage, // ← required
+                                package: _kAssetPackage,
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => Icon(
+                                errorBuilder: (_, __, ___) => const Icon(
                                   Icons.handyman_rounded,
                                   size: 64,
                                   color: AppTheme.primary,

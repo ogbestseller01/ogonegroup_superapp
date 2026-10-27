@@ -1,10 +1,8 @@
 // screens/home/nearby_map_screen.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/technician_provider.dart';
@@ -13,18 +11,8 @@ import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../utils/image_utils.dart';
 import '../../l10n/app_localizations.dart';
-
-class TechnicianRouteData {
-  final List<LatLng> points;
-  final double distanceKm;
-  final double durationMin;
-
-  TechnicianRouteData({
-    required this.points,
-    required this.distanceKm,
-    required this.durationMin,
-  });
-}
+import '../../services/route_service.dart'; // ← ROUTE
+import '../../widgets/route_polylines.dart'; // ← ROUTE
 
 const Color _gold = Color(0xFFF2B93B);
 
@@ -45,11 +33,15 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   static const double _minZoom = 4;
   static const double _maxZoom = 18;
   static const int _routeBatchSize = 4;
+  static const int _maxRouteTargets = 12;
   static const double _cardGap = 12;
 
   final Map<int, TechnicianRouteData> _routesData = {};
   bool _isFetchingRoutes = false;
   int? _selectedTechId;
+
+  // ← ROUTE: lets a refresh cancel routes still loading
+  int _routeRequestId = 0;
 
   late AnimationController _pulseController;
   final ScrollController _bottomScrollController = ScrollController();
@@ -67,12 +59,14 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _fetchRoutesForTechnicians();
     });
   }
 
   @override
   void dispose() {
+    _routeRequestId++; // ← ROUTE: stop any route loading
     _pulseController.dispose();
     _bottomScrollController.dispose();
     _mapController.dispose();
@@ -80,6 +74,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   }
 
   // ── Routes ──────────────────────────────────────────────────────────────
+  // ← ROUTE: road lines from the picked point to each technician.
+  // Lines appear one by one; the nearest fundi is selected straight away.
   Future<void> _fetchRoutesForTechnicians() async {
     final techProvider = context.read<TechnicianProvider>();
     if (!techProvider.hasSearchOrigin) return;
@@ -87,101 +83,61 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     final origin = LatLng(techProvider.searchLat!, techProvider.searchLng!);
     final techPoints = techProvider.technicians
         .where((t) => t.latitude != null && t.longitude != null)
-        .toList();
+        .toList()
+      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
 
     if (techPoints.isEmpty) return;
 
-    setState(() => _isFetchingRoutes = true);
+    final requestId = ++_routeRequestId;
 
-    final Map<int, TechnicianRouteData> fetched = {};
-    final targets = techPoints.take(12).toList();
+    setState(() {
+      _isFetchingRoutes = true;
+      // Select nearest by default
+      _selectedTechId ??= techPoints.first.id;
+    });
 
-    // Small batches so the public OSRM server is not hit with 12 calls at once.
-    for (var i = 0; i < targets.length; i += _routeBatchSize) {
-      final batch = targets.skip(i).take(_routeBatchSize);
+    final targets = techPoints
+        .take(_maxRouteTargets)
+        .map((t) => RouteTarget(
+      id: t.id,
+      point: LatLng(t.latitude!, t.longitude!),
+      fallbackKm: t.distanceKm,
+    ))
+        .toList();
 
-      await Future.wait(batch.map((tech) async {
-        final dest = LatLng(tech.latitude!, tech.longitude!);
-        final routeData =
-        await _getOsrmRouteData(origin, dest, tech.distanceKm);
-        if (routeData != null) {
-          fetched[tech.id] = routeData;
-        }
-      }));
+    bool cancelled() => !mounted || requestId != _routeRequestId;
 
-      if (!mounted) return;
-    }
+    await RouteService.instance.fetchMany(
+      origin: origin,
+      targets: targets,
+      batchSize: _routeBatchSize,
+      isCancelled: cancelled,
+      onRoute: (id, route) {
+        if (cancelled()) return;
+        setState(() => _routesData[id] = route);
+      },
+    );
 
-    if (mounted) {
-      // Sort by distance so nearest comes first in the horizontal list
-      final sorted = [...techPoints]
-        ..sort((a, b) {
-          final da = fetched[a.id]?.distanceKm ?? a.distanceKm;
-          final db = fetched[b.id]?.distanceKm ?? b.distanceKm;
-          return da.compareTo(db);
-        });
+    if (cancelled()) return;
 
-      setState(() {
-        _routesData.addAll(fetched);
-        _isFetchingRoutes = false;
-        // Select nearest by default
-        if (_selectedTechId == null && sorted.isNotEmpty) {
-          _selectedTechId = sorted.first.id;
-        }
-      });
-
-      _fitAllMarkers(origin, techPoints);
-    }
+    setState(() => _isFetchingRoutes = false);
+    _fitAllMarkers(origin, techPoints);
   }
 
-  Future<TechnicianRouteData?> _getOsrmRouteData(
-      LatLng origin,
-      LatLng destination,
-      double fallbackKm,
-      ) async {
-    try {
-      final url = Uri.parse(
-        'https://router.project-osrm.org/route/v1/driving/'
-            '${origin.longitude},${origin.latitude};'
-            '${destination.longitude},${destination.latitude}'
-            '?overview=full&geometries=geojson',
-      );
+  Future<void> _refresh() async {
+    final techProvider = context.read<TechnicianProvider>();
 
-      final response = await http.get(url).timeout(const Duration(seconds: 8));
+    setState(() {
+      _routeRequestId++;
+      _routesData.clear();
+      _isFetchingRoutes = false;
+      _selectedTechId = null;
+    });
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['routes'] != null && (data['routes'] as List).isNotEmpty) {
-          final route = data['routes'][0];
-          final geometry = route['geometry']['coordinates'] as List;
+    await techProvider.refreshLastSearch();
+    if (!mounted) return;
 
-          final points = geometry
-              .map<LatLng>((coord) => LatLng(coord[1].toDouble(), coord[0].toDouble()))
-              .toList();
-
-          final distanceMeters = (route['distance'] as num).toDouble();
-          final durationSeconds = (route['duration'] as num).toDouble();
-
-          return TechnicianRouteData(
-            points: points,
-            distanceKm: distanceMeters / 1000.0,
-            durationMin: durationSeconds / 60.0,
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error fetching OSRM route: $e');
-    }
-
-    final straightKm = fallbackKm > 0
-        ? fallbackKm
-        : const Distance().as(LengthUnit.Kilometer, origin, destination);
-
-    return TechnicianRouteData(
-      points: [origin, destination],
-      distanceKm: straightKm,
-      durationMin: (straightKm / 30) * 60,
-    );
+    await _fetchRoutesForTechnicians();
   }
 
   void _zoomBy(double delta) {
@@ -294,13 +250,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         .where((t) => t.latitude != null && t.longitude != null)
         .toList();
 
-    // Keep them sorted by distance for the horizontal list
+    // Nearest first. Sorted by the provider distance so the list does not
+    // jump around while road routes are still loading.
     final sortedTechs = [...techPoints]
-      ..sort((a, b) {
-        final da = _routesData[a.id]?.distanceKm ?? a.distanceKm;
-        final db = _routesData[b.id]?.distanceKm ?? b.distanceKm;
-        return da.compareTo(db);
-      });
+      ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
 
     _lastSorted = sortedTechs;
 
@@ -340,12 +293,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            onPressed: () {
-              _routesData.clear();
-              _selectedTechId = null;
-              techProvider.refreshLastSearch();
-              _fetchRoutesForTechnicians();
-            },
+            onPressed: _refresh,
             tooltip: 'Refresh',
           ),
         ],
@@ -447,30 +395,19 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                 ],
               ),
 
-            // Route lines
+            // ← ROUTE: road lines from the picked point to each technician
             if (searchPoint != null)
               PolylineLayer(
-                polylines: sortedTechs.expand((tech) {
-                  final isSelected = _selectedTechId == tech.id;
-                  final route = _routesData[tech.id];
-                  final points = route?.points ??
-                      [searchPoint, LatLng(tech.latitude!, tech.longitude!)];
-
-                  return [
-                    Polyline(
-                      points: points,
-                      strokeWidth: isSelected ? 9 : 5.5,
-                      color: Colors.black.withOpacity(0.16),
-                    ),
-                    Polyline(
-                      points: points,
-                      strokeWidth: isSelected ? 6.5 : 4.2,
-                      color: isSelected ? AppTheme.accent : AppTheme.primary.withOpacity(0.65),
-                      borderColor: Colors.white.withOpacity(0.3),
-                      borderStrokeWidth: 1.4,
-                    ),
-                  ];
-                }).toList(),
+                polylines: buildRoutePolylines(
+                  routes: {
+                    for (final tech in sortedTechs)
+                      if (_routesData[tech.id] != null)
+                        tech.id: _routesData[tech.id]!,
+                  },
+                  selectedId: _selectedTechId,
+                  lineColor: AppTheme.primary,
+                  selectedColor: _gold,
+                ),
               ),
 
             MarkerLayer(

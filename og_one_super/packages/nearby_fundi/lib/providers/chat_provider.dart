@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
@@ -11,6 +12,13 @@ import '../services/chat_service.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatService _chatService = ChatService();
+
+  bool _disposed = false;
+  bool _notifyScheduled = false;
+
+  /// Remembers which user/token is already initialized, so calling
+  /// initialize() again (HomeScreen + ChatListScreen) does nothing.
+  String? _initKey;
 
   // ============================================================
   // GETTERS
@@ -41,35 +49,39 @@ class ChatProvider extends ChangeNotifier {
   // ============================================================
 
   ChatProvider() {
-    _chatService.conversations.addListener(_onConversationsChanged);
-    _chatService.currentMessages.addListener(_onMessagesChanged);
-    _chatService.totalUnreadCount.addListener(_onUnreadChanged);
-    _chatService.isTyping.addListener(_onTypingChanged);
-    _chatService.isConnected.addListener(_onConnectionChanged);
+    _chatService.conversations.addListener(_safeNotify);
+    _chatService.currentMessages.addListener(_safeNotify);
+    _chatService.totalUnreadCount.addListener(_safeNotify);
+    _chatService.isTyping.addListener(_safeNotify);
+    _chatService.isConnected.addListener(_safeNotify);
   }
 
   // ============================================================
-  // LISTENER CALLBACKS
+  // SAFE NOTIFY
   // ============================================================
 
-  void _onConversationsChanged() {
-    notifyListeners();
-  }
+  /// Never notifies while the widget tree is building or after dispose.
+  /// If a frame is in progress, the notification is sent after the frame.
+  void _safeNotify() {
+    if (_disposed) return;
 
-  void _onMessagesChanged() {
-    notifyListeners();
-  }
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    final building = phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.transientCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
 
-  void _onUnreadChanged() {
-    notifyListeners();
-  }
+    if (!building) {
+      notifyListeners();
+      return;
+    }
 
-  void _onTypingChanged() {
-    notifyListeners();
-  }
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
 
-  void _onConnectionChanged() {
-    notifyListeners();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      if (!_disposed) notifyListeners();
+    });
   }
 
   // ============================================================
@@ -80,6 +92,10 @@ class ChatProvider extends ChangeNotifier {
     required String token,
     required ChatUser currentUser,
   }) {
+    final key = '${currentUser.id}:$token';
+    if (_initKey == key) return; // already initialized
+    _initKey = key;
+
     _chatService.initialize(
       token: token,
       currentUser: currentUser,
@@ -95,7 +111,7 @@ class ChatProvider extends ChangeNotifier {
   Future<void> refreshConversations() async {
     isLoading = true;
     _error = null;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await _chatService.loadConversations();
@@ -103,7 +119,7 @@ class ChatProvider extends ChangeNotifier {
       _error = e.toString();
     } finally {
       isLoading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
@@ -136,7 +152,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       _error = null;
       isLoading = true;
-      notifyListeners();
+      _safeNotify();
 
       return await _chatService.getMessages(
         conversationId: conversationId,
@@ -148,7 +164,7 @@ class ChatProvider extends ChangeNotifier {
       rethrow;
     } finally {
       isLoading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
@@ -179,9 +195,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       _error = null;
 
-      await _chatService.markConversationAsRead(
-        conversationId,
-      );
+      await _chatService.markConversationAsRead(conversationId);
     } catch (e) {
       _error = e.toString();
     }
@@ -257,6 +271,8 @@ class ChatProvider extends ChangeNotifier {
 
   void disconnectWebSocket() {
     _chatService.disconnectWebSocket();
+    // Allow initialize() to run again after the next login.
+    _initKey = null;
   }
 
   // ============================================================
@@ -273,25 +289,13 @@ class ChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _chatService.conversations.removeListener(
-      _onConversationsChanged,
-    );
+    _disposed = true;
 
-    _chatService.currentMessages.removeListener(
-      _onMessagesChanged,
-    );
-
-    _chatService.totalUnreadCount.removeListener(
-      _onUnreadChanged,
-    );
-
-    _chatService.isTyping.removeListener(
-      _onTypingChanged,
-    );
-
-    _chatService.isConnected.removeListener(
-      _onConnectionChanged,
-    );
+    _chatService.conversations.removeListener(_safeNotify);
+    _chatService.currentMessages.removeListener(_safeNotify);
+    _chatService.totalUnreadCount.removeListener(_safeNotify);
+    _chatService.isTyping.removeListener(_safeNotify);
+    _chatService.isConnected.removeListener(_safeNotify);
 
     // dispose() returns void.
     // Do NOT await it or use its return value.

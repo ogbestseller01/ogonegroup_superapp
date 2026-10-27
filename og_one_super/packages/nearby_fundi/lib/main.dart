@@ -3,8 +3,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kDebugMode, kProfileMode, kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -52,87 +51,61 @@ import 'screens/tracking/tracking_screen.dart';
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
-// Use the shared key from app_navigator.dart so both standalone + mini-app share it
+// Shared key so both standalone + mini-app use the same navigator.
 import 'app_navigator.dart' show navigatorKey;
 
 // ============================================================
-// BOOT DEBUG HELPERS
+// ERROR LOGGING (debug builds only)
 // ============================================================
 
-final Stopwatch _bootClock = Stopwatch();
-
-void _log(String message) {
-  debugPrint('[BOOT +${_bootClock.elapsedMilliseconds}ms] $message');
+void _logError(String label, Object error, [StackTrace? stack]) {
+  if (!kDebugMode) return;
+  debugPrint('[$label] $error');
+  if (stack != null) debugPrint('$stack');
 }
 
-T _timed<T>(String name, T Function() build) {
-  _log('⏳ Creating $name');
-  try {
-    final value = build();
-    _log('✅ Created $name');
-    return value;
-  } catch (e, stackTrace) {
-    debugPrint('❌ [BOOT] $name constructor FAILED: $e');
-    debugPrint('$stackTrace');
-    rethrow;
-  }
-}
+// ============================================================
+// BACKGROUND PUSH HANDLER
+// ============================================================
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  debugPrint('📩 Background message received: ${message.messageId}');
 }
 
-Future<void> main() async {
-  _bootClock.start();
-  _log('🚀 main() started');
+// ============================================================
+// MAIN
+// ============================================================
 
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _log('✅ WidgetsFlutterBinding initialized');
-  _log('ℹ️ Platform: $defaultTargetPlatform | '
-      'debug=$kDebugMode profile=$kProfileMode release=$kReleaseMode');
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint('🔥 [FlutterError] ${details.exceptionAsString()}');
-    debugPrint('${details.stack}');
+    _logError('FlutterError', details.exceptionAsString(), details.stack);
   };
 
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    debugPrint('🔥 [PlatformDispatcher] Uncaught async error: $error');
-    debugPrint('$stack');
+    _logError('Uncaught', error, stack);
     return true;
   };
-  _log('✅ Global error handlers installed');
 
-  // 1. Firebase – only initialize if the host has not already done it
+  // 1. Firebase: only initialize if the host app has not already done it.
   try {
-    _log('⏳ [1/3] Firebase.initializeApp starting');
-    _log('ℹ️ Firebase apps already registered (native): '
-        '${Firebase.apps.map((a) => a.name).toList()}');
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
     }
-    final opts = Firebase.app().options;
-    _log('✅ Firebase initialized | appId=${opts.appId} | '
-        'project=${opts.projectId} | bundle=${opts.iosBundleId}');
-  } catch (e, stackTrace) {
-    debugPrint('❌ Firebase initialization failed: $e');
-    debugPrint('$stackTrace');
+  } catch (e, stack) {
+    _logError('Firebase init', e, stack);
   }
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  _log('✅ Background handler registered');
 
   // 2. Secure screen
   try {
-    _log('⏳ [2/3] SecurityService.enableSecureScreen starting');
     await SecurityService.enableSecureScreen();
-    _log('✅ [2/3] SecurityService.enableSecureScreen finished');
-  } catch (e, stackTrace) {
-    debugPrint('❌ Secure screen initialization failed: $e');
-    debugPrint('$stackTrace');
+  } catch (e, stack) {
+    _logError('Secure screen', e, stack);
   }
 
   // 3. System UI
@@ -143,67 +116,44 @@ Future<void> main() async {
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
     ));
-    _log('✅ [3/3] System UI overlay style set');
-  } catch (e, stackTrace) {
-    debugPrint('⚠️ System UI configuration failed: $e');
-    debugPrint('$stackTrace');
+  } catch (e, stack) {
+    _logError('System UI', e, stack);
   }
 
-  _log('⏳ Calling runApp()');
   runApp(const MyApp());
-  _log('✅ runApp() returned');
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _log('🎉 First Flutter frame rendered');
-  });
-
+  // FCM starts in the background so it never delays the first frame.
   unawaited(() async {
     try {
-      _log('⏳ FcmService.initialize starting (background)');
       await FcmService.initialize();
-      _log('✅ FcmService.initialize finished');
-    } catch (e, stackTrace) {
-      debugPrint('❌ FCM initialization failed: $e');
-      debugPrint('$stackTrace');
+    } catch (e, stack) {
+      _logError('FCM init', e, stack);
     }
   }());
 }
+
+// ============================================================
+// APP
+// ============================================================
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    _log('🧱 MyApp.build()');
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-            create: (_) => _timed('AuthProvider', () => AuthProvider())),
-        ChangeNotifierProvider(
-            create: (_) => _timed('PostProvider', () => PostProvider())),
-        ChangeNotifierProvider(
-            create: (_) => _timed('RequestProvider', () => RequestProvider())),
-        ChangeNotifierProvider(
-            create: (_) =>
-                _timed('TechnicianProvider', () => TechnicianProvider())),
-        ChangeNotifierProvider(
-            create: (_) => _timed('ServiceProvider', () => ServiceProvider())),
-        ChangeNotifierProvider(
-            create: (_) =>
-                _timed('NotificationProvider', () => NotificationProvider())),
-        ChangeNotifierProvider(
-            create: (_) =>
-                _timed('SettingsProvider', () => SettingsProvider())),
-        ChangeNotifierProvider(
-            create: (_) =>
-                _timed('LocationProvider', () => LocationProvider())),
-        ChangeNotifierProvider(
-            create: (_) =>
-                _timed('StaticPageProvider', () => StaticPageProvider())),
-        ChangeNotifierProvider(
-            create: (_) => _timed('ThemeProvider', () => ThemeProvider())),
-        ChangeNotifierProvider(
-            create: (_) => _timed('ChatProvider', () => ChatProvider())),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => RequestProvider()),
+        ChangeNotifierProvider(create: (_) => TechnicianProvider()),
+        ChangeNotifierProvider(create: (_) => ServiceProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => StaticPageProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: Consumer2<ThemeProvider, SettingsProvider>(
         builder: (context, themeProvider, settings, _) {
@@ -235,13 +185,11 @@ class MyApp extends StatelessWidget {
 }
 
 // ============================================================
-// ROUTING  (exported for the mini-app)
+// ROUTING (exported for the mini-app)
 // ============================================================
 
 Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
   final Object? args = routeSettings.arguments;
-  debugPrint('🧭 Route requested: ${routeSettings.name} | '
-      'args type: ${args?.runtimeType}');
 
   MaterialPageRoute<dynamic> route(Widget page) => MaterialPageRoute(
     builder: (_) => page,
@@ -287,8 +235,6 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
       if (args is ChatConversation) {
         return route(ChatScreen(conversation: args));
       }
-      debugPrint('⚠️ chatScreen called without ChatConversation '
-          '(got ${args?.runtimeType}) → ChatListScreen');
       return route(const ChatListScreen());
     case AppRoutes.notifications:
       return route(const NotificationsScreen());
@@ -297,10 +243,13 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
     case AppRoutes.tracking:
       return route(TrackingScreen(requestId: _intArg(args)));
     default:
-      debugPrint('⚠️ Unknown route: ${routeSettings.name}');
       return route(const SplashScreen());
   }
 }
+
+// ============================================================
+// ROUTE ARGUMENT HELPERS
+// ============================================================
 
 int _intArg(Object? args) {
   if (args is int) return args;
@@ -313,13 +262,11 @@ int _intArg(Object? args) {
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;
   }
-  debugPrint('⚠️ Expected an int route argument, got ${args?.runtimeType}');
   return 0;
 }
 
 String _stringArg(Object? args) {
   if (args is String) return args;
   if (args is Map) return args['email']?.toString() ?? '';
-  debugPrint('⚠️ Expected a String route argument, got ${args?.runtimeType}');
   return '';
 }

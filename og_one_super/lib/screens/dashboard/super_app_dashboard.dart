@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_strings.dart';
+import '../../providers/banner_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/mini_app_service.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -21,8 +22,13 @@ class SuperAppDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppUsageProvider()..load(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppUsageProvider()..load()),
+        // BannerProvider is also available from main; this ensures it exists
+        // even if main is not updated yet.
+        ChangeNotifierProvider(create: (_) => BannerProvider()..fetchBanners()),
+      ],
       child: const _DashboardShell(),
     );
   }
@@ -52,12 +58,13 @@ class _DashboardShellState extends State<_DashboardShell> {
     _initialLoad();
   }
 
-  /// Fetches mini apps from Laravel (never throws, falls back to the built-in
-  /// list) and keeps the skeleton visible at least 600 ms so it does not flash.
+  /// Fetches mini apps + banners and keeps the skeleton visible at least 600 ms.
   Future<void> _initialLoad() async {
     try {
       await Future.wait([
         MiniAppService.instance.refresh(),
+        // banners are already fetched in SuperAppDashboard create,
+        // but we can refresh again safely if needed
         Future<void>.delayed(const Duration(milliseconds: 600)),
       ]);
     } catch (_) {}
