@@ -1,174 +1,137 @@
 // lib/models/technician.dart
 
-
-import 'portfolio.dart';
-
-/// Handles the pivot price data from backend
-class TechnicianServicePrice {
-  final int id;
-  final String name;
-  final double minPrice;
-  final double maxPrice;
-
-  TechnicianServicePrice({
-    required this.id,
-    required this.name,
-    required this.minPrice,
-    required this.maxPrice,
-  });
-
-  factory TechnicianServicePrice.fromJson(Map<String, dynamic> json) {
-    return TechnicianServicePrice(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      minPrice: double.tryParse(json['pivot']?['min_price']?.toString() ?? '0') ?? 0.0,
-      maxPrice: double.tryParse(json['pivot']?['max_price']?.toString() ?? '0') ?? 0.0,
-    );
-  }
-}
+import 'service.dart';
 
 class Technician {
   final int id;
-  final String name;
-  final String? phone;
-  final String? profilePhoto;
+  final int userId;
+  final String? bio;
+  final String? area;
+  final double? latitude;
+  final double? longitude;
   final String? nida;
   final String? idDocumentType;
   final String? idDocumentImage;
-  final bool verified;
-  final String? verificationStatus;
-  final int registrationStep;
-  final bool registrationCompleted;
-  final String? bio;
-  final int experience;
-  final double rating;
+  final String? profilePhoto;
   final double? hourlyRate;
-  final String? area;
-  final double? latitude;   // ✅ ADDED
-  final double? longitude;  // ✅ ADDED
-  final bool isOnline;
-  final List<String> services;
-  final List<TechnicianServicePrice> servicePrices;
-  final List<PortfolioItem> portfolios;
+  final int experience;
 
-  Technician({
+  // Registration + verification state (from TechnicianController)
+  final bool verified;
+  final String? verificationStatus; // 'pending' | 'approved' | 'rejected'
+  final int registrationStep;        // 0..6
+  final bool registrationCompleted;
+  final bool fingerprintEnrolled;
+  final bool faceEnrolled;
+
+  // Next of kin (visible on profile endpoint)
+  final String? nextOfKinName;
+  final String? nextOfKinPhone;
+  final String? nextOfKinRelationship;
+
+  // Location telemetry
+  final DateTime? lastActivityAt;
+  final DateTime? locationUpdatedAt;
+
+  /// Services the technician offers. Populated from
+  /// `GET /v19/technicians/profile` via `->with('services')`.
+  final List<Service> services;
+
+  const Technician({
     required this.id,
-    required this.name,
-    this.phone,
-    this.profilePhoto,
+    required this.userId,
+    this.bio,
+    this.area,
+    this.latitude,
+    this.longitude,
     this.nida,
     this.idDocumentType,
     this.idDocumentImage,
+    this.profilePhoto,
+    this.hourlyRate,
+    this.experience = 0,
     this.verified = false,
     this.verificationStatus,
     this.registrationStep = 0,
     this.registrationCompleted = false,
-    this.bio,
-    this.experience = 0,
-    this.rating = 0.0,
-    this.hourlyRate,
-    this.area,
-    this.latitude,          // ✅ ADDED
-    this.longitude,         // ✅ ADDED
-    this.isOnline = false,
+    this.fingerprintEnrolled = false,
+    this.faceEnrolled = false,
+    this.nextOfKinName,
+    this.nextOfKinPhone,
+    this.nextOfKinRelationship,
+    this.lastActivityAt,
+    this.locationUpdatedAt,
     this.services = const [],
-    this.servicePrices = const [],
-    this.portfolios = const [],
   });
 
-  factory Technician.fromJson(Map<String, dynamic> json, {bool isDetail = false}) {
-    String name = json['name'] ?? '';
-    if (name.isEmpty && json['user'] != null && json['user']['name'] != null) {
-      name = json['user']['name'];
-    }
+  bool get isPendingApproval =>
+      registrationCompleted &&
+          !verified &&
+          (verificationStatus == null || verificationStatus == 'pending');
 
-    String? phone = json['phone'];
-    if (phone == null && json['user'] != null && json['user']['phone'] != null) {
-      phone = json['user']['phone'];
-    }
+  bool get isApproved => verified && verificationStatus == 'approved';
 
-    String? profilePhoto = json['profile_photo'];
-    if (profilePhoto == null &&
-        json['user'] != null &&
-        json['user']['profile_photo'] != null) {
-      profilePhoto = json['user']['profile_photo'];
-    }
-
-    String? nida = json['nida'];
-
-    int parseExperience(dynamic value) {
-      if (value == null) return 0;
-      if (value is int) return value;
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
-    }
-
-    double parseDouble(dynamic value) {
-      if (value == null) return 0.0;
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      if (value is String) return double.tryParse(value) ?? 0.0;
-      return 0.0;
-    }
-
-    bool parseBool(dynamic value) {
-      if (value == null) return false;
-      if (value is bool) return value;
-      if (value is int) return value == 1;
-      if (value is String) {
-        return value.toLowerCase() == 'true' || value == '1';
-      }
-      return false;
-    }
-
-    List<String> serviceNames = [];
-    List<TechnicianServicePrice> servicePrices = [];
-
-    if (json['service_prices'] != null && json['service_prices'] is List) {
-      servicePrices = (json['service_prices'] as List)
-          .map((e) => TechnicianServicePrice.fromJson(e as Map<String, dynamic>))
-          .toList();
-      serviceNames = servicePrices.map((s) => s.name).toList();
-    } else if (json['services'] != null && json['services'] is List) {
-      final raw = json['services'] as List;
-      for (var item in raw) {
-        if (item is String) {
-          serviceNames.add(item);
-        }
-      }
-    }
+  factory Technician.fromJson(
+      Map<String, dynamic> json, {
+        bool isDetail = false,
+      }) {
+    final rawServices = json['services'];
+    final services = rawServices is List
+        ? rawServices
+        .whereType<Map>()
+        .map((e) => Service.fromJson(Map<String, dynamic>.from(e)))
+        .toList()
+        : <Service>[];
 
     return Technician(
-      id: json['id'] ?? 0,
-      name: name,
-      phone: phone,
-      profilePhoto: profilePhoto,
-      nida: nida,
-      idDocumentType: json['id_document_type'],
-      idDocumentImage: json['id_document_image'],
-      verified: parseBool(json['verified']),
-      verificationStatus: json['verification_status'],
-      registrationStep: parseExperience(json['registration_step']),
-      registrationCompleted: parseBool(json['registration_completed']),
-      bio: json['bio'],
-      experience: parseExperience(json['experience']),
-      rating: parseDouble(json['rating']),
-      hourlyRate: json['hourly_rate'] != null
-          ? parseDouble(json['hourly_rate'])
-          : null,
-      area: json['area'],
-      // ✅ ADDED – parse latitude & longitude
-      latitude: json['latitude'] != null ? parseDouble(json['latitude']) : null,
-      longitude: json['longitude'] != null ? parseDouble(json['longitude']) : null,
-      isOnline: parseBool(json['is_online']),
-      services: serviceNames,
-      servicePrices: servicePrices,
-      portfolios: isDetail && json['portfolios'] != null
-          ? (json['portfolios'] as List)
-          .where((e) => e != null)
-          .map((p) => PortfolioItem.fromJson(p))
-          .toList()
-          : [],
+      id: _toInt(json['id']),
+      userId: _toInt(json['user_id']),
+      bio: json['bio']?.toString(),
+      area: json['area']?.toString(),
+      latitude: _toDouble(json['latitude']),
+      longitude: _toDouble(json['longitude']),
+      nida: json['nida']?.toString(),
+      idDocumentType: json['id_document_type']?.toString(),
+      idDocumentImage: json['id_document_image']?.toString(),
+      profilePhoto: json['profile_photo']?.toString(),
+      hourlyRate: _toDouble(json['hourly_rate']),
+      experience: _toInt(json['experience']),
+      verified: _toBool(json['verified']),
+      verificationStatus: json['verification_status']?.toString(),
+      registrationStep: _toInt(json['registration_step']),
+      registrationCompleted: _toBool(json['registration_completed']),
+      fingerprintEnrolled: _toBool(json['fingerprint_enrolled']),
+      faceEnrolled: _toBool(json['face_enrolled']),
+      nextOfKinName: json['next_of_kin_name']?.toString(),
+      nextOfKinPhone: json['next_of_kin_phone']?.toString(),
+      nextOfKinRelationship: json['next_of_kin_relationship']?.toString(),
+      lastActivityAt: _parseDate(json['last_activity_at']),
+      locationUpdatedAt: _parseDate(json['location_updated_at']),
+      services: services,
     );
+  }
+
+  static int _toInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse('$v') ?? 0;
+  }
+
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
+  }
+
+  static bool _toBool(dynamic v) {
+    if (v is bool) return v;
+    if (v is num) return v == 1;
+    if (v is String) return v == '1' || v.toLowerCase() == 'true';
+    return false;
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    return DateTime.tryParse(v.toString());
   }
 }

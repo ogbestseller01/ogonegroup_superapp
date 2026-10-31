@@ -1,10 +1,15 @@
-import 'package:flutter/material.dart';
+// lib/providers/technician_provider.dart
+
 import 'dart:io';
-import '../services/api_service.dart';
+
+import 'package:flutter/material.dart';
+
 import '../models/technician.dart';
+import '../services/api_service.dart';
 
 class TechnicianProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+
   Technician? _technician;
   bool _isLoading = false;
   String? _error;
@@ -13,101 +18,61 @@ class TechnicianProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // ── Write actions ─────────────────────────────────────────
+
   Future<bool> uploadProfilePhoto(File imageFile) async {
     _setLoading(true);
     final res = await _api.uploadProfilePhoto(imageFile);
-    if (res.success) {
-      await fetchMyProfile();
-      _setLoading(false);
-      return true;
-    }
-    _error = res.message;
-    _setLoading(false);
-    return false;
-  }
-
-  Future<void> fetchMyProfile() async {
-    _setLoading(true);
-    final res = await _api.getMyTechnicianProfile();
-
-    // ============================================================
-    // 🔍 DEBUG LOGGING — remove once the root cause is confirmed
-    // ============================================================
-    debugPrint('┌─────────────────────────────────────────────');
-    debugPrint('│ [TechnicianProvider] fetchMyProfile()');
-    debugPrint('│ success: ${res.success}');
-    debugPrint('│ message: ${res.message}');
-    debugPrint('│ data == null: ${res.data == null}');
-    debugPrint('│ data runtimeType: ${res.data.runtimeType}');
-    if (res.data is Map) {
-      final map = res.data as Map;
-      debugPrint('│ top-level keys: ${map.keys.toList()}');
-      debugPrint('│ has "service_prices" key: ${map.containsKey('service_prices')}');
-      debugPrint('│ service_prices value: ${map['service_prices']}');
-      debugPrint('│ service_prices runtimeType: ${map['service_prices'].runtimeType}');
-      debugPrint('│ nida value: ${map['nida']}');
-      debugPrint('│ registration_completed: ${map['registration_completed']}');
-      debugPrint('│ id: ${map['id']}');
-    }
-    debugPrint('└─────────────────────────────────────────────');
-    // ============================================================
-
-    if (res.success && res.data != null) {
-      _technician = Technician.fromJson(res.data, isDetail: true);
-
-      // 🔍 Confirm what actually landed in the parsed model
-      debugPrint('┌─────────────────────────────────────────────');
-      debugPrint('│ [TechnicianProvider] Parsed Technician');
-      debugPrint('│ id: ${_technician?.id}');
-      debugPrint('│ name: ${_technician?.name}');
-      debugPrint('│ nida: ${_technician?.nida}');
-      debugPrint('│ servicePrices.length: ${_technician?.servicePrices.length}');
-      for (final sp in _technician?.servicePrices ?? []) {
-        debugPrint('│   - ${sp.name} (id=${sp.id}) TZS ${sp.minPrice}-${sp.maxPrice}');
-      }
-      debugPrint('└─────────────────────────────────────────────');
-    } else {
-      _error = res.message;
-      debugPrint('❌ [TechnicianProvider] fetchMyProfile FAILED: ${res.message}');
-    }
-    _setLoading(false);
+    return _finish(res.success, res.message);
   }
 
   Future<bool> updateProfile(Map<String, dynamic> data) async {
     _setLoading(true);
     final res = await _api.updateTechnicianProfile(data);
-    if (res.success) {
-      await fetchMyProfile();
-      _setLoading(false);
-      return true;
-    }
-    _error = res.message;
-    _setLoading(false);
-    return false;
+    return _finish(res.success, res.message);
   }
 
   Future<bool> updateServices(List<int> serviceIds) async {
     _setLoading(true);
     final res = await _api.updateTechnicianServices(serviceIds);
-    if (res.success) {
-      await fetchMyProfile();
-      _setLoading(false);
-      return true;
-    }
-    _error = res.message;
-    _setLoading(false);
-    return false;
+    return _finish(res.success, res.message);
   }
 
-  Future<bool> updateServicePrices(List<Map<String, dynamic>> prices) async {
+  // NOTE: updateServicePrices() was removed — the backend has no
+  // /v19/technicians/services/prices route. If the design needs
+  // per-service pricing, it must be added to the backend first.
+
+  // ── Read actions ──────────────────────────────────────────
+
+  Future<void> fetchMyProfile() async {
     _setLoading(true);
-    final res = await _api.updateServicePrices(prices);
-    if (res.success) {
+    final res = await _api.getMyTechnicianProfile();
+
+    if (res.success && res.data != null && res.data is Map) {
+      _technician = Technician.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+        isDetail: true,
+      );
+    } else {
+      _error = res.message;
+    }
+    _setLoading(false);
+  }
+
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+
+  Future<bool> _finish(bool success, String? message) async {
+    if (success) {
       await fetchMyProfile();
       _setLoading(false);
       return true;
     }
-    _error = res.message;
+    _error = message;
     _setLoading(false);
     return false;
   }

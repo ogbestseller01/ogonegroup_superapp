@@ -56,10 +56,14 @@ flutter:
     - assets/images/
     - assets/images/apps/
     - google_fonts/
+
   config:
     enable-swift-package-manager: false
 
 dependency_overrides:
+  # Force a compatible version of `js` so pusher_channels_flutter and flutter_secure_storage can coexist
+  js: ^0.7.1
+
   # Shared newer versions so both mini-apps can coexist
   file_picker: ^10.3.10
   flutter_local_notifications: ^19.4.1

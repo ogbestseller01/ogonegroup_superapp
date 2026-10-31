@@ -13,31 +13,61 @@ import '../services/storage_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+  final GlobalKey<NavigatorState>? _navigatorKey;
 
   User? _user;
   String? _token;
   bool _isLoading = false;
   String? _error;
 
-  // ── Public getters ────────────────────────────────────────────────────────
+  // ── Pending registration state ────────────────────────────
+  int? _draftId;
+  String? _registrationToken;
+
+  // Startup / session-expiry guards
+  bool _isInitialized = false;
+  bool _isBootstrapping = false;
+  bool _sessionExpiredWhileBootstrapping = false;
+  bool _handlingSessionExpiry = false;
+
   User? get user => _user;
   String? get token => _token;
   bool get isLoggedIn => _token != null && _user != null;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   String? get errorMessage => _error;
 
-  /// Expose API for registration steps (legacy)
+  bool get isPendingApproval => _user?.isPendingApproval ?? false;
+
+  int? get draftId => _draftId;
+
+  String? get registrationToken => _registrationToken;
+
+  bool get hasRegistrationToken =>
+      _registrationToken != null && _registrationToken!.isNotEmpty;
+
   ApiService get api => _api;
 
-  AuthProvider({GlobalKey<NavigatorState>? navigatorKey}) {
-    _api.onSessionExpired = () async {
-      await _clearSession();
-      navigatorKey?.currentState?.pushNamedAndRemoveUntil(
-        '/login',
-            (_) => false,
-      );
-    };
+  AuthProvider({GlobalKey<NavigatorState>? navigatorKey})
+      : _navigatorKey = navigatorKey {
+    _api.onSessionExpired = _onSessionExpired;
     _loadStoredSession();
+  }
+
+  Future<void> _onSessionExpired() async {
+    if (_isBootstrapping) {
+      _sessionExpiredWhileBootstrapping = true;
+      return;
+    }
+    if (_handlingSessionExpiry) return;
+    _handlingSessionExpiry = true;
+    try {
+      await _clearSession();
+      _navigatorKey?.currentState
+          ?.pushNamedAndRemoveUntil('/login', (_) => false);
+    } finally {
+      _handlingSessionExpiry = false;
+    }
   }
 
   void clearError() {
@@ -45,7 +75,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Register (customer) ───────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // AUTHENTICATION
+  // ══════════════════════════════════════════════════════════
+
   Future<bool> register(
       String name,
       String email,
@@ -54,7 +87,6 @@ class AuthProvider extends ChangeNotifier {
         String? phone,
       }) async {
     _setLoading(true);
-
     final res = await _api.register({
       'name': name,
       'email': email,
@@ -62,124 +94,148 @@ class AuthProvider extends ChangeNotifier {
       'password_confirmation': confirmPassword,
       if (phone != null && phone.isNotEmpty) 'phone': phone,
     });
-
-    _setLoading(false);
-
     if (res.success == true) {
-      return true;
-    }
-
-    _error = res.message;
-    notifyListeners();
-    return false;
-  }
-
-  // ── Register Fundi (legacy) ───────────────────────────────────────────────
-  Future<bool> registerFundi(Map<String, dynamic> data) async {
-    _setLoading(true);
-
-    final res = await _api.registerFundi(data);
-
-    _setLoading(false);
-
-    if (res.success == true) {
-      return true;
-    }
-
-    _error = res.message;
-    notifyListeners();
-    return false;
-  }
-
-  // ── Login (email OR phone) ────────────────────────────────────────────────
-  Future<bool> login(String identifier, String password) async {
-    _setLoading(true);
-
-    final res = await _api.login(identifier, password);
-
-    if (res.success == true && res.data != null) {
-      await _saveSession(Map<String, dynamic>.from(res.data as Map));
       _setLoading(false);
       return true;
     }
-
     _error = res.message;
     _setLoading(false);
     return false;
   }
 
-  // ── Verify OTP ────────────────────────────────────────────────────────────
-  Future<bool> verifyOtp(String email, String otp) async {
+  Future<bool> registerFundi(Map<String, dynamic> data) async {
     _setLoading(true);
+    final res = await _api.registerFundi(data);
+    if (res.success == true) {
+      _setLoading(false);
+      return true;
+    }
+    _error = res.message;
+    _setLoading(false);
+    return false;
+  }
 
+  Future<bool> login(String identifier, String password) async {
+    _setLoading(true);
+    final res = await _api.login(identifier, password);
+    if (res.success == true && res.data != null) {
+      final ok = await _saveSession(
+        Map<String, dynamic>.from(res.data as Map),
+      );
+      if (ok) {
+        _setLoading(false);
+        return true;
+      }
+    }
+    _error = res.message ?? 'Login failed';
+    _setLoading(false);
+    return false;
+  }
+
+  Future<bool> verifyOtp(String identifier, String otp) async {
+    _setLoading(true);
     String? fcmToken;
     try {
       fcmToken = await FcmService.getToken();
     } catch (_) {
       fcmToken = null;
     }
-
-    final res = await _api.verifyOtp(email, otp, fcmToken: fcmToken);
-
+    final res = await _api.verifyOtp(identifier, otp, fcmToken: fcmToken);
     if (res.success == true && res.data != null) {
-      await _saveSession(Map<String, dynamic>.from(res.data as Map));
+      final ok = await _saveSession(
+        Map<String, dynamic>.from(res.data as Map),
+        fcmToken: fcmToken,
+      );
+      if (ok) {
+        _setLoading(false);
+        return true;
+      }
+    }
+    _error = res.message;
+    _setLoading(false);
+    return false;
+  }
+
+  Future<bool> verifyDraftOtp(String identifier, String otp) async {
+    _setLoading(true);
+    final res = await _api.verifyDraftOtp(
+      identifier: identifier,
+      otp: otp,
+      draftId: _draftId,
+    );
+    if (res.success == true && res.data is Map) {
+      final map = Map<String, dynamic>.from(res.data as Map);
+      _registrationToken = map['registration_token']?.toString();
+      final rawDraftId = map['draft_id'] ?? _draftId;
+      _draftId = rawDraftId is int
+          ? rawDraftId
+          : (rawDraftId is num ? rawDraftId.toInt() : int.tryParse('$rawDraftId'));
+
+      if (_draftId != null) {
+        await StorageService.saveTechnicianId(_draftId!);
+      }
+      if (_registrationToken != null && _registrationToken!.isNotEmpty) {
+        await StorageService.saveRegistrationToken(_registrationToken!);
+      }
+
       _setLoading(false);
       return true;
     }
-
     _error = res.message;
     _setLoading(false);
     return false;
   }
 
-  // ── Forgot Password ───────────────────────────────────────────────────────
-  Future<bool> forgotPassword(String email) async {
+  Future<bool> resendDraftOtp(String identifier) async {
     _setLoading(true);
-
-    final res = await _api.forgotPassword(email);
-
-    _setLoading(false);
-
+    final res = await _api.resendDraftOtp(
+      identifier: identifier,
+      draftId: _draftId,
+    );
     if (res.success == true) {
+      _setLoading(false);
       return true;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 
-  // ── Reset Password ────────────────────────────────────────────────────────
-  Future<bool> resetPassword(
-      String email,
-      String otp,
-      String password,
-      ) async {
-    _setLoading(true);
+  // ══════════════════════════════════════════════════════════
+  // PASSWORD / PROFILE
+  // ══════════════════════════════════════════════════════════
 
+  Future<bool> forgotPassword(String email) async {
+    _setLoading(true);
+    final res = await _api.forgotPassword(email);
+    if (res.success == true) {
+      _setLoading(false);
+      return true;
+    }
+    _error = res.message;
+    _setLoading(false);
+    return false;
+  }
+
+  Future<bool> resetPassword(String email, String otp, String password) async {
+    _setLoading(true);
     final res = await _api.resetPassword(
       email: email,
       otp: otp,
       password: password,
     );
-
-    _setLoading(false);
-
     if (res.success == true) {
+      _setLoading(false);
       return true;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 
-  // ── Update Profile ────────────────────────────────────────────────────────
   Future<bool> updateProfile(Map<String, dynamic> data) async {
     _setLoading(true);
-
     final res = await _api.updateProfile(data);
-
     if (res.success == true && res.data != null) {
       final raw = res.data;
       final userData = (raw is Map && raw['user'] != null)
@@ -199,43 +255,33 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     }
-
     _error = res.message;
     _setLoading(false);
     return false;
   }
 
-  // ── Change Password ───────────────────────────────────────────────────────
   Future<bool> changePassword(String current, String newPwd) async {
     _setLoading(true);
-
     final res = await _api.changePassword(
       currentPassword: current,
       newPassword: newPwd,
     );
-
-    _setLoading(false);
-
     if (res.success == true) {
+      _setLoading(false);
       return true;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 
-  // ── Update Locale ─────────────────────────────────────────────────────────
   Future<bool> updateLocale(String locale) async {
     _setLoading(true);
-
     final res = await _api.updateLocale(locale);
     final currentUser = _user;
     final currentToken = _token;
 
-    if (res.success == true &&
-        currentUser != null &&
-        currentToken != null) {
+    if (res.success == true && currentUser != null && currentToken != null) {
       _user = User(
         id: currentUser.id,
         name: currentUser.name,
@@ -243,6 +289,8 @@ class AuthProvider extends ChangeNotifier {
         phone: currentUser.phone,
         nida: currentUser.nida,
         locale: locale,
+        status: currentUser.status,
+        isActive: currentUser.isActive,
         token: currentToken,
       );
       await _storeUser();
@@ -251,280 +299,310 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     }
-
     _error = res.message;
     _setLoading(false);
     return false;
   }
 
-  // ── Resend OTP ────────────────────────────────────────────────────────────
   Future<bool> resendOtp(String email) async {
     _setLoading(true);
-
     final res = await _api.resendOtp(email);
-
-    _setLoading(false);
-
     if (res.success == true) {
+      _setLoading(false);
       return true;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 
-  // ── Delete Account ────────────────────────────────────────────────────────
   Future<bool> deleteAccount() async {
     _setLoading(true);
-
     final res = await _api.deleteAccount();
-
-    _setLoading(false);
-
     if (res.success == true) {
       await logout();
+      _setLoading(false);
       return true;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return false;
   }
 
-  // ── Logout ────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     try {
       await _api.logout();
-    } catch (_) {
-      // Still clear local session even if API fails
-    }
+    } catch (_) {}
     await _clearSession();
+    _registrationToken = null;
+    notifyListeners();
   }
 
-  // ── Registration step (resume) ────────────────────────────────────────────
-  Future<int?> getRegistrationStep(int technicianId) async {
-    final res = await _api.getRegistrationStatus(technicianId);
+  // ══════════════════════════════════════════════════════════
+  // 6-STEP DRAFT-BASED REGISTRATION
+  // ══════════════════════════════════════════════════════════
 
-    if (res.success != true || res.data == null) {
-      return null;
-    }
-
+  Future<int?> getRegistrationStep(int id) async {
+    final res = await _api.getRegistrationStatus(id);
+    if (res.success != true || res.data == null) return null;
     final data = Map<String, dynamic>.from(res.data as Map);
-
-    if (data['registration_completed'] == true) {
-      return null; // already completed → user should login
-    }
-
+    if (data['registration_completed'] == true) return null;
     final step = data['registration_step'];
     if (step is int) return step;
     if (step is num) return step.toInt();
     return null;
   }
 
-  // ── 4-step Fundi registration ─────────────────────────────────────────────
-
-  /// Step 1: Personal information → returns technicianId or null
   Future<int?> registerTechnicianStep1(Map<String, dynamic> data) async {
     _setLoading(true);
-
     final res = await _api.registerTechnicianStep1(data);
-
-    _setLoading(false);
-
-    if (res.success == true && res.data != null) {
-      final id = (res.data as Map)['technician_id'];
-      if (id is int) return id;
-      if (id is num) return id.toInt();
-      return null;
+    if (res.success == true && res.data is Map) {
+      final map = Map<String, dynamic>.from(res.data as Map);
+      final rawId = map['draft_id'];
+      _draftId = rawId is int
+          ? rawId
+          : (rawId is num ? rawId.toInt() : null);
+      if (_draftId != null) {
+        await StorageService.saveTechnicianId(_draftId!);
+      }
+      _setLoading(false);
+      return _draftId;
     }
-
     _error = res.message;
-    notifyListeners();
+    _setLoading(false);
     return null;
   }
 
-  /// Step 2: Identification
+  bool _ensureDraftToken() {
+    if (_registrationToken == null || _registrationToken!.isEmpty) {
+      _error = 'Registration session expired. Please start over.';
+      notifyListeners();
+      return false;
+    }
+    return true;
+  }
+
   Future<bool> registerTechnicianStep2({
-    required int technicianId,
     required String nida,
     required String idDocumentType,
-    required File idDocumentImage,
+    File? idDocumentImage,
   }) async {
+    if (!_ensureDraftToken()) return false;
     _setLoading(true);
-
     final res = await _api.registerTechnicianStep2(
-      technicianId: technicianId,
+      registrationToken: _registrationToken!,
       nida: nida,
       idDocumentType: idDocumentType,
       idDocumentImage: idDocumentImage,
     );
-
     _setLoading(false);
-
-    if (res.success == true) {
-      return true;
-    }
-
+    if (res.success == true) return true;
     _error = res.message;
     notifyListeners();
     return false;
   }
 
-  /// Step 3: Working area
   Future<bool> registerTechnicianStep3({
-    required int technicianId,
-    required String area,
-    double? latitude,
-    double? longitude,
+    required String fingerprintData,
   }) async {
+    if (!_ensureDraftToken()) return false;
     _setLoading(true);
-
     final res = await _api.registerTechnicianStep3(
-      technicianId: technicianId,
-      area: area,
-      latitude: latitude,
-      longitude: longitude,
+      registrationToken: _registrationToken!,
+      fingerprintData: fingerprintData,
     );
-
     _setLoading(false);
-
-    if (res.success == true) {
-      return true;
-    }
-
+    if (res.success == true) return true;
     _error = res.message;
     notifyListeners();
     return false;
   }
 
-  /// Step 4: Services & pricing
   Future<bool> registerTechnicianStep4({
-    required int technicianId,
-    required List<Map<String, dynamic>> services,
+    required String faceData,
   }) async {
+    if (!_ensureDraftToken()) return false;
+    _setLoading(true);
+    final res = await _api.registerTechnicianStep4(
+      registrationToken: _registrationToken!,
+      faceData: faceData,
+    );
+    _setLoading(false);
+    if (res.success == true) return true;
+    _error = res.message;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> registerTechnicianStep5({
+    required String nextOfKinName,
+    required String nextOfKinPhone,
+    required String nextOfKinRelationship,
+  }) async {
+    if (!_ensureDraftToken()) return false;
+    _setLoading(true);
+    final res = await _api.registerTechnicianStep5(
+      registrationToken: _registrationToken!,
+      nextOfKinName: nextOfKinName,
+      nextOfKinPhone: nextOfKinPhone,
+      nextOfKinRelationship: nextOfKinRelationship,
+    );
+    _setLoading(false);
+    if (res.success == true) return true;
+    _error = res.message;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> submitTechnicianRegistration() async {
+    if (!_ensureDraftToken()) return false;
     _setLoading(true);
 
-    final res = await _api.registerTechnicianStep4(
-      technicianId: technicianId,
-      services: services,
+    String? fcmToken;
+    try {
+      fcmToken = await FcmService.getToken();
+    } catch (e) {
+      debugPrint('⚠️ FCM token unavailable at step 6: $e');
+    }
+
+    final res = await _api.submitTechnicianRegistration(
+      registrationToken: _registrationToken!,
+      fcmDeviceToken: fcmToken,
     );
 
-    _setLoading(false);
-
-    if (res.success == true) {
-      return true;
+    if (res.success == true && res.data is Map) {
+      final map = Map<String, dynamic>.from(res.data as Map);
+      final ok = await _saveSession(map, fcmToken: fcmToken);
+      if (ok) {
+        _registrationToken = null;
+        _draftId = null;
+        await StorageService.clearTechnicianData();
+      }
+      _setLoading(false);
+      return ok;
     }
 
     _error = res.message;
-    notifyListeners();
-    return false;
-  }
-
-  /// Submit final registration
-  Future<bool> submitTechnicianRegistration(int technicianId) async {
-    _setLoading(true);
-
-    final res = await _api.submitTechnicianRegistration(technicianId);
-
     _setLoading(false);
-
-    if (res.success == true) {
-      return true;
-    }
-
-    _error = res.message;
-    notifyListeners();
     return false;
   }
 
-  // ── Private helpers ───────────────────────────────────────────────────────
+  Future<void> abandonDraft() async {
+    _registrationToken = null;
+    _draftId = null;
+    await StorageService.clearTechnicianData();
+    notifyListeners();
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BOOTSTRAP + PRIVATE HELPERS
+  // ══════════════════════════════════════════════════════════
 
   Future<void> _loadStoredSession() async {
-    final storedToken = await StorageService.getToken();
-    if (storedToken == null || storedToken.isEmpty) {
-      return;
-    }
+    try {
+      _draftId = await StorageService.getTechnicianId();
+      _registrationToken = await StorageService.getRegistrationToken();
 
-    final userJson = await StorageService.getUserJson();
+      final storedToken = await StorageService.getToken();
+      if (storedToken != null && storedToken.isNotEmpty) {
+        _isBootstrapping = true;
 
-    if (userJson != null && userJson.isNotEmpty) {
-      try {
-        final Map<String, dynamic> userMap =
-        Map<String, dynamic>.from(jsonDecode(userJson) as Map);
-        _token = storedToken;
-        _user = User.fromJson(userMap, storedToken);
-        notifyListeners();
-        _refreshProfile();
-      } catch (e) {
-        debugPrint('Failed to restore user session: $e');
+        final userJson = await StorageService.getUserJson();
+        if (userJson != null && userJson.isNotEmpty) {
+          try {
+            final userMap =
+            Map<String, dynamic>.from(jsonDecode(userJson) as Map);
+            _token = storedToken;
+            _user = User.fromJson(userMap, storedToken);
+            notifyListeners();
+            await _refreshProfile();
+          } catch (e) {
+            debugPrint('Failed to restore user session: $e');
+            await _clearSession();
+          }
+        } else {
+          await _fetchAndSaveUser(storedToken);
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load stored session: $e');
+    } finally {
+      _isBootstrapping = false;
+      if (_sessionExpiredWhileBootstrapping) {
+        _sessionExpiredWhileBootstrapping = false;
         await _clearSession();
       }
-    } else {
-      await _fetchAndSaveUser(storedToken);
+      _isInitialized = true;
+      notifyListeners();
     }
   }
 
   Future<void> _refreshProfile() async {
     final currentToken = _token;
     if (currentToken == null) return;
-
-    final res = await _api.getProfile();
-
-    if (res.success == true &&
-        res.data != null &&
-        res.data is Map &&
-        (res.data as Map)['user'] != null) {
-      final userMap =
-      Map<String, dynamic>.from((res.data as Map)['user'] as Map);
-      _user = User.fromJson(userMap, currentToken);
-      await _storeUser();
-      notifyListeners();
+    try {
+      final res = await _api.getProfile();
+      if (res.success == true &&
+          res.data != null &&
+          res.data is Map &&
+          (res.data as Map)['user'] != null) {
+        final userMap =
+        Map<String, dynamic>.from((res.data as Map)['user'] as Map);
+        _user = User.fromJson(userMap, currentToken);
+        await _storeUser();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Profile refresh failed (kept local session): $e');
     }
   }
 
   Future<void> _fetchAndSaveUser(String token) async {
-    final res = await _api.getProfile();
-
-    if (res.success == true &&
-        res.data != null &&
-        res.data is Map &&
-        (res.data as Map)['user'] != null) {
-      final userMap =
-      Map<String, dynamic>.from((res.data as Map)['user'] as Map);
-      _token = token;
-      _user = User.fromJson(userMap, token);
-      await StorageService.saveToken(token);
-      await _storeUser();
-      await _registerFcm();
-      notifyListeners();
-    } else {
-      await _clearSession();
+    try {
+      final res = await _api.getProfile();
+      if (res.success == true &&
+          res.data != null &&
+          res.data is Map &&
+          (res.data as Map)['user'] != null) {
+        final userMap =
+        Map<String, dynamic>.from((res.data as Map)['user'] as Map);
+        _token = token;
+        _user = User.fromJson(userMap, token);
+        await StorageService.saveToken(token);
+        await _storeUser();
+        await _registerFcm();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch user for stored token: $e');
     }
   }
 
-  Future<void> _saveSession(Map<String, dynamic> data) async {
-    if (data['user'] == null || data['token'] == null) {
-      return;
-    }
+  Future<bool> _saveSession(
+      Map<String, dynamic> data, {
+        String? fcmToken,
+      }) async {
+    final rawUser = data['user'];
+    final rawToken = data['token'];
+    if (rawUser is! Map || rawToken == null) return false;
 
-    final token = data['token'].toString();
-    final userMap = Map<String, dynamic>.from(data['user'] as Map);
-
+    final token = rawToken.toString();
+    final userMap = Map<String, dynamic>.from(rawUser);
     _token = token;
     _user = User.fromJson(userMap, token);
-
     await StorageService.saveToken(token);
     await _storeUser();
-    await _registerFcm();
+    await _registerFcm(fcmToken);
     notifyListeners();
+    return true;
   }
 
   Future<void> _clearSession() async {
+    final hadSession = _token != null || _user != null;
     _token = null;
     _user = null;
-    await StorageService.clearAll();
-    notifyListeners();
+    await StorageService.clearAuth();
+    if (hadSession) notifyListeners();
   }
 
   Future<void> _storeUser() async {
@@ -534,17 +612,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _registerFcm() async {
+  Future<void> _registerFcm([String? providedToken]) async {
     try {
-      final fcmToken = await FcmService.getToken();
+      final fcmToken = providedToken ?? await FcmService.getToken();
       if (fcmToken == null || fcmToken.isEmpty) {
         debugPrint('⚠️ FCM token unavailable');
         return;
       }
 
-      final res = await _api.updateDeviceToken(fcmToken);
+      final res = await _api.updateFcmDeviceToken(fcmToken);
       if (res.success != true) {
         debugPrint('⚠️ Failed to push FCM token: ${res.message}');
+      } else {
+        debugPrint('✅ FCM token registered');
       }
     } catch (e) {
       debugPrint('⚠️ FCM registration error: $e');
@@ -553,9 +633,7 @@ class AuthProvider extends ChangeNotifier {
 
   void _setLoading(bool value) {
     _isLoading = value;
-    if (value == true) {
-      _error = null;
-    }
+    if (value) _error = null;
     notifyListeners();
   }
 }

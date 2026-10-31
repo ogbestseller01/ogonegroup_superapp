@@ -38,20 +38,25 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.getPosts(page: _page, technicianId: _filterTechnicianId);
-    if (res.success && res.data != null) {
-      final data = res.data as Map<String, dynamic>;
-      final List<dynamic> items = data['data'] ?? [];
-      final newPosts = items.map((e) => Post.fromJson(e)).toList();
-      _posts.addAll(newPosts);
-      _hasMore = data['next_page_url'] != null;
-      _page++;
-      _error = null;
-    } else {
-      _error = res.message;
+    try {
+      final res = await _api.getPosts(page: _page, technicianId: _filterTechnicianId);
+      if (res.success && res.data != null) {
+        final data = res.data as Map<String, dynamic>;
+        final List<dynamic> items = data['data'] ?? [];
+        final newPosts = items.map((e) => Post.fromJson(e)).toList();
+        _posts.addAll(newPosts);
+        _hasMore = data['next_page_url'] != null;
+        _page++;
+        _error = null;
+      } else {
+        _error = res.message;
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   // ---- Fundi CRUD ----
@@ -60,22 +65,21 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.getMyPosts();
-    if (res.success && res.data != null) {
-      _posts = (res.data as List).map((e) => Post.fromJson(e)).toList();
-      _error = null;
-
-      for (var p in _posts) {
-        debugPrint('📌 Post #${p.id} | images: ${p.images.length}');
-        debugPrint('   youtubeUrl: ${p.youtubeUrl}');
-        debugPrint('   hasYoutubeVideo: ${p.hasYoutubeVideo}');
+    try {
+      final res = await _api.getMyPosts();
+      if (res.success && res.data != null) {
+        _posts = (res.data as List).map((e) => Post.fromJson(e)).toList();
+        _error = null;
+      } else {
+        _error = res.message;
+        debugPrint('❌ fetchMyPosts error: $_error');
       }
-    } else {
-      _error = res.message;
-      debugPrint('❌ fetchMyPosts error: $_error');
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<bool> createPost(Map<String, dynamic> data) async {
@@ -83,14 +87,19 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.createPost(data);
-    _isLoading = false;
-    if (res.success) {
-      await fetchMyPosts();
-      return true;
+    try {
+      final res = await _api.createPost(data);
+      if (res.success) {
+        await fetchMyPosts();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _error = res.message;
-    notifyListeners();
     return false;
   }
 
@@ -99,14 +108,19 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.updatePost(id, data);
-    _isLoading = false;
-    if (res.success) {
-      await fetchMyPosts();
-      return true;
+    try {
+      final res = await _api.updatePost(id, data);
+      if (res.success) {
+        await fetchMyPosts();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _error = res.message;
-    notifyListeners();
     return false;
   }
 
@@ -115,14 +129,19 @@ class PostProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
-    final res = await _api.deletePost(id);
-    _isLoading = false;
-    if (res.success) {
-      await fetchMyPosts();
-      return true;
+    try {
+      final res = await _api.deletePost(id);
+      if (res.success) {
+        await fetchMyPosts();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _error = res.message;
-    notifyListeners();
     return false;
   }
 
@@ -133,16 +152,13 @@ class PostProvider extends ChangeNotifier {
     final index = _posts.indexWhere((p) => p.id == id);
     if (index != -1) {
       final post = _posts[index];
-      final newLikesCount =
-      post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
+      final newLikesCount = post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
 
+      // ✅ Reconstruct Post with new media-only logic
       _posts[index] = Post(
         id: post.id,
-        title: post.title,
-        content: post.content,
-        images: post.images,               // keep multi-images
-        youtubeUrl: post.youtubeUrl,
-        youtubeEmbed: post.youtubeEmbed,
+        images: post.images,
+        videoUrl: post.videoUrl,
         likesCount: newLikesCount,
         commentsCount: post.commentsCount,
         technicianName: post.technicianName,

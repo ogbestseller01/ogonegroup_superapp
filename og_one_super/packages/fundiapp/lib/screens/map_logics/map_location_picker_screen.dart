@@ -1,5 +1,6 @@
 // map_logics/map_location_picker_screen.dart
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
@@ -11,29 +12,38 @@ class MapLocationPickerScreen extends StatefulWidget {
   const MapLocationPickerScreen({super.key, this.initialCenter});
 
   @override
-  State<MapLocationPickerScreen> createState() => _MapLocationPickerScreenState();
+  State<MapLocationPickerScreen> createState() =>
+      _MapLocationPickerScreenState();
 }
 
 class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   final MapController _mapController = MapController();
+
   LatLng? _selectedPoint;
   String? _placeName;
   bool _isReverseGeocoding = false;
 
-  static const _defaultCenter = LatLng(-6.7924, 39.2083); // Dar es Salaam
-  static const double _minZoom = 4.0;
+  // Center of Tanzania (Dodoma area)
+  static const _defaultCenter = LatLng(-6.369, 34.888);
+
+  // Slightly padded TZ bounding box (SW corner → NE corner)
+  static final LatLngBounds _tanzaniaBounds = LatLngBounds(
+    const LatLng(-12.0, 29.0),
+    const LatLng(-0.8, 40.9),
+  );
+
+  static const double _minZoom = 5.0;
   static const double _maxZoom = 18.0;
 
   @override
   void initState() {
     super.initState();
     _selectedPoint = widget.initialCenter ?? _defaultCenter;
-    if (_selectedPoint != null) {
-      _reverseGeocode(_selectedPoint!);
+    if (widget.initialCenter != null) {
+      _reverseGeocode(widget.initialCenter!);
     }
   }
 
-  /// Reverse geocoding – tries to get a clean area name
   Future<void> _reverseGeocode(LatLng point) async {
     setState(() {
       _isReverseGeocoding = true;
@@ -46,55 +56,40 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             '?lat=${point.latitude}&lon=${point.longitude}'
             '&format=json&addressdetails=1&zoom=16',
       );
+      final res = await http
+          .get(url, headers: {'User-Agent': 'NearbyFundi-App/1.0'})
+          .timeout(const Duration(seconds: 8));
 
-      final response = await http
-          .get(url, headers: {'User-Agent': 'ogonegroup-fundi-app/1.0'})
-          .timeout(const Duration(seconds: 7));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final addr = data['address'] as Map<String, dynamic>?;
+        String? name;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final address = data['address'] as Map<String, dynamic>?;
+        if (addr != null) {
+          name = addr['suburb'] ??
+              addr['neighbourhood'] ??
+              addr['residential'] ??
+              addr['quarter'] ??
+              addr['city_district'] ??
+              addr['village'] ??
+              addr['town'] ??
+              addr['city'] ??
+              addr['county'];
 
-        String? cleanName;
-
-        if (address != null) {
-          cleanName = address['suburb'] ??
-              address['neighbourhood'] ??
-              address['residential'] ??
-              address['quarter'] ??
-              address['city_district'] ??
-              address['village'] ??
-              address['town'] ??
-              address['city'] ??
-              address['county'];
-
-          if (cleanName != null) {
-            final city = address['city'] ?? address['town'] ?? address['state'];
-            if (city != null && city != cleanName) {
-              cleanName = '$cleanName, $city';
-            }
+          final city = addr['city'] ?? addr['town'] ?? addr['state'];
+          if (name != null && city != null && city != name) {
+            name = '$name, $city';
           }
         }
+        name ??= data['display_name']?.toString();
 
-        if (cleanName == null || cleanName.trim().isEmpty) {
-          final display = data['display_name'] as String?;
-          if (display != null) {
-            final parts = display.split(',');
-            cleanName = parts.take(2).join(',').trim();
-          }
-        }
-
-        if (mounted && cleanName != null && cleanName.isNotEmpty) {
-          setState(() => _placeName = cleanName);
+        if (mounted && name != null && name.isNotEmpty) {
+          setState(() => _placeName = name);
         }
       }
-    } catch (e) {
-      debugPrint('Reverse geocode error: $e');
-    }
+    } catch (_) {}
 
-    if (mounted) {
-      setState(() => _isReverseGeocoding = false);
-    }
+    if (mounted) setState(() => _isReverseGeocoding = false);
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
@@ -103,17 +98,15 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   }
 
   void _zoomBy(double delta) {
-    final camera = _mapController.camera;
-    final newZoom = (camera.zoom + delta).clamp(_minZoom, _maxZoom);
-    _mapController.move(camera.center, newZoom);
+    final cam = _mapController.camera;
+    _mapController.move(cam.center, (cam.zoom + delta).clamp(_minZoom, _maxZoom));
   }
 
   void _confirm() {
     if (_selectedPoint == null) return;
-    final name = (_placeName != null && _placeName!.trim().isNotEmpty)
+    final name = (_placeName ?? '').trim().isNotEmpty
         ? _placeName!
         : 'Selected location';
-
     Navigator.pop(context, {
       'lat': _selectedPoint!.latitude,
       'lng': _selectedPoint!.longitude,
@@ -132,10 +125,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
         actions: [
           TextButton(
             onPressed: _selectedPoint != null ? _confirm : null,
-            child: const Text(
-              'OK',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
+            child: const Text('OK',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ],
       ),
@@ -145,15 +136,17 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _selectedPoint ?? _defaultCenter,
-              initialZoom: 14,
+              initialZoom: widget.initialCenter != null ? 14 : 6,
               minZoom: _minZoom,
               maxZoom: _maxZoom,
+              // Remove this line if your flutter_map version complains.
+              cameraConstraint: CameraConstraint.contain(bounds: _tanzaniaBounds),
               onTap: _onMapTap,
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.ogonegroup.fundapp', // ✅ Updated to match your app ID
+                userAgentPackageName: 'com.ogonegroup.fundapp',
               ),
               if (_selectedPoint != null)
                 MarkerLayer(
@@ -162,39 +155,32 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                       point: _selectedPoint!,
                       width: 50,
                       height: 50,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: Colors.red,
-                        size: 50,
-                      ),
+                      child: const Icon(Icons.location_pin,
+                          color: Colors.red, size: 50),
                     ),
                   ],
                 ),
             ],
           ),
 
-          // Zoom controls
           Positioned(
             right: 16,
             bottom: 140,
             child: Column(
               children: [
                 _ZoomButton(
-                  icon: Icons.add,
-                  tooltip: 'Zoom in',
-                  onPressed: () => _zoomBy(1),
-                ),
+                    icon: Icons.add,
+                    tooltip: 'Zoom in',
+                    onPressed: () => _zoomBy(1)),
                 const SizedBox(height: 10),
                 _ZoomButton(
-                  icon: Icons.remove,
-                  tooltip: 'Zoom out',
-                  onPressed: () => _zoomBy(-1),
-                ),
+                    icon: Icons.remove,
+                    tooltip: 'Zoom out',
+                    onPressed: () => _zoomBy(-1)),
               ],
             ),
           ),
 
-          // Bottom info card
           Positioned(
             left: 16,
             right: 16,
@@ -202,8 +188,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             child: Card(
               elevation: 8,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+                  borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -220,8 +205,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                             _placeName ??
                                 'Tap on the map to select a location',
                             style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                                fontWeight: FontWeight.w600),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -238,13 +222,10 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                              borderRadius: BorderRadius.circular(12)),
                         ),
-                        child: const Text(
-                          'Use this location',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                        child: const Text('Use this location',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

@@ -1,379 +1,691 @@
 // lib/screens/auth/register_flow/register_step4_screen.dart
-// Shows Step 4 (services) then Step 5 (prices) in one screen, then submits.
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
 import '../../../config/app_routes.dart';
-import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../providers/service_provider.dart';
-import '../../../services/storage_service.dart';
-import '../../../widgets/register_step_scaffold.dart';
+import '../../../widgets/register_shell.dart';
 
 class RegisterStep4Screen extends StatefulWidget {
-  final int technicianId;
-  const RegisterStep4Screen({super.key, required this.technicianId});
+  final int draftId;
+  const RegisterStep4Screen({super.key, required this.draftId});
 
   @override
   State<RegisterStep4Screen> createState() => _RegisterStep4ScreenState();
 }
 
-class _RegisterStep4ScreenState extends State<RegisterStep4Screen> {
-  int _page = 0; // 0 = services (step 4), 1 = prices (step 5)
-  String _locale = 'en'; // default English
+enum _FacePhase { booting, searching, holding, capturing, review, submitting }
 
-  final Set<int> _selected = {};
-  bool _sameForAll = true;
+/// Hints/errors are stored as enums so they re-translate when the language changes.
+enum _Hint { opening, position, none, closer, farther, hold, confirm, saving, unavailable }
 
-  final _allMin = TextEditingController();
-  final _allMax = TextEditingController();
-  final Map<int, TextEditingController> _min = {};
-  final Map<int, TextEditingController> _max = {};
+enum _Err { noCamera, openFailed, captureFailed, saveFailed, submitFailed, fallbackFailed }
+
+class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
+    with WidgetsBindingObserver {
+  CameraController? _controller;
+  late final FaceDetector _faceDetector;
+  Timer? _stabilityTimer;
+
+  bool _isBusy = false;
+  bool _booting = false;
+
+  _FacePhase _phase = _FacePhase.booting;
+  _Hint _hint = _Hint.opening;
+  _Err? _err;
+  String _errDetail = '';
+  String? _serverError;
+
+  XFile? _capturedFile;
+  double? _faceBoxRatio;
+  double _progress = 0;
+  bool _cameraFailed = false;
 
   @override
   void initState() {
     super.initState();
-    _checkAccess();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServiceProvider>().fetchServices(locale: _locale);
-    });
+    WidgetsBinding.instance.addObserver(this);
+    _faceDetector = FaceDetector(
+      options: FaceDetectorOptions(
+        performanceMode: FaceDetectorMode.fast,
+        enableContours: false,
+        enableLandmarks: false,
+        enableTracking: true,
+        minFaceSize: 0.15,
+      ),
+    );
+    _bootstrapCamera();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _releaseCamera();
+    } else if (state == AppLifecycleState.resumed &&
+        _capturedFile == null &&
+        _controller == null) {
+      _bootstrapCamera();
+    }
   }
 
   @override
   void dispose() {
-    _allMin.dispose();
-    _allMax.dispose();
-    for (final c in [..._min.values, ..._max.values]) {
-      c.dispose();
-    }
+    WidgetsBinding.instance.removeObserver(this);
+    _stabilityTimer?.cancel();
+    final c = _controller;
+    _controller = null;
+    c?.dispose();
+    _faceDetector.close();
     super.dispose();
   }
 
-  Future<void> _checkAccess() async {
-    final step =
-    await context.read<AuthProvider>().getRegistrationStep(widget.technicianId);
-    if (!mounted) return;
-    if (step == null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    } else if (step < 3) {
-      Navigator.pushReplacementNamed(context, AppRoutes.registerStep3,
-          arguments: widget.technicianId);
+  // ── Text resolution ─────────────────────────────────────
+  String _hintText(AppLocalizations l) {
+    switch (_hint) {
+      case _Hint.opening:
+        return l.regFaceOpening;
+      case _Hint.position:
+        return l.regFacePosition;
+      case _Hint.none:
+        return l.regFaceNone;
+      case _Hint.closer:
+        return l.regFaceCloser;
+      case _Hint.farther:
+        return l.regFaceFarther;
+      case _Hint.hold:
+        return l.regFaceHold;
+      case _Hint.confirm:
+        return l.regFaceConfirmPhoto;
+      case _Hint.saving:
+        return l.regFaceSaving;
+      case _Hint.unavailable:
+        return l.regFaceUnavailable;
     }
   }
 
-  TextEditingController _minC(int id) =>
-      _min.putIfAbsent(id, () => TextEditingController());
-  TextEditingController _maxC(int id) =>
-      _max.putIfAbsent(id, () => TextEditingController());
-
-  bool _rangeOk(TextEditingController minC, TextEditingController maxC) {
-    final min = double.tryParse(minC.text.trim());
-    final max = double.tryParse(maxC.text.trim());
-    return min != null && max != null && min >= 0 && max >= min;
-  }
-
-  bool get _pricesValid {
-    if (_selected.isEmpty) return false;
-    if (_sameForAll) return _rangeOk(_allMin, _allMax);
-    return _selected.every((id) => _rangeOk(_minC(id), _maxC(id)));
-  }
-
-  void _back() {
-    if (_page == 1) {
-      setState(() => _page = 0);
-    } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.registerStep3,
-          arguments: widget.technicianId);
+  String? _errorText(AppLocalizations l) {
+    if (_serverError != null) return _serverError;
+    switch (_err) {
+      case null:
+        return null;
+      case _Err.noCamera:
+        return l.regFaceNoCamera;
+      case _Err.openFailed:
+        return l.regFaceOpenFailed(_errDetail);
+      case _Err.captureFailed:
+        return l.regFaceCaptureFailed(_errDetail);
+      case _Err.saveFailed:
+        return l.regFaceSaveFailed;
+      case _Err.submitFailed:
+        return l.regFaceSubmitFailed(_errDetail);
+      case _Err.fallbackFailed:
+        return l.regFaceFallbackFailed(_errDetail);
     }
   }
 
-  void _setLocale(String locale) {
-    if (_locale == locale) return;
-    setState(() => _locale = locale);
-    // Re-fetch so backend returns localized names if needed
-    context.read<ServiceProvider>().fetchServices(
-      forceRefresh: true,
-      locale: locale,
-    );
-  }
+  // ── Camera ──────────────────────────────────────────────
+  Future<void> _bootstrapCamera() async {
+    if (_booting || _capturedFile != null) return;
+    _booting = true;
 
-  Future<void> _submit() async {
-    final auth = context.read<AuthProvider>();
-    auth.clearError();
-
-    final services = _selected.map((id) {
-      final minC = _sameForAll ? _allMin : _minC(id);
-      final maxC = _sameForAll ? _allMax : _maxC(id);
-      return {
-        'service_id': id,
-        'min_price': double.parse(minC.text.trim()),
-        'max_price': double.parse(maxC.text.trim()),
-      };
-    }).toList();
-
-    var ok = await auth.registerTechnicianStep4(
-      technicianId: widget.technicianId,
-      services: services,
-    );
-    if (ok) {
-      ok = await auth.submitTechnicianRegistration(widget.technicianId);
-    }
-    if (!mounted) return;
-
-    if (!ok) {
-      if (auth.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(auth.errorMessage!),
-            backgroundColor: AppTheme.error,
-          ),
-        );
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        _fail(_Err.noCamera);
+        return;
       }
+
+      final front = cameras.firstWhere(
+            (c) => c.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      final ctrl = CameraController(
+        front,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
+      );
+
+      await ctrl.initialize();
+      if (!mounted) {
+        await ctrl.dispose();
+        return;
+      }
+
+      setState(() {
+        _controller = ctrl;
+        _cameraFailed = false;
+        _err = null;
+        _serverError = null;
+        _phase = _FacePhase.searching;
+        _hint = _Hint.position;
+      });
+
+      await ctrl.startImageStream(_onCameraFrame);
+    } catch (e) {
+      _fail(_Err.openFailed, '$e');
+    } finally {
+      _booting = false;
+    }
+  }
+
+  Future<void> _releaseCamera() async {
+    _stabilityTimer?.cancel();
+    _stabilityTimer = null;
+
+    final c = _controller;
+    _controller = null;
+    if (c == null) return;
+
+    try {
+      if (c.value.isStreamingImages) await c.stopImageStream();
+    } catch (_) {}
+    try {
+      await c.dispose();
+    } catch (_) {}
+
+    if (mounted && _capturedFile == null) {
+      setState(() {
+        _phase = _FacePhase.booting;
+        _hint = _Hint.opening;
+      });
+    }
+  }
+
+  Future<void> _stopStream() async {
+    try {
+      if (_controller?.value.isStreamingImages == true) {
+        await _controller!.stopImageStream();
+      }
+    } catch (_) {}
+  }
+
+  InputImageRotation? _rotation() {
+    final ctrl = _controller;
+    if (ctrl == null) return null;
+    return InputImageRotationValue.fromRawValue(
+        ctrl.description.sensorOrientation);
+  }
+
+  Future<void> _onCameraFrame(CameraImage image) async {
+    if (_isBusy || !mounted) return;
+    if (_phase == _FacePhase.capturing ||
+        _phase == _FacePhase.review ||
+        _phase == _FacePhase.submitting) {
       return;
     }
+    _isBusy = true;
 
-    await StorageService.clearTechnicianData();
+    try {
+      final rotation = _rotation();
+      final input = _toInputImage(image, rotation);
+      if (input == null || rotation == null) return;
+
+      final faces = await _faceDetector.processImage(input);
+      if (!mounted) return;
+
+      if (faces.isEmpty) {
+        _resetStability(_Hint.none);
+        return;
+      }
+
+      faces.sort((a, b) => b.boundingBox.width.compareTo(a.boundingBox.width));
+      final face = faces.first;
+
+      final rotated = rotation == InputImageRotation.rotation90deg ||
+          rotation == InputImageRotation.rotation270deg;
+      final uprightWidth = (rotated ? image.height : image.width).toDouble();
+      final ratio = face.boundingBox.width / uprightWidth;
+
+      if (ratio < 0.18) {
+        _resetStability(_Hint.closer, ratio: ratio);
+        return;
+      }
+      if (ratio > 0.60) {
+        _resetStability(_Hint.farther, ratio: ratio);
+        return;
+      }
+
+      _updateFaceRatio(ratio);
+      _startStability();
+    } catch (_) {
+      // ML Kit occasionally throws on transient frames — ignore.
+    } finally {
+      _isBusy = false;
+    }
+  }
+
+  void _updateFaceRatio(double ratio) {
+    if (!mounted) return;
+    if (_faceBoxRatio != null && (_faceBoxRatio! - ratio).abs() < 0.01) return;
+    setState(() => _faceBoxRatio = ratio);
+  }
+
+  void _resetStability(_Hint hint, {double? ratio}) {
+    _stabilityTimer?.cancel();
+    _stabilityTimer = null;
     if (!mounted) return;
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
-        title: const Text("You're all set!"),
-        content: const Text(
-          'Your registration is under review. '
-              "We'll send you an SMS as soon as your account is approved.",
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.login,
-                  (_) => false,
+    final unchanged = _hint == hint &&
+        _phase == _FacePhase.searching &&
+        _progress == 0 &&
+        _faceBoxRatio == ratio;
+    if (unchanged) return;
+
+    setState(() {
+      _hint = hint;
+      _phase = _FacePhase.searching;
+      _progress = 0;
+      _faceBoxRatio = ratio;
+    });
+  }
+
+  void _startStability() {
+    if (_stabilityTimer?.isActive == true) return;
+    if (!mounted) return;
+
+    setState(() {
+      _phase = _FacePhase.holding;
+      _hint = _Hint.hold;
+      _progress = 0;
+    });
+
+    const totalMs = 1400;
+    const tickMs = 60;
+    var elapsed = 0;
+
+    _stabilityTimer = Timer.periodic(const Duration(milliseconds: tickMs), (t) {
+      if (!mounted || _phase != _FacePhase.holding) {
+        t.cancel();
+        return;
+      }
+      elapsed += tickMs;
+      setState(() => _progress = (elapsed / totalMs).clamp(0.0, 1.0));
+
+      if (elapsed >= totalMs) {
+        t.cancel();
+        _stabilityTimer = null;
+        _captureAndReview();
+      }
+    });
+  }
+
+  InputImage? _toInputImage(CameraImage image, InputImageRotation? rotation) {
+    if (rotation == null) return null;
+
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null) return null;
+
+    if (Platform.isIOS && format != InputImageFormat.bgra8888) return null;
+    if (Platform.isAndroid && format != InputImageFormat.nv21) return null;
+    if (image.planes.isEmpty) return null;
+
+    final plane = image.planes.first;
+    return InputImage.fromBytes(
+      bytes: plane.bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: format,
+        bytesPerRow: plane.bytesPerRow,
+      ),
+    );
+  }
+
+  // ── Capture + submit ────────────────────────────────────
+  Future<void> _captureAndReview() async {
+    final ctrl = _controller;
+    if (ctrl == null || _phase == _FacePhase.capturing) return;
+
+    _stabilityTimer?.cancel();
+    _stabilityTimer = null;
+    setState(() => _phase = _FacePhase.capturing);
+    await _stopStream();
+
+    try {
+      final file = await ctrl.takePicture();
+      if (!mounted) return;
+      setState(() {
+        _capturedFile = file;
+        _phase = _FacePhase.review;
+        _hint = _Hint.confirm;
+      });
+    } catch (e) {
+      _fail(_Err.captureFailed, '$e');
+    }
+  }
+
+  Future<void> _confirmAndSubmit() async {
+    final file = _capturedFile;
+    if (file == null) return;
+
+    setState(() {
+      _phase = _FacePhase.submitting;
+      _hint = _Hint.saving;
+      _err = null;
+      _serverError = null;
+    });
+
+    try {
+      final bytes = await File(file.path).readAsBytes();
+      final faceData = base64Encode(bytes);
+
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      final ok = await auth.registerTechnicianStep4(faceData: faceData);
+
+      if (!mounted) return;
+
+      if (ok) {
+        Navigator.of(context).pushReplacementNamed(
+          AppRoutes.registerStep5,
+          arguments: {'draftId': widget.draftId},
+        );
+        return;
+      }
+
+      setState(() {
+        _phase = _FacePhase.review;
+        _hint = _Hint.confirm;
+        _serverError = auth.errorMessage;
+        _err = auth.errorMessage == null ? _Err.saveFailed : null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _phase = _FacePhase.review;
+        _err = _Err.submitFailed;
+        _errDetail = '$e';
+      });
+    }
+  }
+
+  Future<void> _retake() async {
+    await _releaseCamera();
+    if (!mounted) return;
+    setState(() {
+      _capturedFile = null;
+      _faceBoxRatio = null;
+      _progress = 0;
+      _err = null;
+      _serverError = null;
+      _phase = _FacePhase.booting;
+      _hint = _Hint.opening;
+    });
+    await _bootstrapCamera();
+  }
+
+  Future<void> _fallbackSystemCamera() async {
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 80,
+        maxWidth: 1280,
+      );
+      if (file == null) return;
+      await _stopStream();
+      if (!mounted) return;
+      setState(() {
+        _capturedFile = file;
+        _phase = _FacePhase.review;
+        _hint = _Hint.confirm;
+        _err = null;
+        _serverError = null;
+      });
+    } catch (e) {
+      _fail(_Err.fallbackFailed, '$e');
+    }
+  }
+
+  void _fail(_Err e, [String detail = '']) {
+    if (!mounted) return;
+    setState(() {
+      _phase = _FacePhase.searching;
+      _hint = _Hint.unavailable;
+      _err = e;
+      _errDetail = detail;
+      _cameraFailed = true;
+    });
+  }
+
+  // ── UI ──────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final p = RegPalette.of(context);
+    final submitting = _phase == _FacePhase.submitting;
+    final error = _errorText(l10n);
+
+    return RegisterShell(
+      step: 4,
+      total: 6,
+      title: l10n.regFaceTitle,
+      subtitle: _hintText(l10n),
+      showNext: false,
+      backEnabled: !submitting && _phase != _FacePhase.capturing,
+      bottom: _buildFooter(l10n, submitting),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 400, child: _buildPreview(l10n, p)),
+          if (error != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-            child: const Text('Go to login'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreview(AppLocalizations l10n, RegPalette p) {
+    if ((_phase == _FacePhase.review || _phase == _FacePhase.submitting) &&
+        _capturedFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(File(_capturedFile!.path), fit: BoxFit.cover),
+            if (_phase == _FacePhase.submitting)
+              Container(
+                color: Colors.black54,
+                child: const Center(
+                    child: CircularProgressIndicator(color: Colors.white)),
+              ),
+          ],
+        ),
+      );
+    }
+
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized) {
+      return Container(
+        decoration: BoxDecoration(
+          color: p.field,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: _cameraFailed
+            ? Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.videocam_off_rounded, size: 40, color: p.muted),
+            const SizedBox(height: 10),
+            Text(_hintText(l10n),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.muted)),
+          ],
+        )
+            : const CircularProgressIndicator(),
+      );
+    }
+
+    final size = ctrl.value.previewSize;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (size != null)
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: size.height, // preview is landscape-reported
+                height: size.width,
+                child: CameraPreview(ctrl),
+              ),
+            )
+          else
+            CameraPreview(ctrl),
+          _FaceOverlay(
+            faceBoxRatio: _faceBoxRatio,
+            progress: _progress,
+            phase: _phase,
+          ),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                _hintText(l10n),
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ── Language toggle ───────────────────────────────────────────────────
-  Widget _languageToggle(ThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Text(
-          _locale == 'sw' ? 'Lugha:' : 'Language:',
-          style: theme.textTheme.bodySmall,
-        ),
-        const SizedBox(width: 8),
-        SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(value: 'en', label: Text('EN')),
-            ButtonSegment(value: 'sw', label: Text('SW')),
-          ],
-          selected: {_locale},
-          onSelectionChanged: (selected) => _setLocale(selected.first),
-          style: ButtonStyle(
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  Widget _buildFooter(AppLocalizations l10n, bool submitting) {
+    if (_phase == _FacePhase.review || submitting) {
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: submitting ? null : _retake,
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52)),
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.regFaceRetake),
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  // ── Page 0: choose services ───────────────────────────────────────────
-  Widget _servicesPage(ServiceProvider sp, ThemeData theme) {
-    if (sp.isLoading && sp.services.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    if (sp.services.isEmpty) {
-      return Center(
-        child: Text(
-          _locale == 'sw'
-              ? 'Hakuna huduma zinazopatikana. Jaribu tena baadaye.'
-              : 'No services available. Please try again later.',
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: submitting ? null : _confirmAndSubmit,
+              style:
+              FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              icon: const Icon(Icons.check_rounded),
+              label: Text(l10n.regFaceConfirm),
+            ),
+          ),
+        ],
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _languageToggle(theme),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: sp.services.map((s) {
-            final isSel = _selected.contains(s.id);
-            final label = s.localizedName(_locale);
-            return FilterChip(
-              label: Text(label),
-              selected: isSel,
-              showCheckmark: false,
-              selectedColor: theme.colorScheme.primary,
-              backgroundColor: theme.colorScheme.surface,
-              labelStyle: TextStyle(
-                color: isSel ? Colors.white : theme.colorScheme.onSurface,
-              ),
-              onSelected: (v) => setState(() {
-                v ? _selected.add(s.id) : _selected.remove(s.id);
-              }),
-            );
-          }).toList(),
-        ),
-      ],
+    if (_cameraFailed) {
+      return FilledButton.icon(
+        onPressed: _fallbackSystemCamera,
+        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        icon: const Icon(Icons.camera_alt_outlined),
+        label: Text(l10n.regFaceSystemCamera),
+      );
+    }
+
+    return FilledButton.icon(
+      onPressed: (_faceBoxRatio != null && _phase != _FacePhase.capturing)
+          ? _captureAndReview
+          : null,
+      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+      icon: const Icon(Icons.camera_rounded),
+      label: Text(_phase == _FacePhase.capturing
+          ? l10n.regFaceCapturing
+          : l10n.regFaceCaptureNow),
     );
   }
+}
 
-  // ── Page 1: price ranges ──────────────────────────────────────────────
-  Widget _priceRow(TextEditingController minC, TextEditingController maxC) {
-    InputDecoration deco(String label) => InputDecoration(
-      labelText: label,
-      prefixText: 'TZS ',
-      border: const OutlineInputBorder(),
-    );
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: minC,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: deco(_locale == 'sw' ? 'Kutoka' : 'From'),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: TextField(
-            controller: maxC,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: deco(_locale == 'sw' ? 'Hadi' : 'To'),
-            onChanged: (_) => setState(() {}),
-          ),
-        ),
-      ],
-    );
-  }
+// ── Face overlay ────────────────────────────────────────────
+class _FaceOverlay extends StatelessWidget {
+  final double? faceBoxRatio;
+  final double progress;
+  final _FacePhase phase;
 
-  Widget _pricesPage(ServiceProvider sp, ThemeData theme) {
-    final chosen = sp.services.where((s) => _selected.contains(s.id)).toList();
-    final showMax = _allMax.text.isNotEmpty &&
-        _allMin.text.isNotEmpty &&
-        !_rangeOk(_allMin, _allMax);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (chosen.length > 1)
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              _locale == 'sw'
-                  ? 'Bei sawa kwa huduma zote'
-                  : 'Same price for all services',
-            ),
-            value: _sameForAll,
-            onChanged: (v) => setState(() => _sameForAll = v),
-          ),
-        const SizedBox(height: 8),
-        if (_sameForAll || chosen.length == 1) ...[
-          Text(
-            chosen.length == 1
-                ? chosen.first.localizedName(_locale)
-                : (_locale == 'sw'
-                ? '${chosen.length} huduma'
-                : '${chosen.length} services'),
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          _priceRow(_allMin, _allMax),
-          if (showMax)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _locale == 'sw'
-                    ? '"Hadi" lazima iwe juu ya "Kutoka"'
-                    : '"To" must be higher than "From"',
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
-              ),
-            ),
-        ] else
-          ...chosen.map(
-                (s) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.localizedName(_locale),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  _priceRow(_minC(s.id), _maxC(s.id)),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 12),
-        Text(
-          _locale == 'sw'
-              ? 'Hii ni mwongozo kwa wateja. Unaweza kuibadilisha baadaye kwenye wasifu wako.'
-              : 'This is a guide for customers. You can change it later in your profile.',
-          style: theme.textTheme.bodySmall,
-        ),
-      ],
-    );
-  }
+  const _FaceOverlay({
+    required this.faceBoxRatio,
+    required this.progress,
+    required this.phase,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final sp = context.watch<ServiceProvider>();
-    final theme = Theme.of(context);
-    final isServices = _page == 0;
+    final hasFace = faceBoxRatio != null;
+    final isHolding = phase == _FacePhase.holding;
+    final color = !hasFace
+        ? Colors.white70
+        : isHolding
+        ? Colors.greenAccent
+        : Colors.orangeAccent;
 
-    if (!isServices && _selected.length == 1) _sameForAll = true;
-
-    return RegisterStepScaffold(
-      step: isServices ? 4 : 5,
-      total: 5,
-      title: isServices
-          ? (_locale == 'sw' ? 'Unatoa huduma gani?' : 'What do you do?')
-          : (_locale == 'sw' ? 'Weka bei yako' : 'Set your price range'),
-      subtitle: isServices
-          ? (_locale == 'sw'
-          ? 'Chagua kila huduma unayotoa.'
-          : 'Pick every service you offer.')
-          : (_locale == 'sw'
-          ? 'Wateja wanaona bei hii kabla ya kukupigia simu.'
-          : 'Customers see this range before they call you.'),
-      isLoading: auth.isLoading,
-      buttonText: isServices
-          ? (_locale == 'sw' ? 'Endelea' : 'Continue')
-          : (_locale == 'sw' ? 'Wasilisha usajili' : 'Submit registration'),
-      onNext: isServices
-          ? (_selected.isNotEmpty ? () => setState(() => _page = 1) : null)
-          : (_pricesValid ? _submit : null),
-      onBack: _back,
-      child: isServices ? _servicesPage(sp, theme) : _pricesPage(sp, theme),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxSize = constraints.maxWidth * 0.66;
+        return Center(
+          child: SizedBox(
+            width: boxSize,
+            height: boxSize * 1.25,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(boxSize),
+                    border: Border.all(color: color, width: 3),
+                  ),
+                ),
+                if (isHolding)
+                  SizedBox(
+                    width: boxSize + 24,
+                    height: boxSize + 24,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 4,
+                      color: Colors.greenAccent,
+                      backgroundColor: Colors.white24,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,51 +1,54 @@
+// lib/providers/static_page_provider.dart
+
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+
 import '../models/about.dart';
-import '../models/terms.dart';
-import '../models/faq.dart';
 import '../models/contact.dart';
-import '../models/privacy_policy.dart'; // <-- Added import
+import '../models/faq.dart';
+import '../models/privacy_policy.dart';
+import '../models/terms.dart';
+import '../services/api_service.dart';
 
 class StaticPageProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
 
+  // ── Cached data ─────────────────────────────────────────
   About? _about;
   Term? _terms;
   List<Faq> _faqs = [];
-
-  // ✨ NEW: Privacy Policy Variable
   PrivacyPolicy? _privacyPolicy;
 
+  // ── Read state (about / terms / faqs) ───────────────────
   bool _isLoading = false;
   String? _error;
 
-  // --- Getters ---
+  // ── Separate state for privacy policy ───────────────────
+  bool _privacyLoading = false;
+  String? _privacyError;
+
+  // ── Getters ─────────────────────────────────────────────
   About? get about => _about;
   Term? get terms => _terms;
-  List<Faq> get faqs => _faqs;
-
-  // ✨ NEW: Privacy Policy Getter
+  List<Faq> get faqs => List.unmodifiable(_faqs);
   PrivacyPolicy? get privacyPolicy => _privacyPolicy;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // ============================================================
-  // ✨ NEW: Privacy Policy Loading/Error Getters (Added for your screen)
-  // ============================================================
-  bool _privacyLoading = false;
-  String? _privacyError;
-
   bool get privacyLoading => _privacyLoading;
   String? get privacyError => _privacyError;
-  // ============================================================
 
-  // --- Existing Load Methods ---
+  // ════════════════════════════════════════════════════════
+  // ABOUT / TERMS / FAQS
+  // ════════════════════════════════════════════════════════
+
   Future<void> loadAbout() async {
     _setLoading(true);
     final res = await _api.getAbout();
-    if (res.success && res.data != null) {
-      _about = About.fromJson(res.data);
+    if (res.success && res.data is Map) {
+      _about = About.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } else {
       _error = res.message;
     }
@@ -55,8 +58,10 @@ class StaticPageProvider extends ChangeNotifier {
   Future<void> loadTerms() async {
     _setLoading(true);
     final res = await _api.getTerms();
-    if (res.success && res.data != null) {
-      _terms = Term.fromJson(res.data);
+    if (res.success && res.data is Map) {
+      _terms = Term.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } else {
       _error = res.message;
     }
@@ -66,45 +71,76 @@ class StaticPageProvider extends ChangeNotifier {
   Future<void> loadFaqs() async {
     _setLoading(true);
     final res = await _api.getFaqs();
-    if (res.success && res.data != null) {
-      _faqs = (res.data as List).map((e) => Faq.fromJson(e)).toList();
+
+    // Backend returns either a List directly, or { data: [...] }.
+    final raw = res.data;
+    List<dynamic>? list;
+    if (raw is List) {
+      list = raw;
+    } else if (raw is Map && raw['data'] is List) {
+      list = raw['data'] as List;
+    }
+
+    if (res.success && list != null) {
+      _faqs = list
+          .whereType<Map>()
+          .map((e) => Faq.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } else {
       _error = res.message;
     }
     _setLoading(false);
   }
 
+  // ════════════════════════════════════════════════════════
+  // CONTACT FORM
+  //
+  // The /v1/contact route does not exist. The correct endpoint
+  // is POST /v23/feedback (FeedbackController@store), throttled
+  // at 5 requests/minute.
+  // ════════════════════════════════════════════════════════
+
   Future<bool> sendContactMessage(ContactMessage message) async {
     _setLoading(true);
-    final res = await _api.sendContactMessage(message.toJson());
-    _setLoading(false);
-    if (res.success) return true;
+    final res = await _api.sendFeedback(message.toJson());
+    _isLoading = false;
+
+    if (res.success) {
+      _error = null;
+      notifyListeners();
+      return true;
+    }
+
     _error = res.message;
     notifyListeners();
     return false;
   }
 
-  // ============================================================
-  // ✨ NEW: Privacy Policy Methods
-  // ============================================================
+  // ════════════════════════════════════════════════════════
+  // PRIVACY POLICY
+  //
+  // GET /v18/privacy-policy       → public read
+  // PUT /v18/privacy-policy       → admin only (permission:privacy.edit)
+  // ════════════════════════════════════════════════════════
 
-  /// Fetch the public privacy policy from the API
   Future<void> loadPrivacyPolicy() async {
     _privacyLoading = true;
     _privacyError = null;
-    notifyListeners(); // Using separate privacy loading state
+    notifyListeners();
 
     final res = await _api.getPrivacyPolicy();
     _privacyLoading = false;
-    if (res.success && res.data != null) {
-      _privacyPolicy = PrivacyPolicy.fromJson(res.data);
+
+    if (res.success && res.data is Map) {
+      _privacyPolicy = PrivacyPolicy.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
     } else {
       _privacyError = res.message;
     }
     notifyListeners();
   }
 
-  /// Update the privacy policy (Admin only)
   Future<bool> updatePrivacyPolicy(String content) async {
     _privacyLoading = true;
     _privacyError = null;
@@ -113,23 +149,26 @@ class StaticPageProvider extends ChangeNotifier {
     final res = await _api.updatePrivacyPolicy({'content': content});
     _privacyLoading = false;
 
-    if (res.success && res.data != null) {
-      _privacyPolicy = PrivacyPolicy.fromJson(res.data);
+    if (res.success && res.data is Map) {
+      _privacyPolicy = PrivacyPolicy.fromJson(
+        Map<String, dynamic>.from(res.data as Map),
+      );
       notifyListeners();
       return true;
-    } else {
-      _privacyError = res.message;
-      notifyListeners();
-      return false;
     }
+
+    _privacyError = res.message;
+    notifyListeners();
+    return false;
   }
 
-  // ============================================================
-  // Helpers
-  // ============================================================
+  // ════════════════════════════════════════════════════════
+  // HELPERS
+  // ════════════════════════════════════════════════════════
 
   void clearError() {
     _error = null;
+    _privacyError = null;
     notifyListeners();
   }
 

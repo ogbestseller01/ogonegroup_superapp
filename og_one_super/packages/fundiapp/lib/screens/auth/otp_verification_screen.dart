@@ -1,4 +1,5 @@
-// otp_verification_screen.dart
+// lib/screens/auth/otp_verification_screen.dart
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,15 +14,19 @@ import '../../l10n/app_localizations.dart';
 import '../../services/storage_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
-  final String email;
+  final String identifier;
+  final String? email;
+  final String? phone;
   final bool redirectToStep2;
-  final int? technicianId;
+  final int? draftId;
 
   const OtpVerificationScreen({
     super.key,
-    required this.email,
+    required this.identifier,
+    this.email,
+    this.phone,
     this.redirectToStep2 = false,
-    this.technicianId,
+    this.draftId,
   });
 
   @override
@@ -86,25 +91,56 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final auth = context.read<AuthProvider>();
     auth.clearError();
 
-    final success = await auth.verifyOtp(widget.email, _otp);
+    if (widget.redirectToStep2) {
+      final ok = await auth.verifyDraftOtp(widget.identifier, _otp);
+      if (!mounted) return;
+
+      if (ok) {
+        final draftId = auth.draftId ?? widget.draftId;
+        if (widget.email != null && widget.email!.isNotEmpty) {
+          await StorageService.saveTechnicianEmail(widget.email!);
+        }
+        if (draftId != null) {
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.registerStep2,
+            arguments: draftId,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration session lost. Please start over.'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          await auth.abandonDraft();
+          if (!mounted) return;
+          Navigator.pushReplacementNamed(context, AppRoutes.registerStep1);
+        }
+      } else if (auth.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(auth.errorMessage!),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        auth.clearError();
+      }
+      return;
+    }
+
+    // Standard login OTP path
+    final success = await auth.verifyOtp(widget.identifier, _otp);
     if (!mounted) return;
 
     if (success) {
-      if (widget.redirectToStep2 && widget.technicianId != null) {
-        await StorageService.saveTechnicianId(widget.technicianId!);
-        await StorageService.saveTechnicianEmail(widget.email);
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.registerStep2,
-          arguments: widget.technicianId,
-        );
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          }
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      });
     } else if (auth.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -124,7 +160,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final auth = context.read<AuthProvider>();
     auth.clearError();
 
-    final success = await auth.resendOtp(widget.email);
+    final success = widget.redirectToStep2
+        ? await auth.resendDraftOtp(widget.identifier)
+        : await auth.resendOtp(widget.identifier);
+
     if (!mounted) return;
 
     setState(() => _isResending = false);
@@ -133,7 +172,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _startCountdown();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('OTP resent to ${widget.email}'),
+          content: Text('OTP resent to ${widget.identifier}'),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -196,7 +235,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${l10n.enterCodeSent}\n${widget.email}',
+                    '${l10n.enterCodeSent}\n${widget.identifier}',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.hintColor,

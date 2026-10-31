@@ -156,6 +156,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ─────────────────────────────────────────────
   // Sign-up navigation (resumes unfinished registration)
+  //
+  //  `step` = last COMPLETED step of the 6-step fundi flow:
+  //    0/null → step1   (nothing started)
+  //    1      → step2   (basic info done)
+  //    2      → step3   (identity done)
+  //    3      → step4   (fingerprint done)
+  //    4      → step5   (face done)
+  //    5      → review  (emergency contact done)
   // ─────────────────────────────────────────────
   Future<void> _handleSignUp() async {
     final storedId = await StorageService.getTechnicianId();
@@ -167,25 +175,32 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (step != null) {
-        switch (step) {
-          case 1:
-            Navigator.pushNamed(context, AppRoutes.registerStep1);
-            return;
-          case 2:
-            Navigator.pushNamed(context, AppRoutes.registerStep2,
-                arguments: storedId);
-            return;
-          case 3:
-            Navigator.pushNamed(context, AppRoutes.registerStep3,
-                arguments: storedId);
-            return;
-          case 4:
-            Navigator.pushNamed(context, AppRoutes.registerStep4,
-                arguments: storedId);
-            return;
-          default:
-            Navigator.pushNamed(context, AppRoutes.registerStep1);
-            return;
+        if (step < 1) {
+          Navigator.pushNamed(context, AppRoutes.registerStep1);
+          return;
+        } else if (step < 2) {
+          Navigator.pushNamed(context, AppRoutes.registerStep2,
+              arguments: storedId);
+          return;
+        } else if (step < 3) {
+          Navigator.pushNamed(context, AppRoutes.registerStep3,
+              arguments: storedId);
+          return;
+        } else if (step < 4) {
+          Navigator.pushNamed(context, AppRoutes.registerStep4,
+              arguments: storedId);
+          return;
+        } else if (step < 5) {
+          Navigator.pushNamed(context, AppRoutes.registerStep5,
+              arguments: storedId);
+          return;
+        } else {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.registerReview,
+            arguments: {'technicianId': storedId},
+          );
+          return;
         }
       }
 

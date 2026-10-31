@@ -40,12 +40,12 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    _screens = [
-      const _HomeDashboardContent(),
-      const FundiPostsScreen(),
-      const FundiRequestsScreen(),
-      const ChatListScreen(),
-      const FundiProfileScreen(),
+    _screens = const [
+      _HomeDashboardContent(),
+      FundiPostsScreen(),
+      FundiRequestsScreen(),
+      ChatListScreen(),
+      FundiProfileScreen(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -345,9 +345,6 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
           scrolledUnderElevation: 0,
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
-          ),
           actions: [
             IconButton(
               icon: _isRefreshing
@@ -366,17 +363,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
               onPressed: _isRefreshing ? null : _manualRefresh,
             ),
             NotificationBellIcon(onTap: () => _showNotifications(context)),
-            PopupMenuButton<String>(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 4 : 8),
-              icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-              offset: const Offset(0, 50),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18)),
-              elevation: 10,
-              color: isDark ? AppTheme.darkSurface : Colors.white,
-              itemBuilder: (context) => _buildMenuItems(context),
-            ),
-            SizedBox(width: compact ? 0 : 4),
+            SizedBox(width: compact ? 4 : 8),
           ],
         ),
         body: LayoutBuilder(
@@ -401,84 +388,6 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
           chatLabel: l10n.chat,
           profileLabel: l10n.profile,
         ),
-      ),
-    );
-  }
-
-  List<PopupMenuEntry<String>> _buildMenuItems(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return [
-      _buildPopupMenuItem(
-        context,
-        key: 'settings',
-        icon: Icons.settings_outlined,
-        title: l10n.settings,
-        onTap: () => Navigator.pushNamed(context, AppRoutes.settings),
-      ),
-      _buildPopupMenuItem(
-        context,
-        key: 'portfolio',
-        icon: Icons.photo_library_outlined,
-        title: l10n.portfolio,
-        onTap: () => Navigator.pushNamed(context, AppRoutes.portfolio),
-      ),
-      _buildPopupMenuItem(
-        context,
-        key: 'downloads',
-        icon: Icons.file_download_rounded,
-        title: 'Downloads',
-        onTap: () => Navigator.pushNamed(context, AppRoutes.downloads),
-      ),
-      const PopupMenuDivider(),
-      _buildPopupMenuItem(
-        context,
-        key: 'logout',
-        icon: Icons.logout_rounded,
-        title: l10n.logout,
-        onTap: () => _logoutWithConfirmation(context),
-        isDestructive: true,
-      ),
-    ];
-  }
-
-  PopupMenuItem<String> _buildPopupMenuItem(
-      BuildContext context, {
-        required String key,
-        required IconData icon,
-        required String title,
-        required VoidCallback onTap,
-        bool isDestructive = false,
-      }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDestructive
-        ? AppTheme.error
-        : (isDark ? Colors.white : AppTheme.primary);
-    return PopupMenuItem<String>(
-      value: key,
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(icon, color: color, size: 19),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                inherit: true,
-                color: color,
-                fontWeight: isDestructive ? FontWeight.w700 : FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -585,8 +494,6 @@ class _FundiDrawer extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
-    final tech = context.watch<TechnicianProvider>().technician;
-    final online = tech?.isOnline ?? false;
 
     final name = user?.name ?? 'Fundi';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'F';
@@ -596,10 +503,10 @@ class _FundiDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Header
+            // ── Header with Close button on top-right ─────────
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 8, 24),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppTheme.primary, AppTheme.primaryLight],
@@ -610,14 +517,22 @@ class _FundiDrawer extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Avatar + Close button
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(3),
+                        padding: const EdgeInsets.all(3.5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border:
-                          Border.all(color: AppTheme.secondary, width: 2),
+                          Border.all(color: AppTheme.secondary, width: 2.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.secondary.withOpacity(0.35),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
                         child: CircleAvatar(
                           radius: 28,
@@ -634,32 +549,16 @@ class _FundiDrawer extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      if (online)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppTheme.success,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.wifi_rounded,
-                                  color: Colors.white, size: 13),
-                              const SizedBox(width: 4),
-                              Text(
-                                l10n.online,
-                                style: const TextStyle(
-                                  inherit: true,
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white, size: 26),
+                        tooltip: 'Close',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.15),
+                          padding: const EdgeInsets.all(8),
                         ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -668,20 +567,22 @@ class _FundiDrawer extends StatelessWidget {
                     style: const TextStyle(
                       inherit: true,
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (user?.phone != null && user!.phone!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
                     Text(
                       user.phone!,
                       style: TextStyle(
                         inherit: true,
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.82),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -689,10 +590,10 @@ class _FundiDrawer extends StatelessWidget {
               ),
             ),
 
-            // Menu items only
+            // ── Menu items ───────────────────────────────────
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
                 children: [
                   _DrawerItem(
                     icon: Icons.settings_outlined,
@@ -723,7 +624,7 @@ class _FundiDrawer extends StatelessWidget {
                     label: 'Subscription',
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                          horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.secondary.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
@@ -732,7 +633,7 @@ class _FundiDrawer extends StatelessWidget {
                         l10n.comingSoon,
                         style: const TextStyle(
                           inherit: true,
-                          fontSize: 10,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.primary,
                         ),
@@ -747,41 +648,41 @@ class _FundiDrawer extends StatelessWidget {
               ),
             ),
 
-            // Logout
+            // ── Logout ───────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
               child: Material(
-                color: AppTheme.error.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
+                color: AppTheme.error.withOpacity(0.09),
+                borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   onTap: () {
                     Navigator.pop(context);
                     onLogout();
                   },
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                        horizontal: 16, vertical: 15),
                     child: Row(
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
-                            color: AppTheme.error.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
+                            color: AppTheme.error.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(13),
                           ),
                           child: const Icon(Icons.logout_rounded,
-                              color: AppTheme.error, size: 20),
+                              color: AppTheme.error, size: 21),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Text(
                           l10n.logout,
                           style: const TextStyle(
                             inherit: true,
                             color: AppTheme.error,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: 15.5,
                           ),
                         ),
                       ],
@@ -802,41 +703,64 @@ class _DrawerItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Widget? trailing;
+  final bool isDanger;
 
   const _DrawerItem({
     required this.icon,
     required this.label,
     required this.onTap,
     this.trailing,
+    this.isDanger = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? Colors.white : AppTheme.primary;
+    final color = isDanger
+        ? AppTheme.error
+        : (isDark ? Colors.white : AppTheme.primary);
 
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(isDanger ? 0.12 : 0.09),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      inherit: true,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: isDanger
+                          ? AppTheme.error
+                          : (isDark ? Colors.white : AppTheme.primary),
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+          ),
         ),
-        child: Icon(icon, color: color, size: 22),
       ),
-      title: Text(
-        label,
-        style: TextStyle(
-          inherit: true,
-          fontWeight: FontWeight.w600,
-          color: isDark ? Colors.white : AppTheme.primary,
-        ),
-      ),
-      trailing: trailing,
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
     );
   }
 }
@@ -1244,8 +1168,6 @@ class _HomeDashboardContent extends StatelessWidget {
 
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
-    final tech = context.watch<TechnicianProvider>().technician;
-    final online = tech?.isOnline ?? false;
     final requestProvider = context.watch<RequestProvider>();
     final requests = requestProvider.requests;
 
@@ -1282,179 +1204,197 @@ class _HomeDashboardContent extends StatelessWidget {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(padding, 18, padding, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _HeroCard(
-                name: user?.name ?? 'Fundi',
-                initial: user?.name.isNotEmpty == true
-                    ? user!.name[0].toUpperCase()
-                    : 'F',
-                greeting: l10n.hello,
-                onlineLabel: l10n.online,
-                online: online,
-                pendingText: pendingRequests > 0
-                    ? '$pendingRequests ${l10n.pending}'
-                    : null,
-                isTablet: isTablet,
-              ),
-              SizedBox(height: gap + 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      icon: Icons.list_alt_rounded,
-                      label: l10n.totalRequests,
-                      value: requests.length.toString(),
-                      color: AppTheme.accent,
-                      isTablet: isTablet,
-                      onTap: () => _navigateToTab(context, 2),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      icon: Icons.pending_rounded,
-                      label: l10n.pending,
-                      value: pendingRequests.toString(),
-                      color: AppTheme.gold600,
-                      isTablet: isTablet,
-                      onTap: () => _navigateToTab(context, 2),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      icon: Icons.check_circle_rounded,
-                      label: l10n.completed,
-                      value: completedRequests.toString(),
-                      color: AppTheme.success,
-                      isTablet: isTablet,
-                      onTap: () => _navigateToTab(context, 2),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: gap + 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Latest Requests',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          inherit: true,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                          color: primaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (requests.isNotEmpty)
-                    TextButton(
-                      onPressed: () => _navigateToTab(context, 2),
-                      style: TextButton.styleFrom(
-                        foregroundColor:
-                        isDark ? AppTheme.secondary : AppTheme.primary,
-                        backgroundColor: (isDark
-                            ? AppTheme.secondary
-                            : AppTheme.primary)
-                            .withOpacity(0.08),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: const Text(
-                        'View All',
-                        style: TextStyle(
-                          inherit: true,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (topFiveRequests.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? AppTheme.darkBorder
-                          : AppTheme.borderLight.withOpacity(0.35),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primary.withOpacity(0.06),
-                        ),
-                        child: Icon(Icons.inbox_outlined,
-                            size: 36, color: mutedText),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        l10n.noRequests,
-                        style: TextStyle(
-                          inherit: true,
-                          color: mutedText,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                LayoutBuilder(
-                  builder: (context, c) {
-                    if (c.maxWidth >= 640) {
-                      const spacing = 12.0;
-                      final itemW = (c.maxWidth - spacing) / 2;
-                      return Wrap(
-                        spacing: spacing,
-                        children: topFiveRequests
-                            .map((r) => SizedBox(
-                          width: itemW,
-                          child: _buildLatestRequest(context, r),
-                        ))
-                            .toList(),
-                      );
-                    }
-                    return Column(
-                      children: topFiveRequests
-                          .map((r) => _buildLatestRequest(context, r))
-                          .toList(),
-                    );
-                  },
+              // Header band
+              Container(
+                padding: EdgeInsets.fromLTRB(padding, 4, padding, 44),
+                color: AppTheme.primary,
+                child: _HeroCard(
+                  name: user?.name ?? 'Fundi',
+                  initial: user?.name.isNotEmpty == true
+                      ? user!.name[0].toUpperCase()
+                      : 'F',
+                  greeting: l10n.hello,
+                  pendingText: pendingRequests > 0
+                      ? '$pendingRequests ${l10n.pending}'
+                      : null,
+                  isTablet: isTablet,
                 ),
-              const SizedBox(height: 8),
+              ),
+              // Body sheet
+              Container(
+                transform: Matrix4.translationValues(0, -26, 0),
+                padding: EdgeInsets.fromLTRB(padding, 20, padding, 24),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppTheme.darkBackground
+                      : theme.scaffoldBackgroundColor,
+                  borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(30)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            context,
+                            icon: Icons.list_alt_rounded,
+                            label: l10n.totalRequests,
+                            value: requests.length.toString(),
+                            color: AppTheme.accent,
+                            isTablet: isTablet,
+                            onTap: () => _navigateToTab(context, 2),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            context,
+                            icon: Icons.pending_rounded,
+                            label: l10n.pending,
+                            value: pendingRequests.toString(),
+                            color: AppTheme.gold600,
+                            isTablet: isTablet,
+                            onTap: () => _navigateToTab(context, 2),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            context,
+                            icon: Icons.check_circle_rounded,
+                            label: l10n.completed,
+                            value: completedRequests.toString(),
+                            color: AppTheme.success,
+                            isTablet: isTablet,
+                            onTap: () => _navigateToTab(context, 2),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: gap + 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: AppTheme.secondary,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Latest Requests',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                inherit: true,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.4,
+                                color: primaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (requests.isNotEmpty)
+                          TextButton(
+                            onPressed: () => _navigateToTab(context, 2),
+                            style: TextButton.styleFrom(
+                              foregroundColor:
+                              isDark ? AppTheme.secondary : AppTheme.primary,
+                              backgroundColor: (isDark
+                                  ? AppTheme.secondary
+                                  : AppTheme.primary)
+                                  .withOpacity(0.08),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 6),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: const Text(
+                              'View All',
+                              style: TextStyle(
+                                inherit: true,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (topFiveRequests.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 40, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? AppTheme.darkBorder
+                                : AppTheme.borderLight.withOpacity(0.35),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 76,
+                              height: 76,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppTheme.primary.withOpacity(0.06),
+                              ),
+                              child: Icon(Icons.inbox_outlined,
+                                  size: 36, color: mutedText),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              l10n.noRequests,
+                              style: TextStyle(
+                                inherit: true,
+                                color: mutedText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      LayoutBuilder(
+                        builder: (context, c) {
+                          if (c.maxWidth >= 640) {
+                            const spacing = 12.0;
+                            final itemW = (c.maxWidth - spacing) / 2;
+                            return Wrap(
+                              spacing: spacing,
+                              children: topFiveRequests
+                                  .map((r) => SizedBox(
+                                width: itemW,
+                                child: _buildLatestRequest(context, r),
+                              ))
+                                  .toList(),
+                            );
+                          }
+                          return Column(
+                            children: topFiveRequests
+                                .map((r) => _buildLatestRequest(context, r))
+                                .toList(),
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -1759,8 +1699,6 @@ class _HeroCard extends StatelessWidget {
   final String name;
   final String initial;
   final String greeting;
-  final String onlineLabel;
-  final bool online;
   final String? pendingText;
   final bool isTablet;
 
@@ -1768,8 +1706,6 @@ class _HeroCard extends StatelessWidget {
     required this.name,
     required this.initial,
     required this.greeting,
-    required this.onlineLabel,
-    required this.online,
     required this.pendingText,
     required this.isTablet,
   });
@@ -1783,19 +1719,16 @@ class _HeroCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       padding: EdgeInsets.all(isTablet ? 24 : (compact ? 14 : 20)),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primary, AppTheme.primaryLight],
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.10),
+            Colors.white.withOpacity(0.04),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withOpacity(0.30),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
+        border: Border.all(color: Colors.white.withOpacity(0.10), width: 1),
       ),
       child: Stack(
         children: [
@@ -1859,7 +1792,7 @@ class _HeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$greeting 👋',
+                      greeting,
                       style: TextStyle(
                         inherit: true,
                         color: Colors.white.withOpacity(0.75),
@@ -1880,57 +1813,26 @@ class _HeroCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        if (online)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppTheme.success,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.wifi_rounded,
-                                    color: Colors.white, size: 13),
-                                const SizedBox(width: 4),
-                                Text(
-                                  onlineLabel,
-                                  style: const TextStyle(
-                                    inherit: true,
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
+                    if (pendingText != null) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.warning,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          pendingText!,
+                          style: const TextStyle(
+                            inherit: true,
+                            color: AppTheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
                           ),
-                        if (pendingText != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppTheme.warning,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              pendingText!,
-                              style: const TextStyle(
-                                inherit: true,
-                                color: AppTheme.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

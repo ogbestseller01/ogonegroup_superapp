@@ -129,7 +129,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
     if (!userOk) return _fail(auth.errorMessage ?? l10n.updateFailed);
 
-    // 2) technician details. Area text without coordinates is geocoded server-side.
+    // 2) technician details — typed area is geocoded server-side
     final hourly = double.tryParse(_hourlyC.text.trim());
     final area = _areaC.text.trim();
     final techOk = await tech.updateProfile({
@@ -169,15 +169,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Text(
         name.isNotEmpty ? name[0].toUpperCase() : 'F',
         style: TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary),
+          fontSize: 48,
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.primary,
+        ),
       ),
     );
 
     if (_photo != null) return Image.file(_photo!, fit: BoxFit.cover);
 
-    final current = context.watch<TechnicianProvider>().technician?.profilePhoto;
+    final current =
+        context.watch<TechnicianProvider>().technician?.profilePhoto;
     return AppNetworkImage(path: current, fallback: initial);
   }
 
@@ -211,7 +213,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                          color:
+                          theme.colorScheme.primary.withValues(alpha: 0.2),
                           width: 3,
                         ),
                       ),
@@ -259,7 +262,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.nidaNumber,
                   prefixIcon: const Icon(Icons.badge_outlined),
-                  helperText: 'Set during registration. Contact support to change.',
+                  helperText:
+                  'Set during registration. Contact support to change.',
                 ),
               ),
               const SizedBox(height: 16),

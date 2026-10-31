@@ -905,4 +905,290 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oops => 'Oops!';
+
+  @override
+  String get themeLabel => 'Theme';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get backToApp => 'Back to app';
+
+  @override
+  String get regBack => 'Back';
+
+  @override
+  String get regContinue => 'Continue';
+
+  @override
+  String regStepOf(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get regCreateAccountTitle => 'Create your account';
+
+  @override
+  String get regCreateAccountSubtitle => 'We\'ll send a code to your phone to verify it.';
+
+  @override
+  String get regFullName => 'Full name';
+
+  @override
+  String get regPhoneHint => 'Phone number';
+
+  @override
+  String get regEmailOptional => 'Email (optional)';
+
+  @override
+  String get regPasswordHint => 'Password (min 8 characters)';
+
+  @override
+  String get regConfirmPasswordHint => 'Confirm password';
+
+  @override
+  String get regPhotoOptional => 'Photo (optional)';
+
+  @override
+  String get regChooseGallery => 'Choose from gallery';
+
+  @override
+  String get regTakePhoto => 'Take a photo';
+
+  @override
+  String get regRemovePhoto => 'Remove photo';
+
+  @override
+  String get regSearchCountry => 'Search country...';
+
+  @override
+  String get regNoCountryFound => 'No country found';
+
+  @override
+  String get regNameRequired => 'Name is required';
+
+  @override
+  String get regPhoneRequired => 'Phone is required';
+
+  @override
+  String get regPhoneInvalidTz => 'Enter a valid Tanzanian number (e.g. 0682 131 178)';
+
+  @override
+  String get regPhoneInvalid => 'Enter a valid phone number';
+
+  @override
+  String get regEmailInvalid => 'Enter a valid email';
+
+  @override
+  String get regPasswordMin => 'At least 8 characters';
+
+  @override
+  String get regPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get regIdentityTitle => 'Verify your identity';
+
+  @override
+  String get regIdentitySubtitle => 'Used only by our team to approve your account.';
+
+  @override
+  String get regIdNida => 'NIDA';
+
+  @override
+  String get regIdLicense => 'Driver\'s license';
+
+  @override
+  String get regIdVoter => 'Voter\'s ID (KURA)';
+
+  @override
+  String get regNidaHint => 'NIDA number (20 digits)';
+
+  @override
+  String get regVoterHint => 'Voter ID (12 digits)';
+
+  @override
+  String get regLicenseHint => 'License number (min 10 digits)';
+
+  @override
+  String get regEnterId => 'Enter the ID number';
+
+  @override
+  String get regNidaLen => 'NIDA must be exactly 20 digits';
+
+  @override
+  String get regVoterLen => 'Voter ID must be exactly 12 digits';
+
+  @override
+  String get regLicenseLen => 'License must be at least 10 digits';
+
+  @override
+  String get regAddIdPhoto => 'Tap to add a photo of your ID (optional)';
+
+  @override
+  String get regFingerprintTitle => 'Ink fingerprint';
+
+  @override
+  String get regFingerprintHeadIdle => 'Place your finger';
+
+  @override
+  String get regFingerprintHeadDone => 'Fingerprint captured';
+
+  @override
+  String get regFingerprintDescIdle => 'Touch and press the area below to stamp your ink print.';
+
+  @override
+  String get regFingerprintDescDone => 'Your ink print was captured. Tap the button below to continue.';
+
+  @override
+  String get regFingerprintChipIdle => 'Tap here';
+
+  @override
+  String get regFingerprintChipDone => 'Ready';
+
+  @override
+  String get regFingerprintStamp => 'Tap to stamp';
+
+  @override
+  String get regFingerprintScanning => 'Capturing…';
+
+  @override
+  String get regFingerprintSubmit => 'Submit & continue';
+
+  @override
+  String get regFingerprintRetry => 'Try again';
+
+  @override
+  String get regFingerprintSaveFailed => 'Could not save the fingerprint.';
+
+  @override
+  String get regFaceTitle => 'Face capture';
+
+  @override
+  String get regFaceOpening => 'Opening camera…';
+
+  @override
+  String get regFacePosition => 'Position your face in the frame';
+
+  @override
+  String get regFaceNone => 'No face detected';
+
+  @override
+  String get regFaceCloser => 'Move closer';
+
+  @override
+  String get regFaceFarther => 'Move back a little';
+
+  @override
+  String get regFaceHold => 'Hold still…';
+
+  @override
+  String get regFaceConfirmPhoto => 'Confirm your photo';
+
+  @override
+  String get regFaceSaving => 'Saving…';
+
+  @override
+  String get regFaceUnavailable => 'Camera unavailable';
+
+  @override
+  String get regFaceNoCamera => 'No camera available on this device.';
+
+  @override
+  String regFaceOpenFailed(String error) {
+    return 'Could not open the camera: $error';
+  }
+
+  @override
+  String regFaceCaptureFailed(String error) {
+    return 'Could not capture the photo: $error';
+  }
+
+  @override
+  String get regFaceSaveFailed => 'Could not save the face capture.';
+
+  @override
+  String regFaceSubmitFailed(String error) {
+    return 'Submission failed: $error';
+  }
+
+  @override
+  String regFaceFallbackFailed(String error) {
+    return 'Camera fallback failed: $error';
+  }
+
+  @override
+  String get regFaceCapturing => 'Capturing…';
+
+  @override
+  String get regFaceCaptureNow => 'Capture now';
+
+  @override
+  String get regFaceRetake => 'Retake';
+
+  @override
+  String get regFaceConfirm => 'Confirm';
+
+  @override
+  String get regFaceSystemCamera => 'Use system camera';
+
+  @override
+  String get regKinTitle => 'Emergency contact';
+
+  @override
+  String get regKinSubtitle => 'Who should we contact in an emergency?';
+
+  @override
+  String get regKinRelationship => 'Relationship (e.g. Spouse, Parent, Sibling)';
+
+  @override
+  String get regKinRelationRequired => 'Relationship is required';
+
+  @override
+  String get regReviewTitle => 'Review & Submit';
+
+  @override
+  String get regReviewHeading => 'Please review your registration details';
+
+  @override
+  String get regCompletedSteps => 'Completed steps';
+
+  @override
+  String get regAccountCreated => 'Account created';
+
+  @override
+  String get regIdentityVerified => 'Identity saved';
+
+  @override
+  String get regFingerprintEnrolled => 'Fingerprint captured';
+
+  @override
+  String get regFaceEnrolled => 'Face captured';
+
+  @override
+  String get regKinSaved => 'Emergency contact saved';
+
+  @override
+  String get regRelationship => 'Relationship';
+
+  @override
+  String get regSubmit => 'Submit registration';
+
+  @override
+  String get regBackToStep5 => 'Back to step 5';
+
+  @override
+  String get regSubmittedTitle => 'Registration submitted!';
+
+  @override
+  String get regSubmittedBody => 'Your account is pending admin verification. You\'ll receive an SMS once approved.';
+
+  @override
+  String get regSubmitFailed => 'Submission failed. Please try again.';
+
+  @override
+  String get regSessionExpired => 'Registration session expired. Please start over.';
 }

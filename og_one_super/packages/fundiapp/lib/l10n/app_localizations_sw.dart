@@ -905,4 +905,290 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get oops => 'Samahani!';
+
+  @override
+  String get themeLabel => 'Mandhari';
+
+  @override
+  String get themeLight => 'Angavu';
+
+  @override
+  String get themeDark => 'Giza';
+
+  @override
+  String get backToApp => 'Rudi kwenye programu';
+
+  @override
+  String get regBack => 'Rudi';
+
+  @override
+  String get regContinue => 'Endelea';
+
+  @override
+  String regStepOf(int current, int total) {
+    return 'Hatua $current kati ya $total';
+  }
+
+  @override
+  String get regCreateAccountTitle => 'Fungua akaunti yako';
+
+  @override
+  String get regCreateAccountSubtitle => 'Tutakutumia msimbo kwenye simu yako ili kuthibitisha.';
+
+  @override
+  String get regFullName => 'Jina kamili';
+
+  @override
+  String get regPhoneHint => 'Namba ya simu';
+
+  @override
+  String get regEmailOptional => 'Barua pepe (si lazima)';
+
+  @override
+  String get regPasswordHint => 'Nenosiri (angalau herufi 8)';
+
+  @override
+  String get regConfirmPasswordHint => 'Thibitisha nenosiri';
+
+  @override
+  String get regPhotoOptional => 'Picha (si lazima)';
+
+  @override
+  String get regChooseGallery => 'Chagua kutoka kwenye picha';
+
+  @override
+  String get regTakePhoto => 'Piga picha';
+
+  @override
+  String get regRemovePhoto => 'Ondoa picha';
+
+  @override
+  String get regSearchCountry => 'Tafuta nchi...';
+
+  @override
+  String get regNoCountryFound => 'Hakuna nchi iliyopatikana';
+
+  @override
+  String get regNameRequired => 'Jina linahitajika';
+
+  @override
+  String get regPhoneRequired => 'Namba ya simu inahitajika';
+
+  @override
+  String get regPhoneInvalidTz => 'Weka namba sahihi ya Tanzania (mf. 0682 131 178)';
+
+  @override
+  String get regPhoneInvalid => 'Weka namba sahihi ya simu';
+
+  @override
+  String get regEmailInvalid => 'Weka barua pepe sahihi';
+
+  @override
+  String get regPasswordMin => 'Angalau herufi 8';
+
+  @override
+  String get regPasswordMismatch => 'Nenosiri hazifanani';
+
+  @override
+  String get regIdentityTitle => 'Thibitisha utambulisho wako';
+
+  @override
+  String get regIdentitySubtitle => 'Hutumiwa na timu yetu pekee kuidhinisha akaunti yako.';
+
+  @override
+  String get regIdNida => 'NIDA';
+
+  @override
+  String get regIdLicense => 'Leseni ya udereva';
+
+  @override
+  String get regIdVoter => 'Kitambulisho cha mpiga kura (KURA)';
+
+  @override
+  String get regNidaHint => 'Namba ya NIDA (tarakimu 20)';
+
+  @override
+  String get regVoterHint => 'Namba ya kura (tarakimu 12)';
+
+  @override
+  String get regLicenseHint => 'Namba ya leseni (angalau tarakimu 10)';
+
+  @override
+  String get regEnterId => 'Weka namba ya kitambulisho';
+
+  @override
+  String get regNidaLen => 'NIDA lazima iwe tarakimu 20 kamili';
+
+  @override
+  String get regVoterLen => 'Namba ya kura lazima iwe tarakimu 12 kamili';
+
+  @override
+  String get regLicenseLen => 'Leseni lazima iwe na angalau tarakimu 10';
+
+  @override
+  String get regAddIdPhoto => 'Gusa kuongeza picha ya kitambulisho (si lazima)';
+
+  @override
+  String get regFingerprintTitle => 'Kiganja cha wino';
+
+  @override
+  String get regFingerprintHeadIdle => 'Weka kidole chako';
+
+  @override
+  String get regFingerprintHeadDone => 'Alama ya kidole imechukuliwa';
+
+  @override
+  String get regFingerprintDescIdle => 'Gusa na ubonyeze eneo lililo hapa chini kupiga muhuri wa wino.';
+
+  @override
+  String get regFingerprintDescDone => 'Alama yako ya wino imechukuliwa. Bonyeza kitufe hapa chini kuendelea.';
+
+  @override
+  String get regFingerprintChipIdle => 'Gusa hapa';
+
+  @override
+  String get regFingerprintChipDone => 'Tayari';
+
+  @override
+  String get regFingerprintStamp => 'Gusa kupiga muhuri';
+
+  @override
+  String get regFingerprintScanning => 'Inachukua…';
+
+  @override
+  String get regFingerprintSubmit => 'Wasilisha na endelea';
+
+  @override
+  String get regFingerprintRetry => 'Jaribu tena';
+
+  @override
+  String get regFingerprintSaveFailed => 'Imeshindwa kuhifadhi alama ya kidole.';
+
+  @override
+  String get regFaceTitle => 'Picha ya uso';
+
+  @override
+  String get regFaceOpening => 'Inafungua kamera…';
+
+  @override
+  String get regFacePosition => 'Weka uso wako ndani ya fremu';
+
+  @override
+  String get regFaceNone => 'Hakuna uso uliogunduliwa';
+
+  @override
+  String get regFaceCloser => 'Sogea karibu';
+
+  @override
+  String get regFaceFarther => 'Rudi nyuma kidogo';
+
+  @override
+  String get regFaceHold => 'Tulia…';
+
+  @override
+  String get regFaceConfirmPhoto => 'Thibitisha picha yako';
+
+  @override
+  String get regFaceSaving => 'Inahifadhi…';
+
+  @override
+  String get regFaceUnavailable => 'Kamera haipatikani';
+
+  @override
+  String get regFaceNoCamera => 'Hakuna kamera kwenye kifaa hiki.';
+
+  @override
+  String regFaceOpenFailed(String error) {
+    return 'Imeshindwa kufungua kamera: $error';
+  }
+
+  @override
+  String regFaceCaptureFailed(String error) {
+    return 'Imeshindwa kupiga picha: $error';
+  }
+
+  @override
+  String get regFaceSaveFailed => 'Imeshindwa kuhifadhi picha ya uso.';
+
+  @override
+  String regFaceSubmitFailed(String error) {
+    return 'Imeshindwa kuwasilisha: $error';
+  }
+
+  @override
+  String regFaceFallbackFailed(String error) {
+    return 'Kamera mbadala imeshindwa: $error';
+  }
+
+  @override
+  String get regFaceCapturing => 'Inapiga picha…';
+
+  @override
+  String get regFaceCaptureNow => 'Piga picha sasa';
+
+  @override
+  String get regFaceRetake => 'Piga tena';
+
+  @override
+  String get regFaceConfirm => 'Thibitisha';
+
+  @override
+  String get regFaceSystemCamera => 'Tumia kamera ya simu';
+
+  @override
+  String get regKinTitle => 'Mtu wa dharura';
+
+  @override
+  String get regKinSubtitle => 'Tuwasiliane na nani wakati wa dharura?';
+
+  @override
+  String get regKinRelationship => 'Uhusiano (mf. Mke/Mume, Mzazi, Ndugu)';
+
+  @override
+  String get regKinRelationRequired => 'Uhusiano unahitajika';
+
+  @override
+  String get regReviewTitle => 'Hakiki na Wasilisha';
+
+  @override
+  String get regReviewHeading => 'Tafadhali hakiki taarifa zako za usajili';
+
+  @override
+  String get regCompletedSteps => 'Hatua zilizokamilika';
+
+  @override
+  String get regAccountCreated => 'Akaunti imeundwa';
+
+  @override
+  String get regIdentityVerified => 'Utambulisho umehifadhiwa';
+
+  @override
+  String get regFingerprintEnrolled => 'Alama ya kidole imechukuliwa';
+
+  @override
+  String get regFaceEnrolled => 'Uso umechukuliwa';
+
+  @override
+  String get regKinSaved => 'Mtu wa dharura amehifadhiwa';
+
+  @override
+  String get regRelationship => 'Uhusiano';
+
+  @override
+  String get regSubmit => 'Wasilisha usajili';
+
+  @override
+  String get regBackToStep5 => 'Rudi hatua ya 5';
+
+  @override
+  String get regSubmittedTitle => 'Usajili umewasilishwa!';
+
+  @override
+  String get regSubmittedBody => 'Akaunti yako inasubiri uthibitisho wa msimamizi. Utapokea SMS ukishaidhinishwa.';
+
+  @override
+  String get regSubmitFailed => 'Imeshindwa kuwasilisha. Tafadhali jaribu tena.';
+
+  @override
+  String get regSessionExpired => 'Muda wa usajili umeisha. Tafadhali anza upya.';
 }

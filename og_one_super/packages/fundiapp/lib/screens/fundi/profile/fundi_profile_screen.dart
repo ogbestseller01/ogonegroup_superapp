@@ -1,6 +1,5 @@
 // lib/screens/fundi/profile/fundi_profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_routes.dart';
@@ -19,8 +18,9 @@ import '../../../widgets/custom_button.dart';
 /// Navy is unreadable on the dark background, so gold is used in dark mode.
 Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
 Color _cardBg(bool isDark) => isDark ? AppTheme.darkSurface : Colors.white;
-Color _cardBorder(bool isDark) =>
-    isDark ? AppTheme.darkBorder : AppTheme.borderLight.withValues(alpha: 0.30);
+Color _cardBorder(bool isDark) => isDark
+    ? AppTheme.darkBorder
+    : AppTheme.borderLight.withValues(alpha: 0.30);
 Color _ink(bool isDark) => isDark ? Colors.white : AppTheme.primary;
 Color _muted(bool isDark) =>
     isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
@@ -71,29 +71,31 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     final tech = context.read<TechnicianProvider>();
     final catalog = context.read<ServiceProvider>().services;
 
-    final prices = await showModalBottomSheet<List<Map<String, dynamic>>>(
+    final selectedIds = await showModalBottomSheet<Set<int>>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
       constraints: const BoxConstraints(maxWidth: 560),
       builder: (_) => _ServicesEditorSheet(
-        current: tech.technician?.servicePrices ?? const [],
+        selectedIds: (tech.technician?.services ?? const <Service>[])
+            .map((s) => s.id)
+            .toSet(),
         catalog: catalog,
       ),
     );
-    if (prices == null || !mounted) return;
+    if (selectedIds == null || !mounted) return;
 
-    final ok = await tech.updateServicePrices(prices);
+    final ok = await tech.updateServices(selectedIds.toList());
     if (!mounted) return;
-    _snack(ok ? 'Services & prices updated' : (tech.error ?? 'Update failed'),
+    _snack(ok ? 'Services updated' : (tech.error ?? 'Update failed'),
         error: !ok);
   }
 
   Future<void> _logout() async {
     final l10n = AppLocalizations.of(context)!;
-    final confirm =
-    await showConfirmationDialog(context, l10n.logout, l10n.logoutConfirmation);
+    final confirm = await showConfirmationDialog(
+        context, l10n.logout, l10n.logoutConfirmation);
     if (confirm != true || !mounted) return;
     final auth = context.read<AuthProvider>();
     await auth.logout();
@@ -121,9 +123,16 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     return '${nida.substring(0, 4)}${'*' * (nida.length - 8)}${nida.substring(nida.length - 4)}';
   }
 
-  String? _categoryLabel(List<Service> catalog, int serviceId) {
+  /// Category label for a service. Prefers the service's own `categories`
+  /// (present when the catalog is the source); otherwise looks it up from
+  /// the passed-in catalog — because `GET /v19/technicians/profile` only
+  /// eager-loads `services`, not `services.categories`.
+  String? _categoryLabel(List<Service> catalog, Service service) {
+    if (service.categories.isNotEmpty) {
+      return service.categories.map((c) => c.name).join(', ');
+    }
     for (final s in catalog) {
-      if (s.id == serviceId && s.categories.isNotEmpty) {
+      if (s.id == service.id && s.categories.isNotEmpty) {
         return s.categories.map((c) => c.name).join(', ');
       }
     }
@@ -371,9 +380,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  /// Card shell. Uses Material so ink splashes of children stay visible
-  /// (this is what fixes the "ListTile background color or ink splashes may
-  /// be invisible" assertion).
+  /// Card shell. Uses Material so ink splashes of children stay visible.
   Widget _card(bool isDark, {required Widget child}) {
     return Material(
       color: _cardBg(isDark),
@@ -388,9 +395,9 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  Widget _servicesCard(bool isDark, AppLocalizations l10n, Technician? t,
-      List<Service> catalog) {
-    final prices = t?.servicePrices ?? const <TechnicianServicePrice>[];
+  Widget _servicesCard(
+      bool isDark, AppLocalizations l10n, Technician? t, List<Service> catalog) {
+    final services = t?.services ?? const <Service>[];
 
     return Container(
       decoration: BoxDecoration(
@@ -427,7 +434,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        '${l10n.servicesIOffer} (${prices.length})',
+                        '${l10n.servicesIOffer} (${services.length})',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -454,7 +461,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: prices.isEmpty
+              child: services.isEmpty
                   ? Text(
                 l10n.noServicesSelected,
                 style: TextStyle(
@@ -465,9 +472,9 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
               )
                   : Column(
                 children: [
-                  for (final sp in prices)
-                    _servicePriceTile(
-                        isDark, sp, _categoryLabel(catalog, sp.id)),
+                  for (final s in services)
+                    _serviceTile(
+                        isDark, s, _categoryLabel(catalog, s)),
                 ],
               ),
             ),
@@ -477,8 +484,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  Widget _servicePriceTile(
-      bool isDark, TechnicianServicePrice sp, String? category) {
+  Widget _serviceTile(bool isDark, Service s, String? category) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
@@ -493,39 +499,14 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            runSpacing: 4,
-            spacing: 10,
-            children: [
-              Text(
-                sp.name,
-                style: TextStyle(
-                  inherit: true,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: _ink(isDark),
-                ),
-              ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _accent(isDark).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'TZS ${sp.minPrice.toStringAsFixed(0)} - ${sp.maxPrice.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    inherit: true,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: _accent(isDark),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            s.name,
+            style: TextStyle(
+              inherit: true,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              color: _ink(isDark),
+            ),
           ),
           if (category != null) ...[
             const SizedBox(height: 5),
@@ -552,14 +533,18 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
         rows.add(MapEntry(l10n.experience, '${t.experience} ${l10n.years}'));
       }
       if ((t.hourlyRate ?? 0) > 0) {
-        rows.add(MapEntry(
-            l10n.hourlyRate, '${l10n.tzs} ${t.hourlyRate!.toStringAsFixed(0)}'));
+        rows.add(MapEntry(l10n.hourlyRate,
+            '${l10n.tzs} ${t.hourlyRate!.toStringAsFixed(0)}'));
       }
       if ((t.area ?? '').isNotEmpty) rows.add(MapEntry(l10n.area, t.area!));
-      if ((t.nida ?? '').isNotEmpty) rows.add(MapEntry('NIDA', _maskNida(t.nida!)));
+      if ((t.nida ?? '').isNotEmpty) {
+        rows.add(MapEntry('NIDA', _maskNida(t.nida!)));
+      }
       rows.add(MapEntry(
         l10n.accountStatus,
-        t.verified ? l10n.active : (t.verificationStatus ?? 'pending').toUpperCase(),
+        t.verified
+            ? l10n.active
+            : (t.verificationStatus ?? 'pending').toUpperCase(),
       ));
     }
 
@@ -642,10 +627,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
             if (i < rows.length - 1)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 11),
-                child: Divider(
-                  height: 1,
-                  color: _cardBorder(isDark),
-                ),
+                child: Divider(height: 1, color: _cardBorder(isDark)),
               ),
           ],
         ],
@@ -672,10 +654,12 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
           minimumSize: const Size(0, 52),
           backgroundColor: _cardBg(isDark),
           side: BorderSide(
-            color: color != null ? color.withValues(alpha: 0.5) : _cardBorder(isDark),
+            color: color != null
+                ? color.withValues(alpha: 0.5)
+                : _cardBorder(isDark),
           ),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           padding: const EdgeInsets.symmetric(vertical: 14),
           textStyle: const TextStyle(
             inherit: true,
@@ -718,7 +702,8 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                     padding: EdgeInsets.fromLTRB(h, 12, h, 24),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
+                        constraints:
+                        const BoxConstraints(maxWidth: 720),
                         child: Column(
                           children: [
                             _header(isDark, auth, t),
@@ -768,49 +753,30 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
   }
 }
 
-// ═══════════════════ SERVICES & PRICES EDITOR ═══════════════════════════════
+// ═══════════════════ SERVICES EDITOR (multi-select) ═════════════════════════
 
 class _ServicesEditorSheet extends StatefulWidget {
-  final List<TechnicianServicePrice> current;
+  final Set<int> selectedIds;
   final List<Service> catalog;
 
-  const _ServicesEditorSheet({required this.current, required this.catalog});
+  const _ServicesEditorSheet({
+    required this.selectedIds,
+    required this.catalog,
+  });
 
   @override
   State<_ServicesEditorSheet> createState() => _ServicesEditorSheetState();
 }
 
 class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
-  final Set<int> _selected = {};
-  final Map<int, TextEditingController> _min = {};
-  final Map<int, TextEditingController> _max = {};
+  late final Set<int> _selected = {...widget.selectedIds};
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    for (final sp in widget.current) {
-      _selected.add(sp.id);
-      _min[sp.id] = TextEditingController(text: sp.minPrice.toStringAsFixed(0));
-      _max[sp.id] = TextEditingController(text: sp.maxPrice.toStringAsFixed(0));
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final c in [..._min.values, ..._max.values]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
 
   void _toggle(int id, bool on) {
     setState(() {
       _error = null;
       if (on) {
         _selected.add(id);
-        _min.putIfAbsent(id, () => TextEditingController());
-        _max.putIfAbsent(id, () => TextEditingController());
       } else {
         _selected.remove(id);
       }
@@ -823,56 +789,7 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
       setState(() => _error = l10n.selectAtLeastOneService);
       return;
     }
-
-    final result = <Map<String, dynamic>>[];
-    for (final id in _selected) {
-      final min = double.tryParse(_min[id]!.text.trim());
-      final max = double.tryParse(_max[id]!.text.trim());
-      if (min == null || max == null || max < min) {
-        setState(() => _error = 'Enter a valid price range for every service');
-        return;
-      }
-      result.add({'service_id': id, 'min_price': min, 'max_price': max});
-    }
-    Navigator.pop(context, result);
-  }
-
-  Widget _priceField(TextEditingController c, String label, bool isDark) {
-    return Expanded(
-      child: TextField(
-        controller: c,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        onChanged: (_) => setState(() => _error = null),
-        cursorColor: _accent(isDark),
-        style: TextStyle(
-          inherit: true,
-          fontWeight: FontWeight.w700,
-          color: _ink(isDark),
-        ),
-        decoration: InputDecoration(
-          labelText: label,
-          prefixText: 'TZS ',
-          isDense: true,
-          filled: true,
-          fillColor: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: _cardBorder(isDark)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: _cardBorder(isDark)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: _accent(isDark), width: 2),
-          ),
-        ),
-      ),
-    );
+    Navigator.pop(context, _selected);
   }
 
   @override
@@ -885,132 +802,110 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
     return MediaQuery.withClampedTextScaling(
       minScaleFactor: 0.85,
       maxScaleFactor: 1.25,
-      child: Padding(
-        padding:
-        EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: SizedBox(
-          height: height,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Edit services & prices',
-                    style: TextStyle(
-                      inherit: true,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                      color: _ink(isDark),
-                    ),
+      child: SizedBox(
+        height: height,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Edit services',
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: _ink(isDark),
                   ),
                 ),
               ),
-              Expanded(
-                child: widget.catalog.isEmpty
-                    ? Center(
-                  child: Text(
-                    'No services available.',
-                    style: TextStyle(color: _muted(isDark)),
-                  ),
-                )
-                    : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: widget.catalog.length,
-                  itemBuilder: (context, i) {
-                    final s = widget.catalog[i];
-                    final on = _selected.contains(s.id);
-                    final category = s.categories.isNotEmpty
-                        ? s.categories.map((c) => c.name).join(', ')
-                        : null;
+            ),
+            Expanded(
+              child: widget.catalog.isEmpty
+                  ? Center(
+                child: Text(
+                  'No services available.',
+                  style: TextStyle(color: _muted(isDark)),
+                ),
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: widget.catalog.length,
+                itemBuilder: (context, i) {
+                  final s = widget.catalog[i];
+                  final on = _selected.contains(s.id);
+                  final category = s.categories.isNotEmpty
+                      ? s.categories.map((c) => c.name).join(', ')
+                      : null;
 
-                    // Material (not Container) so the checkbox tile's
-                    // ink splash is visible – fixes the ListTile assertion.
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Material(
-                        color: on
-                            ? _accent(isDark).withValues(alpha: 0.07)
-                            : Colors.transparent,
-                        clipBehavior: Clip.antiAlias,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          side: BorderSide(
-                            color: on
-                                ? _accent(isDark).withValues(alpha: 0.4)
-                                : _cardBorder(isDark),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            CheckboxListTile(
-                              contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                              activeColor: _accent(isDark),
-                              checkColor:
-                              isDark ? AppTheme.primary : Colors.white,
-                              title: Text(
-                                s.name,
-                                style: TextStyle(
-                                  inherit: true,
-                                  fontWeight: FontWeight.w700,
-                                  color: _ink(isDark),
-                                ),
-                              ),
-                              subtitle: category != null
-                                  ? Text(
-                                category,
-                                style: TextStyle(
-                                  inherit: true,
-                                  fontSize: 12,
-                                  color: _muted(isDark),
-                                ),
-                              )
-                                  : null,
-                              value: on,
-                              onChanged: (v) => _toggle(s.id, v == true),
-                            ),
-                            if (on)
-                              Padding(
-                                padding:
-                                const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                                child: Row(
-                                  children: [
-                                    _priceField(_min[s.id]!, 'From', isDark),
-                                    const SizedBox(width: 10),
-                                    _priceField(_max[s.id]!, 'To', isDark),
-                                  ],
-                                ),
-                              ),
-                          ],
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Material(
+                      color: on
+                          ? _accent(isDark).withValues(alpha: 0.07)
+                          : Colors.transparent,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: BorderSide(
+                          color: on
+                              ? _accent(isDark).withValues(alpha: 0.4)
+                              : _cardBorder(isDark),
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.w600,
+                      child: CheckboxListTile(
+                        contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12),
+                        activeColor: _accent(isDark),
+                        checkColor:
+                        isDark ? AppTheme.primary : Colors.white,
+                        title: Text(
+                          s.name,
+                          style: TextStyle(
+                            inherit: true,
+                            fontWeight: FontWeight.w700,
+                            color: _ink(isDark),
+                          ),
+                        ),
+                        subtitle: category != null
+                            ? Text(
+                          category,
+                          style: TextStyle(
+                            inherit: true,
+                            fontSize: 12,
+                            color: _muted(isDark),
+                          ),
+                        )
+                            : null,
+                        value: on,
+                        onChanged: (v) => _toggle(s.id, v == true),
+                      ),
                     ),
+                  );
+                },
+              ),
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: CustomButton(
-                  text: l10n.saveChanges,
-                  onPressed: _submit,
-                ),
               ),
-            ],
-          ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: CustomButton(
+                text: l10n.saveChanges,
+                onPressed: _submit,
+              ),
+            ),
+          ],
         ),
       ),
     );

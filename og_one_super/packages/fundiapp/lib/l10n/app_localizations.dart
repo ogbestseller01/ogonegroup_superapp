@@ -1846,6 +1846,558 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Oops!'**
   String get oops;
+
+  /// No description provided for @themeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get themeLabel;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @backToApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to app'**
+  String get backToApp;
+
+  /// No description provided for @regBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get regBack;
+
+  /// No description provided for @regContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get regContinue;
+
+  /// No description provided for @regStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String regStepOf(int current, int total);
+
+  /// No description provided for @regCreateAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get regCreateAccountTitle;
+
+  /// No description provided for @regCreateAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll send a code to your phone to verify it.'**
+  String get regCreateAccountSubtitle;
+
+  /// No description provided for @regFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get regFullName;
+
+  /// No description provided for @regPhoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get regPhoneHint;
+
+  /// No description provided for @regEmailOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Email (optional)'**
+  String get regEmailOptional;
+
+  /// No description provided for @regPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Password (min 8 characters)'**
+  String get regPasswordHint;
+
+  /// No description provided for @regConfirmPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get regConfirmPasswordHint;
+
+  /// No description provided for @regPhotoOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo (optional)'**
+  String get regPhotoOptional;
+
+  /// No description provided for @regChooseGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get regChooseGallery;
+
+  /// No description provided for @regTakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get regTakePhoto;
+
+  /// No description provided for @regRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get regRemovePhoto;
+
+  /// No description provided for @regSearchCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country...'**
+  String get regSearchCountry;
+
+  /// No description provided for @regNoCountryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No country found'**
+  String get regNoCountryFound;
+
+  /// No description provided for @regNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get regNameRequired;
+
+  /// No description provided for @regPhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone is required'**
+  String get regPhoneRequired;
+
+  /// No description provided for @regPhoneInvalidTz.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Tanzanian number (e.g. 0682 131 178)'**
+  String get regPhoneInvalidTz;
+
+  /// No description provided for @regPhoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get regPhoneInvalid;
+
+  /// No description provided for @regEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get regEmailInvalid;
+
+  /// No description provided for @regPasswordMin.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get regPasswordMin;
+
+  /// No description provided for @regPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get regPasswordMismatch;
+
+  /// No description provided for @regIdentityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your identity'**
+  String get regIdentityTitle;
+
+  /// No description provided for @regIdentitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only by our team to approve your account.'**
+  String get regIdentitySubtitle;
+
+  /// No description provided for @regIdNida.
+  ///
+  /// In en, this message translates to:
+  /// **'NIDA'**
+  String get regIdNida;
+
+  /// No description provided for @regIdLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver\'s license'**
+  String get regIdLicense;
+
+  /// No description provided for @regIdVoter.
+  ///
+  /// In en, this message translates to:
+  /// **'Voter\'s ID (KURA)'**
+  String get regIdVoter;
+
+  /// No description provided for @regNidaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'NIDA number (20 digits)'**
+  String get regNidaHint;
+
+  /// No description provided for @regVoterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Voter ID (12 digits)'**
+  String get regVoterHint;
+
+  /// No description provided for @regLicenseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'License number (min 10 digits)'**
+  String get regLicenseHint;
+
+  /// No description provided for @regEnterId.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the ID number'**
+  String get regEnterId;
+
+  /// No description provided for @regNidaLen.
+  ///
+  /// In en, this message translates to:
+  /// **'NIDA must be exactly 20 digits'**
+  String get regNidaLen;
+
+  /// No description provided for @regVoterLen.
+  ///
+  /// In en, this message translates to:
+  /// **'Voter ID must be exactly 12 digits'**
+  String get regVoterLen;
+
+  /// No description provided for @regLicenseLen.
+  ///
+  /// In en, this message translates to:
+  /// **'License must be at least 10 digits'**
+  String get regLicenseLen;
+
+  /// No description provided for @regAddIdPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add a photo of your ID (optional)'**
+  String get regAddIdPhoto;
+
+  /// No description provided for @regFingerprintTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ink fingerprint'**
+  String get regFingerprintTitle;
+
+  /// No description provided for @regFingerprintHeadIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Place your finger'**
+  String get regFingerprintHeadIdle;
+
+  /// No description provided for @regFingerprintHeadDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint captured'**
+  String get regFingerprintHeadDone;
+
+  /// No description provided for @regFingerprintDescIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and press the area below to stamp your ink print.'**
+  String get regFingerprintDescIdle;
+
+  /// No description provided for @regFingerprintDescDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your ink print was captured. Tap the button below to continue.'**
+  String get regFingerprintDescDone;
+
+  /// No description provided for @regFingerprintChipIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here'**
+  String get regFingerprintChipIdle;
+
+  /// No description provided for @regFingerprintChipDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get regFingerprintChipDone;
+
+  /// No description provided for @regFingerprintStamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to stamp'**
+  String get regFingerprintStamp;
+
+  /// No description provided for @regFingerprintScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing…'**
+  String get regFingerprintScanning;
+
+  /// No description provided for @regFingerprintSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit & continue'**
+  String get regFingerprintSubmit;
+
+  /// No description provided for @regFingerprintRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get regFingerprintRetry;
+
+  /// No description provided for @regFingerprintSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the fingerprint.'**
+  String get regFingerprintSaveFailed;
+
+  /// No description provided for @regFaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Face capture'**
+  String get regFaceTitle;
+
+  /// No description provided for @regFaceOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening camera…'**
+  String get regFaceOpening;
+
+  /// No description provided for @regFacePosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Position your face in the frame'**
+  String get regFacePosition;
+
+  /// No description provided for @regFaceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No face detected'**
+  String get regFaceNone;
+
+  /// No description provided for @regFaceCloser.
+  ///
+  /// In en, this message translates to:
+  /// **'Move closer'**
+  String get regFaceCloser;
+
+  /// No description provided for @regFaceFarther.
+  ///
+  /// In en, this message translates to:
+  /// **'Move back a little'**
+  String get regFaceFarther;
+
+  /// No description provided for @regFaceHold.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold still…'**
+  String get regFaceHold;
+
+  /// No description provided for @regFaceConfirmPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your photo'**
+  String get regFaceConfirmPhoto;
+
+  /// No description provided for @regFaceSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get regFaceSaving;
+
+  /// No description provided for @regFaceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera unavailable'**
+  String get regFaceUnavailable;
+
+  /// No description provided for @regFaceNoCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'No camera available on this device.'**
+  String get regFaceNoCamera;
+
+  /// No description provided for @regFaceOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the camera: {error}'**
+  String regFaceOpenFailed(String error);
+
+  /// No description provided for @regFaceCaptureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not capture the photo: {error}'**
+  String regFaceCaptureFailed(String error);
+
+  /// No description provided for @regFaceSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the face capture.'**
+  String get regFaceSaveFailed;
+
+  /// No description provided for @regFaceSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submission failed: {error}'**
+  String regFaceSubmitFailed(String error);
+
+  /// No description provided for @regFaceFallbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera fallback failed: {error}'**
+  String regFaceFallbackFailed(String error);
+
+  /// No description provided for @regFaceCapturing.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing…'**
+  String get regFaceCapturing;
+
+  /// No description provided for @regFaceCaptureNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture now'**
+  String get regFaceCaptureNow;
+
+  /// No description provided for @regFaceRetake.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get regFaceRetake;
+
+  /// No description provided for @regFaceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get regFaceConfirm;
+
+  /// No description provided for @regFaceSystemCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Use system camera'**
+  String get regFaceSystemCamera;
+
+  /// No description provided for @regKinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency contact'**
+  String get regKinTitle;
+
+  /// No description provided for @regKinSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who should we contact in an emergency?'**
+  String get regKinSubtitle;
+
+  /// No description provided for @regKinRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship (e.g. Spouse, Parent, Sibling)'**
+  String get regKinRelationship;
+
+  /// No description provided for @regKinRelationRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship is required'**
+  String get regKinRelationRequired;
+
+  /// No description provided for @regReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review & Submit'**
+  String get regReviewTitle;
+
+  /// No description provided for @regReviewHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review your registration details'**
+  String get regReviewHeading;
+
+  /// No description provided for @regCompletedSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed steps'**
+  String get regCompletedSteps;
+
+  /// No description provided for @regAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get regAccountCreated;
+
+  /// No description provided for @regIdentityVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity saved'**
+  String get regIdentityVerified;
+
+  /// No description provided for @regFingerprintEnrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint captured'**
+  String get regFingerprintEnrolled;
+
+  /// No description provided for @regFaceEnrolled.
+  ///
+  /// In en, this message translates to:
+  /// **'Face captured'**
+  String get regFaceEnrolled;
+
+  /// No description provided for @regKinSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency contact saved'**
+  String get regKinSaved;
+
+  /// No description provided for @regRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get regRelationship;
+
+  /// No description provided for @regSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit registration'**
+  String get regSubmit;
+
+  /// No description provided for @regBackToStep5.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to step 5'**
+  String get regBackToStep5;
+
+  /// No description provided for @regSubmittedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration submitted!'**
+  String get regSubmittedTitle;
+
+  /// No description provided for @regSubmittedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is pending admin verification. You\'ll receive an SMS once approved.'**
+  String get regSubmittedBody;
+
+  /// No description provided for @regSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Submission failed. Please try again.'**
+  String get regSubmitFailed;
+
+  /// No description provided for @regSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration session expired. Please start over.'**
+  String get regSessionExpired;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

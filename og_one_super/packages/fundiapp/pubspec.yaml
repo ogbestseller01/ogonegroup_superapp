@@ -33,10 +33,10 @@ dependencies:
   path_provider: ^2.1.4
   country_flags: ^4.1.2
   gallery_saver_plus: ^3.0.0
-  # country_flags: ^4.1.2   # no longer needed — flags are local PNGs
   pdf: ^3.10.8
   printing: ^5.13.1
   share_plus: ^10.0.0
+  video_player: ^2.9.2
 
   # ── YouTube & Browser ───────────────────────────────────
   youtube_player_flutter: ^9.0.1
@@ -53,14 +53,7 @@ dependencies:
   # ── Firebase & Notifications ────────────────────────────
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
-  # v19 uses the POSITIONAL API for initialize() and show().
-  # (Named parameters only arrive in v20+.)
   flutter_local_notifications: ^19.0.0
-
-  # ── Badge ───────────────────────────────────────────────
-  # iOS: native UIApplication badge API via app_badge_plus.
-  # Android: handled through the custom MethodChannel
-  #          'com.nearbyfundi/badge' (implemented natively).
   app_badge_plus: ^1.0.0
 
   # ── Device ──────────────────────────────────────────────
@@ -74,6 +67,14 @@ dependencies:
 
   # ── QR Scanner ──────────────────────────────────────────
   qr_code_scanner_plus: ^2.0.10
+  camera: ^0.11.0+2
+  google_mlkit_face_detection: ^0.13.0
+
+  # ── Biometric Auth (Face + Fingerprint) ─────────────────
+  biometric_security: ^0.1.0
+  flutter_secure_storage: ^9.2.2
+  uuid: ^4.5.1
+  device_info_plus: ^11.1.0
 
 dev_dependencies:
   flutter_test:
@@ -85,34 +86,14 @@ dependency_overrides:
   record_linux: ^1.2.0
   record_platform_interface: ^1.2.0
 
-# ============================================================
-#  FLUTTER
-# ============================================================
 flutter:
   generate: true
   uses-material-design: true
 
-  # ── Assets ───────────────────────────────────────────────
-  # Folder globs pick up everything inside; the listing below
-  # is documentation for future readers.
-  #
-  # Contents of assets/images/ as of today:
-  #   • backing.jpg               — home hero
-  #   • englishflug.png           — 🇬🇧 flag used in Settings → Language
-  #   • home.jpg                  — home illustration
-  #   • nearbyfundi-logov1.png    — legacy logo (splash, icon source)
-  #   • tzflug.png                — 🇹🇿 flag used in Settings → Language
-  #   • fundiapp-logo.png         — brand logo on login
-  #
-  # Contents of assets/icons/:
-  #   • nearbyfundi-logov1.png    — launcher icon source
   assets:
     - assets/icons/
     - assets/images/
 
-# ============================================================
-#  LAUNCHER ICONS — Android & iOS
-# ============================================================
 flutter_launcher_icons:
   android: true
   ios: true

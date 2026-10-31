@@ -14,53 +14,88 @@ class PortfolioProvider extends ChangeNotifier {
 
   Future<void> loadPortfolio() async {
     _setLoading(true);
-    final res = await _api.getMyPortfolios();
-    if (res.success && res.data != null) {
-      final List<dynamic> data = res.data is List ? res.data : res.data['data'] ?? [];
-      _items = data.map((p) => PortfolioItem.fromJson(p)).toList();
-      _error = null;
-    } else {
-      _error = res.message;
+    try {
+      final res = await _api.getMyPortfolios();
+      if (res.success && res.data != null) {
+        final List<dynamic> data = res.data is List ? res.data : res.data['data'] ?? [];
+        _items = data.map((p) => PortfolioItem.fromJson(p)).toList();
+        _error = null;
+      } else {
+        _error = res.message;
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _setLoading(false);
     }
-    _setLoading(false);
   }
 
-  Future<bool> addPortfolio(Map<String, dynamic> data) async {
-    _setLoading(true);
-    final res = await _api.createPortfolio(data);
-    if (res.success) {
-      await loadPortfolio();
-      _setLoading(false);
-      return true;
+  Future<bool> addPortfolio(List<String> imagePaths) async {
+    if (imagePaths.isEmpty) {
+      _error = 'Please select at least one image.';
+      notifyListeners();
+      return false;
     }
-    _error = res.message;
-    _setLoading(false);
+
+    _setLoading(true);
+    try {
+      final res = await _api.createPortfolio(imagePaths);
+      if (res.success) {
+        await loadPortfolio();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _setLoading(false);
+    }
     return false;
   }
 
-  Future<bool> updatePortfolio(int id, Map<String, dynamic> data) async {
+  /// ✅ UPDATED: Update existing post (append new images, delete specific images)
+  Future<bool> updatePortfolio(
+      int id, {
+        List<String>? newImagePaths,
+        List<int>? deleteImageIds,
+      }) async {
     _setLoading(true);
-    final res = await _api.updatePortfolio(id, data);
-    if (res.success) {
-      await loadPortfolio();
+    try {
+      final res = await _api.updatePortfolio(
+        id,
+        newImagePaths: newImagePaths,
+        deleteImageIds: deleteImageIds,
+      );
+
+      if (res.success) {
+        await loadPortfolio();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
       _setLoading(false);
-      return true;
     }
-    _error = res.message;
-    _setLoading(false);
     return false;
   }
 
   Future<bool> deletePortfolio(int id) async {
     _setLoading(true);
-    final res = await _api.deletePortfolio(id);
-    if (res.success) {
-      await loadPortfolio();
+    try {
+      final res = await _api.deletePortfolio(id);
+      if (res.success) {
+        _items.removeWhere((item) => item.id == id);
+        notifyListeners();
+        await loadPortfolio();
+        return true;
+      }
+      _error = res.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
       _setLoading(false);
-      return true;
     }
-    _error = res.message;
-    _setLoading(false);
     return false;
   }
 

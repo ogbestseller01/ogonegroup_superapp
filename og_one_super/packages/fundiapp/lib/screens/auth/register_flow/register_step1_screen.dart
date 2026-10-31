@@ -1,25 +1,32 @@
 // lib/screens/auth/register_flow/register_step1_screen.dart
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
 import '../../../config/app_routes.dart';
-import '../../../config/app_theme.dart';
 import '../../../config/country_codes.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/country.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/storage_service.dart';
-import '../../../widgets/flag_icon.dart';
-import '../../../widgets/register_step_scaffold.dart';
+import '../../../widgets/register_shell.dart';
 
 class RegisterStep1Screen extends StatefulWidget {
-  const RegisterStep1Screen({super.key});
+  /// When the user backs out of Services, this carries the account data
+  /// back here so the fields re-populate instead of starting blank.
+  final Map<String, dynamic>? initialData;
+
+  const RegisterStep1Screen({super.key, this.initialData});
 
   @override
   State<RegisterStep1Screen> createState() => _RegisterStep1ScreenState();
 }
 
 class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
+  static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   final _formKey = GlobalKey<FormState>();
   final _nameC = TextEditingController();
   final _emailC = TextEditingController();
@@ -40,7 +47,8 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   @override
   void initState() {
     super.initState();
-    _resumeIfStarted();
+    _restoreFromArgs();
+    _resumeIfDraftExists();
   }
 
   @override
@@ -53,26 +61,98 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     super.dispose();
   }
 
-  Future<void> _resumeIfStarted() async {
-    final storedId = await StorageService.getTechnicianId();
-    if (storedId == null || !mounted) return;
-    final step = await context.read<AuthProvider>().getRegistrationStep(storedId);
-    if (!mounted) return;
-    if (step != null && step >= 1) {
-      Navigator.pushReplacementNamed(context, AppRoutes.registerStep2,
-          arguments: storedId);
+  // ── Restore fields when navigating back from Services ───────
+  void _restoreFromArgs() {
+    final d = widget.initialData;
+    if (d == null) return;
+
+    _nameC.text = d['name']?.toString() ?? '';
+    _emailC.text = d['email']?.toString() ?? '';
+    _phoneC.text = d['phone_local_raw']?.toString() ?? '';
+    _passC.text = d['password']?.toString() ?? '';
+    _confirmC.text = d['password_confirmation']?.toString() ?? '';
+
+    final cc = d['phone_country_code']?.toString();
+    if (cc != null) {
+      _country = _countries.firstWhere(
+            (c) => c.dialCode == cc,
+        orElse: () => _countries.first,
+      );
+    }
+
+    final photoPath = d['profile_photo']?.toString();
+    if (photoPath != null && photoPath.isNotEmpty) {
+      _photo = File(photoPath);
     }
   }
 
-  bool get _valid {
-    final email = _emailC.text.trim();
-    return _nameC.text.trim().isNotEmpty &&
-        (email.isEmpty || email.contains('@')) &&
-        _phoneC.text.replaceAll(RegExp(r'[^0-9]'), '').length >= 7 &&
-        _passC.text.length >= 8 &&
-        _confirmC.text == _passC.text;
+  // ── Resume into later step if a server draft exists ─────────
+  Future<void> _resumeIfDraftExists() async {
+    final storedId = await StorageService.getTechnicianId();
+    if (storedId == null || !mounted) return;
+
+    final auth = context.read<AuthProvider>();
+    if (!auth.hasRegistrationToken) {
+      await auth.abandonDraft();
+      return;
+    }
+
+    final step = await auth.getRegistrationStep(storedId);
+    if (!mounted) return;
+
+    if (step == null) {
+      await auth.abandonDraft();
+      return;
+    }
+
+    if (step >= 5) {
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.registerReview,
+        arguments: {'draftId': storedId},
+      );
+      return;
+    }
+
+    final route = step <= 1
+        ? AppRoutes.registerStep2
+        : step == 2
+        ? AppRoutes.registerStep3
+        : step == 3
+        ? AppRoutes.registerStep4
+        : AppRoutes.registerStep5;
+    Navigator.pushReplacementNamed(context, route, arguments: storedId);
   }
 
+  // ── Validation ──────────────────────────────────────────────
+  String get _phoneDigits => _phoneC.text
+      .replaceAll(RegExp(r'[^0-9]'), '')
+      .replaceFirst(RegExp(r'^0+'), '');
+
+  String? _validatePhone(String? v, AppLocalizations l10n) {
+    final raw = (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    if (raw.isEmpty) return l10n.regPhoneRequired;
+    final d = raw.replaceFirst(RegExp(r'^0+'), '');
+    if (_country.dialCode == '+255') {
+      return RegExp(r'^[67]\d{8}$').hasMatch(d) ? null : l10n.regPhoneInvalidTz;
+    }
+    return (d.length >= 7 && d.length <= 12) ? null : l10n.regPhoneInvalid;
+  }
+
+  String? _validateEmail(String? v, AppLocalizations l10n) {
+    final e = (v ?? '').trim();
+    if (e.isEmpty) return null;
+    return _emailRe.hasMatch(e) ? null : l10n.regEmailInvalid;
+  }
+
+  bool _isValid(AppLocalizations l10n) =>
+      _nameC.text.trim().length >= 2 &&
+          _validatePhone(_phoneC.text, l10n) == null &&
+          _validateEmail(_emailC.text, l10n) == null &&
+          _passC.text.length >= 8 &&
+          _confirmC.text == _passC.text;
+
+  // ── Photo / country pickers ─────────────────────────────────
   Future<void> _pickPhoto(ImageSource source) async {
     final picked = await _picker.pickImage(
       source: source,
@@ -84,31 +164,49 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   }
 
   void _photoSheet() {
+    final l10n = AppLocalizations.of(context)!;
+    final p = RegPalette.of(context);
     showModalBottomSheet(
       context: context,
+      backgroundColor: p.card,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from gallery'),
+              leading: Icon(Icons.photo_library_rounded, color: p.link),
+              title: Text(l10n.regChooseGallery,
+                  style: TextStyle(color: p.text)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickPhoto(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a photo'),
+              leading: Icon(Icons.camera_alt_rounded, color: p.link),
+              title:
+              Text(l10n.regTakePhoto, style: TextStyle(color: p.text)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickPhoto(ImageSource.camera);
               },
             ),
+            if (_photo != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
+                title: Text(l10n.regRemovePhoto,
+                    style: TextStyle(color: p.text)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _photo = null);
+                },
+              ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -116,97 +214,74 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   }
 
   Future<void> _pickCountry() async {
-    final picked = await showModalBottomSheet<Country>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _CountrySheet(countries: _countries, selected: _country),
-    );
-    if (picked != null && mounted) setState(() => _country = picked);
+    final picked = await showRegCountryPicker(context, _countries, _country);
+    if (picked != null && mounted) {
+      setState(() => _country = picked);
+      _formKey.currentState?.validate();
+    }
   }
 
-  Future<void> _next() async {
+  // ── Next → Services ─────────────────────────────────────────
+  void _next() {
     if (!_formKey.currentState!.validate()) return;
 
-    await StorageService.clearTechnicianData();
-    final auth = context.read<AuthProvider>();
-    auth.clearError();
+    final email = _emailC.text.trim().toLowerCase();
+    final fullPhone = '${_country.dialCode.replaceAll('+', '')}$_phoneDigits';
 
-    // 0679117297 -> 679117297, then prefix the dial code
-    final digits = _phoneC.text
-        .replaceAll(RegExp(r'[^0-9]'), '')
-        .replaceFirst(RegExp(r'^0+'), '');
-    final fullPhone = '${_country.dialCode.replaceAll('+', '')}$digits';
-    final email = _emailC.text.trim();
-
-    final id = await auth.registerTechnicianStep1({
-      'name': _nameC.text.trim(),
-      if (email.isNotEmpty) 'email': email,
-      'password': _passC.text,
-      'password_confirmation': _confirmC.text,
-      'phone': fullPhone,
-      if (_photo != null) 'profile_photo': _photo!.path,
-    });
-
-    if (!mounted) return;
-
-    if (id == null) {
-      final msg = auth.errorMessage;
-      if (msg != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: AppTheme.error),
-        );
-      }
-      return;
-    }
-
-    // The code is always sent by SMS (and by email when given), so always verify.
-    Navigator.pushNamed(
+    Navigator.pushReplacementNamed(
       context,
-      AppRoutes.otp,
-      arguments: {
-        'email': email.isNotEmpty ? email : fullPhone, // identifier shown/used on OTP screen
-        'phone': fullPhone,
-        'technicianId': id,
-        'redirectToStep2': true,
+      AppRoutes.registerServices,
+      arguments: <String, dynamic>{
+        'name': _nameC.text.trim(),
+        'email': email,
+        'phone_local_raw': _phoneC.text,
+        'phone_country_code': _country.dialCode,
+        'phone_full': fullPhone,
+        'password': _passC.text,
+        'password_confirmation': _confirmC.text,
+        if (_photo != null) 'profile_photo': _photo!.path,
       },
     );
   }
 
+  // ── UI ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
+    final p = RegPalette.of(context);
+    final busy = auth.isLoading;
 
-    return RegisterStepScaffold(
+    return RegisterShell(
       step: 1,
-      total: 5,
-      title: 'Create your account',
-      subtitle: "We'll send a code to your phone to verify it.",
-      isLoading: auth.isLoading,
-      onNext: _valid ? _next : null,
+      total: 8,
+      title: l10n.regCreateAccountTitle,
+      subtitle: l10n.regCreateAccountSubtitle,
+      isLoading: busy,
+      onNext: (_isValid(l10n) && !busy) ? _next : null,
+      nextLabel: l10n.regContinue,
       child: Form(
         key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         onChanged: () => setState(() {}),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Photo
             Center(
               child: GestureDetector(
-                onTap: _photoSheet,
+                onTap: busy ? null : _photoSheet,
                 child: Stack(
                   children: [
                     CircleAvatar(
                       radius: 48,
-                      backgroundColor: theme.colorScheme.surface,
-                      backgroundImage: _photo != null ? FileImage(_photo!) : null,
+                      backgroundColor: p.field,
+                      backgroundImage:
+                      _photo != null ? FileImage(_photo!) : null,
                       child: _photo == null
-                          ? Icon(Icons.person_outline,
-                          size: 44,
-                          color: theme.colorScheme.onSurface.withOpacity(0.4))
+                          ? Icon(Icons.person_outline_rounded,
+                          size: 44, color: theme.hintColor)
                           : null,
                     ),
                     Positioned(
@@ -214,8 +289,8 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                       right: 0,
                       child: CircleAvatar(
                         radius: 15,
-                        backgroundColor: theme.colorScheme.primary,
-                        child: const Icon(Icons.camera_alt,
+                        backgroundColor: AppThemeAccent.of(context),
+                        child: const Icon(Icons.camera_alt_rounded,
                             size: 16, color: Colors.white),
                       ),
                     ),
@@ -225,104 +300,123 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             ),
             const SizedBox(height: 6),
             Center(
-              child: Text('Photo (optional)', style: theme.textTheme.bodySmall),
+              child: Text(l10n.regPhotoOptional,
+                  style: theme.textTheme.bodySmall?.copyWith(color: p.muted)),
             ),
             const SizedBox(height: 20),
+
+            // Name
             TextFormField(
               controller: _nameC,
+              enabled: !busy,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                hintText: 'Full name',
-                prefixIcon: Icon(Icons.person_outline),
-              ),
-              validator: (v) =>
-              (v == null || v.trim().isEmpty) ? 'Name is required' : null,
+              textInputAction: TextInputAction.next,
+              style: TextStyle(fontSize: 15, color: p.text),
+              decoration: regInputDecoration(context,
+                  hint: l10n.regFullName, icon: Icons.person_outline_rounded),
+              validator: (v) => (v == null || v.trim().length < 2)
+                  ? l10n.regNameRequired
+                  : null,
             ),
             const SizedBox(height: 14),
+
+            // Phone + country
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: _pickCountry,
-                  child: Container(
-                    height: 56,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: theme.dividerColor),
-                    ),
-                    child: Row(
-                      children: [
-                        FlagIcon(emoji: _country.flag, height: 20),
-                        const SizedBox(width: 8),
-                        Text(_country.dialCode),
-                        const Icon(Icons.arrow_drop_down),
-                      ],
+                Material(
+                  color: p.field,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: busy ? null : _pickCountry,
+                    child: Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          regFlag(_country.name, _country.flag, 20),
+                          const SizedBox(width: 6),
+                          Text(_country.dialCode,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14.5,
+                                  color: p.text)),
+                          Icon(Icons.arrow_drop_down, color: p.muted),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
                     controller: _phoneC,
+                    enabled: !busy,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      hintText: 'Phone number',
-                      prefixIcon: Icon(Icons.phone_outlined),
-                    ),
-                    validator: (v) {
-                      final d = (v ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-                      if (d.isEmpty) return 'Phone is required';
-                      return (d.length >= 7 && d.length <= 12)
-                          ? null
-                          : 'Enter a valid phone number';
-                    },
+                    textInputAction: TextInputAction.next,
+                    style: TextStyle(fontSize: 15, color: p.text),
+                    decoration: regInputDecoration(context,
+                        hint: l10n.regPhoneHint, icon: Icons.phone_outlined),
+                    validator: (v) => _validatePhone(v, l10n),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
+
+            // Email
             TextFormField(
               controller: _emailC,
+              enabled: !busy,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                hintText: 'Email (optional)',
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-              validator: (v) {
-                final e = (v ?? '').trim();
-                if (e.isEmpty) return null;
-                return e.contains('@') ? null : 'Enter a valid email';
-              },
+              textInputAction: TextInputAction.next,
+              style: TextStyle(fontSize: 15, color: p.text),
+              decoration: regInputDecoration(context,
+                  hint: l10n.regEmailOptional, icon: Icons.email_outlined),
+              validator: (v) => _validateEmail(v, l10n),
             ),
             const SizedBox(height: 14),
+
+            // Password
             TextFormField(
               controller: _passC,
+              enabled: !busy,
               obscureText: _obscure,
-              decoration: InputDecoration(
-                hintText: 'Password (min 8 characters)',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
+              textInputAction: TextInputAction.next,
+              style: TextStyle(fontSize: 15, color: p.text),
+              decoration: regInputDecoration(
+                context,
+                hint: l10n.regPasswordHint,
+                icon: Icons.lock_outline_rounded,
+                suffix: IconButton(
                   icon: Icon(
-                      _obscure ? Icons.visibility_off : Icons.visibility),
+                    _obscure
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
+                    size: 20,
+                    color: p.muted,
+                  ),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
               validator: (v) =>
-              (v != null && v.length >= 8) ? null : 'At least 8 characters',
+              (v != null && v.length >= 8) ? null : l10n.regPasswordMin,
             ),
             const SizedBox(height: 14),
+
+            // Confirm password
             TextFormField(
               controller: _confirmC,
+              enabled: !busy,
               obscureText: _obscure,
-              decoration: const InputDecoration(
-                hintText: 'Confirm password',
-                prefixIcon: Icon(Icons.lock_outline),
-              ),
+              style: TextStyle(fontSize: 15, color: p.text),
+              decoration: regInputDecoration(context,
+                  hint: l10n.regConfirmPasswordHint,
+                  icon: Icons.lock_outline_rounded),
               validator: (v) =>
-              v == _passC.text ? null : 'Passwords do not match',
+              v == _passC.text ? null : l10n.regPasswordMismatch,
             ),
           ],
         ),
@@ -331,91 +425,6 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   }
 }
 
-// ── Searchable country list ───────────────────────────────────────────────
-class _CountrySheet extends StatefulWidget {
-  final List<Country> countries;
-  final Country selected;
-  const _CountrySheet({required this.countries, required this.selected});
-
-  @override
-  State<_CountrySheet> createState() => _CountrySheetState();
-}
-
-class _CountrySheetState extends State<_CountrySheet> {
-  late List<Country> _filtered = widget.countries;
-
-  void _filter(String query) {
-    final q = query.trim().toLowerCase();
-    setState(() {
-      _filtered = q.isEmpty
-          ? widget.countries
-          : widget.countries
-          .where((c) =>
-      c.name.toLowerCase().contains(q) || c.dialCode.contains(q))
-          .toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.85,
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
-                onChanged: _filter,
-                decoration: const InputDecoration(
-                  hintText: 'Search country...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            Expanded(
-              child: _filtered.isEmpty
-                  ? const Center(child: Text('No country found'))
-                  : ListView.builder(
-                itemCount: _filtered.length,
-                itemBuilder: (context, i) {
-                  final c = _filtered[i];
-                  final isSel = c.name == widget.selected.name &&
-                      c.dialCode == widget.selected.dialCode;
-                  return ListTile(
-                    leading: FlagIcon(emoji: c.flag, height: 24),
-                    title: Text(c.name),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(c.dialCode),
-                        if (isSel) ...[
-                          const SizedBox(width: 8),
-                          Icon(Icons.check_circle,
-                              size: 18,
-                              color: theme.colorScheme.primary),
-                        ],
-                      ],
-                    ),
-                    onTap: () => Navigator.pop(context, c),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class AppThemeAccent {
+  static Color of(BuildContext context) => RegPalette.of(context).link;
 }

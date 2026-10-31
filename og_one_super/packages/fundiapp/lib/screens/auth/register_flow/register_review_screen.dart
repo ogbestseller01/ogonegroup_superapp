@@ -1,23 +1,28 @@
 // lib/screens/auth/register_flow/register_review_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../config/app_theme.dart';
-import '../../../providers/auth_provider.dart';
+
 import '../../../config/app_routes.dart';
-import '../../../widgets/custom_button.dart';
-import '../../../widgets/loading_overlay.dart';
-import '../../../services/storage_service.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../widgets/register_shell.dart';
 
 class RegisterReviewScreen extends StatefulWidget {
-  final Map<String, dynamic> registrationData;
-  const RegisterReviewScreen({super.key, required this.registrationData});
+  final int draftId;
+  final Map<String, dynamic>? extra;
+  const RegisterReviewScreen({
+    super.key,
+    required this.draftId,
+    this.extra,
+  });
 
   @override
   State<RegisterReviewScreen> createState() => _RegisterReviewScreenState();
 }
 
 class _RegisterReviewScreenState extends State<RegisterReviewScreen> {
-  bool _isLoadingCheck = false;
+  bool _isLoadingCheck = true;
+  Map<String, dynamic> _status = {};
 
   @override
   void initState() {
@@ -25,144 +30,225 @@ class _RegisterReviewScreenState extends State<RegisterReviewScreen> {
     _checkStepAccess();
   }
 
+  Future<void> _restart() async {
+    final auth = context.read<AuthProvider>();
+    await auth.abandonDraft();
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+        context, AppRoutes.registerStep1, (_) => false);
+  }
+
   Future<void> _checkStepAccess() async {
     final auth = context.read<AuthProvider>();
-    final technicianId = widget.registrationData['technicianId'] as int;
-    final step = await auth.getRegistrationStep(technicianId);
-    if (!mounted) return;
-    if (step == null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+
+    if (!auth.hasRegistrationToken) {
+      await _restart();
       return;
     }
-    // Allow if Step 4 is completed (step >= 4)
-    if (step < 4) {
-      Navigator.pushReplacementNamed(
-        context,
-        AppRoutes.registerStep4,
-        arguments: technicianId,
-      );
+
+    final res = await auth.api.getRegistrationStatus(widget.draftId);
+    if (!mounted) return;
+
+    final data = (res.success && res.data is Map)
+        ? Map<String, dynamic>.from(res.data as Map)
+        : null;
+
+    if (data == null || data['can_proceed'] == false) {
+      await _restart();
+      return;
     }
-    // Otherwise stay
+
+    final step = (data['registration_step'] as num?)?.toInt() ?? 0;
+    if (step < 5) {
+      final route = step <= 1
+          ? AppRoutes.registerStep2
+          : step == 2
+          ? AppRoutes.registerStep3
+          : step == 3
+          ? AppRoutes.registerStep4
+          : AppRoutes.registerStep5;
+      Navigator.pushReplacementNamed(context, route,
+          arguments: widget.draftId);
+      return;
+    }
+
+    setState(() {
+      _isLoadingCheck = false;
+      _status = data;
+    });
   }
 
   Future<void> _submitRegistration() async {
+    final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     auth.clearError();
 
-    final success = await auth.submitTechnicianRegistration(
-      widget.registrationData['technicianId'] as int,
-    );
+    final success = await auth.submitTechnicianRegistration();
     if (!mounted) return;
 
     if (success) {
-      await StorageService.clearTechnicianData();
+      final p = RegPalette.of(context);
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Registration Submitted!'),
-          content: const Text(
-            'Your account is pending admin verification. You will receive an email once approved.',
+          backgroundColor: p.card,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          icon: const Icon(Icons.check_circle_rounded,
+              color: Colors.green, size: 52),
+          title: Text(l10n.regSubmittedTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+          content: Text(
+            l10n.regSubmittedBody,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: p.muted),
           ),
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
-              },
-              child: const Text('Go to Login'),
+            FilledButton(
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                  context, AppRoutes.home, (_) => false),
+              child: Text(l10n.regContinue),
             ),
           ],
         ),
       );
-    } else {
-      if (auth.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(auth.errorMessage!), backgroundColor: AppTheme.error),
-        );
-      }
+      return;
     }
+
+    // Draft discarded (token expired) → nothing left to retry here.
+    if (!auth.hasRegistrationToken) {
+      regSnack(context, auth.errorMessage ?? l10n.regSessionExpired,
+          error: true);
+      await _restart();
+      return;
+    }
+
+    regSnack(context, auth.errorMessage ?? l10n.regSubmitFailed, error: true);
   }
 
-  void _goBack() {
-    Navigator.pushReplacementNamed(
-      context,
-      AppRoutes.registerStep4,
-      arguments: widget.registrationData['technicianId'],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final theme = Theme.of(context);
-    final data = widget.registrationData;
-
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Review & Submit'),
-        centerTitle: true,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: auth.isLoading ? null : _goBack,
-          tooltip: 'Back to Step 4',
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.arrow_forward),
-            onPressed: auth.isLoading ? null : _submitRegistration,
-            tooltip: 'Submit',
+  Widget _checkRow(RegPalette p, {required bool done, required String label}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 20,
+            color: done ? Colors.green : p.muted,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14.5,
+                color: done ? p.text : p.muted,
+              ),
+            ),
           ),
         ],
       ),
-      body: LoadingOverlay(
-        isLoading: auth.isLoading || _isLoadingCheck,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Please review your registration details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
+    );
+  }
 
-              const Text('Selected Services & Prices:', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              ...(data['services'] as List<Map<String, dynamic>>).map((s) {
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.dividerColor),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Service #${s['service_id']}'),
-                      Text('TZS ${s['min_price']} - TZS ${s['max_price']}'),
-                    ],
-                  ),
-                );
-              }).toList(),
+  Widget _panel(RegPalette p, {required Widget child}) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: p.field,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: child,
+  );
 
-              const SizedBox(height: 32),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final auth = context.watch<AuthProvider>();
+    final p = RegPalette.of(context);
 
-              CustomButton(
-                text: 'Submit Registration',
-                onPressed: _submitRegistration,
-                isLoading: auth.isLoading,
-                isDisabled: auth.isLoading,
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _goBack,
-                child: const Text('Back to Step 4'),
-              ),
-            ],
+    final step = (_status['registration_step'] as num?)?.toInt() ?? 0;
+    final fingerprint = _status['fingerprint_enrolled'] == true;
+    final face = _status['face_enrolled'] == true;
+    final kin = widget.extra?['nextOfKinName'] as String?;
+    final allComplete = step >= 5 && fingerprint && face;
+    final busy = auth.isLoading || _isLoadingCheck;
+
+    void goBack() => Navigator.pushReplacementNamed(
+      context,
+      AppRoutes.registerStep5,
+      arguments: widget.draftId,
+    );
+
+    return RegisterShell(
+      step: 6,
+      total: 6,
+      title: l10n.regReviewTitle,
+      subtitle: l10n.regReviewHeading,
+      isLoading: busy,
+      onNext: (allComplete && !busy) ? _submitRegistration : null,
+      nextLabel: l10n.regSubmit,
+      onBack: auth.isLoading ? null : goBack,
+      backEnabled: !auth.isLoading,
+      bottom: OutlinedButton(
+        onPressed: auth.isLoading ? null : goBack,
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        child: Text(l10n.regBackToStep5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _panel(
+            p,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.regCompletedSteps,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: p.text)),
+                const SizedBox(height: 8),
+                _checkRow(p, done: step >= 1, label: l10n.regAccountCreated),
+                _checkRow(p, done: step >= 2, label: l10n.regIdentityVerified),
+                _checkRow(p,
+                    done: fingerprint, label: l10n.regFingerprintEnrolled),
+                _checkRow(p, done: face, label: l10n.regFaceEnrolled),
+                _checkRow(p, done: step >= 5, label: l10n.regKinSaved),
+              ],
+            ),
           ),
-        ),
+          if (kin != null && kin.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _panel(
+              p,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.regKinTitle,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: p.text)),
+                  const SizedBox(height: 8),
+                  Text('${l10n.name}: $kin', style: TextStyle(color: p.text)),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${l10n.phone}: ${widget.extra?['nextOfKinPhone'] ?? '-'}',
+                    style: TextStyle(color: p.text),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${l10n.regRelationship}: '
+                        '${widget.extra?['nextOfKinRelationship'] ?? '-'}',
+                    style: TextStyle(color: p.text),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

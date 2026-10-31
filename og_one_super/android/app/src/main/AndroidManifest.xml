@@ -41,7 +41,8 @@
 
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" />
+        android:maxSdkVersion="29"
+        tools:replace="android:maxSdkVersion" />
 
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -109,16 +110,7 @@
 
         <!-- ========================================================
              FCM CONFIGURATION
-
-             No default_notification_icon or
-             default_notification_channel_id is declared here.
-
-             This allows Flutter/FcmService to control notification
-             rendering explicitly and prevents unwanted automatic
-             notifications from data-only FCM messages.
              ======================================================== -->
-
-        <!-- Flutter embedding -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
@@ -129,43 +121,30 @@
          APP QUERIES
          ============================================================ -->
     <queries>
-
-        <!-- Open HTTPS links -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
-
-        <!-- Open HTTP links -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" />
         </intent>
-
-        <!-- Phone dialer -->
         <intent>
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
-
-        <!-- SMS -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="smsto" />
         </intent>
-
-        <!-- File picker / content -->
         <intent>
             <action android:name="android.intent.action.GET_CONTENT" />
             <data android:mimeType="*/*" />
         </intent>
-
-        <!-- Flutter text processing -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
-
     </queries>
 
 </manifest>

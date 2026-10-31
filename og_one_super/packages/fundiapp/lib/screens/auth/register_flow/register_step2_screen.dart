@@ -1,17 +1,18 @@
-// lib/screens/auth/register_flow/register_step2_screen.dart
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+
 import '../../../config/app_routes.dart';
-import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../widgets/register_step_scaffold.dart';
+import '../../../widgets/register_shell.dart';
 
 class RegisterStep2Screen extends StatefulWidget {
-  final int technicianId;
-  const RegisterStep2Screen({super.key, required this.technicianId});
+  final int draftId;
+  const RegisterStep2Screen({super.key, required this.draftId});
 
   @override
   State<RegisterStep2Screen> createState() => _RegisterStep2ScreenState();
@@ -20,6 +21,7 @@ class RegisterStep2Screen extends StatefulWidget {
 class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   final _idC = TextEditingController();
   final _picker = ImagePicker();
+
   String _idType = 'nida';
   File? _idImage;
 
@@ -36,91 +38,148 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
   }
 
   Future<void> _checkAccess() async {
-    final step =
-    await context.read<AuthProvider>().getRegistrationStep(widget.technicianId);
-    if (!mounted) return;
-    if (step == null) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    } else if (step < 1) {
+    final auth = context.read<AuthProvider>();
+
+    debugPrint('🔎 Step2 access check → '
+        'hasToken=${auth.hasRegistrationToken}, '
+        'draftId=${widget.draftId}');
+
+    // 1) No registration token → the OTP step didn't issue one.
+    if (!auth.hasRegistrationToken) {
+      debugPrint('❌ No registration token — abandoning draft. '
+          'Did the OTP screen call auth.verifyDraftOtp() and not '
+          'auth.verifyOtp() or a direct API call?');
+      await auth.abandonDraft();
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.registerStep1);
+      return;
+    }
+
+    // 2) Check server-side draft state via the public status endpoint.
+    final res = await auth.api.getRegistrationStatus(widget.draftId);
+    debugPrint('🔎 getRegistrationStatus → '
+        'success=${res.success}, msg=${res.message}, data=${res.data}');
+
+    if (!mounted) return;
+
+    final data = (res.success && res.data is Map)
+        ? Map<String, dynamic>.from(res.data as Map)
+        : null;
+
+    if (data == null || data['can_proceed'] == false) {
+      debugPrint('❌ Draft not usable — '
+          'data=${data?.toString() ?? "null"}');
+      await auth.abandonDraft();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.registerStep1);
+      return;
+    }
+
+    final step = (data['registration_step'] as num?)?.toInt() ?? 0;
+    debugPrint('✅ Draft OK at step $step — allowing Step 2 screen');
+
+    // If the server has progressed beyond step 1, jump to the correct step.
+    if (step > 1 && step < 5) {
+      final route = step == 2
+          ? AppRoutes.registerStep3
+          : step == 3
+          ? AppRoutes.registerStep4
+          : AppRoutes.registerStep5;
+      Navigator.pushReplacementNamed(context, route,
+          arguments: widget.draftId);
+      return;
+    }
+    if (step >= 5) {
+      Navigator.pushReplacementNamed(context, AppRoutes.registerReview,
+          arguments: {'draftId': widget.draftId});
     }
   }
 
-  String? _validateId(String? value) {
+  String get _digits => _idC.text.replaceAll(RegExp(r'\D'), '');
+
+  String? _validateId(String? value, AppLocalizations l10n) {
     final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
-    if (digits.isEmpty) return 'Enter the ID number';
+    if (digits.isEmpty) return l10n.regEnterId;
     switch (_idType) {
       case 'nida':
-        return digits.length == 20 ? null : 'NIDA must be exactly 20 digits';
+        return digits.length == 20 ? null : l10n.regNidaLen;
       case 'voter_id':
-        return digits.length == 12 ? null : 'Voter ID must be exactly 12 digits';
+        return digits.length == 12 ? null : l10n.regVoterLen;
       default:
-        return digits.length >= 10 ? null : 'License must be at least 10 digits';
+        return digits.length >= 10 ? null : l10n.regLicenseLen;
     }
   }
 
-  String get _hint {
+  String _hint(AppLocalizations l10n) {
     switch (_idType) {
       case 'nida':
-        return 'NIDA number (20 digits)';
+        return l10n.regNidaHint;
       case 'voter_id':
-        return 'Voter ID (12 digits)';
+        return l10n.regVoterHint;
       default:
-        return 'License number (min 10 digits)';
+        return l10n.regLicenseHint;
     }
   }
-
-  bool get _valid => _validateId(_idC.text) == null && _idImage != null;
 
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
       source: source,
-      maxWidth: 1280, // large enough for the admin to read the ID
+      maxWidth: 1280,
       imageQuality: 85,
     );
-    if (picked != null && mounted) setState(() => _idImage = File(picked.path));
+    if (picked != null && mounted) {
+      setState(() => _idImage = File(picked.path));
+    }
   }
 
-  void _imageSheet() {
+  void _showImageSheet() {
+    final l10n = AppLocalizations.of(context)!;
+    final p = RegPalette.of(context);
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: p.card,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from gallery'),
+              leading: Icon(Icons.photo_library_rounded, color: p.link),
+              title:
+              Text(l10n.regChooseGallery, style: TextStyle(color: p.text)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a photo'),
+              leading: Icon(Icons.camera_alt_rounded, color: p.link),
+              title: Text(l10n.regTakePhoto, style: TextStyle(color: p.text)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.camera);
               },
             ),
+            if (_idImage != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
+                title: Text(l10n.regRemovePhoto,
+                    style: TextStyle(color: p.text)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _idImage = null);
+                },
+              ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _scan() async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const _ScannerScreen()),
-    );
-    if (result != null && mounted) {
-      setState(() => _idC.text = result.replaceAll(RegExp(r'\D'), ''));
-    }
   }
 
   Future<void> _next() async {
@@ -128,181 +187,107 @@ class _RegisterStep2ScreenState extends State<RegisterStep2Screen> {
     auth.clearError();
 
     final ok = await auth.registerTechnicianStep2(
-      technicianId: widget.technicianId,
-      nida: _idC.text.replaceAll(RegExp(r'\D'), ''),
+      nida: _digits,
       idDocumentType: _idType,
-      idDocumentImage: _idImage!,
+      idDocumentImage: _idImage,
     );
     if (!mounted) return;
 
     if (ok) {
-      Navigator.pushReplacementNamed(context, AppRoutes.registerStep3,
-          arguments: widget.technicianId);
-    } else if (auth.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.errorMessage!), backgroundColor: AppTheme.error),
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.registerStep3,
+        arguments: widget.draftId,
       );
+    } else if (auth.errorMessage != null) {
+      regSnack(context, auth.errorMessage!, error: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final auth = context.watch<AuthProvider>();
-    final theme = Theme.of(context);
+    final p = RegPalette.of(context);
+    final busy = auth.isLoading;
 
-    return RegisterStepScaffold(
+    return RegisterShell(
       step: 2,
-      total: 5,
-      title: 'Verify your identity',
-      subtitle: 'Used only by our team to approve your account.',
-      isLoading: auth.isLoading,
-      onNext: _valid ? _next : null,
-      onBack: () => Navigator.pushReplacementNamed(context, AppRoutes.registerStep1),
+      total: 6,
+      title: l10n.regIdentityTitle,
+      subtitle: l10n.regIdentitySubtitle,
+      isLoading: busy,
+      onNext: _validateId(_idC.text, l10n) == null ? _next : null,
+      nextLabel: l10n.regContinue,
+      onBack: () =>
+          Navigator.pushReplacementNamed(context, AppRoutes.registerStep1),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DropdownButtonFormField<String>(
             value: _idType,
-            items: const [
-              DropdownMenuItem(value: 'nida', child: Text('NIDA')),
-              DropdownMenuItem(value: 'drivers_license', child: Text("Driver's license")),
-              DropdownMenuItem(value: 'voter_id', child: Text("Voter's ID (KURA)")),
+            dropdownColor: p.card,
+            style: TextStyle(fontSize: 15, color: p.text),
+            iconEnabledColor: p.muted,
+            items: [
+              DropdownMenuItem(value: 'nida', child: Text(l10n.regIdNida)),
+              DropdownMenuItem(
+                  value: 'drivers_license', child: Text(l10n.regIdLicense)),
+              DropdownMenuItem(value: 'voter_id', child: Text(l10n.regIdVoter)),
             ],
-            onChanged: (v) => setState(() => _idType = v ?? 'nida'),
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.assignment_ind_outlined),
-            ),
+            onChanged: busy
+                ? null
+                : (v) => setState(() => _idType = v ?? 'nida'),
+            decoration: regInputDecoration(context,
+                hint: '', icon: Icons.assignment_ind_outlined),
           ),
           const SizedBox(height: 14),
           TextFormField(
             controller: _idC,
+            enabled: !busy,
             keyboardType: TextInputType.number,
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            validator: _validateId,
+            validator: (v) => _validateId(v, l10n),
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: _hint,
-              prefixIcon: const Icon(Icons.badge_outlined),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.qr_code_scanner),
-                tooltip: 'Scan barcode / QR',
-                onPressed: _scan,
-              ),
-            ),
+            style: TextStyle(fontSize: 15, color: p.text),
+            decoration: regInputDecoration(context,
+                hint: _hint(l10n), icon: Icons.badge_outlined),
           ),
           const SizedBox(height: 20),
           InkWell(
-            onTap: _imageSheet,
-            borderRadius: BorderRadius.circular(12),
+            onTap: busy ? null : _showImageSheet,
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              height: 150,
+              height: 160,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.dividerColor),
+                color: p.field,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: Theme.of(context).dividerColor.withOpacity(0.4)),
               ),
               child: _idImage != null
                   ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(_idImage!, fit: BoxFit.cover),
+                borderRadius: BorderRadius.circular(16),
+                child: Image.file(_idImage!,
+                    fit: BoxFit.cover, width: double.infinity),
               )
                   : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.add_a_photo_outlined,
-                      size: 36,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      size: 36, color: p.muted),
                   const SizedBox(height: 8),
-                  const Text('Tap to add a photo of your ID'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      l10n.regAddIdPhoto,
+                      textAlign: TextAlign.center,
+                      style:
+                      TextStyle(color: p.muted, fontSize: 13.5),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Barcode / QR scanner ──────────────────────────────────────────────────
-class _ScannerScreen extends StatefulWidget {
-  const _ScannerScreen();
-
-  @override
-  State<_ScannerScreen> createState() => _ScannerScreenState();
-}
-
-class _ScannerScreenState extends State<_ScannerScreen> {
-  final GlobalKey _qrKey = GlobalKey(debugLabel: 'ID_QR');
-  QRViewController? _controller;
-  bool _flash = false;
-  bool _done = false;
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    _controller?.pauseCamera();
-    _controller?.resumeCamera();
-  }
-
-  void _onCreated(QRViewController c) {
-    _controller = c;
-    c.scannedDataStream.listen((scan) {
-      final code = scan.code;
-      if (_done || code == null || code.isEmpty) return;
-      _done = true;
-      c.pauseCamera();
-      Navigator.pop(context, code);
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scan ID'),
-        actions: [
-          IconButton(
-            icon: Icon(_flash ? Icons.flash_on : Icons.flash_off),
-            onPressed: () async {
-              await _controller?.toggleFlash();
-              final s = await _controller?.getFlashStatus();
-              if (mounted) setState(() => _flash = s ?? false);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.cameraswitch),
-            onPressed: () => _controller?.flipCamera(),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          QRView(
-            key: _qrKey,
-            onQRViewCreated: _onCreated,
-            overlay: QrScannerOverlayShape(
-              borderColor: Colors.white,
-              borderRadius: 12,
-              borderLength: 30,
-              borderWidth: 6,
-              cutOutWidth: 250,
-              cutOutHeight: 100,
-            ),
-          ),
-          const Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text('Align barcode / QR here',
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
           ),
         ],
