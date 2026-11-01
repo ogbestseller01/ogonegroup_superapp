@@ -1,17 +1,12 @@
-// lib/screens/fundi/fundi_requests_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/request.dart';
 import '../../providers/request_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../../services/location_sharing_service.dar.dart';
 import '../chat/chat_screen.dart';
-import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 
 class FundiRequestsScreen extends StatefulWidget {
@@ -24,7 +19,7 @@ class FundiRequestsScreen extends StatefulWidget {
 class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   final TextEditingController _filterController = TextEditingController();
   String _filterQuery = '';
-  String? _selectedStatusFilter;
+  String? _selectedStatusFilter; // null = All, or pending/accepted/cancelled/rejected
 
   @override
   void initState() {
@@ -53,8 +48,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       filtered = filtered.where((r) {
         return r.customerName.toLowerCase().contains(query) ||
             r.serviceName.toLowerCase().contains(query) ||
-            r.description.toLowerCase().contains(query) ||
-            (r.customerPhone?.toLowerCase().contains(query) ?? false);
+            r.description.toLowerCase().contains(query);
       }).toList();
     }
 
@@ -65,34 +59,23 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   double _hPad(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 360 ? 12.0 : 16.0;
 
-  /// Navy is unreadable on the dark background, so gold is used in dark mode.
   Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
-
   Color _cardBg(bool isDark) => isDark ? AppTheme.darkSurface : Colors.white;
-
   Color _cardBorder(bool isDark) =>
       isDark ? AppTheme.darkBorder : AppTheme.borderLight.withOpacity(0.30);
-
   Color _ink(bool isDark) => isDark ? Colors.white : AppTheme.primary;
-
   Color _muted(bool isDark) =>
       isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
-  // ─── Status helpers ─────────────────────────────────────────────────────
+  // ─── Status helpers (only 4 statuses) ───────────────────────────────────
   Color _statusColor(String status, bool isDark) {
     switch (status) {
       case 'accepted':
-      case 'in_progress':
         return _accent(isDark);
-      case 'on_the_way':
-        return Colors.green;
-      case 'arrived':
-        return Colors.teal;
-      case 'completed':
-        return AppTheme.success;
       case 'rejected':
       case 'cancelled':
         return AppTheme.error;
+      case 'pending':
       default:
         return AppTheme.warning;
     }
@@ -104,18 +87,12 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   IconData _statusIcon(String status) {
     switch (status) {
       case 'accepted':
-      case 'in_progress':
         return Icons.check_circle_outline_rounded;
-      case 'on_the_way':
-        return Icons.directions_car_rounded;
-      case 'arrived':
-        return Icons.location_on_rounded;
-      case 'completed':
-        return Icons.verified_rounded;
       case 'rejected':
         return Icons.cancel_outlined;
       case 'cancelled':
         return Icons.do_not_disturb_on_outlined;
+      case 'pending':
       default:
         return Icons.hourglass_empty_rounded;
     }
@@ -127,14 +104,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
         return 'Pending';
       case 'accepted':
         return 'Accepted';
-      case 'on_the_way':
-        return 'On The Way';
-      case 'arrived':
-        return 'Arrived';
-      case 'in_progress':
-        return 'In Progress';
-      case 'completed':
-        return 'Completed';
       case 'rejected':
         return 'Rejected';
       case 'cancelled':
@@ -159,25 +128,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     return '$day/$month/$year • $hour:$minute';
   }
 
-  // ─── Call customer ──────────────────────────────────────────────────────
-  Future<void> _callCustomer(String? phone) async {
-    if (phone == null || phone.trim().isEmpty) {
-      _showSnack(context, 'Customer phone number not available', isError: true);
-      return;
-    }
-
-    final cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    final uri = Uri.parse('tel:$cleaned');
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      if (mounted) {
-        _showSnack(context, 'Unable to open phone dialer', isError: true);
-      }
-    }
-  }
-
   // ─── Chat ───────────────────────────────────────────────────────────────
   Future<void> _startChat(BuildContext context, ServiceRequest request) async {
     try {
@@ -200,55 +150,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     } catch (e) {
       if (context.mounted) {
         _showSnack(context, 'Failed to start chat: $e', isError: true);
-      }
-    }
-  }
-
-  // ─── Complete confirmation ──────────────────────────────────────────────
-  Future<void> _markCompleted(BuildContext context, int requestId) async {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: theme.colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text(l10n.completeRequest, style: theme.textTheme.titleMedium),
-        content: Text(l10n.completeConfirmation, style: theme.textTheme.bodyMedium),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.success,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: Text(l10n.completeRequest),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final provider = context.read<RequestProvider>();
-      final success = await provider.completeRequest(requestId);
-
-      // Stop live location sharing
-      LocationSharingService.stopSharing();
-
-      if (context.mounted) {
-        _showSnack(
-          context,
-          success ? l10n.completedSuccess : (provider.error ?? l10n.failedToComplete),
-          isError: !success,
-        );
       }
     }
   }
@@ -312,7 +213,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     );
   }
 
-  // ─── TITLE ROW (replaces the second app bar) ────────────────────────────
+  // ─── TITLE ROW ──────────────────────────────────────────────────────────
   Widget _buildTitleRow(
       BuildContext context,
       RequestProvider provider,
@@ -358,8 +259,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                 child: SizedBox(
                   width: 42,
                   height: 42,
-                  child: Icon(Icons.refresh_rounded,
-                      color: _accent(isDark), size: 22),
+                  child: Icon(Icons.refresh_rounded, color: _accent(isDark), size: 22),
                 ),
               ),
             ),
@@ -370,8 +270,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   // ─── SEARCH & FILTER ────────────────────────────────────────────────────
-  Widget _buildSearchAndFilter(
-      BuildContext context, ThemeData theme, bool isDark) {
+  Widget _buildSearchAndFilter(BuildContext context, ThemeData theme, bool isDark) {
     final l10n = AppLocalizations.of(context)!;
     final h = _hPad(context);
 
@@ -401,17 +300,11 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               cursorColor: _accent(isDark),
               decoration: InputDecoration(
                 hintText: l10n.filterByCustomerService,
-                hintStyle: theme.textTheme.bodySmall?.copyWith(
-                  color: _muted(isDark),
-                ),
-                prefixIcon:
-                Icon(Icons.search_rounded, color: _accent(isDark)),
+                hintStyle: theme.textTheme.bodySmall?.copyWith(color: _muted(isDark)),
+                prefixIcon: Icon(Icons.search_rounded, color: _accent(isDark)),
                 suffixIcon: _filterQuery.isNotEmpty
                     ? IconButton(
-                  icon: Icon(
-                    Icons.clear_rounded,
-                    color: _muted(isDark),
-                  ),
+                  icon: Icon(Icons.clear_rounded, color: _muted(isDark)),
                   onPressed: () {
                     _filterController.clear();
                     setState(() => _filterQuery = '');
@@ -422,10 +315,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 15,
-                  horizontal: 16,
-                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
               ),
               onChanged: (value) => setState(() => _filterQuery = value),
             ),
@@ -442,11 +332,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                 const SizedBox(width: 8),
                 _buildFilterChip('Accepted', 'accepted', theme, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('On The Way', 'on_the_way', theme, isDark),
-                const SizedBox(width: 8),
-                _buildFilterChip('Completed', 'completed', theme, isDark),
-                const SizedBox(width: 8),
                 _buildFilterChip('Rejected', 'rejected', theme, isDark),
+                const SizedBox(width: 8),
+                _buildFilterChip('Cancelled', 'cancelled', theme, isDark),
               ],
             ),
           ),
@@ -455,8 +343,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     );
   }
 
-  Widget _buildFilterChip(
-      String label, String? value, ThemeData theme, bool isDark) {
+  Widget _buildFilterChip(String label, String? value, ThemeData theme, bool isDark) {
     final isSelected = _selectedStatusFilter == value;
     final selectedBg = isDark ? AppTheme.secondary : AppTheme.primary;
     final selectedFg = isDark ? AppTheme.primary : Colors.white;
@@ -469,17 +356,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : _cardBg(isDark),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? selectedBg : _cardBorder(isDark),
-          ),
+          border: Border.all(color: isSelected ? selectedBg : _cardBorder(isDark)),
           boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: selectedBg.withOpacity(0.28),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ]
+              ? [BoxShadow(color: selectedBg.withOpacity(0.28), blurRadius: 10, offset: const Offset(0, 3))]
               : null,
         ),
         child: Text(
@@ -494,37 +373,23 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   // ─── STATS BAR ──────────────────────────────────────────────────────────
-  Widget _buildStatsBar(
-      BuildContext context, RequestProvider provider, bool isDark) {
+  Widget _buildStatsBar(BuildContext context, RequestProvider provider, bool isDark) {
     final h = _hPad(context);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: h, vertical: 8),
       child: Row(
         children: [
-          _buildStatCard('Total', provider.totalCount, _ink(isDark), isDark,
-              icon: Icons.list_alt_rounded),
+          _buildStatCard('Total', provider.totalCount, _ink(isDark), isDark, icon: Icons.list_alt_rounded),
           const SizedBox(width: 8),
-          _buildStatCard('Pending', provider.pendingCount, AppTheme.warning, isDark,
-              icon: Icons.hourglass_empty_rounded),
+          _buildStatCard('Pending', provider.pendingCount, AppTheme.warning, isDark, icon: Icons.hourglass_empty_rounded),
           const SizedBox(width: 8),
-          _buildStatCard(
-              'Accepted', provider.acceptedCount, _accent(isDark), isDark,
-              icon: Icons.check_circle_outline_rounded),
-          const SizedBox(width: 8),
-          _buildStatCard('Done', provider.completedCount, AppTheme.success, isDark,
-              icon: Icons.verified_rounded),
+          _buildStatCard('Accepted', provider.acceptedCount, _accent(isDark), isDark, icon: Icons.check_circle_outline_rounded),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(
-      String label,
-      int count,
-      Color color,
-      bool isDark, {
-        required IconData icon,
-      }) {
+  Widget _buildStatCard(String label, int count, Color color, bool isDark, {required IconData icon}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 4),
@@ -592,19 +457,11 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       bool isDark,
       ) {
     if (provider.requests.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.inbox_outlined,
-        text: l10n.noRequests,
-        isDark: isDark,
-      );
+      return _buildEmptyState(icon: Icons.inbox_outlined, text: l10n.noRequests, isDark: isDark);
     }
 
     if (requests.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.search_off_rounded,
-        text: l10n.noMatchingRequests,
-        isDark: isDark,
-      );
+      return _buildEmptyState(icon: Icons.search_off_rounded, text: l10n.noMatchingRequests, isDark: isDark);
     }
 
     return RefreshIndicator(
@@ -625,12 +482,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             padding: EdgeInsets.fromLTRB(h, 6, h, 28),
             children: [
               if (wide)
-              // Wide screens show cards in two columns.
                 Wrap(
                   spacing: spacing,
-                  children: cards
-                      .map((card) => SizedBox(width: itemW, child: card))
-                      .toList(),
+                  children: cards.map((card) => SizedBox(width: itemW, child: card)).toList(),
                 )
               else
                 ...cards,
@@ -641,11 +495,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     );
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String text,
-    required bool isDark,
-  }) {
+  Widget _buildEmptyState({required IconData icon, required String text, required bool isDark}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -692,11 +542,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       bool isDark,
       ) {
     final isPending = request.isPending;
-    final isActioned = request.isAccepted ||
-        request.isOnTheWay ||
-        request.isArrived ||
-        request.isInProgress;
-    final isCompleted = request.isCompleted;
+    final isAccepted = request.isAccepted;
     final isRejectedOrCancelled = request.isRejected || request.isCancelled;
 
     final createdDate = _formatRequestDate(request.createdAt);
@@ -707,11 +553,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       decoration: BoxDecoration(
         color: _cardBg(isDark),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isCompleted
-              ? AppTheme.success.withOpacity(0.32)
-              : _cardBorder(isDark),
-        ),
+        border: Border.all(color: _cardBorder(isDark)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.28 : 0.07),
@@ -735,8 +577,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                     color: _statusBgColor(request.status, isDark),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Icon(_statusIcon(request.status),
-                      color: statusColor, size: 23),
+                  child: Icon(_statusIcon(request.status), color: statusColor, size: 23),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -776,11 +617,10 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
 
             const SizedBox(height: 14),
 
-            // Customer name
+            // Customer name only (phone removed)
             Row(
               children: [
-                Icon(Icons.person_outline_rounded,
-                    size: 16, color: _muted(isDark)),
+                Icon(Icons.person_outline_rounded, size: 16, color: _muted(isDark)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -798,45 +638,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               ],
             ),
 
-            // Customer phone
-            if (request.customerPhone != null &&
-                request.customerPhone!.trim().isNotEmpty) ...[
-              const SizedBox(height: 6),
-              InkWell(
-                onTap: () => _callCustomer(request.customerPhone),
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Row(
-                    children: [
-                      Icon(Icons.phone_rounded,
-                          size: 16, color: _accent(isDark)),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          request.customerPhone!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            inherit: true,
-                            fontSize: 14,
-                            color: _accent(isDark),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.call_made_rounded,
-                        size: 13,
-                        color: _accent(isDark).withOpacity(0.7),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-
             const SizedBox(height: 10),
 
             // Description
@@ -844,9 +645,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withOpacity(0.04)
-                    : AppTheme.navy50.withOpacity(0.6),
+                color: isDark ? Colors.white.withOpacity(0.04) : AppTheme.navy50.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(
@@ -854,9 +653,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                 style: TextStyle(
                   inherit: true,
                   fontSize: 13,
-                  color: isDark
-                      ? Colors.white.withOpacity(0.78)
-                      : AppTheme.primary.withOpacity(0.78),
+                  color: isDark ? Colors.white.withOpacity(0.78) : AppTheme.primary.withOpacity(0.78),
                   height: 1.4,
                 ),
                 maxLines: 2,
@@ -887,10 +684,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
 
             // Actions
             if (isPending) _buildPendingActions(context, request, l10n),
-            if (isActioned) _buildActionedActions(context, request, l10n),
-            if (isCompleted) _buildCompletedActions(request, l10n, theme),
-            if (isRejectedOrCancelled)
-              _buildRejectedActions(request, theme, isDark),
+            if (isAccepted) _buildAcceptedActions(context, request, l10n),
+            if (isRejectedOrCancelled) _buildRejectedActions(request, theme, isDark),
           ],
         ),
       ),
@@ -898,11 +693,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   // ─── ACTION BUTTONS ────────────────────────────────────────────────────
-  Widget _buildPendingActions(
-      BuildContext context,
-      ServiceRequest request,
-      AppLocalizations l10n,
-      ) {
+  Widget _buildPendingActions(BuildContext context, ServiceRequest request, AppLocalizations l10n) {
     return Row(
       children: [
         Expanded(
@@ -916,9 +707,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               if (context.mounted) {
                 _showSnack(
                   context,
-                  success
-                      ? l10n.requestAccepted
-                      : (provider.error ?? 'Failed to accept'),
+                  success ? l10n.requestAccepted : (provider.error ?? 'Failed to accept'),
                   isError: !success,
                 );
               }
@@ -935,15 +724,10 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               final provider = context.read<RequestProvider>();
               final success = await provider.rejectRequest(request.id);
 
-              // Stop any previous sharing
-              LocationSharingService.stopSharing();
-
               if (context.mounted) {
                 _showSnack(
                   context,
-                  success
-                      ? l10n.requestRejected
-                      : (provider.error ?? 'Failed to reject'),
+                  success ? l10n.requestRejected : (provider.error ?? 'Failed to reject'),
                   isError: !success,
                 );
               }
@@ -954,182 +738,20 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     );
   }
 
-  Widget _buildActionedActions(
-      BuildContext context,
-      ServiceRequest request,
-      AppLocalizations l10n,
-      ) {
-    return Column(
-      children: [
-        // Call + Chat
-        Row(
-          children: [
-            if (request.customerPhone != null &&
-                request.customerPhone!.trim().isNotEmpty) ...[
-              Expanded(
-                child: _PrimaryButton(
-                  label: 'Call',
-                  color: Colors.green.shade700,
-                  icon: Icons.phone_rounded,
-                  outlined: true,
-                  onPressed: () => _callCustomer(request.customerPhone),
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
-            Expanded(
-              child: _PrimaryButton(
-                label: l10n.chatWithCustomer,
-                color: AppTheme.primary,
-                icon: Icons.chat_bubble_outline_rounded,
-                onPressed: () => _startChat(context, request),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        // ─── I'M ON THE WAY ──────────────────────────────────────────────
-        if (request.isAccepted)
-          SizedBox(
-            width: double.infinity,
-            child: _PrimaryButton(
-              label: "I'm On The Way",
-              color: Colors.green,
-              icon: Icons.directions_car_rounded,
-              onPressed: () async {
-                final provider = context.read<RequestProvider>();
-                final success = await provider.markOnTheWay(request.id);
-
-                if (success) {
-                  // Start continuous live location sharing
-                  LocationSharingService.startSharing();
-                }
-
-                if (context.mounted) {
-                  _showSnack(
-                    context,
-                    success
-                        ? 'You are now sharing your live location with the customer'
-                        : (provider.error ?? 'Failed to update status'),
-                    isError: !success,
-                  );
-                }
-              },
-            ),
-          ),
-
-        // ─── I HAVE ARRIVED ──────────────────────────────────────────────
-        if (request.isOnTheWay)
-          SizedBox(
-            width: double.infinity,
-            child: _PrimaryButton(
-              label: 'I Have Arrived',
-              color: Colors.teal,
-              icon: Icons.location_on_rounded,
-              onPressed: () async {
-                final provider = context.read<RequestProvider>();
-                final success = await provider.markArrived(request.id);
-
-                // Keep sharing until job is completed
-                // (you can stop here if you prefer)
-                // LocationSharingService.stopSharing();
-
-                if (context.mounted) {
-                  _showSnack(
-                    context,
-                    success
-                        ? 'Marked as arrived'
-                        : (provider.error ?? 'Failed to update status'),
-                    isError: !success,
-                  );
-                }
-              },
-            ),
-          ),
-
-        if (request.isAccepted || request.isOnTheWay) const SizedBox(height: 10),
-
-        // ─── MARK COMPLETE ───────────────────────────────────────────────
-        SizedBox(
-          width: double.infinity,
-          child: _PrimaryButton(
-            label: l10n.markComplete,
-            color: AppTheme.success,
-            icon: Icons.verified_rounded,
-            outlined: true,
-            onPressed: () => _markCompleted(context, request.id),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompletedActions(
-      ServiceRequest request,
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
-    return Container(
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppTheme.success.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.success.withOpacity(0.25)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.verified_rounded, color: AppTheme.success, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.completed,
-                  style: const TextStyle(
-                    inherit: true,
-                    color: AppTheme.success,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
-                  ),
-                ),
-                if (request.technicianRating != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Row(
-                      children: [
-                        ...List.generate(
-                          request.technicianRating!.round().clamp(0, 5),
-                              (index) => const Icon(
-                            Icons.star_rounded,
-                            size: 14,
-                            color: Colors.amber,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          request.technicianRating!.toStringAsFixed(1),
-                          style: const TextStyle(
-                            inherit: true,
-                            fontSize: 12,
-                            color: Colors.amber,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+  Widget _buildAcceptedActions(BuildContext context, ServiceRequest request, AppLocalizations l10n) {
+    // Only Chat button remains (Call removed)
+    return SizedBox(
+      width: double.infinity,
+      child: _PrimaryButton(
+        label: l10n.chatWithCustomer,
+        color: AppTheme.primary,
+        icon: Icons.chat_bubble_outline_rounded,
+        onPressed: () => _startChat(context, request),
       ),
     );
   }
 
-  Widget _buildRejectedActions(
-      ServiceRequest request, ThemeData theme, bool isDark) {
+  Widget _buildRejectedActions(ServiceRequest request, ThemeData theme, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1173,7 +795,6 @@ class _PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Navy buttons turn gold in dark mode so they stay visible.
     final base = (color == AppTheme.primary && isDark) ? AppTheme.secondary : color;
     final onBase = base == AppTheme.secondary ? AppTheme.primary : Colors.white;
 
@@ -1185,25 +806,13 @@ class _PrimaryButton extends StatelessWidget {
       children: [
         Icon(icon, size: 17, color: outlined ? base : onBase),
         const SizedBox(width: 7),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
+        Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
       ],
     );
 
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(15),
-    );
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(15));
     const padding = EdgeInsets.symmetric(vertical: 13, horizontal: 10);
-    const textStyle = TextStyle(
-      inherit: true,
-      fontWeight: FontWeight.w700,
-      fontSize: 13.5,
-    );
+    const textStyle = TextStyle(inherit: true, fontWeight: FontWeight.w700, fontSize: 13.5);
     const minSize = Size(0, 48);
 
     if (outlined) {

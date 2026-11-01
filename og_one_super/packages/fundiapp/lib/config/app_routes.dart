@@ -28,6 +28,10 @@ class AppRoutes {
   static const String registerServices = '/register-services';
   static const String registerLocation = '/register-location';
 
+  // ===== TICKETS & JOBS (Added) =====
+  static const String tickets       = '/tickets';
+  static const String jobs          = '/jobs';
+
   // ===== CHAT ROUTES =====
   static const String chatList  = '/chat-list';
   static const String chat      = '/chat';
@@ -71,13 +75,6 @@ class AppRoutes {
   static String getResetRoute(String email) => '/reset-password?email=$email';
 
   /// Maps the last completed step to the next screen.
-  ///
-  ///  step  0 / null  →  registerStep1  (nothing started)
-  ///        1         →  registerStep2  (account created + OTP verified)
-  ///        2         →  registerStep3  (identity verified)
-  ///        3         →  registerStep4  (fingerprint enrolled)
-  ///        4         →  registerStep5  (face enrolled)
-  ///        5+        →  registerReview (emergency contact saved)
   static String registrationRouteForStep(int step) {
     if (step < 1) return registerStep1;
     if (step < 2) return registerStep2;
@@ -109,6 +106,10 @@ class AppRoutes {
     editProfile: 'Edit Profile',
     settings: 'Settings',
     notifications: 'Notifications',
+
+    // Added to routeNames map as well
+    tickets: 'Tickets',
+    jobs: 'Jobs',
 
     chatList: 'Chat List',
     chat: 'Chat',

@@ -1,9 +1,6 @@
-// lib/providers/request_provider.dart
-
 import 'package:flutter/material.dart';
 import '../models/request.dart';
 import '../services/api_service.dart';
-import '../services/location_sharing_service.dar.dart';
 
 class RequestProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -25,15 +22,9 @@ class RequestProvider extends ChangeNotifier {
       _requests.where((r) => r.isPending).toList();
   List<ServiceRequest> get acceptedRequests =>
       _requests.where((r) => r.isAccepted).toList();
-  List<ServiceRequest> get completedRequests =>
-      _requests.where((r) => r.isCompleted).toList();
-  List<ServiceRequest> get activeRequests =>
-      _requests.where((r) => r.isActive).toList();
 
   int get pendingCount => pendingRequests.length;
   int get acceptedCount => acceptedRequests.length;
-  int get completedCount => completedRequests.length;
-  int get activeCount => activeRequests.length;
   int get totalCount => _requests.length;
 
   bool hasActiveRequest(int technicianId) {
@@ -136,8 +127,15 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Update Status ──────────────────────────────────────────
+  // ─── Update Status (only pending → accepted | rejected | cancelled) ────
   Future<bool> updateStatus(int id, String status) async {
+    // Only allow the 4 valid statuses
+    if (!['pending', 'accepted', 'cancelled', 'rejected'].contains(status)) {
+      _error = 'Invalid status';
+      notifyListeners();
+      return false;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -145,19 +143,7 @@ class RequestProvider extends ChangeNotifier {
     try {
       final res = await _api.updateRequestStatus(id, status);
 
-      debugPrint('📡 updateStatus → id: $id | status: $status');
-      debugPrint('📡 success: ${res.success}');
-      debugPrint('📡 message: ${res.message}');
-
       if (res.success) {
-        if (status == 'on_the_way' || status == 'in_progress') {
-          LocationSharingService.startSharing();
-        } else if (status == 'completed' ||
-            status == 'cancelled' ||
-            status == 'rejected') {
-          LocationSharingService.stopSharing();
-        }
-
         await loadMyRequests();
         return true;
       } else {
@@ -174,7 +160,7 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Cancel Request ─────────────────────────────────────────
+  // ─── Cancel Request (customer only, pending → cancelled) ────────────────
   Future<bool> cancelRequest(int id) async {
     _isLoading = true;
     _error = null;
@@ -184,7 +170,6 @@ class RequestProvider extends ChangeNotifier {
       final res = await _api.cancelRequest(id);
 
       if (res.success) {
-        LocationSharingService.stopSharing();
         await loadMyRequests();
         return true;
       } else {
@@ -201,68 +186,8 @@ class RequestProvider extends ChangeNotifier {
   }
 
   // ─── Convenience Methods ────────────────────────────────────
-  Future<bool> acceptRequest(int id) async {
-    final success = await updateStatus(id, 'accepted');
-    if (!success) {
-      debugPrint('🔴 ACCEPT FAILED → $_error');
-    }
-    return success;
-  }
-
+  Future<bool> acceptRequest(int id) => updateStatus(id, 'accepted');
   Future<bool> rejectRequest(int id) => updateStatus(id, 'rejected');
-
-  Future<bool> completeRequest(int id) => updateStatus(id, 'completed');
-
-  Future<bool> markInProgress(int id) => updateStatus(id, 'in_progress');
-
-  Future<bool> markOnTheWay(int id) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final res = await _api.markOnTheWay(id);
-
-      if (res.success) {
-        LocationSharingService.startSharing();
-        await loadMyRequests();
-        return true;
-      } else {
-        _error = res.message ?? 'Failed to mark on the way';
-        return false;
-      }
-    } catch (e) {
-      _error = 'Failed to mark on the way: $e';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<bool> markArrived(int id) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final res = await _api.markArrived(id);
-
-      if (res.success) {
-        await loadMyRequests();
-        return true;
-      } else {
-        _error = res.message ?? 'Failed to mark arrived';
-        return false;
-      }
-    } catch (e) {
-      _error = 'Failed to mark arrived: $e';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   // ─── Helpers ────────────────────────────────────────────────
   void clearError() {

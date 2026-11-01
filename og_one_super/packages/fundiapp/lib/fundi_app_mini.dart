@@ -20,6 +20,7 @@ import 'config/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/job_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/portfolio_provider.dart';
 import 'providers/post_provider.dart';
@@ -30,6 +31,7 @@ import 'providers/static_page_provider.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/ticket_provider.dart';
 
 import 'main.dart' show generateFundiAppRoute;
 
@@ -69,6 +71,8 @@ class FundiAppMiniApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProvider(create: (_) => TicketProvider()),
+        ChangeNotifierProvider(create: (_) => JobProvider()),
       ],
       child: Consumer2<ThemeProvider, SettingsProvider>(
         builder: (context, themeProvider, settings, _) {

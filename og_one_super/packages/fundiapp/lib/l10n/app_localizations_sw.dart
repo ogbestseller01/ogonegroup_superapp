@@ -1191,4 +1191,119 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get regSessionExpired => 'Muda wa usajili umeisha. Tafadhali anza upya.';
+
+  @override
+  String get jobs => 'Kazi';
+
+  @override
+  String get tickets => 'Tiketi';
+
+  @override
+  String get downloads => 'Vipakuliwa';
+
+  @override
+  String get subscription => 'Usajili';
+
+  @override
+  String get viewAll => 'Angalia Zote';
+
+  @override
+  String get viewAllShort => 'Angalia zote';
+
+  @override
+  String get latestRequests => 'Maombi ya Hivi Karibuni';
+
+  @override
+  String get activeJobs => 'Kazi Zinazoendelea';
+
+  @override
+  String get openTickets => 'Tiketi Zilizo Wazi';
+
+  @override
+  String get noActiveJobs => 'Hakuna kazi zinazoendelea';
+
+  @override
+  String get noOpenTickets => 'Hakuna tiketi zilizo wazi';
+
+  @override
+  String get noJobsFound => 'Hakuna kazi zilizopatikana';
+
+  @override
+  String get searchJobsHint => 'Tafuta namba ya kazi, mteja, huduma...';
+
+  @override
+  String get subscriptionComingSoonTitle => 'Usajili';
+
+  @override
+  String get subscriptionComingSoonBody => 'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua vipengele zaidi na kukuza biashara yako.';
+
+  @override
+  String get pendingStatus => 'INASUBIRI';
+
+  @override
+  String get onProgressStatus => 'INAENDELEA';
+
+  @override
+  String get completedStatus => 'IMEKAMILIKA';
+
+  @override
+  String get noTicketsFound => 'Hakuna tiketi zilizopatikana';
+
+  @override
+  String get searchTicketsHint => 'Tafuta tiketi, kazi, mteja, huduma...';
+
+  @override
+  String get jobDetails => 'Maelezo ya Kazi';
+
+  @override
+  String get ticketDetails => 'Maelezo ya Tiketi';
+
+  @override
+  String get noTicket => 'Hakuna tiketi';
+
+  @override
+  String ticketsCount(int count) {
+    return 'Tiketi ($count)';
+  }
+
+  @override
+  String get noTicketsForJob => 'Hakuna tiketi kwa kazi hii';
+
+  @override
+  String get downloadTicket => 'Pakua Tiketi';
+
+  @override
+  String downloadingTicket(String number) {
+    return 'Inapakua tiketi $number...';
+  }
+
+  @override
+  String get jobNumber => 'Namba ya kazi';
+
+  @override
+  String get ticketNumber => 'Namba ya tiketi';
+
+  @override
+  String get title => 'Kichwa';
+
+  @override
+  String get category => 'Kategoria';
+
+  @override
+  String get requestDescription => 'Maelezo ya ombi';
+
+  @override
+  String get started => 'Imeanza';
+
+  @override
+  String get completedLabel => 'Imekamilika';
+
+  @override
+  String get jobStatus => 'Hali ya kazi';
+
+  @override
+  String get ticketStatus => 'Hali ya tiketi';
+
+  @override
+  String get created => 'Imeundwa';
 }

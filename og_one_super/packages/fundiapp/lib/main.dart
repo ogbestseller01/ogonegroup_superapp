@@ -24,6 +24,7 @@ import 'models/chat_conversation.dart';
 // ── Local: providers ─────────────────────────────────────────
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/job_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/portfolio_provider.dart';
 import 'providers/post_provider.dart';
@@ -34,6 +35,7 @@ import 'providers/static_page_provider.dart';
 import 'providers/subscription_provider.dart';
 import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/ticket_provider.dart';
 
 // ── Local: services ──────────────────────────────────────────
 import 'services/fcm_service.dart';
@@ -63,6 +65,7 @@ import 'screens/fundi/fundi_requests_screen.dart';
 import 'screens/fundi/profile/edit_profile_screen.dart';
 import 'screens/fundi/profile/fundi_profile_screen.dart';
 import 'screens/fundi/profile/fundi_settings_screen.dart';
+import 'screens/jobs/jobs_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/static/about_screen.dart';
@@ -74,6 +77,7 @@ import 'screens/subscription/downloads_screen.dart';
 import 'screens/subscription/my_subscriptions_screen.dart';
 import 'screens/subscription/payment_methods_screen.dart';
 import 'screens/subscription/rate_cards_screen.dart';
+import 'screens/tickets/tickets_screen.dart';
 
 // ============================================================
 //  FCM BACKGROUND HANDLER  (must be top-level + vm:entry-point)
@@ -156,6 +160,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        // ── Tickets & Jobs ──
+        ChangeNotifierProvider(create: (_) => TicketProvider()),
+        ChangeNotifierProvider(create: (_) => JobProvider()),
       ],
       child: const MyApp(),
     ),
@@ -239,53 +246,33 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(const LoginScreen());
 
   // ── Registration flow ─────────────────────────────────
-
-  // Account: photo + name + phone + email + password
     case AppRoutes.registerStep1:
       return route(RegisterStep1Screen(
         initialData:
         args is Map<String, dynamic> && args.isNotEmpty ? args : null,
       ));
 
-  // Services: fundi picks what they offer
     case AppRoutes.registerServices:
       if (args is Map<String, dynamic> && args.isNotEmpty) {
         return route(RegisterServicesScreen(args: args));
       }
       return route(const RegisterStep1Screen());
 
-  // Location: area + lat/lng → triggers POST /register/step1
     case AppRoutes.registerLocation:
       if (args is Map<String, dynamic> && args.isNotEmpty) {
         return route(RegisterLocationScreen(args: args));
       }
       return route(const RegisterStep1Screen());
 
-  // Identity: NIDA + ID photo
     case AppRoutes.registerStep2:
-      return route(RegisterStep2Screen(
-        draftId: _getDraftArgument(args),
-      ));
-
-  // Fingerprint
+      return route(RegisterStep2Screen(draftId: _getDraftArgument(args)));
     case AppRoutes.registerStep3:
-      return route(RegisterStep3Screen(
-        draftId: _getDraftArgument(args),
-      ));
-
-  // Face
+      return route(RegisterStep3Screen(draftId: _getDraftArgument(args)));
     case AppRoutes.registerStep4:
-      return route(RegisterStep4Screen(
-        draftId: _getDraftArgument(args),
-      ));
-
-  // Emergency contact
+      return route(RegisterStep4Screen(draftId: _getDraftArgument(args)));
     case AppRoutes.registerStep5:
-      return route(RegisterStep5Screen(
-        draftId: _getDraftArgument(args),
-      ));
+      return route(RegisterStep5Screen(draftId: _getDraftArgument(args)));
 
-  // Review & submit
     case AppRoutes.registerReview:
       if (args is Map<String, dynamic>) {
         final id = _getDraftArgument(args);
@@ -310,7 +297,6 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
           email: args['email']?.toString(),
           phone: args['phone']?.toString(),
           redirectToStep2: args['redirectToStep2'] == true,
-          // ✅ Fallback to technicianId in case Step 1 used the legacy key
           draftId: _nullableInt(args['draftId'] ?? args['technicianId']),
         ));
       }
@@ -345,6 +331,12 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(const EditProfileScreen());
     case AppRoutes.settings:
       return route(const FundiSettingsScreen());
+
+  // ── Tickets & Jobs (NEW) ──────────────────────────────
+    case AppRoutes.tickets:
+      return route(const TicketsScreen());
+    case AppRoutes.jobs:
+      return route(const JobsScreen());
 
   // ── Chat / calls ──────────────────────────────────────
     case AppRoutes.chatList:

@@ -84,6 +84,8 @@ class ApiResponse {
 ///   #49  deletePortfolio                 #100 updatePrivacyPolicy
 ///   #50  updatePortfolioSocialLinks      #101 searchNearbyFundis
 ///   #51  getPortfolios                   #102 searchNearbyByPlace
+///   #103 getMyJobs                       #105 getMyTickets
+///   #104 getJobDetail                    #106 getTicketDetail
 class ApiService {
   late final Dio _dio;
   void Function()? onSessionExpired;
@@ -640,6 +642,28 @@ class ApiService {
 
   Future<ApiResponse> getTrackingData(int requestId) =>
       _get('/v4/requests/$requestId/tracking');
+
+  // ============================================================
+  // SECTION 9B: JOBS & TICKETS            (NEW)
+  // ============================================================
+
+  // [API #103] GET /v4/jobs            (optional ?status=pending|on-progress|completed)
+  Future<ApiResponse> getMyJobs({String? status}) =>
+      _get('/v4/jobs', query: {
+        if (status != null && status.isNotEmpty) 'status': status,
+      });
+
+  // [API #104] GET /v4/jobs/{id}
+  Future<ApiResponse> getJobDetail(int id) => _get('/v4/jobs/$id');
+
+  // [API #105] GET /v4/tickets         (optional ?status=on-progress|completed)
+  Future<ApiResponse> getMyTickets({String? status}) =>
+      _get('/v4/tickets', query: {
+        if (status != null && status.isNotEmpty) 'status': status,
+      });
+
+  // [API #106] GET /v4/tickets/{id}
+  Future<ApiResponse> getTicketDetail(int id) => _get('/v4/tickets/$id');
 
   // ============================================================
   // SECTION 10: PUBLIC BLOG & SOCIAL

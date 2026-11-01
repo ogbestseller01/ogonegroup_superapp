@@ -1191,4 +1191,119 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get regSessionExpired => 'Registration session expired. Please start over.';
+
+  @override
+  String get jobs => 'Jobs';
+
+  @override
+  String get tickets => 'Tickets';
+
+  @override
+  String get downloads => 'Downloads';
+
+  @override
+  String get subscription => 'Subscription';
+
+  @override
+  String get viewAll => 'View All';
+
+  @override
+  String get viewAllShort => 'View all';
+
+  @override
+  String get latestRequests => 'Latest Requests';
+
+  @override
+  String get activeJobs => 'Active Jobs';
+
+  @override
+  String get openTickets => 'Open Tickets';
+
+  @override
+  String get noActiveJobs => 'No active jobs';
+
+  @override
+  String get noOpenTickets => 'No open tickets';
+
+  @override
+  String get noJobsFound => 'No jobs found';
+
+  @override
+  String get searchJobsHint => 'Search job number, customer, service...';
+
+  @override
+  String get subscriptionComingSoonTitle => 'Subscription';
+
+  @override
+  String get subscriptionComingSoonBody => 'Premium version — Coming soon 🚀\nUnlock more features and grow your business.';
+
+  @override
+  String get pendingStatus => 'PENDING';
+
+  @override
+  String get onProgressStatus => 'ON PROGRESS';
+
+  @override
+  String get completedStatus => 'COMPLETED';
+
+  @override
+  String get noTicketsFound => 'No tickets found';
+
+  @override
+  String get searchTicketsHint => 'Search ticket, job, customer, service...';
+
+  @override
+  String get jobDetails => 'Job Details';
+
+  @override
+  String get ticketDetails => 'Ticket Details';
+
+  @override
+  String get noTicket => 'No ticket';
+
+  @override
+  String ticketsCount(int count) {
+    return 'Tickets ($count)';
+  }
+
+  @override
+  String get noTicketsForJob => 'No tickets for this job';
+
+  @override
+  String get downloadTicket => 'Download Ticket';
+
+  @override
+  String downloadingTicket(String number) {
+    return 'Downloading ticket $number...';
+  }
+
+  @override
+  String get jobNumber => 'Job number';
+
+  @override
+  String get ticketNumber => 'Ticket number';
+
+  @override
+  String get title => 'Title';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get requestDescription => 'Request description';
+
+  @override
+  String get started => 'Started';
+
+  @override
+  String get completedLabel => 'Completed';
+
+  @override
+  String get jobStatus => 'Job status';
+
+  @override
+  String get ticketStatus => 'Ticket status';
+
+  @override
+  String get created => 'Created';
 }

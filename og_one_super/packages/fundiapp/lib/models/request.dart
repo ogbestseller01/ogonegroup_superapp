@@ -1,19 +1,20 @@
-// lib/models/request.dart
-
 class ServiceRequest {
   final int id;
   final int technicianId;
   final int customerId;
   final String description;
-  final String status;
+  final String status; // pending | accepted | cancelled | rejected
   final DateTime createdAt;
   final String technicianName;
   final String serviceName;
   final String customerName;
-  final String? customerPhone;          // ← NEW
+  final String? customerPhone;
   final String? technicianArea;
   final String? technicianPhone;
   final double? technicianRating;
+  final bool canCancel;
+  final bool canMarkAsJob;
+  final bool hasJob;
 
   ServiceRequest({
     required this.id,
@@ -25,24 +26,22 @@ class ServiceRequest {
     required this.technicianName,
     required this.serviceName,
     required this.customerName,
-    this.customerPhone,                 // ← NEW
+    this.customerPhone,
     this.technicianArea,
     this.technicianPhone,
     this.technicianRating,
+    this.canCancel = false,
+    this.canMarkAsJob = false,
+    this.hasJob = false,
   });
 
-  // Status helpers
-  bool get isPending => status == 'pending';
-  bool get isAccepted => status == 'accepted';
-  bool get isOnTheWay => status == 'on_the_way';
-  bool get isArrived => status == 'arrived';
-  bool get isInProgress => status == 'in_progress';
-  bool get isCompleted => status == 'completed';
-  bool get isRejected => status == 'rejected';
+  // ─── Status helpers (only the 4 allowed statuses) ───────────────────────
+  bool get isPending   => status == 'pending';
+  bool get isAccepted  => status == 'accepted';
   bool get isCancelled => status == 'cancelled';
+  bool get isRejected  => status == 'rejected';
 
-  bool get isActive =>
-      isPending || isAccepted || isOnTheWay || isArrived || isInProgress;
+  bool get isActive => isPending || isAccepted;
 
   factory ServiceRequest.fromJson(Map<String, dynamic> json) {
     String techName = 'Unknown';
@@ -56,6 +55,9 @@ class ServiceRequest {
         final user = tech['user'] as Map;
         techName = user['name']?.toString() ?? techName;
         techPhone = user['phone']?.toString();
+      } else {
+        techName = tech['name']?.toString() ?? techName;
+        techPhone = tech['phone']?.toString();
       }
       techArea = tech['area']?.toString();
       if (tech['rating'] != null) {
@@ -67,7 +69,6 @@ class ServiceRequest {
       techName = json['technician_name'].toString();
     }
 
-    // Customer data
     String customerName = 'Customer';
     String? customerPhone;
     int customerId = json['customer_id'] ?? 0;
@@ -79,7 +80,6 @@ class ServiceRequest {
       customerId = customer['id'] ?? customerId;
     }
 
-    // Fallbacks for flat responses
     if (json['customer_name'] != null) {
       customerName = json['customer_name'].toString();
     }
@@ -97,13 +97,15 @@ class ServiceRequest {
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
       technicianName: techName,
-      serviceName:
-      json['service']?['name'] ?? json['service_name'] ?? 'Service',
+      serviceName: json['service']?['name'] ?? json['service_name'] ?? 'Service',
       customerName: customerName,
-      customerPhone: customerPhone,       // ← NEW
+      customerPhone: customerPhone,
       technicianArea: techArea,
       technicianPhone: techPhone,
       technicianRating: techRating,
+      canCancel: json['can_cancel'] == true,
+      canMarkAsJob: json['can_mark_as_job'] == true,
+      hasJob: json['has_job'] == true,
     );
   }
 }

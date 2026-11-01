@@ -2398,6 +2398,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration session expired. Please start over.'**
   String get regSessionExpired;
+
+  /// No description provided for @jobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs'**
+  String get jobs;
+
+  /// No description provided for @tickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets'**
+  String get tickets;
+
+  /// No description provided for @downloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads'**
+  String get downloads;
+
+  /// No description provided for @subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get subscription;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View All'**
+  String get viewAll;
+
+  /// No description provided for @viewAllShort.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAllShort;
+
+  /// No description provided for @latestRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Requests'**
+  String get latestRequests;
+
+  /// No description provided for @activeJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Jobs'**
+  String get activeJobs;
+
+  /// No description provided for @openTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Tickets'**
+  String get openTickets;
+
+  /// No description provided for @noActiveJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'No active jobs'**
+  String get noActiveJobs;
+
+  /// No description provided for @noOpenTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'No open tickets'**
+  String get noOpenTickets;
+
+  /// No description provided for @noJobsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs found'**
+  String get noJobsFound;
+
+  /// No description provided for @searchJobsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search job number, customer, service...'**
+  String get searchJobsHint;
+
+  /// No description provided for @subscriptionComingSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get subscriptionComingSoonTitle;
+
+  /// No description provided for @subscriptionComingSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium version — Coming soon 🚀\nUnlock more features and grow your business.'**
+  String get subscriptionComingSoonBody;
+
+  /// No description provided for @pendingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'PENDING'**
+  String get pendingStatus;
+
+  /// No description provided for @onProgressStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'ON PROGRESS'**
+  String get onProgressStatus;
+
+  /// No description provided for @completedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'COMPLETED'**
+  String get completedStatus;
+
+  /// No description provided for @noTicketsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets found'**
+  String get noTicketsFound;
+
+  /// No description provided for @searchTicketsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ticket, job, customer, service...'**
+  String get searchTicketsHint;
+
+  /// No description provided for @jobDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Job Details'**
+  String get jobDetails;
+
+  /// No description provided for @ticketDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket Details'**
+  String get ticketDetails;
+
+  /// No description provided for @noTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'No ticket'**
+  String get noTicket;
+
+  /// No description provided for @ticketsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets ({count})'**
+  String ticketsCount(int count);
+
+  /// No description provided for @noTicketsForJob.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets for this job'**
+  String get noTicketsForJob;
+
+  /// No description provided for @downloadTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Ticket'**
+  String get downloadTicket;
+
+  /// No description provided for @downloadingTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading ticket {number}...'**
+  String downloadingTicket(String number);
+
+  /// No description provided for @jobNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Job number'**
+  String get jobNumber;
+
+  /// No description provided for @ticketNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket number'**
+  String get ticketNumber;
+
+  /// No description provided for @title.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get title;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @requestDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Request description'**
+  String get requestDescription;
+
+  /// No description provided for @started.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get started;
+
+  /// No description provided for @completedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedLabel;
+
+  /// No description provided for @jobStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Job status'**
+  String get jobStatus;
+
+  /// No description provided for @ticketStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket status'**
+  String get ticketStatus;
+
+  /// No description provided for @created.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get created;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
