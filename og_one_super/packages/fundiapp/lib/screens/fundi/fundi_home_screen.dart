@@ -607,10 +607,7 @@ class _FundiDrawer extends StatelessWidget {
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.white,
-                          size: 26,
-                        ),
+                            Icons.close_rounded, color: Colors.white, size: 26),
                         tooltip: 'Close',
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withOpacity(0.15),
@@ -684,9 +681,7 @@ class _FundiDrawer extends StatelessWidget {
                     label: 'Subscription',
                     trailing: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
-                      ),
+                          horizontal: 9, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppTheme.secondary.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
@@ -740,9 +735,7 @@ class _FundiDrawer extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 15,
-                    ),
+                        horizontal: 16, vertical: 15),
                     child: Row(
                       children: [
                         Container(
@@ -1005,7 +998,19 @@ class _HomeDashboardContent extends StatelessWidget {
     final totalTickets = ticketProvider.tickets.length;
     final pendingRequests = requestProvider.pendingCount;
 
+    // Request stats
+    final totalRequests = requestProvider.totalCount;
+    final pendingCount = requestProvider.pendingCount;
+    final completedCount = requestProvider.acceptedCount; // Accepted = Completed
+
     final greeting = _greeting();
+
+    // Helper to navigate to Requests tab
+    void goToRequests() {
+      final homeState =
+      context.findAncestorStateOfType<_FundiHomeScreenState>();
+      homeState?._navigateToTab(2);
+    }
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -1024,19 +1029,29 @@ class _HomeDashboardContent extends StatelessWidget {
           32,
         ),
         children: [
-          // ── Hero Card (always dark navy + white text) ─────────
+          // ── Hero Card (Jobs & Tickets chips removed) ──────────
           _HeroCard(
             name: name,
             initial: initial,
             greeting: greeting,
             pendingText:
             pendingRequests > 0 ? '$pendingRequests Pending' : null,
-            activeJobs: totalJobs,
-            openTickets: totalTickets,
             isTablet: isTablet,
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
+
+          // ── REQUEST STATS (Total / Pending / Completed) ───────
+          // Tapping ANY card navigates to Requests screen
+          _RequestStatsRow(
+            total: totalRequests,
+            pending: pendingCount,
+            completed: completedCount,
+            isDark: isDark,
+            onTap: goToRequests,
+          ),
+
+          const SizedBox(height: 18),
 
           // ── Quick Actions (Jobs & Tickets) ────────────────────
           Row(
@@ -1071,11 +1086,7 @@ class _HomeDashboardContent extends StatelessWidget {
           _SectionHeader(
             title: l10n.latestRequests,
             showAction: requestProvider.requests.isNotEmpty,
-            onViewAll: () {
-              final homeState =
-              context.findAncestorStateOfType<_FundiHomeScreenState>();
-              homeState?._navigateToTab(2);
-            },
+            onViewAll: goToRequests,
           ),
           const SizedBox(height: 12),
 
@@ -1152,7 +1163,7 @@ class _HomeDashboardContent extends StatelessWidget {
     );
   }
 
-  /// Greeting forced to East Africa Time (UTC+3) – 24-hour logic
+  /// Greeting forced to East Africa Time (UTC+3)
   String _greeting() {
     final eat = DateTime.now().toUtc().add(const Duration(hours: 3));
     final hour = eat.hour; // 0–23
@@ -1160,6 +1171,165 @@ class _HomeDashboardContent extends StatelessWidget {
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  }
+}
+
+// ================================================================
+// REQUEST STATS ROW (Total / Pending / Completed)
+// ================================================================
+
+class _RequestStatsRow extends StatelessWidget {
+  final int total;
+  final int pending;
+  final int completed;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _RequestStatsRow({
+    required this.total,
+    required this.pending,
+    required this.completed,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            icon: Icons.list_alt_rounded,
+            value: total,
+            label: 'Total Requests',
+            iconBg: isDark
+                ? AppTheme.primary.withOpacity(0.25)
+                : AppTheme.navy50,
+            iconColor: isDark ? AppTheme.secondary : AppTheme.primary,
+            isDark: isDark,
+            onTap: onTap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.more_horiz_rounded,
+            value: pending,
+            label: 'Pending',
+            iconBg: AppTheme.warning.withOpacity(isDark ? 0.22 : 0.15),
+            iconColor: AppTheme.warning,
+            isDark: isDark,
+            onTap: onTap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _StatCard(
+            icon: Icons.check_circle_outline_rounded,
+            value: completed,
+            label: 'Completed',
+            iconBg: AppTheme.success.withOpacity(isDark ? 0.22 : 0.14),
+            iconColor: AppTheme.success,
+            isDark: isDark,
+            onTap: onTap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final int value;
+  final String label;
+  final Color iconBg;
+  final Color iconColor;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _StatCard({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.iconBg,
+    required this.iconColor,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final textColor = isDark ? Colors.white : AppTheme.primary;
+    final muted = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark
+                  ? AppTheme.darkBorder
+                  : AppTheme.borderLight.withOpacity(0.35),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            child: Column(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, size: 20, color: iconColor),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '$value',
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: textColor,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1329,9 +1499,7 @@ class _RequestTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.13),
                               borderRadius: BorderRadius.circular(20),
@@ -1352,11 +1520,8 @@ class _RequestTile extends StatelessWidget {
                       const SizedBox(height: 7),
                       Row(
                         children: [
-                          Icon(
-                            Icons.person_outline_rounded,
-                            size: 15,
-                            color: mutedText,
-                          ),
+                          Icon(Icons.person_outline_rounded,
+                              size: 15, color: mutedText),
                           const SizedBox(width: 5),
                           Expanded(
                             child: Text(
@@ -1377,11 +1542,8 @@ class _RequestTile extends StatelessWidget {
                         const SizedBox(height: 5),
                         Row(
                           children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 14,
-                              color: mutedText,
-                            ),
+                            Icon(Icons.access_time_rounded,
+                                size: 14, color: mutedText),
                             const SizedBox(width: 5),
                             Text(
                               created,
@@ -1761,9 +1923,7 @@ class _QuickAction extends StatelessWidget {
                         minHeight: 25,
                       ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
+                          horizontal: 6, vertical: 4),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.12),
@@ -1798,6 +1958,7 @@ class _QuickAction extends StatelessWidget {
 
 // ================================================================
 // HERO CARD  – always dark navy + white text
+// Jobs & Tickets chips REMOVED
 // ================================================================
 
 class _HeroCard extends StatelessWidget {
@@ -1805,8 +1966,6 @@ class _HeroCard extends StatelessWidget {
   final String initial;
   final String greeting;
   final String? pendingText;
-  final int activeJobs;
-  final int openTickets;
   final bool isTablet;
 
   const _HeroCard({
@@ -1814,8 +1973,6 @@ class _HeroCard extends StatelessWidget {
     required this.initial,
     required this.greeting,
     required this.pendingText,
-    required this.activeJobs,
-    required this.openTickets,
     required this.isTablet,
   });
 
@@ -1957,17 +2114,11 @@ class _HeroCard extends StatelessWidget {
                         letterSpacing: -0.4,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        if (pendingText != null)
-                          _chip(pendingText!, filled: true),
-                        if (activeJobs > 0) _chip('$activeJobs Jobs'),
-                        if (openTickets > 0) _chip('$openTickets Tickets'),
-                      ],
-                    ),
+                    // Only show Pending chip (Jobs & Tickets removed)
+                    if (pendingText != null) ...[
+                      const SizedBox(height: 10),
+                      _chip(pendingText!, filled: true),
+                    ],
                   ],
                 ),
               ),
