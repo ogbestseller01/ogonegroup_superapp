@@ -21,6 +21,7 @@ import 'l10n/app_localizations.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
+import 'providers/job_provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/post_provider.dart';
@@ -57,6 +58,12 @@ class NearbyFundiMiniApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => RequestProvider()),
+
+        // Jobs + tickets. Every job carries its ticket nested inside
+        // (Job.ticket), so one provider is the single source of truth
+        // for both JobsScreen and TicketsScreen.
+        ChangeNotifierProvider(create: (_) => JobProvider()),
+
         ChangeNotifierProvider(create: (_) => TechnicianProvider()),
         ChangeNotifierProvider(create: (_) => ServiceProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),

@@ -1,9 +1,13 @@
 // screens/home/map_location_picker_screen.dart
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+
+import '../../config/tanzania_map.dart';
 
 class MapLocationPickerScreen extends StatefulWidget {
   final LatLng? initialCenter;
@@ -11,30 +15,197 @@ class MapLocationPickerScreen extends StatefulWidget {
   const MapLocationPickerScreen({super.key, this.initialCenter});
 
   @override
-  State<MapLocationPickerScreen> createState() => _MapLocationPickerScreenState();
+  State<MapLocationPickerScreen> createState() =>
+      _MapLocationPickerScreenState();
 }
 
 class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   LatLng? _selectedPoint;
   String? _placeName;
   bool _isReverseGeocoding = false;
+  bool _isLocating = false;
 
-  static const _defaultCenter = LatLng(-6.7924, 39.2083); // Dar es Salaam
-  static const double _minZoom = 4.0;
-  static const double _maxZoom = 18.0;
+  // Search state & Debouncer for low network usage
+  List<dynamic> _searchResults = [];
+  bool _isSearching = false;
+  Timer? _debounceTimer;
+
+  static const double _minZoom = TanzaniaMap.minZoom;
+  static const double _maxZoom = TanzaniaMap.maxZoom;
 
   @override
   void initState() {
     super.initState();
-    _selectedPoint = widget.initialCenter ?? _defaultCenter;
-    // Immediately reverse-geocode the initial point
-    if (_selectedPoint != null) {
+    if (widget.initialCenter != null) {
+      _selectedPoint = widget.initialCenter;
       _reverseGeocode(_selectedPoint!);
+    } else {
+      // By default, try to fetch the current location on startup
+      _getCurrentLocation(moveToLocation: true);
     }
   }
 
-  /// Better reverse geocoding – tries to get a clean area name
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  /// Fetches the user's current GPS location and optionally moves the map
+  Future<void> _getCurrentLocation({bool moveToLocation = false}) async {
+    setState(() => _isLocating = true);
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enable location services.')),
+          );
+        }
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permissions are denied.')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permissions are permanently denied.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final point = LatLng(position.latitude, position.longitude);
+
+      if (!TanzaniaMap.contains(point.latitude, point.longitude)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Current location is outside Tanzania.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _selectedPoint = point;
+          _searchResults = [];
+        });
+        _reverseGeocode(point);
+
+        if (moveToLocation) {
+          _mapController.move(point, 15);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error getting current location: $e');
+    } finally {
+      if (mounted) setState(() => _isLocating = false);
+    }
+  }
+
+  /// Debouncing search to optimize network requests
+  void _onSearchChanged(String query) {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _searchPlaces(query);
+    });
+  }
+
+  /// Search places via OpenStreetMap Nominatim (restricted to Tanzania)
+  Future<void> _searchPlaces(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search'
+            '?q=${Uri.encodeComponent(cleanQuery)}'
+            '&format=json&countrycodes=tz&limit=5&addressdetails=1',
+      );
+
+      final response = await http
+          .get(url, headers: {'User-Agent': 'NearbyFundi/1.0'})
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200 && mounted) {
+        final List<dynamic> decoded = jsonDecode(response.body);
+        setState(() {
+          _searchResults = decoded;
+        });
+      }
+    } catch (e) {
+      debugPrint('Search network error: $e');
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  /// Selects a location from search results and moves the map
+  void _selectSearchResult(dynamic item) {
+    final lat = double.tryParse(item['lat']?.toString() ?? '') ?? 0.0;
+    final lon = double.tryParse(item['lon']?.toString() ?? '') ?? 0.0;
+    final point = LatLng(lat, lon);
+
+    if (!TanzaniaMap.contains(lat, lon)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected location is outside Tanzania.')),
+      );
+      return;
+    }
+
+    final displayName = item['display_name'] ?? 'Selected location';
+    final shortName = displayName.split(',').take(2).join(',').trim();
+
+    setState(() {
+      _selectedPoint = point;
+      _placeName = shortName;
+      _searchResults = [];
+      _searchController.text = shortName;
+    });
+
+    _searchFocusNode.unfocus();
+    _mapController.move(point, 15);
+  }
+
+  /// Reverse geocoding with fast fallback for offline/poor network conditions
   Future<void> _reverseGeocode(LatLng point) async {
     setState(() {
       _isReverseGeocoding = true;
@@ -50,7 +221,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
       final response = await http
           .get(url, headers: {'User-Agent': 'NearbyFundi/1.0'})
-          .timeout(const Duration(seconds: 7));
+          .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -59,7 +230,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
         String? cleanName;
 
         if (address != null) {
-          // Priority order for a nice name customers understand
           cleanName = address['suburb'] ??
               address['neighbourhood'] ??
               address['residential'] ??
@@ -70,7 +240,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
               address['city'] ??
               address['county'];
 
-          // If we got a suburb, try to add the city for clarity
           if (cleanName != null) {
             final city = address['city'] ?? address['town'] ?? address['state'];
             if (city != null && city != cleanName) {
@@ -79,7 +248,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
           }
         }
 
-        // Fallback to display_name (shortened)
         if (cleanName == null || cleanName.trim().isEmpty) {
           final display = data['display_name'] as String?;
           if (display != null) {
@@ -89,20 +257,43 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
         }
 
         if (mounted && cleanName != null && cleanName.isNotEmpty) {
-          setState(() => _placeName = cleanName);
+          setState(() {
+            _placeName = cleanName;
+            _searchController.text = cleanName!;
+          });
         }
       }
     } catch (e) {
-      debugPrint('Reverse geocode error: $e');
+      debugPrint('Reverse geocode error or timeout: $e');
     }
 
     if (mounted) {
+      if (_placeName == null) {
+        final fallbackStr =
+            'Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}';
+        setState(() {
+          _placeName = fallbackStr;
+          _searchController.text = fallbackStr;
+        });
+      }
       setState(() => _isReverseGeocoding = false);
     }
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
-    setState(() => _selectedPoint = point);
+    if (!TanzaniaMap.contains(point.latitude, point.longitude)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please pick a location inside Tanzania.')),
+      );
+      return;
+    }
+
+    _searchFocusNode.unfocus();
+    setState(() {
+      _selectedPoint = point;
+      _searchResults = [];
+    });
+
     _reverseGeocode(point);
   }
 
@@ -115,7 +306,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   void _confirm() {
     if (_selectedPoint == null) return;
 
-    // Prefer human-readable name. Only use coordinates as last resort.
     final name = (_placeName != null && _placeName!.trim().isNotEmpty)
         ? _placeName!
         : 'Selected location';
@@ -133,7 +323,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pick location on map'),
+        title: const Text('Pick location'),
         centerTitle: true,
         actions: [
           TextButton(
@@ -147,19 +337,25 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       ),
       body: Stack(
         children: [
+          // Flutter Map Layer
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _selectedPoint ?? _defaultCenter,
-              initialZoom: 14,
+              initialCenter: _selectedPoint ?? TanzaniaMap.center,
+              initialZoom: _selectedPoint != null ? 15 : TanzaniaMap.defaultZoom,
               minZoom: _minZoom,
               maxZoom: _maxZoom,
+              cameraConstraint: TanzaniaMap.constraint,
               onTap: _onMapTap,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.nearbyfundi',
+                maxZoom: 19,
               ),
               if (_selectedPoint != null)
                 MarkerLayer(
@@ -179,12 +375,100 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             ],
           ),
 
-          // Zoom controls
+          // Search Bar Overlay & Suggestions List
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: Column(
+              children: [
+                Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(12),
+                  color: theme.cardColor,
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Search place in Tanzania (e.g. Sinza, Arusha)...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchResults = []);
+                        },
+                      )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_isSearching)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+                if (_searchResults.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: _searchResults.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final item = _searchResults[index];
+                        return ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.location_on, size: 20),
+                          title: Text(
+                            item['display_name'] ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          onTap: () => _selectSearchResult(item),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Zoom & Current Location Controls
           Positioned(
             right: 16,
             bottom: 140,
             child: Column(
               children: [
+                _ZoomButton(
+                  icon: _isLocating ? Icons.hourglass_empty : Icons.my_location,
+                  tooltip: 'My current location',
+                  onPressed: _isLocating
+                      ? () {}
+                      : () => _getCurrentLocation(moveToLocation: true),
+                ),
+                const SizedBox(height: 10),
                 _ZoomButton(
                   icon: Icons.add,
                   tooltip: 'Zoom in',
@@ -200,7 +484,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             ),
           ),
 
-          // Bottom info card
+          // Bottom Confirmation Card
           Positioned(
             left: 16,
             right: 16,
@@ -224,7 +508,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                               ? const Text('Getting address…')
                               : Text(
                             _placeName ??
-                                'Tap on the map to select a location',
+                                'Tap map or search a location in Tanzania',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),

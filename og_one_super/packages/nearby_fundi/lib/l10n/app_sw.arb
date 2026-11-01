@@ -12,6 +12,9 @@
   "settings": "Mipangilio",
   "chat": "Mazungumzo",
   "payments": "Malipo",
+  "jobs": "Kazi",
+  "tickets": "Tiketi",
+  "soon": "Hivi karibuni",
 
   "findFundi": "Tafuta Fundi",
   "searchLocation": "📍 Tafuta eneo...",
@@ -274,5 +277,13 @@
   "jobsCompleted": "kazi zilizokamilika",
   "rating": "Ukadiriaji",
   "privacyPolicy": "Sera ya Faragha",
-  "send": "Tuma"
+  "send": "Tuma",
+
+  "noJobsYet": "Hakuna kazi bado",
+  "noJobsHint": "Maombi yaliyokubaliwa unayoyaweka kama kazi yataonekana hapa.",
+  "activeJobs": "Kazi Zinazoendelea",
+  "completedJobs": "Kazi Zilizokamilika",
+  "markComplete": "Weka Imekamilika",
+  "jobCompletedMsg": "Kazi imekamilika. Tiketi imefungwa.",
+  "couldNotStartCompletion": "Imeshindwa kuanza kukamilisha."
 }

@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/request_provider.dart';
+import '../../providers/job_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -22,6 +24,8 @@ import 'nearby_screen.dart';
 import 'blogs_screen.dart';
 
 import '../requests/my_requests_screen.dart';
+import '../jobs/jobs_screen.dart';
+import '../tickets/tickets_screen.dart';
 import '../profile/profile_screen.dart';
 import '../chat/chat_list_screen.dart';
 
@@ -40,17 +44,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Real screens:
+  // 0 Nearby, 1 Blog, 2 Requests, 3 Jobs, 4 Profile
   int _currentIndex = 0;
   String _currentLocale = 'en';
 
   static const double _tabletBreakpoint = 700;
   static const double _desktopBreakpoint = 1100;
 
-  /// Tabs that draw their own AppBar (so Home hides its own to avoid a
-  /// double header) and their own pull-to-refresh.
+  /// Tabs that draw their own AppBar and their own pull-to-refresh.
   static const Set<int> _selfContainedTabs = {2, 3};
 
-  /// Every menu tab except Nearby needs an account.
+  /// Every menu tab except Home needs an account.
   static const Set<int> _guardedTabs = {1, 2, 3, 4};
 
   /// Tabs that call private APIs (not built for guests).
@@ -90,11 +95,11 @@ class _HomeScreenState extends State<HomeScreen> {
             : child;
 
     return [
-      const NearbyScreen(),
-      const BlogsScreen(),
-      tab(2, const MyRequestsScreen()),
-      tab(3, ChatListScreen(onBack: () => _selectTab(0))),
-      tab(4, const ProfileScreen()),
+      const NearbyScreen(),          // 0
+      const BlogsScreen(),           // 1
+      tab(2, const MyRequestsScreen()), // 2
+      tab(3, const JobsScreen()),    // 3
+      tab(4, const ProfileScreen()), // 4
     ];
   }
 
@@ -138,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Sign in or create an account to send and track '
             'your service requests.';
       case 3:
-        return 'Sign in or create an account to chat with fundis.';
+        return 'Sign in or create an account to view and manage your jobs.';
       case 4:
         return 'Sign in or create an account to see and edit your profile.';
       default:
@@ -159,10 +164,102 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
+  // DRAWER ACTIONS
+  // ================================================================
+
+  /// Chat now lives in the drawer and opens as its own screen.
+  void _openChat() {
+    if (!AuthGuard.ensure(
+      context,
+      message: 'Sign in or create an account to chat with fundis.',
+    )) {
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => ChatListScreen(onBack: () => Navigator.pop(ctx)),
+      ),
+    );
+  }
+
+  void _openTickets() {
+    if (!AuthGuard.ensure(
+      context,
+      message: 'Sign in or create an account to view your tickets.',
+    )) {
+      return;
+    }
+
+    Navigator.pushNamed(context, AppRoutes.tickets);
+  }
+
+  void _showComingSoon(String feature) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        icon: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: _gold.withValues(alpha: 0.16),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.hourglass_top_rounded,
+            color: _gold,
+            size: 30,
+          ),
+        ),
+        title: Text(
+          feature,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            fontWeight: FontWeight.w800,
+            color: _ink(theme),
+          ),
+        ),
+        content: Text(
+          l10n.comingSoon,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
+            height: 1.5,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 28,
+                vertical: 12,
+              ),
+            ),
+            child: Text(l10n.done),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================================================================
   // REFRESH
   // ================================================================
 
-  /// Refresh button: guests see the login modal.
   void _onRefreshTap() {
     if (!AuthGuard.ensure(
       context,
@@ -174,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshCurrentScreen() async {
-    // Pull-to-refresh by a guest does nothing (no modal on every pull).
     if (!AuthGuard.isLoggedIn(context)) return;
 
     final l10n = AppLocalizations.of(context)!;
@@ -191,15 +287,17 @@ class _HomeScreenState extends State<HomeScreen> {
           await context.read<RequestProvider>().loadMyRequests();
           break;
         case 3:
-          await context.read<ChatProvider>().refreshConversations();
+          await context.read<JobProvider>().loadJobs();
           break;
         case 4:
           await context.read<AuthProvider>().loadUser();
           break;
       }
 
+      if (!mounted) return;
       await context.read<NotificationProvider>().loadNotifications();
 
+      if (!mounted) return;
       final settings = context.read<SettingsProvider>();
       if (_currentLocale != settings.locale) {
         _currentLocale = settings.locale;
@@ -285,7 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.18),
+                      color:
+                      theme.colorScheme.onSurface.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
@@ -311,8 +410,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Text(
                                     l10n.notifications,
-                                    style: theme.textTheme.titleLarge
-                                        ?.copyWith(
+                                    style:
+                                    theme.textTheme.titleLarge?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       color: ink,
                                     ),
@@ -378,8 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: ListView.separated(
                             controller: scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
-                            padding:
-                            const EdgeInsets.fromLTRB(16, 4, 16, 30),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
                             itemCount: provider.notifications.length,
                             separatorBuilder: (_, __) =>
                             const SizedBox(height: 10),
@@ -418,25 +516,157 @@ class _HomeScreenState extends State<HomeScreen> {
     final type = notification['type']?.toString() ?? '';
 
     if (type == 'chat_message') {
-      _selectTab(3);
+      _openChat();
       return;
     }
 
     if (type == 'new_request' ||
         type == 'request_accepted' ||
-        type == 'request_rejected' ||
-        type == 'request_in_progress' ||
-        type == 'request_completed') {
-      _selectTab(2);
+        type == 'request_rejected') {
+      _selectTab(2); // Requests
+      return;
     }
+
+    // Future job-related notifications can land here
+    if (type.contains('job')) {
+      _selectTab(3); // Jobs
+    }
+  }
+
+  // ================================================================
+  // DRAWER – Chat, Tickets, Payments + Close button
+  // ================================================================
+
+  Widget _buildDrawer(ThemeData theme, AppLocalizations l10n) {
+    final ink = _ink(theme);
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final drawerWidth = screenWidth < 400 ? screenWidth * 0.88 : 340.0;
+
+    return Drawer(
+      width: drawerWidth,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // Header with Close button
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.paddingOf(context).top + 16,
+                12,
+                20,
+              ),
+              decoration: const BoxDecoration(
+                color: AppTheme.primary,
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(28),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 5,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: _gold,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.appTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.nunito(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  // Close button (top right)
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    tooltip: 'Close',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Menu items
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  // Chat (with unread badge)
+                  Consumer<ChatProvider>(
+                    builder: (context, chatProvider, child) {
+                      return _DrawerItem(
+                        icon: _ChatIcon(
+                            unread: chatProvider.totalUnread, active: false),
+                        label: l10n.chat,
+                        ink: ink,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _openChat();
+                        },
+                      );
+                    },
+                  ),
+
+                  // Tickets (now real)
+                  _DrawerItem(
+                    icon: const Icon(Icons.confirmation_number_outlined),
+                    label: l10n.tickets,
+                    ink: ink,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _openTickets();
+                    },
+                  ),
+
+                  // Payments (still coming soon)
+                  _DrawerItem(
+                    icon: const Icon(Icons.payments_outlined),
+                    label: l10n.payments,
+                    ink: ink,
+                    soon: true,
+                    soonLabel: l10n.soon,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showComingSoon(l10n.payments);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ================================================================
   // NAVIGATION RAIL (tablet / desktop)
   // ================================================================
 
-  List<NavigationRailDestination> _railDestinations(
-      AppLocalizations l10n, ChatProvider chatProvider) {
+  List<NavigationRailDestination> _railDestinations(AppLocalizations l10n) {
     return [
       NavigationRailDestination(
         icon: const Icon(Icons.home_outlined),
@@ -454,10 +684,9 @@ class _HomeScreenState extends State<HomeScreen> {
         label: Text(l10n.requests),
       ),
       NavigationRailDestination(
-        icon: _ChatIcon(unread: chatProvider.totalUnread, active: false),
-        selectedIcon:
-        _ChatIcon(unread: chatProvider.totalUnread, active: true),
-        label: Text(l10n.chat),
+        icon: const Icon(Icons.work_outline_rounded),
+        selectedIcon: const Icon(Icons.work_rounded),
+        label: Text(l10n.jobs),
       ),
       NavigationRailDestination(
         icon: const Icon(Icons.person_outline),
@@ -467,8 +696,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  Widget _buildLargeNavigation(
-      ThemeData theme, AppLocalizations l10n, ChatProvider chatProvider) {
+  Widget _buildLargeNavigation(ThemeData theme, AppLocalizations l10n) {
     final ink = _ink(theme);
 
     return Container(
@@ -504,13 +732,13 @@ class _HomeScreenState extends State<HomeScreen> {
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
-        destinations: _railDestinations(l10n, chatProvider),
+        destinations: _railDestinations(l10n),
       ),
     );
   }
 
   // ================================================================
-  // APP BAR (rounded, with tonal action buttons)
+  // APP BAR
   // ================================================================
 
   PreferredSizeWidget _buildAppBar(ThemeData theme, AppLocalizations l10n) {
@@ -523,11 +751,31 @@ class _HomeScreenState extends State<HomeScreen> {
       toolbarHeight: 66,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      titleSpacing: 18,
+      leadingWidth: 62,
+      titleSpacing: 8,
       iconTheme: const IconThemeData(color: Colors.white),
       systemOverlayStyle: SystemUiOverlayStyle.light,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+      ),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: Builder(
+          builder: (barContext) {
+            final unread = context.watch<ChatProvider>().totalUnread;
+            return _BarButton(
+              tooltip: 'Menu',
+              onTap: () => Scaffold.of(barContext).openDrawer(),
+              child: Badge(
+                isLabelVisible: unread > 0,
+                backgroundColor: AppTheme.error,
+                smallSize: 9,
+                child: const Icon(Icons.menu_rounded,
+                    color: Colors.white, size: 22),
+              ),
+            );
+          },
+        ),
       ),
       title: Row(
         children: [
@@ -594,7 +842,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final settings = context.watch<SettingsProvider>();
     final loggedIn = context.watch<AuthProvider>().isLoggedIn;
 
-    // If the user logs out while on another tab, fall back to Nearby.
     if (!loggedIn && _currentIndex != 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _currentIndex = 0);
@@ -618,7 +865,6 @@ class _HomeScreenState extends State<HomeScreen> {
         final veryLarge = width >= _desktopBreakpoint;
         final selfContained = _selfContainedTabs.contains(_currentIndex);
 
-        // System back from any tab returns to the first tab before exiting.
         return PopScope(
           canPop: _currentIndex == 0,
           onPopInvokedWithResult: (didPop, result) {
@@ -626,14 +872,10 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           child: Scaffold(
             appBar: selfContained ? null : _buildAppBar(theme, l10n),
+            drawer: _buildDrawer(theme, l10n),
             body: Row(
               children: [
-                if (largeScreen)
-                  Consumer<ChatProvider>(
-                    builder: (context, chatProvider, child) {
-                      return _buildLargeNavigation(theme, l10n, chatProvider);
-                    },
-                  ),
+                if (largeScreen) _buildLargeNavigation(theme, l10n),
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
@@ -644,12 +886,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         onRefresh: _refreshCurrentScreen,
                         color: theme.primaryColor,
                         backgroundColor: theme.colorScheme.surface,
-                        // Tabs with their own pull-to-refresh must not
-                        // trigger a second, duplicate refresh here.
                         notificationPredicate: (notification) =>
                         !selfContained && notification.depth == 0,
-                        // IndexedStack keeps every tab alive so the Nearby
-                        // search/map and scroll positions survive tab changes.
                         child: IndexedStack(
                           index: _currentIndex,
                           children: screens,
@@ -669,99 +907,156 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // BOTTOM NAVIGATION (rounded top, navy pill indicator, gold icon)
+  // BOTTOM NAVIGATION – Home, Blog, Requests, Jobs, Profile
   // ================================================================
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
     final ink = _ink(theme);
 
-    return Consumer<ChatProvider>(
-      builder: (context, chatProvider, child) {
-        return Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.16),
-                blurRadius: 22,
-                offset: const Offset(0, -6),
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primary.withValues(alpha: 0.16),
+            blurRadius: 22,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: selected ? ink : theme.hintColor,
+              );
+            }),
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              final selected = states.contains(WidgetState.selected);
+              return IconThemeData(
+                color: selected ? _gold : theme.hintColor,
+              );
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _selectTab,
+            height: 70,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: AppTheme.primary,
+            indicatorShape: const StadiumBorder(),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded, color: _gold),
+                label: l10n.nearby,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.article_outlined),
+                selectedIcon: const Icon(Icons.article_rounded, color: _gold),
+                label: l10n.blog,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.list_alt_outlined),
+                selectedIcon: const Icon(Icons.list_alt_rounded, color: _gold),
+                label: l10n.requests,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.work_outline_rounded),
+                selectedIcon: const Icon(Icons.work_rounded, color: _gold),
+                label: l10n.jobs,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.person_outline),
+                selectedIcon: const Icon(Icons.person_rounded, color: _gold),
+                label: l10n.profile,
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: selected ? ink : theme.hintColor,
-                  );
-                }),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return IconThemeData(
-                    color: selected ? _gold : theme.hintColor,
-                  );
-                }),
-              ),
-              child: NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: _selectTab,
-                height: 70,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                indicatorColor: AppTheme.primary,
-                indicatorShape: const StadiumBorder(),
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: [
-                  NavigationDestination(
-                    icon: const Icon(Icons.home_outlined),
-                    selectedIcon:
-                    const Icon(Icons.home_rounded, color: _gold),
-                    label: l10n.nearby,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.article_outlined),
-                    selectedIcon:
-                    const Icon(Icons.article_rounded, color: _gold),
-                    label: l10n.blog,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.list_alt_outlined),
-                    selectedIcon:
-                    const Icon(Icons.list_alt_rounded, color: _gold),
-                    label: l10n.requests,
-                  ),
-                  NavigationDestination(
-                    icon: _ChatIcon(
-                        unread: chatProvider.totalUnread, active: false),
-                    selectedIcon: _ChatIcon(
-                        unread: chatProvider.totalUnread, active: true),
-                    label: l10n.chat,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.person_outline),
-                    selectedIcon:
-                    const Icon(Icons.person_rounded, color: _gold),
-                    label: l10n.profile,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
 
 // ==================================================================
-// APP BAR BUTTON (soft tonal square)
+// DRAWER ITEM
+// ==================================================================
+
+class _DrawerItem extends StatelessWidget {
+  final Widget icon;
+  final String label;
+  final Color ink;
+  final VoidCallback onTap;
+  final bool soon;
+  final String soonLabel;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.label,
+    required this.ink,
+    required this.onTap,
+    this.soon = false,
+    this.soonLabel = 'Soon',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        leading: IconTheme(
+          data: IconThemeData(color: ink, size: 24),
+          child: icon,
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: ink,
+            fontWeight: FontWeight.w700,
+            fontSize: 15.5,
+          ),
+        ),
+        trailing: soon
+            ? Container(
+          padding:
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _gold.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            soonLabel,
+            style: TextStyle(
+              color: theme.brightness == Brightness.dark
+                  ? _gold
+                  : const Color(0xFF8A6200),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        )
+            : null,
+      ),
+    );
+  }
+}
+
+// ==================================================================
+// APP BAR BUTTON
 // ==================================================================
 
 class _BarButton extends StatelessWidget {
@@ -901,10 +1196,6 @@ class _NotificationTile extends StatelessWidget {
         return 'Request Accepted';
       case 'request_rejected':
         return 'Request Rejected';
-      case 'request_in_progress':
-        return 'In Progress';
-      case 'request_completed':
-        return 'Completed';
       default:
         return 'Notification';
     }
@@ -920,10 +1211,6 @@ class _NotificationTile extends StatelessWidget {
         return Icons.check_circle_outline_rounded;
       case 'request_rejected':
         return Icons.cancel_outlined;
-      case 'request_in_progress':
-        return Icons.hourglass_top_rounded;
-      case 'request_completed':
-        return Icons.task_alt_rounded;
       default:
         return Icons.notifications_outlined;
     }
@@ -932,12 +1219,9 @@ class _NotificationTile extends StatelessWidget {
   Color _getIconColor(String? type, ThemeData theme) {
     switch (type) {
       case 'request_accepted':
-      case 'request_completed':
         return AppTheme.success;
       case 'request_rejected':
         return AppTheme.error;
-      case 'request_in_progress':
-        return AppTheme.warning;
       case 'chat_message':
         return theme.brightness == Brightness.dark
             ? const Color(0xFF6DB6F2)

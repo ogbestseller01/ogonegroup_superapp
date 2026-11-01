@@ -12,10 +12,6 @@ import '../../config/app_theme.dart';
 import '../../config/app_routes.dart';
 import '../../widgets/request_dialog.dart';
 
-// ──────────────────────────────────────────────────────────────────────────
-// MAIN SCREEN
-// ──────────────────────────────────────────────────────────────────────────
-
 class TechnicianDetailScreen extends StatefulWidget {
   final int technicianId;
 
@@ -25,8 +21,7 @@ class TechnicianDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<TechnicianDetailScreen> createState() =>
-      _TechnicianDetailScreenState();
+  State<TechnicianDetailScreen> createState() => _TechnicianDetailScreenState();
 }
 
 class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
@@ -52,9 +47,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     try {
       final technicianProvider = context.read<TechnicianProvider>();
 
-      await technicianProvider.fetchTechnicianWithPortfolios(
-        widget.technicianId,
-      );
+      await technicianProvider.fetchTechnicianWithPortfolios(widget.technicianId);
 
       await Future.wait([
         context.read<RequestProvider>().loadMyRequests(),
@@ -62,13 +55,9 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       ]);
 
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     } catch (e) {
       if (!mounted) return;
-
       setState(() {
         _isLoading = false;
         _error = e.toString();
@@ -76,26 +65,19 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     }
   }
 
-  // ─── CRITICAL FIX for package / mini-app embedding ─────────────────────
   void _showRequestModal(Technician tech) {
     showDialog(
       context: context,
-      useRootNavigator: false, // stay inside mini-app navigator (has providers)
+      useRootNavigator: false,
       barrierDismissible: false,
-      builder: (dialogContext) => RequestDialog(
-        technician: tech,
-      ),
+      builder: (dialogContext) => RequestDialog(technician: tech),
     );
   }
 
-  void _showPortfolioModal(
-      PortfolioItem item,
-      List<PortfolioItem> items,
-      int initialIndex,
-      ) {
+  void _showPortfolioModal(PortfolioItem item, List<PortfolioItem> items, int initialIndex) {
     showModalBottomSheet(
       context: context,
-      useRootNavigator: false, // same reason
+      useRootNavigator: false,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => PortfolioModal(
@@ -109,19 +91,15 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
   Widget build(BuildContext context) {
     final technicianProvider = context.watch<TechnicianProvider>();
     final requestProvider = context.watch<RequestProvider>();
-
     final tech = technicianProvider.currentTechnician;
-
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-
     final horizontalPadding = isTablet ? 32.0 : 16.0;
     final portfolioColumns = isTablet ? 3 : 2;
 
-    // ─── LOADING ──────────────────────────────────────────────────────────
     if (_isLoading || technicianProvider.isLoading) {
       return Scaffold(
         appBar: _buildAppBar(l10n, theme),
@@ -129,10 +107,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       );
     }
 
-    // ─── ERROR ────────────────────────────────────────────────────────────
-    if (_error != null ||
-        technicianProvider.error != null ||
-        tech == null) {
+    if (_error != null || technicianProvider.error != null || tech == null) {
       return Scaffold(
         appBar: _buildAppBar(l10n, theme),
         body: Center(
@@ -141,20 +116,12 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  size: 56,
-                  color: AppTheme.error,
-                ),
+                const Icon(Icons.error_outline_rounded, size: 56, color: AppTheme.error),
                 const SizedBox(height: 16),
                 Text(
-                  technicianProvider.error ??
-                      _error ??
-                      l10n.technicianNotFound,
+                  technicianProvider.error ?? _error ?? l10n.technicianNotFound,
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.hintColor,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -163,13 +130,8 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
                   child: Text(l10n.retry),
                 ),
@@ -180,7 +142,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       );
     }
 
-    // ─── MAIN UI ──────────────────────────────────────────────────────────
     return Scaffold(
       appBar: _buildAppBar(l10n, theme, techName: tech.name),
       body: Align(
@@ -188,10 +149,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 16,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -219,9 +177,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: theme.dividerColor.withOpacity(0.3)),
-          ),
+          border: Border(top: BorderSide(color: theme.dividerColor.withOpacity(0.3))),
         ),
         child: SafeArea(
           child: Padding(
@@ -230,25 +186,16 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                 ? _buildAlreadySentWidget(l10n, theme)
                 : ElevatedButton.icon(
               onPressed: () => _showRequestModal(tech),
-              icon: const Icon(
-                Icons.handyman_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
+              icon: const Icon(Icons.handyman_rounded, color: Colors.white, size: 20),
               label: Text(
                 l10n.requestThisFundi,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
             ),
@@ -258,34 +205,17 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // APP BAR
-  // ─────────────────────────────────────────────────────────────────────────
-
-  PreferredSizeWidget _buildAppBar(
-      AppLocalizations l10n,
-      ThemeData theme, {
-        String? techName,
-      }) {
+  PreferredSizeWidget _buildAppBar(AppLocalizations l10n, ThemeData theme, {String? techName}) {
     return AppBar(
       title: Text(
         techName ?? l10n.technician,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-          fontSize: 18,
-        ),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
       ),
       leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          color: Colors.white,
-        ),
-        onPressed: () {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        },
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+        onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
       ),
       actions: [
         IconButton(
@@ -300,15 +230,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // PROFILE CARD
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildHeroProfile(
-      Technician tech,
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
+  Widget _buildHeroProfile(Technician tech, AppLocalizations l10n, ThemeData theme) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
@@ -326,15 +248,11 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                 radius: 44,
                 backgroundColor: AppTheme.primary.withOpacity(0.10),
                 backgroundImage: tech.profilePhoto != null
-                    ? NetworkImage(
-                  ImageUtils.getFullImageUrl(tech.profilePhoto!),
-                )
+                    ? NetworkImage(ImageUtils.getFullImageUrl(tech.profilePhoto!))
                     : null,
                 child: tech.profilePhoto == null
                     ? Text(
-                  tech.name.isNotEmpty
-                      ? tech.name[0].toUpperCase()
-                      : '?',
+                  tech.name.isNotEmpty ? tech.name[0].toUpperCase() : '?',
                   style: const TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w800,
@@ -352,10 +270,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                   decoration: BoxDecoration(
                     color: tech.isOnline ? Colors.green : Colors.grey,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.surface,
-                      width: 2.5,
-                    ),
+                    border: Border.all(color: theme.colorScheme.surface, width: 2.5),
                   ),
                 ),
               ),
@@ -380,11 +295,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
               if (tech.verified)
                 const Padding(
                   padding: EdgeInsets.only(left: 6),
-                  child: Icon(
-                    Icons.verified_rounded,
-                    color: AppTheme.accent,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.verified_rounded, color: AppTheme.accent, size: 20),
                 ),
             ],
           ),
@@ -393,21 +304,14 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.location_on_rounded,
-                  size: 16,
-                  color: AppTheme.error,
-                ),
+                const Icon(Icons.location_on_rounded, size: 16, color: AppTheme.error),
                 const SizedBox(width: 3),
                 Flexible(
                   child: Text(
                     tech.area!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: theme.hintColor,
-                      fontSize: 13.5,
-                    ),
+                    style: TextStyle(color: theme.hintColor, fontSize: 13.5),
                   ),
                 ),
               ],
@@ -427,11 +331,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                   theme,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 36,
-                color: theme.dividerColor.withOpacity(0.4),
-              ),
+              Container(width: 1, height: 36, color: theme.dividerColor.withOpacity(0.4)),
               Expanded(
                 child: _statItem(
                   Icons.work_history_rounded,
@@ -441,11 +341,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                   theme,
                 ),
               ),
-              Container(
-                width: 1,
-                height: 36,
-                color: theme.dividerColor.withOpacity(0.4),
-              ),
+              Container(width: 1, height: 36, color: theme.dividerColor.withOpacity(0.4)),
               Expanded(
                 child: _statItem(
                   Icons.work_outline_rounded,
@@ -462,13 +358,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  Widget _statItem(
-      IconData icon,
-      String value,
-      String label,
-      Color color,
-      ThemeData theme,
-      ) {
+  Widget _statItem(IconData icon, String value, String label, Color color, ThemeData theme) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -482,10 +372,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
               ),
             ),
           ],
@@ -500,10 +387,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       ],
     );
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // SECTION TITLE
-  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _sectionTitle(String text, ThemeData theme, {Widget? trailing}) {
     return Padding(
@@ -525,15 +408,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // BIO
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildBioSection(
-      String bio,
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
+  Widget _buildBioSection(String bio, AppLocalizations l10n, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -548,25 +423,14 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
           ),
           child: Text(
             bio,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.5,
-              fontSize: 14.5,
-            ),
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 14.5),
           ),
         ),
       ],
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // SERVICES
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildServicesSection(
-      Technician tech,
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
+  Widget _buildServicesSection(Technician tech, AppLocalizations l10n, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -599,10 +463,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
             runSpacing: 8,
             children: tech.services.map((service) {
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
@@ -629,15 +490,12 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.schedule_rounded,
-                    color: AppTheme.primary, size: 20),
+                const Icon(Icons.schedule_rounded, color: AppTheme.primary, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     l10n.hourlyRate,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                   ),
                 ),
                 Text(
@@ -656,29 +514,19 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  Widget _servicePriceRow(
-      dynamic sp,
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
+  Widget _servicePriceRow(ServicePrice sp, AppLocalizations l10n, ThemeData theme) {
     final hasPrice = sp.minPrice > 0 || sp.maxPrice > 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       child: Row(
         children: [
-          const Icon(
-            Icons.construction_rounded,
-            color: AppTheme.primary,
-            size: 20,
-          ),
+          const Icon(Icons.construction_rounded, color: AppTheme.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               sp.name,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 8),
@@ -699,10 +547,6 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       ),
     );
   }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // PORTFOLIO
-  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildPortfolioSection(
       Technician tech,
@@ -740,17 +584,11 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
             ),
             child: Column(
               children: [
-                Icon(
-                  Icons.photo_library_outlined,
-                  size: 44,
-                  color: theme.hintColor.withOpacity(0.6),
-                ),
+                Icon(Icons.photo_library_outlined, size: 44, color: theme.hintColor.withOpacity(0.6)),
                 const SizedBox(height: 8),
                 Text(
                   l10n.noPortfolioItems,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.hintColor,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
                 ),
               ],
             ),
@@ -764,7 +602,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
               crossAxisCount: columns,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.78,
+              childAspectRatio: 0.85,
             ),
             itemBuilder: (context, index) {
               final item = items[index];
@@ -779,14 +617,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ACTIVE REQUEST MESSAGE
-  // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _buildAlreadySentWidget(
-      AppLocalizations l10n,
-      ThemeData theme,
-      ) {
+  Widget _buildAlreadySentWidget(AppLocalizations l10n, ThemeData theme) {
     return Container(
       height: 52,
       decoration: BoxDecoration(
@@ -796,11 +627,7 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.hourglass_empty_rounded,
-            size: 20,
-            color: theme.hintColor,
-          ),
+          Icon(Icons.hourglass_empty_rounded, size: 20, color: theme.hintColor),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -820,10 +647,10 @@ class _TechnicianDetailScreenState extends State<TechnicianDetailScreen> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// PORTFOLIO GRID CARD
+// PORTFOLIO GRID CARD (supports multiple images)
 // ──────────────────────────────────────────────────────────────────────────
 
-class PortfolioGridCard extends StatefulWidget {
+class PortfolioGridCard extends StatelessWidget {
   final PortfolioItem item;
   final VoidCallback onTap;
   final ThemeData theme;
@@ -836,96 +663,65 @@ class PortfolioGridCard extends StatefulWidget {
   });
 
   @override
-  State<PortfolioGridCard> createState() => _PortfolioGridCardState();
-}
-
-class _PortfolioGridCardState extends State<PortfolioGridCard> {
-  bool _isExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-    final theme = widget.theme;
-    final desc = item.description ?? '';
-    final shouldShowReadMore = desc.length > 60;
+    final firstImage = item.firstImage;
 
-    return Hero(
-      tag: 'portfolio_${item.id}',
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
+        ),
         clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // IMAGE (tap opens viewer)
-              Expanded(
-                child: GestureDetector(
-                  onTap: widget.onTap,
-                  child: Image.network(
-                    ImageUtils.getFullImageUrl(item.image),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) {
-                      return Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          size: 36,
-                          color: theme.hintColor,
-                        ),
-                      );
-                    },
-                  ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (firstImage != null)
+              Image.network(
+                ImageUtils.getFullImageUrl(firstImage),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.broken_image_outlined, size: 36, color: theme.hintColor),
                 ),
+              )
+            else
+              Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Icon(Icons.photo_library_outlined, size: 36, color: theme.hintColor),
               ),
 
-              // DESCRIPTION
-              if (desc.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            // Multiple images indicator
+            if (item.hasMultipleImages)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.65),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(Icons.photo_library_rounded, size: 14, color: Colors.white),
+                      const SizedBox(width: 4),
                       Text(
-                        desc,
-                        maxLines: _isExpanded ? 6 : 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 13,
-                          height: 1.3,
-                          color: theme.colorScheme.onSurface,
+                        '${item.images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (shouldShowReadMore)
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isExpanded = !_isExpanded;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              _isExpanded ? 'Read less' : 'Read more',
-                              style: const TextStyle(
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -933,7 +729,7 @@ class _PortfolioGridCardState extends State<PortfolioGridCard> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// PORTFOLIO MODAL
+// PORTFOLIO MODAL (swipe between portfolio posts + images inside)
 // ──────────────────────────────────────────────────────────────────────────
 
 class PortfolioModal extends StatefulWidget {
@@ -967,19 +763,14 @@ class _PortfolioModalState extends State<PortfolioModal> {
     super.dispose();
   }
 
-  void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final totalItems = widget.items.length;
+    final currentItem = widget.items[_currentIndex];
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
+      height: MediaQuery.of(context).size.height * 0.92,
       decoration: BoxDecoration(
         color: theme.brightness == Brightness.dark
             ? const Color(0xFF0D1F1F)
@@ -988,7 +779,7 @@ class _PortfolioModalState extends State<PortfolioModal> {
       ),
       child: Column(
         children: [
-          // HEADER
+          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
             child: Row(
@@ -1010,59 +801,20 @@ class _PortfolioModalState extends State<PortfolioModal> {
             ),
           ),
 
-          // PAGES
+          // Portfolio posts (swipe left/right between posts)
           Expanded(
             child: PageView.builder(
               controller: _pageController,
-              onPageChanged: _onPageChanged,
+              onPageChanged: (index) => setState(() => _currentIndex = index),
               itemCount: totalItems,
               itemBuilder: (context, index) {
                 final item = widget.items[index];
-                return Column(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: InteractiveViewer(
-                          child: Center(
-                            child: Image.network(
-                              ImageUtils.getFullImageUrl(item.image),
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) {
-                                return const Center(
-                                  child: Icon(
-                                    Icons.broken_image_outlined,
-                                    size: 64,
-                                    color: Colors.white54,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (item.description != null &&
-                        item.description!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
-                        child: Text(
-                          item.description!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.5,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                  ],
-                );
+                return _PortfolioImagesViewer(item: item);
               },
             ),
           ),
 
-          // DOTS
+          // Dots for portfolio posts
           if (totalItems > 1)
             Padding(
               padding: const EdgeInsets.only(bottom: 20, top: 8),
@@ -1088,6 +840,81 @@ class _PortfolioModalState extends State<PortfolioModal> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _PortfolioImagesViewer extends StatefulWidget {
+  final PortfolioItem item;
+
+  const _PortfolioImagesViewer({required this.item});
+
+  @override
+  State<_PortfolioImagesViewer> createState() => _PortfolioImagesViewerState();
+}
+
+class _PortfolioImagesViewerState extends State<_PortfolioImagesViewer> {
+  late PageController _imageController;
+  int _currentImageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _imageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = widget.item.images;
+
+    if (images.isEmpty) {
+      return const Center(
+        child: Icon(Icons.broken_image_outlined, size: 64, color: Colors.white54),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: PageView.builder(
+            controller: _imageController,
+            onPageChanged: (i) => setState(() => _currentImageIndex = i),
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: InteractiveViewer(
+                  child: Center(
+                    child: Image.network(
+                      ImageUtils.getFullImageUrl(images[index].url),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Center(
+                        child: Icon(Icons.broken_image_outlined, size: 64, color: Colors.white54),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // Image counter inside portfolio post
+        if (images.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12, top: 8),
+            child: Text(
+              '${_currentImageIndex + 1} / ${images.length}',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+      ],
     );
   }
 }

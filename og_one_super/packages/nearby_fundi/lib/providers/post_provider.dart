@@ -1,5 +1,5 @@
+// FILE: lib/providers/post_provider.dart
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/post.dart';
 
@@ -26,8 +26,10 @@ class PostProvider extends ChangeNotifier {
     fetchPosts(refresh: true);
   }
 
-  /// Public blog feed (used by BlogsScreen)
+  /// Public posts feed
   Future<void> fetchPosts({bool refresh = false}) async {
+    if (_isLoading && !refresh) return; // avoid duplicate page requests
+
     if (refresh) {
       _page = 1;
       _posts.clear();
@@ -41,22 +43,23 @@ class PostProvider extends ChangeNotifier {
 
     final res =
     await _api.getPosts(page: _page, technicianId: _filterTechnicianId);
+
     if (res.success && res.data != null) {
       final data = res.data as Map<String, dynamic>;
       final List<dynamic> items = data['data'] ?? [];
-      final newPosts = items.map((e) => Post.fromJson(e)).toList();
-      _posts.addAll(newPosts);
+      _posts.addAll(items.map((e) => Post.fromJson(e)));
       _hasMore = data['next_page_url'] != null;
       _page++;
       _error = null;
     } else {
       _error = res.message;
     }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  /// Fundi’s own posts
+  /// Fundi's own posts
   Future<void> fetchMyPosts() async {
     _isLoading = true;
     _error = null;
@@ -69,102 +72,68 @@ class PostProvider extends ChangeNotifier {
     } else {
       _error = res.message;
     }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<bool> createPost(Map<String, dynamic> data) async {
+  Future<bool> createPost(Map<String, dynamic> data) =>
+      _mutate(() => _api.createPost(data));
+
+  Future<bool> updatePost(int id, Map<String, dynamic> data) =>
+      _mutate(() => _api.updatePost(id, data));
+
+  Future<bool> deletePost(int id) => _mutate(() => _api.deletePost(id));
+
+  /// Shared flow for create / update / delete: run, then reload my posts.
+  Future<bool> _mutate(Future<dynamic> Function() request) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final res = await _api.createPost(data);
+    final res = await request();
     _isLoading = false;
+
     if (res.success) {
       await fetchMyPosts();
       return true;
     }
+
     _error = res.message;
     notifyListeners();
     return false;
   }
 
-  Future<bool> updatePost(int id, Map<String, dynamic> data) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    final res = await _api.updatePost(id, data);
-    _isLoading = false;
-    if (res.success) {
-      await fetchMyPosts();
-      return true;
-    }
-    _error = res.message;
-    notifyListeners();
-    return false;
-  }
-
-  Future<bool> deletePost(int id) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    final res = await _api.deletePost(id);
-    _isLoading = false;
-    if (res.success) {
-      await fetchMyPosts();
-      return true;
-    }
-    _error = res.message;
-    notifyListeners();
-    return false;
-  }
-
-  Future<void> likePost(int id) async {
+  /// Toggles like on the server. Returns true on success and updates the
+  /// post in the feed (if it is there).
+  Future<bool> likePost(int id) async {
     final res = await _api.likePost(id);
-    if (!res.success) return;
+    if (!res.success) return false;
 
     final index = _posts.indexWhere((p) => p.id == id);
     if (index != -1) {
       final post = _posts[index];
-      final newLikesCount =
-      post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
-
-      _posts[index] = Post(
-        id: post.id,
-        title: post.title,
-        content: post.content,
-        images: post.images,
-        youtubeUrl: post.youtubeUrl,
-        youtubeEmbed: post.youtubeEmbed,
-        likesCount: newLikesCount,
-        commentsCount: post.commentsCount,
-        technicianName: post.technicianName,
-        technicianAvatar: post.technicianAvatar,
-        technicianId: post.technicianId,
-        createdAt: post.createdAt,
-        likedByUser: !post.likedByUser,
-        comments: post.comments,
-      );
+      post.likesCount += post.likedByUser ? -1 : 1;
+      post.likedByUser = !post.likedByUser;
       notifyListeners();
     }
+    return true;
   }
 
   Future<void> addComment(int postId, String comment) async {
     final res = await _api.commentOnPost(postId, comment);
     if (res.success) {
-      await _refreshSinglePost(postId);
+      await refreshPost(postId);
     }
   }
 
-  Future<void> _refreshSinglePost(int postId) async {
+  /// Reloads a single post (e.g. after a new comment) and updates the feed.
+  Future<void> refreshPost(int postId) async {
     final res = await _api.getPostDetail(postId);
     if (res.success && res.data != null) {
-      final updatedPost = Post.fromJson(res.data);
       final index = _posts.indexWhere((p) => p.id == postId);
       if (index != -1) {
-        _posts[index] = updatedPost;
+        _posts[index] = Post.fromJson(res.data);
         notifyListeners();
       }
     }

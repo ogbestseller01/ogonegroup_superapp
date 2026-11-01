@@ -1,106 +1,111 @@
-// models/technician.dart
+// lib/models/technician.dart
+
 class TechnicianService {
   final int id;
   final String name;
+  const TechnicianService({required this.id, required this.name});
 
-  TechnicianService({required this.id, required this.name});
-
-  factory TechnicianService.fromJson(Map<String, dynamic> json) => TechnicianService(
-    id: json['id'] ?? 0,
-    name: json['name'] ?? '',
-  );
+  factory TechnicianService.fromJson(Map<String, dynamic> json) =>
+      TechnicianService(
+        id: _asInt(json['id']),
+        name: json['name']?.toString() ?? '',
+      );
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
 }
 
+class PortfolioImage {
+  final int id;
+  final String url;
+  const PortfolioImage({required this.id, required this.url});
+
+  factory PortfolioImage.fromJson(Map<String, dynamic> json) => PortfolioImage(
+    id: _asInt(json['id']),
+    url: (json['url'] ?? json['image'] ?? '').toString(),
+  );
+
+  Map<String, dynamic> toJson() => {'id': id, 'url': url};
+  bool get isValid => url.isNotEmpty;
+}
+
 class PortfolioItem {
   final int id;
-  final String image;
-  final String? description;
+  final List<PortfolioImage> images;
   final String? createdAt;
-  final String? instagram;
-  final String? facebook;
-  final String? tiktok;
-  final String? twitter;
-  final String? telegram;
 
-  PortfolioItem({
+  const PortfolioItem({
     required this.id,
-    required this.image,
-    this.description,
+    required this.images,
     this.createdAt,
-    this.instagram,
-    this.facebook,
-    this.tiktok,
-    this.twitter,
-    this.telegram,
   });
 
   factory PortfolioItem.fromJson(Map<String, dynamic> json) {
-    final socialLinks = json['social_links'] as Map<String, dynamic>?;
+    List<PortfolioImage> imgs = [];
+
+    final raw = json['images'];
+    if (raw is List && raw.isNotEmpty) {
+      imgs = raw
+          .whereType<Map>()
+          .map((e) => PortfolioImage.fromJson(Map<String, dynamic>.from(e)))
+          .where((i) => i.isValid)
+          .toList();
+    }
+
+    if (imgs.isEmpty) {
+      final single = (json['image'] ?? json['url'] ?? '').toString();
+      if (single.isNotEmpty) {
+        imgs = [PortfolioImage(id: _asInt(json['id']), url: single)];
+      }
+    }
 
     return PortfolioItem(
-      id: json['id'] ?? 0,
-      image: json['image'] ?? '',
-      description: json['description'],
-      createdAt: json['created_at'],
-      instagram: socialLinks?['instagram'] ?? json['instagram'],
-      facebook: socialLinks?['facebook'] ?? json['facebook'],
-      tiktok: socialLinks?['tiktok'] ?? json['tiktok'],
-      twitter: socialLinks?['twitter'] ?? json['twitter'],
-      telegram: socialLinks?['telegram'] ?? json['telegram'],
+      id: _asInt(json['id']),
+      images: imgs,
+      createdAt: json['created_at']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'image': image,
-    'description': description,
+    'images': images.map((i) => i.toJson()).toList(),
     'created_at': createdAt,
-    'instagram': instagram,
-    'facebook': facebook,
-    'tiktok': tiktok,
-    'twitter': twitter,
-    'telegram': telegram,
   };
 
-  bool get hasSocialLinks {
-    return instagram != null ||
-        facebook != null ||
-        tiktok != null ||
-        twitter != null ||
-        telegram != null;
-  }
+  String? get firstImage => images.isNotEmpty ? images.first.url : null;
+  bool get hasMultipleImages => images.length > 1;
 }
 
-// NEW: PriceRange
 class PriceRange {
   final double min;
   final double max;
-  PriceRange({required this.min, required this.max});
+  const PriceRange({required this.min, required this.max});
 
   factory PriceRange.fromJson(Map<String, dynamic> json) => PriceRange(
-    min: (json['min'] as num?)?.toDouble() ?? 0,
-    max: (json['max'] as num?)?.toDouble() ?? 0,
+    min: _asDouble(json['min']),
+    max: _asDouble(json['max']),
   );
 
   Map<String, dynamic> toJson() => {'min': min, 'max': max};
 }
 
-// NEW: ServicePrice
 class ServicePrice {
   final int id;
   final String name;
   final double minPrice;
   final double maxPrice;
 
-  ServicePrice({required this.id, required this.name, required this.minPrice, required this.maxPrice});
+  const ServicePrice({
+    required this.id,
+    required this.name,
+    required this.minPrice,
+    required this.maxPrice,
+  });
 
   factory ServicePrice.fromJson(Map<String, dynamic> json) => ServicePrice(
-    id: json['id'] ?? 0,
-    name: json['name'] ?? '',
-    minPrice: (json['min_price'] as num?)?.toDouble() ?? 0,
-    maxPrice: (json['max_price'] as num?)?.toDouble() ?? 0,
+    id: _asInt(json['id']),
+    name: json['name']?.toString() ?? '',
+    minPrice: _asDouble(json['min_price']),
+    maxPrice: _asDouble(json['max_price']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -109,6 +114,43 @@ class ServicePrice {
     'min_price': minPrice,
     'max_price': maxPrice,
   };
+}
+
+class CompletedJob {
+  final int id;
+  final String jobNumber;
+  final String? status;
+  final String? startedAt;
+  final String? completedAt;
+  final String? notes;
+  final String? serviceName;
+
+  const CompletedJob({
+    required this.id,
+    required this.jobNumber,
+    this.status,
+    this.startedAt,
+    this.completedAt,
+    this.notes,
+    this.serviceName,
+  });
+
+  factory CompletedJob.fromJson(Map<String, dynamic> json) {
+    String? serviceName;
+    final request = json['request'];
+    if (request is Map && request['service'] is Map) {
+      serviceName = (request['service'] as Map)['name']?.toString();
+    }
+    return CompletedJob(
+      id: _asInt(json['id']),
+      jobNumber: json['job_number']?.toString() ?? '',
+      status: json['status']?.toString(),
+      startedAt: json['started_at']?.toString(),
+      completedAt: json['completed_at']?.toString(),
+      notes: json['notes']?.toString(),
+      serviceName: serviceName,
+    );
+  }
 }
 
 class Technician {
@@ -128,16 +170,21 @@ class Technician {
   final double? longitude;
   final bool isOnline;
   final bool verified;
-  final List<String> services;
   final List<TechnicianService> serviceObjects;
   final List<PortfolioItem> portfolios;
 
-  // NEW FIELDS
   final int completedJobsCount;
   final PriceRange? priceRange;
   final List<ServicePrice> servicePrices;
 
-  Technician({
+  final int requestsCount;
+  final int postLikes;
+  final int postComments;
+  final int reviewsCount;
+  final double rankScore;
+  final int rankPosition;
+
+  const Technician({
     required this.id,
     this.userId = 0,
     required this.name,
@@ -152,196 +199,203 @@ class Technician {
     this.area,
     this.latitude,
     this.longitude,
-    this.isOnline = false,
-    this.verified = false,
-    this.services = const [],
+    required this.isOnline,
+    required this.verified,
     this.serviceObjects = const [],
     this.portfolios = const [],
     this.completedJobsCount = 0,
     this.priceRange,
     this.servicePrices = const [],
+    this.requestsCount = 0,
+    this.postLikes = 0,
+    this.postComments = 0,
+    this.reviewsCount = 0,
+    this.rankScore = 0.0,
+    this.rankPosition = 0,
   });
 
+  List<String> get services =>
+      serviceObjects.map((s) => s.name).toList(growable: false);
+
+  /// Comparator to sort technicians by rank (Highest score first, then lowest position).
+  /// Usage: `technicians.sort(Technician.byRank);`
+  static int byRank(Technician a, Technician b) {
+    final scoreCmp = b.rankScore.compareTo(a.rankScore); // Descending
+    if (scoreCmp != 0) return scoreCmp;
+
+    // If scores are equal, higher rank position (lower number) is better
+    return a.rankPosition.compareTo(b.rankPosition);
+  }
+
+  Technician copyWith({
+    int? id,
+    int? userId,
+    String? name,
+    String? email,
+    String? phone,
+    String? profilePhoto,
+    String? bio,
+    int? experience,
+    double? rating,
+    double? hourlyRate,
+    double? distanceKm,
+    String? area,
+    double? latitude,
+    double? longitude,
+    bool? isOnline,
+    bool? verified,
+    List<TechnicianService>? serviceObjects,
+    List<PortfolioItem>? portfolios,
+    int? completedJobsCount,
+    PriceRange? priceRange,
+    List<ServicePrice>? servicePrices,
+    int? requestsCount,
+    int? postLikes,
+    int? postComments,
+    int? reviewsCount,
+    double? rankScore,
+    int? rankPosition,
+  }) =>
+      Technician(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        name: name ?? this.name,
+        email: email ?? this.email,
+        phone: phone ?? this.phone,
+        profilePhoto: profilePhoto ?? this.profilePhoto,
+        bio: bio ?? this.bio,
+        experience: experience ?? this.experience,
+        rating: rating ?? this.rating,
+        hourlyRate: hourlyRate ?? this.hourlyRate,
+        distanceKm: distanceKm ?? this.distanceKm,
+        area: area ?? this.area,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
+        isOnline: isOnline ?? this.isOnline,
+        verified: verified ?? this.verified,
+        serviceObjects: serviceObjects ?? this.serviceObjects,
+        portfolios: portfolios ?? this.portfolios,
+        completedJobsCount: completedJobsCount ?? this.completedJobsCount,
+        priceRange: priceRange ?? this.priceRange,
+        servicePrices: servicePrices ?? this.servicePrices,
+        requestsCount: requestsCount ?? this.requestsCount,
+        postLikes: postLikes ?? this.postLikes,
+        postComments: postComments ?? this.postComments,
+        reviewsCount: reviewsCount ?? this.reviewsCount,
+        rankScore: rankScore ?? this.rankScore,
+        rankPosition: rankPosition ?? this.rankPosition,
+      );
+
   factory Technician.fromJson(Map<String, dynamic> json, {bool isDetail = false}) {
-    Map<String, dynamic> safeCast(Map<dynamic, dynamic> map) {
-      return Map<String, dynamic>.from(map);
-    }
-
-    List<Map<String, dynamic>> safeCastList(List<dynamic> list) {
-      return list.map((item) {
-        if (item is Map<dynamic, dynamic>) {
-          return Map<String, dynamic>.from(item);
-        } else if (item is Map<String, dynamic>) {
-          return item;
-        } else {
-          return <String, dynamic>{};
-        }
-      }).where((item) => item.isNotEmpty).toList();
-    }
-
     Map<String, dynamic> data = json;
-
-    if (json['technician'] != null && json['technician'] is Map) {
-      data = json['technician'] is Map<dynamic, dynamic>
-          ? Map<String, dynamic>.from(json['technician'] as Map<dynamic, dynamic>)
-          : json['technician'] as Map<String, dynamic>;
-    } else if (json['data'] != null && json['data'] is Map) {
-      data = json['data'] is Map<dynamic, dynamic>
-          ? Map<String, dynamic>.from(json['data'] as Map<dynamic, dynamic>)
-          : json['data'] as Map<String, dynamic>;
+    if (json['data'] is Map) {
+      data = Map<String, dynamic>.from(json['data'] as Map);
+    } else if (json['technician'] is Map) {
+      data = Map<String, dynamic>.from(json['technician'] as Map);
     }
 
-    Map<String, dynamic>? user;
-    if (data['user'] != null && data['user'] is Map) {
-      user = data['user'] is Map<dynamic, dynamic>
-          ? Map<String, dynamic>.from(data['user'] as Map<dynamic, dynamic>)
-          : data['user'] as Map<String, dynamic>;
-    }
+    final user = data['user'] is Map
+        ? Map<String, dynamic>.from(data['user'] as Map)
+        : null;
+    final tech = data['technician'] is Map
+        ? Map<String, dynamic>.from(data['technician'] as Map)
+        : null;
 
-    Map<String, dynamic>? tech;
-    if (data['technician'] != null && data['technician'] is Map) {
-      tech = data['technician'] is Map<dynamic, dynamic>
-          ? Map<String, dynamic>.from(data['technician'] as Map<dynamic, dynamic>)
-          : data['technician'] as Map<String, dynamic>;
-    }
-
-    String name = data['name'] ?? '';
-    if (name.isEmpty && user != null) name = user['name'] ?? '';
-    if (name.isEmpty && tech != null) name = tech['name'] ?? '';
+    String name = data['name']?.toString() ?? '';
+    if (name.isEmpty) name = user?['name']?.toString() ?? '';
+    if (name.isEmpty) name = tech?['name']?.toString() ?? '';
     if (name.isEmpty) name = 'Unknown';
 
-    String? email = data['email'] ?? user?['email'] ?? tech?['email'];
-    String? phone = data['phone'] ?? user?['phone'] ?? tech?['phone'];
-
-    int userId = data['user_id'] ?? 0;
-    if (userId == 0 && user != null) userId = user['id'] ?? 0;
-    if (userId == 0 && tech != null) userId = tech['user_id'] ?? 0;
-
-    // Parse services
-    List<String> serviceNames = [];
+    // services
     List<TechnicianService> serviceObjs = [];
-
-    dynamic servicesData = data['services'] ?? tech?['services'] ?? user?['services'] ?? data['service_objects'];
-
-    if (servicesData is List) {
-      if (servicesData.isNotEmpty) {
-        if (servicesData.first is Map) {
-          final safeList = safeCastList(servicesData);
-          serviceObjs = safeList.map((e) => TechnicianService.fromJson(e)).toList();
-          serviceNames = serviceObjs.map((s) => s.name).toList();
-        } else if (servicesData.first is String) {
-          serviceNames = servicesData.whereType<String>().toList();
-          serviceObjs = serviceNames.asMap().entries.map((entry) {
-            return TechnicianService(id: entry.key + 1, name: entry.value);
-          }).toList();
-        }
-      }
-    } else if (servicesData is Map) {
-      try {
-        final serviceMap = servicesData is Map<dynamic, dynamic>
-            ? Map<String, dynamic>.from(servicesData)
-            : servicesData as Map<String, dynamic>;
-        final serviceObj = TechnicianService.fromJson(serviceMap);
-        serviceObjs = [serviceObj];
-        serviceNames = [serviceObj.name];
-      } catch (_) {}
-    }
-
-    if (serviceObjs.isEmpty && json['services'] != null) {
-      final origServices = json['services'];
-      if (origServices is List && origServices.isNotEmpty && origServices.first is Map) {
-        final safeList = safeCastList(origServices);
-        serviceObjs = safeList.map((e) => TechnicianService.fromJson(e)).toList();
-        serviceNames = serviceObjs.map((s) => s.name).toList();
+    final dynamic rawServices =
+        data['services'] ?? tech?['services'] ?? user?['services'];
+    if (rawServices is List) {
+      if (rawServices.isNotEmpty && rawServices.first is Map) {
+        serviceObjs = rawServices
+            .whereType<Map>()
+            .map((e) => TechnicianService.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      } else if (rawServices.isNotEmpty && rawServices.first is String) {
+        serviceObjs = [
+          for (var i = 0; i < rawServices.length; i++)
+            TechnicianService(
+              id: i + 1,
+              name: rawServices[i].toString(),
+            ),
+        ];
       }
     }
 
-    // Parse portfolios
+    // portfolios
     List<PortfolioItem> portfolios = [];
-    if (isDetail) {
-      dynamic portfoliosData = data['portfolios'] ?? tech?['portfolios'];
-      if (portfoliosData != null && portfoliosData is List) {
-        final safeList = safeCastList(portfoliosData);
-        portfolios = safeList.map((e) => PortfolioItem.fromJson(e)).toList();
+    if (isDetail || data['portfolios'] is List) {
+      final raw = data['portfolios'] ?? tech?['portfolios'];
+      if (raw is List) {
+        portfolios = raw
+            .whereType<Map>()
+            .map((e) => PortfolioItem.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
       }
     }
 
-    // ─── NEW: Parse price_range and service_prices ──────────────────
+    // price range
     PriceRange? priceRange;
-    if (data['price_range'] != null && data['price_range'] is Map) {
-      final pr = data['price_range'] as Map<dynamic, dynamic>;
-      final min = (pr['min'] as num?)?.toDouble() ?? 0;
-      final max = (pr['max'] as num?)?.toDouble() ?? 0;
-      if (min > 0 || max > 0) {
-        priceRange = PriceRange(min: min, max: max);
-      }
+    if (data['price_range'] is Map) {
+      final pr = Map<String, dynamic>.from(data['price_range'] as Map);
+      final min = _asDouble(pr['min']);
+      final max = _asDouble(pr['max']);
+      if (min > 0 || max > 0) priceRange = PriceRange(min: min, max: max);
     }
 
+    // service prices
     List<ServicePrice> servicePrices = [];
-    if (data['service_prices'] != null && data['service_prices'] is List) {
-      final spList = data['service_prices'] as List;
-      servicePrices = spList.map((sp) => ServicePrice.fromJson(sp)).toList();
+    if (data['service_prices'] is List) {
+      servicePrices = data['service_prices']
+          .whereType<Map>()
+          .map((sp) => ServicePrice.fromJson(Map<String, dynamic>.from(sp)))
+          .toList();
     }
 
-    // ─── Parse completed_jobs_count ──────────────────────────────────
-    int completedJobs = 0;
-    if (data['completed_jobs_count'] != null) {
-      completedJobs = (data['completed_jobs_count'] as num).toInt();
-    }
-    // ────────────────────────────────────────────────────────────────
+    // Extract email and phone (checking root, user object, and tech object)
+    final String? email = data['email']?.toString() ??
+        user?['email']?.toString() ??
+        tech?['email']?.toString();
 
-    double parseDouble(dynamic value) {
-      if (value == null) return 0.0;
-      if (value is num) return value.toDouble();
-      return double.tryParse(value.toString()) ?? 0.0;
-    }
-
-    double? parseNullableDouble(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value.toDouble();
-      return double.tryParse(value.toString());
-    }
-
-    int parseInt(dynamic value) {
-      if (value == null) return 0;
-      if (value is num) return value.toInt();
-      return int.tryParse(value.toString()) ?? 0;
-    }
-
-    String? profilePhoto = data['profile_photo'] ?? tech?['profile_photo'];
-    String? bio = data['bio'] ?? tech?['bio'];
-    String? area = data['area'] ?? tech?['area'];
-    double? latitude = parseNullableDouble(data['latitude'] ?? tech?['latitude']);
-    double? longitude = parseNullableDouble(data['longitude'] ?? tech?['longitude']);
-    double? hourlyRate = parseNullableDouble(data['hourly_rate'] ?? tech?['hourly_rate']);
-    int experience = parseInt(data['experience'] ?? tech?['experience']);
-    double rating = parseDouble(data['rating'] ?? tech?['rating']);
-    bool isOnline = data['is_online'] ?? tech?['is_online'] ?? false;
-    bool verified = data['verified'] ?? tech?['verified'] ?? false;
+    final String? phone = data['phone']?.toString() ??
+        user?['phone']?.toString() ??
+        tech?['phone']?.toString();
 
     return Technician(
-      id: data['id'] ?? tech?['id'] ?? json['id'] ?? 0,
-      userId: userId,
+      id: _asInt(data['id'] ?? tech?['id'] ?? json['id']),
+      userId: _asInt(data['user_id'] ?? user?['id'] ?? tech?['user_id']),
       name: name,
       email: email,
       phone: phone,
-      profilePhoto: profilePhoto,
-      bio: bio,
-      experience: experience,
-      rating: rating,
-      hourlyRate: hourlyRate,
-      distanceKm: parseDouble(data['distance'] ?? data['distance_km'] ?? 0.0),
-      area: area,
-      latitude: latitude,
-      longitude: longitude,
-      isOnline: isOnline,
-      verified: verified,
-      services: serviceNames,
+      profilePhoto: data['profile_photo']?.toString() ??
+          tech?['profile_photo']?.toString(),
+      bio: data['bio']?.toString() ?? tech?['bio']?.toString(),
+      experience: _asInt(data['experience'] ?? tech?['experience']),
+      rating: _asDouble(data['rating'] ?? tech?['rating']),
+      hourlyRate: _asNullableDouble(data['hourly_rate'] ?? tech?['hourly_rate']),
+      distanceKm: _asDouble(data['distance'] ?? data['distance_km']),
+      area: data['area']?.toString() ?? tech?['area']?.toString(),
+      latitude: _asNullableDouble(data['latitude'] ?? tech?['latitude']),
+      longitude: _asNullableDouble(data['longitude'] ?? tech?['longitude']),
+      isOnline: _asBool(data['is_online'] ?? tech?['is_online']),
+      verified: _asBool(data['verified'] ?? tech?['verified']),
       serviceObjects: serviceObjs,
       portfolios: portfolios,
-      completedJobsCount: completedJobs,
+      completedJobsCount:
+      _asInt(data['completed_jobs_count'] ?? tech?['completed_jobs_count']),
       priceRange: priceRange,
       servicePrices: servicePrices,
+      requestsCount: _asInt(data['requests_count']),
+      postLikes: _asInt(data['post_likes']),
+      postComments: _asInt(data['post_comments']),
+      reviewsCount: _asInt(data['reviews_count']),
+      rankScore: _asDouble(data['rank_score']),
+      rankPosition: _asInt(data['rank_position']),
     );
   }
 
@@ -362,11 +416,46 @@ class Technician {
     'longitude': longitude,
     'is_online': isOnline,
     'verified': verified,
-    'services': services,
     'service_objects': serviceObjects.map((s) => s.toJson()).toList(),
     'portfolios': portfolios.map((p) => p.toJson()).toList(),
     'completed_jobs_count': completedJobsCount,
     'price_range': priceRange?.toJson(),
     'service_prices': servicePrices.map((sp) => sp.toJson()).toList(),
+    'requests_count': requestsCount,
+    'post_likes': postLikes,
+    'post_comments': postComments,
+    'reviews_count': reviewsCount,
+    'rank_score': rankScore,
+    'rank_position': rankPosition,
   };
+}
+
+// ── null-safe helpers ──────────────────────────────────────────────
+int _asInt(dynamic v) {
+  if (v == null) return 0;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  return int.tryParse(v.toString()) ?? 0;
+}
+
+double _asDouble(dynamic v) {
+  if (v == null) return 0.0;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? 0.0;
+}
+
+double? _asNullableDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is double) return v;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
+}
+
+bool _asBool(dynamic v) {
+  if (v == null) return false;
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  final s = v.toString().toLowerCase().trim();
+  return s == 'true' || s == '1' || s == 'yes';
 }

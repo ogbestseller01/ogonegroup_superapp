@@ -1,3 +1,7 @@
+// FILE: lib/screens/home/technician_location_map_screen.dart
+// Single technician location + route map
+// Clean, modern, consistent with NearbyScreen design language
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -12,9 +16,34 @@ import '../../config/app_theme.dart';
 import '../../utils/image_utils.dart';
 import '../../l10n/app_localizations.dart';
 
+// ================================================================
+// UI HELPERS (match NearbyScreen)
+// ================================================================
+
+const Color _gold = Color(0xFFF2B93B);
+const Color _goldInk = Color(0xFF8A6200);
+
+Color _ink(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppTheme.primary;
+
+Color _softFill(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFF1F5F9);
+
+// ================================================================
+// SCREEN
+// ================================================================
+
 class TechnicianLocationMapScreen extends StatefulWidget {
   final Technician technician;
-  const TechnicianLocationMapScreen({super.key, required this.technician});
+
+  const TechnicianLocationMapScreen({
+    super.key,
+    required this.technician,
+  });
 
   @override
   State<TechnicianLocationMapScreen> createState() =>
@@ -24,6 +53,7 @@ class TechnicianLocationMapScreen extends StatefulWidget {
 class _TechnicianLocationMapScreenState
     extends State<TechnicianLocationMapScreen> {
   final MapController _mapController = MapController();
+
   static const double _minZoom = 4;
   static const double _maxZoom = 18;
 
@@ -31,6 +61,7 @@ class _TechnicianLocationMapScreenState
   bool _isLoadingRoute = false;
   double? _osrmDistanceKm;
   double? _osrmDurationMin;
+  bool _mapReady = false;
 
   Technician get technician => widget.technician;
 
@@ -42,10 +73,15 @@ class _TechnicianLocationMapScreenState
     });
   }
 
+  // ==============================================================
+  // ROUTE
+  // ==============================================================
+
   Future<void> _fetchOsrmRoute() async {
     final techProvider = context.read<TechnicianProvider>();
     final lat = technician.latitude;
     final lng = technician.longitude;
+
     if (lat == null || lng == null || !techProvider.hasSearchOrigin) return;
 
     final origin = LatLng(techProvider.searchLat!, techProvider.searchLng!);
@@ -60,6 +96,7 @@ class _TechnicianLocationMapScreenState
             '${destination.longitude},${destination.latitude}'
             '?overview=full&geometries=geojson',
       );
+
       final response =
       await http.get(url).timeout(const Duration(seconds: 10));
 
@@ -68,12 +105,16 @@ class _TechnicianLocationMapScreenState
         if (data['routes'] != null && (data['routes'] as List).isNotEmpty) {
           final route = data['routes'][0];
           final geometry = route['geometry']['coordinates'] as List;
+
           final points = geometry
               .map<LatLng>(
                   (coord) => LatLng(coord[1].toDouble(), coord[0].toDouble()))
               .toList();
+
           final distanceMeters = (route['distance'] as num).toDouble();
           final durationSeconds = (route['duration'] as num).toDouble();
+
+          if (!mounted) return;
 
           setState(() {
             _routePoints = points;
@@ -81,6 +122,7 @@ class _TechnicianLocationMapScreenState
             _osrmDurationMin = durationSeconds / 60.0;
             _isLoadingRoute = false;
           });
+
           _fitRouteBounds(origin, destination);
           return;
         }
@@ -89,6 +131,8 @@ class _TechnicianLocationMapScreenState
       debugPrint('Error fetching OSRM route: $e');
     }
 
+    if (!mounted) return;
+
     setState(() {
       _routePoints = [origin, destination];
       _isLoadingRoute = false;
@@ -96,24 +140,33 @@ class _TechnicianLocationMapScreenState
   }
 
   void _fitRouteBounds(LatLng origin, LatLng destination) {
+    if (!_mapReady) return;
+
     final bounds = LatLngBounds.fromPoints([origin, destination]);
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.all(50),
+        padding: const EdgeInsets.all(60),
+        maxZoom: 16,
       ),
     );
   }
 
   void _zoomBy(double delta) {
+    if (!_mapReady) return;
     final camera = _mapController.camera;
     final newZoom = (camera.zoom + delta).clamp(_minZoom, _maxZoom);
     _mapController.move(camera.center, newZoom);
   }
 
   void _recenter(LatLng point, double zoom) {
+    if (!_mapReady) return;
     _mapController.move(point, zoom);
   }
+
+  // ==============================================================
+  // GOOGLE MAPS
+  // ==============================================================
 
   Future<void> _openInGoogleMaps(
       BuildContext context, {
@@ -121,6 +174,7 @@ class _TechnicianLocationMapScreenState
         required LatLng destination,
       }) async {
     final Uri url;
+
     if (origin != null) {
       url = Uri.parse(
         'https://www.google.com/maps/dir/?api=1'
@@ -134,6 +188,7 @@ class _TechnicianLocationMapScreenState
             '&query=${destination.latitude},${destination.longitude}',
       );
     }
+
     try {
       final launched =
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -152,19 +207,24 @@ class _TechnicianLocationMapScreenState
     );
   }
 
-  Widget _buildAvatar(Technician tech,
-      {double size = 56, double iconSize = 28}) {
+  // ==============================================================
+  // AVATAR
+  // ==============================================================
+
+  Widget _buildAvatar(
+      Technician tech, {
+        double size = 56,
+        double iconSize = 28,
+      }) {
     return Container(
       width: size,
       height: size,
-      padding: const EdgeInsets.all(3.5),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
-        border: Border.all(color: Colors.white, width: 2.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
+            color: Colors.black.withValues(alpha: 0.22),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -192,6 +252,10 @@ class _TechnicianLocationMapScreenState
     );
   }
 
+  // ==============================================================
+  // BUILD
+  // ==============================================================
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -209,7 +273,8 @@ class _TechnicianLocationMapScreenState
           foregroundColor: Colors.white,
         ),
         body: const Center(
-            child: Text('Location not available for this technician.')),
+          child: Text('Location not available for this technician.'),
+        ),
       );
     }
 
@@ -218,13 +283,15 @@ class _TechnicianLocationMapScreenState
         ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
         : null;
     final hasOrigin = origin != null;
+
     final fallbackKm = hasOrigin
         ? const Distance().as(LengthUnit.Kilometer, origin, destination)
         : 0.0;
+
     final displayKm = _osrmDistanceKm ??
         (technician.distanceKm > 0 ? technician.distanceKm : fallbackKm);
-    const initialZoom = 14.0;
 
+    const initialZoom = 14.0;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmall = screenWidth < 400;
 
@@ -238,7 +305,9 @@ class _TechnicianLocationMapScreenState
         title: Text(
           technician.name,
           style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         elevation: 0,
         backgroundColor: AppTheme.primary,
@@ -254,9 +323,11 @@ class _TechnicianLocationMapScreenState
             IconButton(
               icon: const Icon(Icons.refresh_rounded, color: Colors.white),
               onPressed: () {
-                _routePoints.clear();
-                _osrmDistanceKm = null;
-                _osrmDurationMin = null;
+                setState(() {
+                  _routePoints = [];
+                  _osrmDistanceKm = null;
+                  _osrmDurationMin = null;
+                });
                 _fetchOsrmRoute();
               },
               tooltip: 'Refresh route',
@@ -265,68 +336,81 @@ class _TechnicianLocationMapScreenState
       ),
       body: Stack(
         children: [
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: destination,
-              initialZoom: initialZoom,
-              minZoom: _minZoom,
-              maxZoom: _maxZoom,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.nearbyfundi',
-                errorTileCallback: (tile, error, stackTrace) {
-                  debugPrint('TILE ERROR: $error');
-                },
+          // MAP
+          RepaintBoundary(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: destination,
+                initialZoom: initialZoom,
+                minZoom: _minZoom,
+                maxZoom: _maxZoom,
+                onMapReady: () => _mapReady = true,
               ),
-              if (hasOrigin && _routePoints.isNotEmpty)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: _routePoints,
-                      strokeWidth: 10.0,
-                      color: Colors.black.withOpacity(0.22),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.nearbyfundi',
+                ),
+                if (hasOrigin && _routePoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      // Shadow
+                      Polyline(
+                        points: _routePoints,
+                        strokeWidth: 10.0,
+                        color: Colors.black.withValues(alpha: 0.22),
+                      ),
+                      // Main route
+                      Polyline(
+                        points: _routePoints,
+                        strokeWidth: 6.5,
+                        color: AppTheme.primary,
+                        borderColor: Colors.white.withValues(alpha: 0.45),
+                        borderStrokeWidth: 2.0,
+                      ),
+                    ],
+                  ),
+                MarkerLayer(
+                  markers: [
+                    if (hasOrigin) _buildOriginMarker(origin, isSmall),
+                    _buildTechnicianMarker(
+                      context,
+                      destination,
+                      isDark,
+                      isSmall,
+                      pinSize,
+                      avatarSize,
+                      avatarIconSize,
                     ),
-                    Polyline(
-                      points: _routePoints,
-                      strokeWidth: 7.0,
-                      color: AppTheme.primary,
-                      borderColor: Colors.white.withOpacity(0.4),
-                      borderStrokeWidth: 2.0,
+                    if (hasOrigin)
+                      _buildDistanceLabel(
+                        origin,
+                        destination,
+                        displayKm,
+                        theme,
+                        isSmall,
+                        badgeFontSize,
+                      ),
+                  ],
+                ),
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(
+                      '© OpenStreetMap contributors',
+                      onTap: () => launchUrl(
+                        Uri.parse(
+                            'https://www.openstreetmap.org/copyright'),
+                      ),
                     ),
                   ],
                 ),
-              MarkerLayer(
-                markers: [
-                  if (hasOrigin) _buildOriginMarker(origin, isSmall),
-                  _buildTechnicianMarker(
-                    context,
-                    destination,
-                    isDark,
-                    isSmall,
-                    pinSize,
-                    avatarSize,
-                    avatarIconSize,
-                  ),
-                  if (hasOrigin)
-                    _buildDistanceLabel(origin, destination, displayKm, theme,
-                        isSmall, badgeFontSize),
-                ],
-              ),
-              RichAttributionWidget(
-                attributions: [
-                  TextSourceAttribution(
-                    '© OpenStreetMap contributors',
-                    onTap: () => launchUrl(
-                      Uri.parse('https://www.openstreetmap.org/copyright'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
+
+          // LOADING BADGE
           if (_isLoadingRoute)
             Positioned(
               top: 16,
@@ -335,30 +419,45 @@ class _TechnicianLocationMapScreenState
               child: Center(
                 child: Container(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
-                        width: 13,
-                        height: 13,
+                        width: 14,
+                        height: 14,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: _gold,
+                        ),
                       ),
-                      SizedBox(width: 8),
+                      SizedBox(width: 10),
                       Text(
                         'Calculating route…',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
+
+          // ZOOM CONTROLS
           Positioned(
             right: 14,
             bottom: hasOrigin ? 210 : 180,
@@ -380,27 +479,35 @@ class _TechnicianLocationMapScreenState
                   icon: Icons.my_location_rounded,
                   tooltip: 'Recenter',
                   onPressed: () => _recenter(destination, initialZoom),
+                  highlighted: true,
                 ),
               ],
             ),
           ),
+
+          // BOTTOM CARD
           Positioned(
             left: 12,
             right: 12,
             bottom: 14,
             child: GestureDetector(
               onTap: () => _showTechnicianDetailSheet(
-                  context, origin, destination, l10n, displayKm),
+                context,
+                origin,
+                destination,
+                l10n,
+                displayKm,
+              ),
               child: Container(
                 padding: EdgeInsets.all(isSmall ? 12 : 14),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withValues(alpha: 0.16),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -410,7 +517,15 @@ class _TechnicianLocationMapScreenState
                   children: [
                     Row(
                       children: [
-                        _buildAvatar(technician, size: 48, iconSize: 24),
+                        Container(
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _gold,
+                          ),
+                          child: _buildAvatar(technician,
+                              size: 46, iconSize: 23),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -423,22 +538,21 @@ class _TechnicianLocationMapScreenState
                                       technician.name,
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: isSmall ? 14.5 : 15.5),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: isSmall ? 14.5 : 15.5,
+                                        color: _ink(context),
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   if (technician.verified)
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 4),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                            color: Colors.blue,
-                                            shape: BoxShape.circle),
-                                        child: const Icon(Icons.check_rounded,
-                                            size: 10, color: Colors.white),
+                                    const Padding(
+                                      padding: EdgeInsets.only(left: 4),
+                                      child: Icon(
+                                        Icons.verified_rounded,
+                                        size: 16,
+                                        color: Color(0xFF3B9BE8),
                                       ),
                                     ),
                                 ],
@@ -454,8 +568,9 @@ class _TechnicianLocationMapScreenState
                                         technician.area!,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
-                                            color: theme.hintColor,
-                                            fontSize: 12),
+                                          color: theme.hintColor,
+                                          fontSize: 12,
+                                        ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -475,13 +590,13 @@ class _TechnicianLocationMapScreenState
                                   '${displayKm.toStringAsFixed(1)} km',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: AppTheme.primary,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                     fontSize: isSmall ? 12.5 : 13.5,
                                   ),
                                 ),
                                 if (_osrmDurationMin != null)
                                   Text(
-                                    '~${_osrmDurationMin!.toStringAsFixed(0)}m',
+                                    '~${_osrmDurationMin!.toStringAsFixed(0)} min',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: theme.hintColor,
                                       fontSize: 11,
@@ -491,7 +606,7 @@ class _TechnicianLocationMapScreenState
                             ),
                           ),
                         Icon(Icons.expand_less_rounded,
-                            color: theme.hintColor, size: 20),
+                            color: theme.hintColor, size: 22),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -505,16 +620,20 @@ class _TechnicianLocationMapScreenState
                               arguments: technician.id,
                             ),
                             icon: const Icon(Icons.person_rounded, size: 17),
-                            label: Text(l10n.viewProfile,
-                                style: TextStyle(fontSize: isSmall ? 12.5 : 13.5)),
+                            label: Text(
+                              l10n.viewProfile,
+                              style: TextStyle(
+                                  fontSize: isSmall ? 12.5 : 13.5),
+                            ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.primary,
                               side: BorderSide(
-                                  color: AppTheme.primary.withOpacity(0.4)),
+                                  color: AppTheme.primary
+                                      .withValues(alpha: 0.35)),
                               padding: EdgeInsets.symmetric(
                                   vertical: isSmall ? 11 : 12),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(11)),
+                                  borderRadius: BorderRadius.circular(14)),
                             ),
                           ),
                         ),
@@ -527,14 +646,16 @@ class _TechnicianLocationMapScreenState
                               destination: destination,
                             ),
                             icon: Icon(
-                                hasOrigin
-                                    ? Icons.directions_rounded
-                                    : Icons.map_rounded,
-                                size: 17),
+                              hasOrigin
+                                  ? Icons.directions_rounded
+                                  : Icons.map_rounded,
+                              size: 17,
+                            ),
                             label: Text(
                               hasOrigin ? l10n.directions : 'Maps',
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: isSmall ? 12.5 : 13.5),
+                              style: TextStyle(
+                                  fontSize: isSmall ? 12.5 : 13.5),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primary,
@@ -542,7 +663,8 @@ class _TechnicianLocationMapScreenState
                               padding: EdgeInsets.symmetric(
                                   vertical: isSmall ? 11 : 12),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(11)),
+                                  borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
                             ),
                           ),
                         ),
@@ -558,6 +680,10 @@ class _TechnicianLocationMapScreenState
     );
   }
 
+  // ==============================================================
+  // MARKERS
+  // ==============================================================
+
   Marker _buildOriginMarker(LatLng point, bool isSmall) {
     return Marker(
       point: point,
@@ -567,24 +693,28 @@ class _TechnicianLocationMapScreenState
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.location_pin,
-            color: Colors.red.shade800,
-            size: isSmall ? 48 : 62,
+            Icons.location_on_rounded,
+            color: AppTheme.error,
+            size: isSmall ? 44 : 56,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 6,
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white, width: 1),
+              color: AppTheme.error,
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               'You',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: isSmall ? 10 : 12,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -606,9 +736,11 @@ class _TechnicianLocationMapScreenState
     final origin = techProvider.hasSearchOrigin
         ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
         : null;
+
     final fallbackKm = origin != null
         ? const Distance().as(LengthUnit.Kilometer, origin, point)
         : 0.0;
+
     final displayKm = _osrmDistanceKm ??
         (technician.distanceKm > 0 ? technician.distanceKm : fallbackKm);
 
@@ -629,14 +761,24 @@ class _TechnicianLocationMapScreenState
               alignment: Alignment.center,
               children: [
                 Icon(
-                  Icons.location_pin,
-                  color: Colors.red.shade700,
+                  Icons.location_on_rounded,
+                  color: AppTheme.error,
                   size: pinSize,
                 ),
                 Padding(
                   padding: EdgeInsets.only(bottom: pinSize * 0.32),
-                  child: _buildAvatar(technician,
-                      size: avatarSize, iconSize: avatarIconSize),
+                  child: Container(
+                    padding: const EdgeInsets.all(2.5),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _gold,
+                    ),
+                    child: _buildAvatar(
+                      technician,
+                      size: avatarSize,
+                      iconSize: avatarIconSize,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -644,11 +786,10 @@ class _TechnicianLocationMapScreenState
             if (technician.area != null)
               Container(
                 padding:
-                const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.black87,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white, width: 0.6),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -674,15 +815,16 @@ class _TechnicianLocationMapScreenState
             if (displayKm > 0)
               Container(
                 margin: const EdgeInsets.only(top: 3),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.primary, width: 1.2),
+                  border: Border.all(color: AppTheme.primary, width: 1.3),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.13),
-                      blurRadius: 3,
+                      color: Colors.black.withValues(alpha: 0.13),
+                      blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
                   ],
@@ -693,26 +835,30 @@ class _TechnicianLocationMapScreenState
                     Text(
                       '${displayKm.toStringAsFixed(1)} km',
                       style: TextStyle(
-                        fontSize: isSmall ? 7.8 : 9.2,
-                        fontWeight: FontWeight.bold,
+                        fontSize: isSmall ? 8 : 9.5,
+                        fontWeight: FontWeight.w800,
                         color: AppTheme.primary,
                       ),
                     ),
                     if (_osrmDurationMin != null) ...[
-                      const SizedBox(width: 1.5),
-                      Text('•',
-                          style: TextStyle(
-                              fontSize: isSmall ? 7.8 : 9.2,
-                              color: AppTheme.primary.withOpacity(0.5))),
-                      const SizedBox(width: 1.5),
+                      const SizedBox(width: 3),
+                      Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: isSmall ? 8 : 9.5,
+                          color: AppTheme.primary.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
                       Icon(Icons.access_time_rounded,
-                          size: isSmall ? 8.5 : 10, color: AppTheme.primary),
+                          size: isSmall ? 9 : 10.5,
+                          color: AppTheme.primary),
                       const SizedBox(width: 1),
                       Text(
                         '~${_osrmDurationMin!.toStringAsFixed(0)}m',
                         style: TextStyle(
-                          fontSize: isSmall ? 7.5 : 8.8,
-                          fontWeight: FontWeight.bold,
+                          fontSize: isSmall ? 7.5 : 9,
+                          fontWeight: FontWeight.w800,
                           color: AppTheme.primary,
                         ),
                       ),
@@ -743,20 +889,22 @@ class _TechnicianLocationMapScreenState
 
     return Marker(
       point: midpoint,
-      width: isSmall ? 86 : 100,
-      height: isSmall ? 26 : 30,
+      width: isSmall ? 90 : 105,
+      height: isSmall ? 28 : 32,
       child: Container(
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: AppTheme.primary.withOpacity(0.45), width: 1.2),
+            color: AppTheme.primary.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.13),
-              blurRadius: 3,
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 4,
               offset: const Offset(0, 1),
             ),
           ],
@@ -768,25 +916,28 @@ class _TechnicianLocationMapScreenState
               '${km.toStringAsFixed(1)} km',
               style: TextStyle(
                 fontSize: badgeFontSize,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 color: AppTheme.primary,
               ),
             ),
             if (_osrmDurationMin != null) ...[
-              const SizedBox(width: 1.5),
-              Text('•',
-                  style: TextStyle(
-                      fontSize: badgeFontSize,
-                      color: AppTheme.primary.withOpacity(0.5))),
-              const SizedBox(width: 1.5),
+              const SizedBox(width: 3),
+              Text(
+                '•',
+                style: TextStyle(
+                  fontSize: badgeFontSize,
+                  color: AppTheme.primary.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(width: 3),
               Icon(Icons.access_time_rounded,
-                  size: badgeFontSize + 0.8, color: AppTheme.primary),
+                  size: badgeFontSize + 1, color: AppTheme.primary),
               const SizedBox(width: 1),
               Text(
                 '~${_osrmDurationMin!.toStringAsFixed(0)}m',
                 style: TextStyle(
                   fontSize: badgeFontSize - 0.3,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   color: AppTheme.primary,
                 ),
               ),
@@ -796,6 +947,10 @@ class _TechnicianLocationMapScreenState
       ),
     );
   }
+
+  // ==============================================================
+  // DETAIL SHEET
+  // ==============================================================
 
   void _showTechnicianDetailSheet(
       BuildContext context,
@@ -809,44 +964,67 @@ class _TechnicianLocationMapScreenState
     final hasOrigin = origin != null;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmall = screenWidth < 400;
+    final ink = _ink(context);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
       backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
       builder: (sheetContext) => SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(isSmall ? 14 : 18),
+          padding: EdgeInsets.fromLTRB(
+              isSmall ? 16 : 20, 12, isSmall ? 16 : 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Handle + close
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 36,
+                    width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: theme.dividerColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 22),
-                    onPressed: () => Navigator.pop(sheetContext),
-                    tooltip: 'Close',
+                  Material(
+                    color: _softFill(context),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.pop(sheetContext),
+                      child: const SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Icon(Icons.close_rounded, size: 20),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
+
+              // Header
               Row(
                 children: [
-                  _buildAvatar(technician,
-                      size: isSmall ? 52 : 60, iconSize: isSmall ? 26 : 30),
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _gold,
+                    ),
+                    child: _buildAvatar(
+                      technician,
+                      size: isSmall ? 54 : 62,
+                      iconSize: isSmall ? 26 : 30,
+                    ),
+                  ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -858,60 +1036,66 @@ class _TechnicianLocationMapScreenState
                               child: Text(
                                 technician.name,
                                 style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: isSmall ? 17 : 19,
-                                  color: theme.colorScheme.onSurface,
+                                  color: ink,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (technician.verified)
-                              Container(
-                                margin: const EdgeInsets.only(left: 5),
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                    color: Colors.blue, shape: BoxShape.circle),
-                                child: const Icon(Icons.check_rounded,
-                                    size: 13, color: Colors.white),
+                              const Padding(
+                                padding: EdgeInsets.only(left: 5),
+                                child: Icon(
+                                  Icons.verified_rounded,
+                                  size: 18,
+                                  color: Color(0xFF3B9BE8),
+                                ),
                               ),
                           ],
                         ),
                         if (technician.area != null)
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_rounded,
-                                  size: 15, color: theme.hintColor),
-                              const SizedBox(width: 3),
-                              Flexible(
-                                child: Text(
-                                  technician.area!,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontSize: isSmall ? 13 : 14,
-                                    color: theme.hintColor,
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_on_rounded,
+                                    size: 14, color: AppTheme.error),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    technician.area!,
+                                    style: theme.textTheme.bodyMedium
+                                        ?.copyWith(
+                                      fontSize: isSmall ? 13 : 14,
+                                      color: theme.hintColor,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                       ],
                     ),
                   ),
                   Container(
                     padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
-                      color: (technician.isOnline ? Colors.green : Colors.grey)
-                          .withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      color: (technician.isOnline
+                          ? Colors.green
+                          : Colors.grey)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       technician.isOnline ? 'Online' : 'Offline',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
                         color: technician.isOnline
                             ? (isDark
                             ? Colors.green.shade300
@@ -922,19 +1106,22 @@ class _TechnicianLocationMapScreenState
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+
+              const SizedBox(height: 16),
+
+              // Stats row
               Row(
                 children: [
                   if (technician.rating > 0) ...[
                     const Icon(Icons.star_rounded,
-                        color: Colors.amber, size: 17),
+                        color: AppTheme.secondary, size: 18),
                     const SizedBox(width: 3),
                     Text(
                       technician.rating.toStringAsFixed(1),
                       style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 16),
                   ],
                   Icon(Icons.directions_car_rounded,
                       size: 17, color: theme.hintColor),
@@ -942,114 +1129,115 @@ class _TechnicianLocationMapScreenState
                   Text(
                     '${displayKm.toStringAsFixed(1)} km',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       color: AppTheme.primary,
                     ),
                   ),
                   if (_osrmDurationMin != null) ...[
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Text(
-                      '• ~${_osrmDurationMin!.toStringAsFixed(0)}m',
+                      '• ~${_osrmDurationMin!.toStringAsFixed(0)} min',
                       style: theme.textTheme.bodySmall
                           ?.copyWith(color: theme.hintColor),
                     ),
                   ],
                 ],
               ),
-              const SizedBox(height: 12),
+
+              // Services
               if (technician.services.isNotEmpty) ...[
+                const SizedBox(height: 14),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: technician.services
-                      .map(
-                        (s) => Chip(
-                      label: Text(
+                  children: technician.services.map((s) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _softFill(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
                         s,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: isSmall ? 11.5 : 12.5,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.primary,
+                        style: TextStyle(
+                          fontSize: isSmall ? 12 : 13,
+                          fontWeight: FontWeight.w700,
+                          color: ink,
                         ),
                       ),
-                      backgroundColor: AppTheme.primary.withOpacity(0.08),
-                      side: BorderSide.none,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                      materialTapTargetSize:
-                      MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  )
-                      .toList(),
+                    );
+                  }).toList(),
                 ),
-                const SizedBox(height: 14),
               ],
+
+              const SizedBox(height: 18),
+
+              // Buttons
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(sheetContext);
-                        Navigator.pushNamed(context, AppRoutes.technicianDetail,
-                            arguments: technician.id);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11)),
-                        padding: EdgeInsets.symmetric(
-                            vertical: isSmall ? 13 : 14),
-                      ),
-                      child: Text(
-                        l10n.viewProfile,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: isSmall ? 13.5 : 14.5),
+                    child: SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.technicianDetail,
+                            arguments: technician.id,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          l10n.viewProfile,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: isSmall ? 14 : 15,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
                   if (technician.latitude != null &&
-                      technician.longitude != null)
-                    Container(
+                      technician.longitude != null) ...[
+                    const SizedBox(width: 10),
+                    SizedBox(
                       height: 50,
-                      width: isSmall ? 48 : 54,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.green.withOpacity(0.15)
-                            : Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(11),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.green.withOpacity(0.3)
-                              : Colors.green.shade200,
-                          width: 1.3,
-                        ),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          hasOrigin
-                              ? Icons.directions_rounded
-                              : Icons.map_rounded,
-                          color: isDark
-                              ? Colors.green.shade300
-                              : Colors.green.shade700,
-                          size: isSmall ? 24 : 28,
-                        ),
+                      width: isSmall ? 52 : 56,
+                      child: ElevatedButton(
                         onPressed: () => _openInGoogleMaps(
                           context,
                           origin: origin,
                           destination: destination,
                         ),
-                        tooltip: hasOrigin ? l10n.directions : 'View on map',
-                        padding: EdgeInsets.zero,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _gold,
+                          foregroundColor: AppTheme.primary,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Icon(
+                          hasOrigin
+                              ? Icons.directions_rounded
+                              : Icons.map_rounded,
+                          size: 24,
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 6),
             ],
           ),
         ),
@@ -1058,28 +1246,41 @@ class _TechnicianLocationMapScreenState
   }
 }
 
+// ================================================================
+// MAP CONTROL BUTTON
+// ================================================================
+
 class _MapControlButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+  final bool highlighted;
 
   const _MapControlButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.highlighted = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
-      color: theme.colorScheme.surface,
+      color: highlighted
+          ? AppTheme.primary
+          : Theme.of(context).colorScheme.surface,
       shape: const CircleBorder(),
-      elevation: 3,
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.22),
       child: IconButton(
-        icon: Icon(icon, color: AppTheme.primary, size: 20),
+        icon: Icon(
+          icon,
+          color: highlighted ? _gold : AppTheme.primary,
+          size: 21,
+        ),
         tooltip: tooltip,
         onPressed: onPressed,
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       ),
     );
   }

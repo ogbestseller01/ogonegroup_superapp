@@ -161,6 +161,24 @@ abstract class AppLocalizations {
   /// **'Payments'**
   String get payments;
 
+  /// No description provided for @jobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs'**
+  String get jobs;
+
+  /// No description provided for @tickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Tickets'**
+  String get tickets;
+
+  /// No description provided for @soon.
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get soon;
+
   /// No description provided for @findFundi.
   ///
   /// In en, this message translates to:
@@ -1624,6 +1642,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send'**
   String get send;
+
+  /// No description provided for @noJobsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs yet'**
+  String get noJobsYet;
+
+  /// No description provided for @noJobsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted requests you mark as a job appear here.'**
+  String get noJobsHint;
+
+  /// No description provided for @activeJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Jobs'**
+  String get activeJobs;
+
+  /// No description provided for @completedJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Jobs'**
+  String get completedJobs;
+
+  /// No description provided for @markComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Complete'**
+  String get markComplete;
+
+  /// No description provided for @jobCompletedMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Job completed. Ticket closed.'**
+  String get jobCompletedMsg;
+
+  /// No description provided for @couldNotStartCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start completion.'**
+  String get couldNotStartCompletion;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

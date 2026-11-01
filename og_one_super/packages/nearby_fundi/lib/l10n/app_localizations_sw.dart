@@ -42,6 +42,15 @@ class AppLocalizationsSw extends AppLocalizations {
   String get payments => 'Malipo';
 
   @override
+  String get jobs => 'Kazi';
+
+  @override
+  String get tickets => 'Tiketi';
+
+  @override
+  String get soon => 'Hivi karibuni';
+
+  @override
   String get findFundi => 'Tafuta Fundi';
 
   @override
@@ -778,4 +787,25 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get send => 'Tuma';
+
+  @override
+  String get noJobsYet => 'Hakuna kazi bado';
+
+  @override
+  String get noJobsHint => 'Maombi yaliyokubaliwa unayoyaweka kama kazi yataonekana hapa.';
+
+  @override
+  String get activeJobs => 'Kazi Zinazoendelea';
+
+  @override
+  String get completedJobs => 'Kazi Zilizokamilika';
+
+  @override
+  String get markComplete => 'Weka Imekamilika';
+
+  @override
+  String get jobCompletedMsg => 'Kazi imekamilika. Tiketi imefungwa.';
+
+  @override
+  String get couldNotStartCompletion => 'Imeshindwa kuanza kukamilisha.';
 }

@@ -1,4 +1,6 @@
 // packages/nearby_fundi/lib/screens/onboarding_screen.dart
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../config/app_routes.dart';
@@ -77,8 +79,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final size = MediaQuery.sizeOf(context);
     final isSmall = size.width < 400;
+    final isShort = size.height < 640;
     final isLastPage = _currentPage == _items.length - 1;
 
     return Scaffold(
@@ -100,13 +103,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             children: [
               // ── Top Bar ─────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  isShort ? 10 : 20,
+                  24,
+                  isShort ? 4 : 8,
+                ),
                 child: Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
-                      padding: const EdgeInsets.all(8),
+                      width: isShort ? 38 : 44,
+                      height: isShort ? 38 : 44,
+                      padding: EdgeInsets.all(isShort ? 6 : 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -130,13 +138,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'NearbyFundi',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: isSmall ? 18 : 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                    Flexible(
+                      child: Text(
+                        'NearbyFundi',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isSmall ? 18 : 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
                     const Spacer(),
@@ -165,67 +177,77 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   itemBuilder: (context, index) => _OnboardingPage(
                     item: _items[index],
                     isSmall: isSmall,
+                    isShort: isShort,
                   ),
                 ),
               ),
 
               // ── Bottom Section ──────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-                child: Column(
-                  children: [
-                    // Page indicator
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_items.length, (index) {
-                        final active = _currentPage == index;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: active ? 32 : 8,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: active
-                                ? AppTheme.secondary
-                                : Colors.white.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        );
-                      }),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // CTA button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: isLastPage ? _getStarted : _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.secondary,
-                          foregroundColor: AppTheme.primary,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              isLastPage ? 'Get Started' : 'Continue',
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    0,
+                    24,
+                    isShort ? 16 : 32,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Page indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_items.length, (index) {
+                          final active = _currentPage == index;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: active ? 32 : 8,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? AppTheme.secondary
+                                  : Colors.white.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward_rounded, size: 22),
-                          ],
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // CTA button
+                      SizedBox(
+                        width: double.infinity,
+                        height: isShort ? 50 : 56,
+                        child: ElevatedButton(
+                          onPressed: isLastPage ? _getStarted : _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.secondary,
+                            foregroundColor: AppTheme.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                isLastPage ? 'Get Started' : 'Continue',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward_rounded, size: 22),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -242,105 +264,141 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class _OnboardingPage extends StatelessWidget {
   final OnboardingItem item;
   final bool isSmall;
+  final bool isShort;
 
   const _OnboardingPage({
     required this.item,
     required this.isSmall,
+    required this.isShort,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon circle
-          Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-                width: 1,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Icon circle scales with the smaller dimension so it never
+        // eats the whole page on short/landscape screens.
+        final double base = math.min(constraints.maxWidth, constraints.maxHeight);
+        final double outer = (base * 0.46).clamp(120.0, 200.0);
+        final double inner = outer * 0.70;
+
+        return SingleChildScrollView(
+          // Scrollable vertically so text never overflows on small screens.
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          child: ConstrainedBox(
+            // Keep content centered when there is plenty of room.
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - 32,
             ),
-            child: Center(
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Icon circle
+                  Center(
+                    child: Container(
+                      width: outer,
+                      height: outer,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: inner,
+                          height: inner,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 30,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            item.icon,
+                            size: inner * 0.46,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                child: Icon(item.icon, size: 64, color: AppTheme.primary),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // Title
+                  Text(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isSmall ? 26 : 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Divider
+                  Center(
+                    child: Container(
+                      width: 48,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.secondary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Description
+                  Text(
+                    item.description,
+                    textAlign: TextAlign.center,
+                    softWrap: true,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.75),
+                      fontSize: isSmall ? 14.5 : 16,
+                      height: 1.55,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // Benefits — Wrap handles horizontal overflow.
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.center,
+                    children: const [
+                      _Benefit(icon: Icons.verified_rounded, text: 'Verified'),
+                      _Benefit(icon: Icons.star_rounded, text: 'Trusted'),
+                      _Benefit(icon: Icons.bolt_rounded, text: 'Fast'),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
           ),
-
-          const SizedBox(height: 48),
-
-          // Title
-          Text(
-            item.title,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isSmall ? 28 : 34,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Divider
-          Container(
-            width: 48,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppTheme.secondary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Description
-          Text(
-            item.description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.75),
-              fontSize: isSmall ? 15 : 17,
-              height: 1.6,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Benefits
-          const Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: [
-              _Benefit(icon: Icons.verified_rounded, text: 'Verified'),
-              _Benefit(icon: Icons.star_rounded, text: 'Trusted'),
-              _Benefit(icon: Icons.bolt_rounded, text: 'Fast'),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

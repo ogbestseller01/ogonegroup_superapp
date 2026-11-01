@@ -12,6 +12,9 @@
   "settings": "Settings",
   "chat": "Chat",
   "payments": "Payments",
+  "jobs": "Jobs",
+  "tickets": "Tickets",
+  "soon": "Soon",
 
   "findFundi": "Find Fundi",
   "searchLocation": "📍 Search location...",
@@ -274,5 +277,13 @@
   "jobsCompleted": "jobs completed",
   "rating": "Rating",
   "privacyPolicy": "Privacy Policy",
-  "send": "Send"
+  "send": "Send",
+
+  "noJobsYet": "No jobs yet",
+  "noJobsHint": "Accepted requests you mark as a job appear here.",
+  "activeJobs": "Active Jobs",
+  "completedJobs": "Completed Jobs",
+  "markComplete": "Mark Complete",
+  "jobCompletedMsg": "Job completed. Ticket closed.",
+  "couldNotStartCompletion": "Could not start completion."
 }

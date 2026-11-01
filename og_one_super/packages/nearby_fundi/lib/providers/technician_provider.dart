@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/technician.dart';
-import '../services/technician_heartbeat_service.dart'; // ✅ added
+import '../services/technician_heartbeat_service.dart';
 
 class TechnicianProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -42,7 +42,13 @@ class TechnicianProvider extends ChangeNotifier {
   Map<String, dynamic>? get filters => _filters;
   Map<String, dynamic>? get meta => _meta;
 
-  // ─── Heartbeat controls ──────────────────────────────────────────────
+  /// Radius the server actually used (it widens automatically when nothing is near).
+  int? get searchRadiusKm => int.tryParse('${_searchMeta?['radius']}');
+
+  /// True when the server had to widen the radius to find fundis.
+  bool get searchExpanded => _searchMeta?['expanded'] == true;
+
+  // ─── Heartbeat controls ────────────────────────────────────────────────
   void startHeartbeat() {
     _heartbeatService.start();
   }
@@ -106,7 +112,7 @@ class TechnicianProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Search by GPS coordinates (Map Picker) ───────────────────────────
+  // ─── Search by GPS coordinates (Map Picker / My location) ──────────────
   Future<void> searchByCoordinates({
     required double lat,
     required double lng,
@@ -151,7 +157,7 @@ class TechnicianProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Legacy fetchNearby (now calls searchByCoordinates) ────────────────
+  // ─── Legacy fetchNearby (calls searchByCoordinates) ────────────────────
   Future<void> fetchNearby({
     required double lat,
     required double lng,
@@ -208,7 +214,7 @@ class TechnicianProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── UPDATED: Fetch technician with portfolios (preserves new fields) ──
+  // ─── Fetch technician with portfolios (preserves all fields) ───────────
   Future<void> fetchTechnicianWithPortfolios(int id) async {
     _isLoading = true;
     _error = null;
@@ -224,10 +230,8 @@ class TechnicianProvider extends ChangeNotifier {
         return;
       }
 
-      // Parse the technician (includes all new fields)
       final tech = Technician.fromJson(detailRes.data, isDetail: false);
 
-      // Fetch portfolios separately
       final portfolioRes = await _api.getTechnicianPortfolio(id);
       List<PortfolioItem> portfolioItems = [];
       if (portfolioRes.success && portfolioRes.data != null) {
@@ -237,31 +241,9 @@ class TechnicianProvider extends ChangeNotifier {
             portfoliosData.map((p) => PortfolioItem.fromJson(p)).toList();
       }
 
-      // Rebuild the technician preserving all fields, only replacing portfolios
-      _currentTechnician = Technician(
-        id: tech.id,
-        userId: tech.userId,
-        name: tech.name,
-        email: tech.email,
-        phone: tech.phone,
-        profilePhoto: tech.profilePhoto,
-        bio: tech.bio,
-        experience: tech.experience,
-        rating: tech.rating,
-        hourlyRate: tech.hourlyRate,
-        distanceKm: tech.distanceKm,
-        area: tech.area,
-        latitude: tech.latitude,
-        longitude: tech.longitude,
-        isOnline: tech.isOnline,
-        verified: tech.verified,
-        services: tech.services,
-        serviceObjects: tech.serviceObjects,
+      // FIXED: Use copyWith instead of manually passing invalid parameters
+      _currentTechnician = tech.copyWith(
         portfolios: portfolioItems,
-        // ─── NEW FIELDS ──────────────────────────────────────────────
-        completedJobsCount: tech.completedJobsCount,
-        priceRange: tech.priceRange,
-        servicePrices: tech.servicePrices,
       );
       _error = null;
     } catch (e) {
@@ -312,7 +294,7 @@ class TechnicianProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── UPDATED toggleOnline – now starts/stops heartbeat ────────────────
+  // ─── toggleOnline – starts/stops heartbeat ─────────────────────────────
   Future<void> toggleOnline(bool isOnline) async {
     _isLoading = true;
     _error = null;
@@ -323,7 +305,6 @@ class TechnicianProvider extends ChangeNotifier {
       if (res.success && res.data != null) {
         _myTechnician = Technician.fromJson(res.data, isDetail: true);
         _error = null;
-        // ─── Auto start/stop heartbeat ──────────────────────────────
         if (isOnline) {
           startHeartbeat();
         } else {
@@ -351,30 +332,10 @@ class TechnicianProvider extends ChangeNotifier {
       final res = await _api.updateTechnicianLocation(latitude, longitude);
       if (res.success) {
         if (_myTechnician != null) {
-          _myTechnician = Technician(
-            id: _myTechnician!.id,
-            userId: _myTechnician!.userId,
-            name: _myTechnician!.name,
-            email: _myTechnician!.email,
-            phone: _myTechnician!.phone,
-            profilePhoto: _myTechnician!.profilePhoto,
-            bio: _myTechnician!.bio,
-            experience: _myTechnician!.experience,
-            rating: _myTechnician!.rating,
-            hourlyRate: _myTechnician!.hourlyRate,
-            distanceKm: _myTechnician!.distanceKm,
-            area: _myTechnician!.area,
+          // FIXED: Use copyWith instead of manually passing invalid parameters
+          _myTechnician = _myTechnician!.copyWith(
             latitude: latitude,
             longitude: longitude,
-            isOnline: _myTechnician!.isOnline,
-            verified: _myTechnician!.verified,
-            services: _myTechnician!.services,
-            serviceObjects: _myTechnician!.serviceObjects,
-            portfolios: _myTechnician!.portfolios,
-            // ─── PRESERVE NEW FIELDS ──────────────────────────────────
-            completedJobsCount: _myTechnician!.completedJobsCount,
-            priceRange: _myTechnician!.priceRange,
-            servicePrices: _myTechnician!.servicePrices,
           );
         }
         _error = null;
@@ -417,6 +378,13 @@ class TechnicianProvider extends ChangeNotifier {
             _searchLat = lat is num ? lat.toDouble() : double.tryParse('$lat');
             _searchLng = lng is num ? lng.toDouble() : double.tryParse('$lng');
           }
+        }
+
+        if (res.data['filters'] is Map) {
+          _filters = Map<String, dynamic>.from(res.data['filters']);
+        }
+        if (res.data['meta'] is Map) {
+          _meta = Map<String, dynamic>.from(res.data['meta']);
         }
       } else if (res.data is List) {
         dataList = res.data as List;
@@ -504,7 +472,7 @@ class TechnicianProvider extends ChangeNotifier {
           }
 
           if (suggestions.isNotEmpty) {
-            _error = _error! + '\n\n' + suggestions.join('\n• ');
+            _error = '${_error!}\n\n• ${suggestions.join('\n• ')}';
           }
         } else {
           _error =
@@ -514,7 +482,7 @@ class TechnicianProvider extends ChangeNotifier {
         _error = null;
       }
     } else {
-      _error = res.message ?? 'Failed to search technicians.';
+      _error = res.message;
       _technicians = [];
       _searchLat = null;
       _searchLng = null;

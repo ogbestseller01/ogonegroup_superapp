@@ -124,12 +124,13 @@ class ApiService {
     required String email,
     required String otp,
     required String password,
-  }) => _post('/v1/auth/reset-password', data: {
-    'email': email,
-    'otp': otp,
-    'password': password,
-    'password_confirmation': password,
-  });
+  }) =>
+      _post('/v1/auth/reset-password', data: {
+        'email': email,
+        'otp': otp,
+        'password': password,
+        'password_confirmation': password,
+      });
 
   Future<ApiResponse> logout() => _post('/v1/auth/logout');
 
@@ -141,11 +142,12 @@ class ApiService {
   Future<ApiResponse> changePassword({
     required String currentPassword,
     required String newPassword,
-  }) => _post('/v1/auth/change-password', data: {
-    'current_password': currentPassword,
-    'password': newPassword,
-    'password_confirmation': newPassword,
-  });
+  }) =>
+      _post('/v1/auth/change-password', data: {
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': newPassword,
+      });
 
   Future<ApiResponse> updateLocale(String locale) =>
       _post('/v1/auth/locale', data: {'locale': locale});
@@ -185,52 +187,53 @@ class ApiService {
     required int serviceId,
     int? categoryId,
     String locale = 'en',
-  }) => _get('/v4/technicians/by-service-category', query: {
-    'service_id': serviceId,
-    if (categoryId != null) 'category_id': categoryId,
-    'locale': locale,
-  });
+  }) =>
+      _get('/v4/technicians/by-service-category', query: {
+        'service_id': serviceId,
+        if (categoryId != null) 'category_id': categoryId,
+        'locale': locale,
+      });
 
   Future<ApiResponse> getRequestServices({String locale = 'en'}) =>
       _get('/v4/request-services', query: {'locale': locale});
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  TECHNICIANS (Customer side) - V1
+  //  TECHNICIANS (Customer side) - V1  (whole Tanzania, auto-widening radius)
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getNearbyTechnicians({
     required double lat,
     required double lng,
-    int radius = 10,
+    int radius = 20,
     int? serviceId,
     int? categoryId,
     String locale = 'en',
     String? search,
-  }) => _get('/v1/technicians/nearby', query: {
-    'lat': lat,
-    'lng': lng,
-    'radius': radius,
-    if (serviceId != null) 'service_id': serviceId,
-    if (categoryId != null) 'category_id': categoryId,
-    'locale': locale,
-    if (search != null && search.isNotEmpty) 'search': search,
-  });
+  }) =>
+      _get('/v1/technicians/nearby', query: {
+        'lat': lat,
+        'lng': lng,
+        'radius': radius,
+        if (serviceId != null) 'service_id': serviceId,
+        if (categoryId != null) 'category_id': categoryId,
+        if (search != null && search.isNotEmpty) 'search': search,
+      });
 
   Future<ApiResponse> searchTechniciansByPlace({
     required String place,
     int? serviceId,
     int? categoryId,
-    int radius = 10,
+    int radius = 20,
     String locale = 'en',
     String? search,
-  }) => _get('/v1/technicians/nearby-by-place', query: {
-    'place': place,
-    if (serviceId != null) 'service_id': serviceId,
-    if (categoryId != null) 'category_id': categoryId,
-    'radius': radius,
-    'locale': locale,
-    if (search != null && search.isNotEmpty) 'search': search,
-  });
+  }) =>
+      _get('/v1/technicians/nearby-by-place', query: {
+        'place': place,
+        if (serviceId != null) 'service_id': serviceId,
+        if (categoryId != null) 'category_id': categoryId,
+        'radius': radius,
+        if (search != null && search.isNotEmpty) 'search': search,
+      });
 
   Future<ApiResponse> getTechnicianDetail(int id, {String locale = 'en'}) =>
       _get('/v1/technicians/$id', query: {'locale': locale});
@@ -239,8 +242,7 @@ class ApiService {
   //  TECHNICIAN PROFILE (Fundi side) - V2
   // ═══════════════════════════════════════════════════════════════════════
 
-  Future<ApiResponse> getTechnicianProfile() =>
-      _get('/v2/technicians/profile');
+  Future<ApiResponse> getTechnicianProfile() => _get('/v2/technicians/profile');
 
   Future<ApiResponse> updateTechnicianServices(List<int> serviceIds) =>
       _put('/v2/technicians/services', data: {'service_ids': serviceIds});
@@ -257,10 +259,11 @@ class ApiService {
   Future<ApiResponse> sendTechnicianHeartbeat({
     double? latitude,
     double? longitude,
-  }) => _post('/v2/technicians/heartbeat', data: {
-    if (latitude != null) 'latitude': latitude,
-    if (longitude != null) 'longitude': longitude,
-  });
+  }) =>
+      _post('/v2/technicians/heartbeat', data: {
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+      });
 
   Future<ApiResponse> uploadTechnicianPhoto(File imageFile) async {
     final formData = FormData.fromMap({
@@ -282,8 +285,7 @@ class ApiService {
   Future<ApiResponse> getTechnicianPortfolio(int technicianId) =>
       _get('/v3/portfolios/technician/$technicianId');
 
-  Future<ApiResponse> getMyPortfolios() =>
-      _get('/v3/portfolios/my');
+  Future<ApiResponse> getMyPortfolios() => _get('/v3/portfolios/my');
 
   Future<ApiResponse> createPortfolio({
     required File imageFile,
@@ -341,14 +343,16 @@ class ApiService {
     });
   }
 
-  Future<ApiResponse> deletePortfolio(int id) =>
-      _delete('/v3/portfolios/$id');
+  Future<ApiResponse> deletePortfolio(int id) => _delete('/v3/portfolios/$id');
 
   Future<ApiResponse> updatePortfolioSocialLinks(int id, Map<String, dynamic> socialLinks) =>
       _put('/v3/portfolios/$id/social-links', data: socialLinks);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  REQUESTS (Booking) - V4
+  //  statuses: pending | accepted | cancelled | rejected
+  //  pending -> accepted / rejected (fundi), pending -> cancelled (customer)
+  //  accepted / cancelled / rejected are locked
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> createRequest({
@@ -358,37 +362,60 @@ class ApiService {
     required String description,
     double? latitude,
     double? longitude,
-  }) => _post('/v4/requests', data: {
-    'technician_id': technicianId,
-    'service_id': serviceId,
-    if (categoryId != null) 'category_id': categoryId,
-    'description': description,
-    if (latitude != null) 'latitude': latitude,
-    if (longitude != null) 'longitude': longitude,
-  });
+  }) =>
+      _post('/v4/requests', data: {
+        'technician_id': technicianId,
+        'service_id': serviceId,
+        if (categoryId != null) 'category_id': categoryId,
+        'description': description,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+      });
 
   Future<ApiResponse> getMyRequests() => _get('/v4/my-requests');
 
+  /// status: 'accepted' | 'rejected' (fundi) | 'cancelled' (customer)
   Future<ApiResponse> updateRequestStatus(int id, String status) =>
       _patch('/v4/requests/$id/status', data: {'status': status});
 
-  Future<ApiResponse> cancelRequest(int id) =>
-      _delete('/v4/requests/$id/cancel');
+  Future<ApiResponse> acceptRequest(int id) => updateRequestStatus(id, 'accepted');
 
-  Future<ApiResponse> markOnTheWay(int requestId) =>
-      _patch('/v4/requests/$requestId/on-the-way');
+  Future<ApiResponse> rejectRequest(int id) => updateRequestStatus(id, 'rejected');
 
-  Future<ApiResponse> markArrived(int requestId) =>
-      _patch('/v4/requests/$requestId/arrive');
+  /// Customer cancels a PENDING request (server sets status = cancelled).
+  Future<ApiResponse> cancelRequest(int id) => _delete('/v4/requests/$id/cancel');
+
+  Future<ApiResponse> updateRequestLocation(
+      int id, {
+        required double latitude,
+        required double longitude,
+      }) =>
+      _patch('/v4/requests/$id/location', data: {
+        'latitude': latitude,
+        'longitude': longitude,
+      });
 
   Future<ApiResponse> getTrackingData(int requestId) =>
-      _get('/tracking/$requestId');
+      _get('/v4/requests/$requestId/tracking');
 
+  // ─────────────────────────────────────────────────────────────────────
+  //  JOBS (converted from accepted requests)
+  // ─────────────────────────────────────────────────────────────────────
 
+  Future<ApiResponse> getMyJobs() => _get('/v4/jobs');
+
+  Future<ApiResponse> markRequestAsJob(int requestId) =>
+      _post('/v4/requests/$requestId/mark-as-job', data: {});
+
+  Future<ApiResponse> requestJobCompletion(int jobId) =>
+      _post('/v4/jobs/$jobId/request-completion', data: {});
+
+  Future<ApiResponse> verifyJobCompletion(int jobId, String otp) =>
+      _post('/v4/jobs/$jobId/verify-completion', data: {'otp': otp});
 
   // ═══════════════════════════════════════════════════════════════════════
-//  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)
-// ═══════════════════════════════════════════════════════════════════════
+  //  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)
+  // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getPosts({int page = 1, int? technicianId}) =>
       _get('/v1/posts', query: {
@@ -400,8 +427,7 @@ class ApiService {
 
   Future<ApiResponse> getPostDetail(int id) => _get('/v1/posts/$id');
 
-  Future<ApiResponse> likePost(int postId) =>
-      _post('/v5/posts/$postId/like');
+  Future<ApiResponse> likePost(int postId) => _post('/v5/posts/$postId/like');
 
   Future<ApiResponse> commentOnPost(int postId, String comment) =>
       _post('/v5/posts/$postId/comments', data: {'comment': comment});
@@ -415,10 +441,8 @@ class ApiService {
     formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
     formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
 
-    if (data['youtube_url'] != null &&
-        data['youtube_url'].toString().isNotEmpty) {
-      formData.fields
-          .add(MapEntry('youtube_url', data['youtube_url'].toString()));
+    if (data['youtube_url'] != null && data['youtube_url'].toString().isNotEmpty) {
+      formData.fields.add(MapEntry('youtube_url', data['youtube_url'].toString()));
     }
 
     // Multi-image
@@ -466,8 +490,7 @@ class ApiService {
       formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
     }
     if (data.containsKey('content')) {
-      formData.fields
-          .add(MapEntry('content', data['content']?.toString() ?? ''));
+      formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
     }
     if (data.containsKey('youtube_url')) {
       formData.fields.add(MapEntry(
@@ -523,7 +546,6 @@ class ApiService {
 
   Future<ApiResponse> deletePost(int id) => _delete('/v5/posts/$id');
 
-
   // ═══════════════════════════════════════════════════════════════════════
   //  STATIC PAGES - V1 & V6
   // ═══════════════════════════════════════════════════════════════════════
@@ -546,10 +568,11 @@ class ApiService {
   Future<ApiResponse> getOrCreateConversation({
     required int customerId,
     required int fundiId,
-  }) => _post('/v14/chat/conversation', data: {
-    'customer_id': customerId,
-    'fundi_id': fundiId,
-  });
+  }) =>
+      _post('/v14/chat/conversation', data: {
+        'customer_id': customerId,
+        'fundi_id': fundiId,
+      });
 
   Future<ApiResponse> getConversations() => _get('/v14/chat/conversations');
 
@@ -557,10 +580,11 @@ class ApiService {
     required int conversationId,
     int limit = 50,
     int offset = 0,
-  }) => _get('/v14/chat/conversations/$conversationId/messages', query: {
-    'limit': limit,
-    'offset': offset,
-  });
+  }) =>
+      _get('/v14/chat/conversations/$conversationId/messages', query: {
+        'limit': limit,
+        'offset': offset,
+      });
 
   Future<ApiResponse> sendMessage({
     required int conversationId,
@@ -623,10 +647,11 @@ class ApiService {
   Future<ApiResponse> sendTypingStatus({
     required int conversationId,
     required bool isTyping,
-  }) => _post('/v14/chat/typing', data: {
-    'conversation_id': conversationId,
-    'is_typing': isTyping,
-  });
+  }) =>
+      _post('/v14/chat/typing', data: {
+        'conversation_id': conversationId,
+        'is_typing': isTyping,
+      });
 
   Future<ApiResponse> downloadChatFile(int messageId) =>
       _get('/v14/chat/files/$messageId/download', query: {
@@ -660,9 +685,9 @@ class ApiService {
   Future<ApiResponse> deleteConversation(int conversationId) =>
       _delete('/v14/chat/conversations/$conversationId');
 
-// ═══════════════════════════════════════════════════════════════════════
-//  NOTIFICATION ENDPOINTS (V15) - FIXED QUERY PARAMS
-// ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════
+  //  NOTIFICATION ENDPOINTS (V15)
+  // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getNotifications({String? excludeType, String? type}) =>
       _get('/v15/notifications', query: {
@@ -731,8 +756,7 @@ class ApiService {
 
   Future<ApiResponse> getMyInvoices() => _get('/v16/my-invoices');
 
-  Future<ApiResponse> checkSubscriptionStatus() =>
-      _get('/v16/check-subscription');
+  Future<ApiResponse> checkSubscriptionStatus() => _get('/v16/check-subscription');
 
   Future<String?> downloadInvoice(int invoiceId) async {
     try {
@@ -782,15 +806,14 @@ class ApiService {
     required int requestId,
     required int rating,
     String? comment,
-  }) => _post('/v18/reviews', data: {
-    'request_id': requestId,
-    'rating': rating,
-    if (comment != null) 'comment': comment,
-  });
+  }) =>
+      _post('/v18/reviews', data: {
+        'request_id': requestId,
+        'rating': rating,
+        if (comment != null) 'comment': comment,
+      });
 
-  Future<ApiResponse> getPrivacyPolicy() =>
-      _get('/v18/privacy-policy');
-
+  Future<ApiResponse> getPrivacyPolicy() => _get('/v18/privacy-policy');
 
   // ═══════════════════════════════════════════════════════════════════════
   //  PRIVATE HELPERS

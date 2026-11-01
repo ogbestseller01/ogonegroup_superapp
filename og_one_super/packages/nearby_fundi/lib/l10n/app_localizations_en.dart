@@ -42,6 +42,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get payments => 'Payments';
 
   @override
+  String get jobs => 'Jobs';
+
+  @override
+  String get tickets => 'Tickets';
+
+  @override
+  String get soon => 'Soon';
+
+  @override
   String get findFundi => 'Find Fundi';
 
   @override
@@ -778,4 +787,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get send => 'Send';
+
+  @override
+  String get noJobsYet => 'No jobs yet';
+
+  @override
+  String get noJobsHint => 'Accepted requests you mark as a job appear here.';
+
+  @override
+  String get activeJobs => 'Active Jobs';
+
+  @override
+  String get completedJobs => 'Completed Jobs';
+
+  @override
+  String get markComplete => 'Mark Complete';
+
+  @override
+  String get jobCompletedMsg => 'Job completed. Ticket closed.';
+
+  @override
+  String get couldNotStartCompletion => 'Could not start completion.';
 }
