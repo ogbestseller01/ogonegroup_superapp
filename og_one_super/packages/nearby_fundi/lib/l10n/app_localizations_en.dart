@@ -808,4 +808,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get couldNotStartCompletion => 'Could not start completion.';
+
+  @override
+  String get viewDetails => 'View Details';
 }

@@ -285,5 +285,6 @@
   "completedJobs": "Completed Jobs",
   "markComplete": "Mark Complete",
   "jobCompletedMsg": "Job completed. Ticket closed.",
-  "couldNotStartCompletion": "Could not start completion."
+  "couldNotStartCompletion": "Could not start completion.",
+  "viewDetails": "View Details"
 }

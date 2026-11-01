@@ -1,14 +1,9 @@
+// lib/providers/job_provider.dart
 import 'package:flutter/material.dart';
 
-import '../services/api_service.dart';
 import '../models/job.dart';
+import '../services/api_service.dart';
 
-/// Jobs + tickets. Tickets arrive nested inside each job, so there is one
-/// source of truth and one API call.
-///
-/// Requires these ApiService methods:
-///   getMyJobs(), markRequestAsJob(requestId),
-///   requestJobCompletion(jobId), verifyJobCompletion(jobId, otp)
 class JobProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
 
@@ -16,21 +11,30 @@ class JobProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  final Set<int> _busyJobIds = {};
-
   List<Job> get jobs => List.unmodifiable(_jobs);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   List<Job> get activeJobs => _jobs.where((j) => !j.isCompleted).toList();
   List<Job> get completedJobs => _jobs.where((j) => j.isCompleted).toList();
-
-  /// Jobs that carry a ticket (every job created by Mark as Job does).
   List<Job> get jobsWithTicket => _jobs.where((j) => j.ticket != null).toList();
 
-  bool isBusy(int jobId) => _busyJobIds.contains(jobId);
+  Job? getJobById(int id) {
+    for (final j in _jobs) {
+      if (j.id == id) return j;
+    }
+    return null;
+  }
 
-  // ── LOAD ──────────────────────────────────────────────────────────────
+  List<dynamic> _extractList(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is Map) {
+      final v = raw['data'] ?? raw['jobs'] ?? raw['results'] ?? [];
+      return v is List ? v : [];
+    }
+    return [];
+  }
+
   Future<void> loadJobs() async {
     _isLoading = true;
     _error = null;
@@ -39,11 +43,10 @@ class JobProvider extends ChangeNotifier {
     try {
       final res = await _api.getMyJobs();
       if (res.success && res.data != null) {
-        final raw = res.data;
-        final list = raw is List ? raw : (raw is Map ? (raw['data'] ?? []) : []);
-        _jobs = (list as List)
-            .whereType<Map>()
+        _jobs = _extractList(res.data)
+            .whereType()
             .map((e) => Job.fromJson(Map<String, dynamic>.from(e)))
+            .where((j) => Job.allStatuses.contains(j.status))
             .toList();
       } else {
         _error = res.message;
@@ -57,11 +60,17 @@ class JobProvider extends ChangeNotifier {
     }
   }
 
-  // ── MARK AS JOB (request accepted → in_progress + Job + Ticket) ───────
+  Future<Job?> ensureJob(int id) async {
+    final cached = getJobById(id);
+    if (cached != null) return cached;
+    await loadJobs();
+    return getJobById(id);
+  }
+
   Future<Job?> markAsJob(int requestId) async {
     _error = null;
     try {
-      final res = await _api.markRequestAsJob(requestId);
+      final res = await _api.markAsJob(requestId);
       if (res.success && res.data is Map) {
         final job = Job.fromJson(Map<String, dynamic>.from(res.data as Map));
         _jobs = [job, ..._jobs.where((j) => j.id != job.id)];
@@ -69,54 +78,46 @@ class JobProvider extends ChangeNotifier {
         return job;
       }
       _error = res.message;
+      notifyListeners();
+      return null;
     } catch (e) {
       _error = e.toString();
+      debugPrint('❌ markAsJob failed: $e');
+      notifyListeners();
+      return null;
     }
-    notifyListeners();
-    return null;
   }
 
-  // ── MARK COMPLETE (server generates the OTP) ──────────────────────────
   Future<bool> requestCompletion(int jobId) async {
-    _busyJobIds.add(jobId);
     _error = null;
-    notifyListeners();
-
     try {
-      final res = await _api.requestJobCompletion(jobId);
+      final res = await _api.requestCompletion(jobId);
       if (res.success) return true;
       _error = res.message;
+      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      return false;
-    } finally {
-      _busyJobIds.remove(jobId);
       notifyListeners();
+      return false;
     }
   }
 
-  // ── ENTER OTP → job + ticket completed ────────────────────────────────
-  Future<bool> verifyCompletion(int jobId, String otp) async {
-    _busyJobIds.add(jobId);
+  Future<bool> verifyCompletion(int jobId, String code) async {
     _error = null;
-    notifyListeners();
-
     try {
-      final res = await _api.verifyJobCompletion(jobId, otp);
-      if (res.success && res.data is Map) {
-        final updated = Job.fromJson(Map<String, dynamic>.from(res.data as Map));
-        _jobs = _jobs.map((j) => j.id == updated.id ? updated : j).toList();
+      final res = await _api.verifyCompletion(jobId, code);
+      if (res.success) {
+        await loadJobs();
         return true;
       }
       _error = res.message;
+      notifyListeners();
       return false;
     } catch (e) {
       _error = e.toString();
-      return false;
-    } finally {
-      _busyJobIds.remove(jobId);
       notifyListeners();
+      return false;
     }
   }
 

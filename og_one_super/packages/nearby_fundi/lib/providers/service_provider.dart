@@ -1,4 +1,4 @@
-// providers/service_provider.dart
+// lib/providers/service_provider.dart
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/service.dart';
@@ -40,22 +40,21 @@ class ServiceProvider extends ChangeNotifier {
   List<Service> searchServices(String query) {
     if (query.isEmpty) return localizedServices;
     final lowerQuery = query.toLowerCase().trim();
-    return localizedServices.where((service) =>
-        service.matchesSearch(lowerQuery, _currentLocale)
-    ).toList();
+    return localizedServices
+        .where((s) => s.matchesSearch(lowerQuery, _currentLocale))
+        .toList();
   }
 
   List<ServiceCategory> searchCategories(String query) {
     if (query.isEmpty) return _allCategories;
     final lowerQuery = query.toLowerCase().trim();
-    return _allCategories.where((category) =>
-        category.matchesSearch(lowerQuery, _currentLocale)
-    ).toList();
+    return _allCategories
+        .where((c) => c.matchesSearch(lowerQuery, _currentLocale))
+        .toList();
   }
 
   Future<void> fetchServices({String locale = 'en'}) async {
     _currentLocale = locale;
-
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -66,9 +65,7 @@ class ServiceProvider extends ChangeNotifier {
 
       final allCats = <ServiceCategory>{};
       for (var service in _services) {
-        if (service.categories != null) {
-          allCats.addAll(service.categories!);
-        }
+        if (service.categories != null) allCats.addAll(service.categories!);
       }
       _allCategories = allCats.toList();
     } else {

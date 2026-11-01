@@ -808,4 +808,7 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get couldNotStartCompletion => 'Imeshindwa kuanza kukamilisha.';
+
+  @override
+  String get viewDetails => 'Angalia Maelezo';
 }

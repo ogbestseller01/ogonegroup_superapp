@@ -1,15 +1,14 @@
-// screens/requests/my_requests_screen.dart
+// lib/screens/requests/my_requests_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/request.dart';
-import '../../providers/request_provider.dart';
-import '../../config/app_theme.dart';
 import '../../config/app_routes.dart';
-import '../../utils/home_tabs.dart';
-import '../../widgets/confirmation_dialog.dart';
-import '../../widgets/mark_as_job_flow.dart';
+import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/request.dart';
+import '../../providers/job_provider.dart';
+import '../../providers/request_provider.dart';
+import '../../widgets/confirmation_dialog.dart';
 
 String formatDateFull(DateTime date) {
   final l = date.toLocal();
@@ -25,7 +24,7 @@ class MyRequestsScreen extends StatefulWidget {
 }
 
 class _MyRequestsScreenState extends State<MyRequestsScreen> {
-  String? _statusFilter; // null = all
+  String? _statusFilter;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -33,7 +32,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RequestProvider>().loadMyRequests();
+      if (mounted) context.read<RequestProvider>().loadMyRequests();
     });
   }
 
@@ -43,22 +42,14 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     super.dispose();
   }
 
-  // ── Helpers ─────────────────────────────────────────────────────────────
-  /// pending, accepted, in progress, then rejected / cancelled
+  // ── Helpers ───────────────────────────────────────────────────────────
   int _statusPriority(String status) {
     switch (status) {
-      case ServiceRequest.pendingStatus:
-        return 0;
-      case ServiceRequest.acceptedStatus:
-        return 1;
-      case ServiceRequest.inProgressStatus:
-        return 2;
-      case ServiceRequest.rejectedStatus:
-        return 3;
-      case ServiceRequest.cancelledStatus:
-        return 4;
-      default:
-        return 5;
+      case ServiceRequest.pendingStatus:   return 0;
+      case ServiceRequest.acceptedStatus:  return 1;
+      case ServiceRequest.rejectedStatus:  return 2;
+      case ServiceRequest.cancelledStatus: return 3;
+      default:                             return 4;
     }
   }
 
@@ -70,6 +61,16 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     return 'Just now';
   }
 
+  void _handleBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      navigator.pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+    }
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────
   Future<void> _confirmCancel(ServiceRequest r) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<RequestProvider>();
@@ -92,7 +93,47 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     }
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────
+  Future<void> _markAsJob(ServiceRequest r) async {
+    final confirmed = await showConfirmationDialog(
+      context,
+      'Mark as job',
+      'Start this job with ${r.technicianName}? A ticket will be created.',
+    );
+    if (confirmed != true || !mounted) return;
+
+    final jobs = context.read<JobProvider>();
+    final requests = context.read<RequestProvider>();
+
+    final job = await jobs.markAsJob(r.id);
+    if (!mounted) return;
+
+    if (job == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(jobs.error ?? 'Could not create the job.')),
+      );
+      return;
+    }
+
+    await requests.loadMyRequests();
+    if (!mounted) return;
+    Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: job.id);
+  }
+
+  void _openChat(ServiceRequest r) {
+    if (r.technicianUserId == 0) return;
+    Navigator.pushNamed(
+      context,
+      AppRoutes.chatScreen,
+      arguments: r.technicianUserId,
+    );
+  }
+
+  void _openJob(ServiceRequest r) {
+    if (r.jobId == null) return;
+    Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: r.jobId);
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RequestProvider>();
@@ -130,7 +171,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
+          onPressed: _handleBack,
         ),
         actions: [
           IconButton(
@@ -142,7 +183,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       ),
       body: Column(
         children: [
-          // ── Search ──
+          // Search
           Padding(
             padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 12),
             child: Container(
@@ -165,8 +206,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   hintText: 'Filter by fundi or service...',
                   hintStyle: TextStyle(
                       color: theme.hintColor.withOpacity(0.7), fontSize: 14),
-                  prefixIcon:
-                  Icon(Icons.search_rounded, color: theme.hintColor, size: 22),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      color: theme.hintColor, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                     icon: Icon(Icons.close_rounded,
@@ -184,7 +225,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             ),
           ),
 
-          // ── Status chips ──
+          // Status chips
           SizedBox(
             height: 42,
             child: ListView(
@@ -194,7 +235,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 _filterChip(null, 'All'),
                 _filterChip(ServiceRequest.pendingStatus, 'Pending'),
                 _filterChip(ServiceRequest.acceptedStatus, 'Accepted'),
-                _filterChip(ServiceRequest.inProgressStatus, 'In progress'),
                 _filterChip(ServiceRequest.rejectedStatus, 'Rejected'),
                 _filterChip(ServiceRequest.cancelledStatus, 'Cancelled'),
               ],
@@ -203,7 +243,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
           const SizedBox(height: 14),
 
-          // ── Stats ──
+          // Stats
           if (provider.requests.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: hPad),
@@ -215,22 +255,25 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.hourglass_empty_rounded,
-                          '${provider.pendingCount}', 'Pending', AppTheme.warning)),
+                          '${provider.pendingCount}', 'Pending',
+                          AppTheme.warning)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.check_circle_outline_rounded,
-                          '${provider.acceptedCount}', 'Accepted', AppTheme.success)),
+                          '${provider.acceptedCount}', 'Accepted',
+                          AppTheme.success)),
                   const SizedBox(width: 10),
                   Expanded(
-                      child: _statCard(Icons.engineering_rounded,
-                          '${provider.inProgressCount}', 'In progress', AppTheme.accent)),
+                      child: _statCard(Icons.cancel_outlined,
+                          '${provider.closedCount}', 'Closed',
+                          AppTheme.error)),
                 ],
               ),
             ),
 
           const SizedBox(height: 8),
 
-          // ── List ──
+          // List
           Expanded(
             child: RefreshIndicator(
               onRefresh: provider.loadMyRequests,
@@ -243,7 +286,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
-  // ── Filter chip ─────────────────────────────────────────────────────────
   Widget _filterChip(String? value, String label) {
     final selected = _statusFilter == value;
     return Padding(
@@ -282,7 +324,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
-  // ── Stat card ───────────────────────────────────────────────────────────
   Widget _statCard(IconData icon, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -328,7 +369,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
-  // ── List ────────────────────────────────────────────────────────────────
   Widget _buildList(
       RequestProvider provider,
       List<ServiceRequest> filtered,
@@ -343,15 +383,19 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
     if (provider.requests.isEmpty) {
       return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           const SizedBox(height: 120),
           Icon(Icons.inbox_outlined,
               size: 72, color: theme.hintColor.withOpacity(0.35)),
           const SizedBox(height: 16),
           Center(
-            child: Text(l10n.noRequestsYet,
-                style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.hintColor, fontWeight: FontWeight.w600)),
+            child: Text(
+              provider.error ?? l10n.noRequestsYet,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.hintColor, fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(height: 6),
           Center(
@@ -365,6 +409,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
     if (filtered.isEmpty) {
       return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           const SizedBox(height: 100),
           Icon(Icons.filter_alt_off_rounded,
@@ -379,12 +424,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       );
     }
 
-    final open = filtered
-        .where((r) => r.isPending || r.isAccepted || r.isInProgress)
-        .toList();
-    final closed = filtered.where((r) => r.isRejected || r.isCancelled).toList();
+    // Open = pending or accepted. Closed = cancelled or rejected.
+    final open = filtered.where((r) => !r.isClosed).toList();
+    final closed = filtered.where((r) => r.isClosed).toList();
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 28),
       children: [
         if (open.isNotEmpty) ...[
@@ -431,7 +476,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
-  // ── Request card ────────────────────────────────────────────────────────
   Widget _requestCard(ServiceRequest r, RequestProvider provider) {
     final statusColor = r.statusColor;
     final statusBg = statusColor.withOpacity(0.12);
@@ -445,57 +489,52 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12),
     );
 
-    // Second row of buttons: Cancel (pending) · Track · View Job · Details
-    final secondary = <Widget>[
+    // Action buttons, laid out in a wrapping row so four never overflow.
+    final actions = <Widget>[
       if (r.canBeCancelled)
-        Expanded(
-          child: OutlinedButton(
-            onPressed: cancelling ? null : () => _confirmCancel(r),
-            style: outlined(AppTheme.error),
-            child: cancelling
-                ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-                : const Text('Cancel',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ),
-      if (r.isAccepted || r.isInProgress)
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => Navigator.pushNamed(
-              context,
-              AppRoutes.tracking,
-              arguments: r.id,
-            ),
-            style: outlined(AppTheme.primary),
-            child: const Text('Track',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ),
-      if (r.isInProgress)
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () => homeTabRequest.value = HomeTabs.jobs,
-            style: outlined(AppTheme.accent),
-            child: const Text('View Job',
-                style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ),
-      Expanded(
-        child: OutlinedButton(
-          onPressed: () => showDialog(
-            context: context,
-            barrierDismissible: true,
-            builder: (_) => _RequestDetailModal(request: r),
-          ),
-          style: outlined(AppTheme.primary),
-          child: const Text('Details',
+        OutlinedButton(
+          onPressed: cancelling ? null : () => _confirmCancel(r),
+          style: outlined(AppTheme.error),
+          child: cancelling
+              ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : const Text('Cancel',
               style: TextStyle(fontWeight: FontWeight.w600)),
         ),
-      ),
+      if (r.canBeMarkedAsJob)
+        ElevatedButton.icon(
+          onPressed: () => _markAsJob(r),
+          icon: const Icon(Icons.work_outline_rounded, size: 16),
+          label: const Text('Mark as Job',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.accent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      if (r.hasJob)
+        OutlinedButton.icon(
+          onPressed: () => _openJob(r),
+          icon: const Icon(Icons.work_outline_rounded, size: 16),
+          label: const Text('View Job',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          style: outlined(AppTheme.accent),
+        ),
+      if (r.technicianUserId != 0)
+        OutlinedButton.icon(
+          onPressed: () => _openChat(r),
+          icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+          label: const Text('Chat',
+              style: TextStyle(fontWeight: FontWeight.w600)),
+          style: outlined(AppTheme.primary),
+        ),
     ];
 
     return Container(
@@ -540,7 +579,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1E293B)),
                       ),
-                      if (r.categoryName != null && r.categoryName!.isNotEmpty)
+                      if (r.categoryName != null &&
+                          r.categoryName!.isNotEmpty)
                         Text(
                           r.categoryName!,
                           style: const TextStyle(
@@ -603,8 +643,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   Expanded(
                     child: Text(
                       r.technicianArea!,
-                      style:
-                      TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.grey.shade700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -617,7 +657,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
@@ -640,74 +681,35 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 const SizedBox(width: 5),
                 Text(
                   _formatAgo(r.createdAt),
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                  style:
+                  TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                 ),
               ],
             ),
 
-            // Accepted → next step hint
-            if (r.canMarkAsJob) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppTheme.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.lock_rounded,
-                        size: 14, color: AppTheme.success),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Accepted — it can no longer be cancelled. '
-                            'Mark it as a job to start the work.',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.success),
-                      ),
-                    ),
-                  ],
-                ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: actions,
               ),
             ],
 
-            const SizedBox(height: 14),
-
-            // PRIMARY: Mark as Job (accepted only)
-            if (r.canMarkAsJob) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => startMarkAsJobFlow(context, r),
-                  icon: const Icon(Icons.engineering_rounded, size: 18),
-                  label: const Text('Mark as Job',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                  ),
+            // Details button on its own row
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => showDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (_) => _RequestDetailModal(request: r),
                 ),
+                style: outlined(AppTheme.primary),
+                child: const Text('Details',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
               ),
-              const SizedBox(height: 10),
-            ],
-
-            // Secondary buttons
-            Row(
-              children: [
-                for (var i = 0; i < secondary.length; i++) ...[
-                  if (i != 0) const SizedBox(width: 10),
-                  secondary[i],
-                ],
-              ],
             ),
           ],
         ),
@@ -756,8 +758,8 @@ class _RequestDetailModal extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text('Request Details',
-                      style:
-                      TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+                      style: TextStyle(
+                          fontSize: 19, fontWeight: FontWeight.w700)),
                 ),
                 IconButton(
                   icon: Icon(Icons.close_rounded, color: theme.hintColor),
@@ -766,7 +768,7 @@ class _RequestDetailModal extends StatelessWidget {
               ],
             ),
             const Divider(height: 22),
-            Expanded(
+            Flexible(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -803,8 +805,8 @@ class _RequestDetailModal extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(request.description,
-                              style:
-                              const TextStyle(fontSize: 14, height: 1.5)),
+                              style: const TextStyle(
+                                  fontSize: 14, height: 1.5)),
                         ],
                       ),
                     ),

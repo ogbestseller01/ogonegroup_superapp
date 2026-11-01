@@ -15,7 +15,6 @@ String _formatDateTime(DateTime? d) {
 }
 
 /// Tickets are created automatically with each job and complete with it.
-/// Opened from the drawer.
 class TicketsScreen extends StatefulWidget {
   const TicketsScreen({super.key});
 
@@ -28,7 +27,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<JobProvider>().loadJobs();
+      if (mounted) context.read<JobProvider>().loadJobs();
     });
   }
 
@@ -64,34 +63,38 @@ class _TicketsScreenState extends State<TicketsScreen> {
         onRefresh: provider.loadJobs,
         color: AppTheme.primary,
         child: provider.isLoading && provider.jobs.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+            ? const Center(
+            child: CircularProgressIndicator(color: AppTheme.primary))
             : items.isEmpty
-                ? ListView(
-                    children: [
-                      const SizedBox(height: 120),
-                      Icon(Icons.confirmation_number_outlined,
-                          size: 72, color: theme.hintColor.withOpacity(0.35)),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Text('No tickets yet',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.hintColor,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                      const SizedBox(height: 6),
-                      Center(
-                        child: Text('A ticket is created when you mark a request as a job.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(color: theme.hintColor)),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 28),
-                    itemCount: items.length,
-                    itemBuilder: (_, i) => _ticketCard(items[i]),
-                  ),
+            ? ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            const SizedBox(height: 120),
+            Icon(Icons.confirmation_number_outlined,
+                size: 72, color: theme.hintColor.withOpacity(0.35)),
+            const SizedBox(height: 16),
+            Center(
+              child: Text('No tickets yet',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.hintColor,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 6),
+            Center(
+              child: Text(
+                  'A ticket is created when you mark a request as a job.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor)),
+            ),
+          ],
+        )
+            : ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 28),
+          itemCount: items.length,
+          itemBuilder: (_, i) => _ticketCard(items[i]),
+        ),
       ),
     );
   }
@@ -99,6 +102,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
   Widget _ticketCard(Job job) {
     final t = job.ticket!;
     final color = Job.statusColorFor(t.status);
+    final fundi = t.technicianName ?? job.technicianName;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -131,13 +135,22 @@ class _TicketsScreenState extends State<TicketsScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(t.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E293B))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1E293B))),
+                    if (t.ticketNumber.isNotEmpty)
+                      Text(t.ticketNumber,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600)),
+                  ],
+                ),
               ),
               const SizedBox(width: 8),
               StatusTicker(
@@ -160,20 +173,35 @@ class _TicketsScreenState extends State<TicketsScreen> {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontSize: 13.5, color: Colors.grey.shade700, height: 1.4)),
+                      fontSize: 13.5,
+                      color: Colors.grey.shade700,
+                      height: 1.4)),
             ),
           ],
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.handyman_rounded, size: 14, color: Colors.grey.shade500),
+              Icon(Icons.handyman_rounded,
+                  size: 14, color: Colors.grey.shade500),
               const SizedBox(width: 5),
               Expanded(
-                child: Text('${job.technicianName} • ${job.jobNumber}',
+                child: Text('Fundi: $fundi • ${job.jobNumber}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    style:
+                    TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
               ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(Icons.schedule_rounded,
+                  size: 14, color: Colors.grey.shade500),
+              const SizedBox(width: 5),
+              Text('Created ${_formatDateTime(t.createdAt)}',
+                  style:
+                  TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
             ],
           ),
           if (t.isCompleted) ...[
@@ -184,7 +212,8 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     size: 14, color: AppTheme.success),
                 const SizedBox(width: 5),
                 Text('Completed ${_formatDateTime(t.completedAt)}',
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
+                    style:
+                    TextStyle(fontSize: 12.5, color: Colors.grey.shade600)),
               ],
             ),
           ],

@@ -350,9 +350,11 @@ class ApiService {
 
   // ═══════════════════════════════════════════════════════════════════════
   //  REQUESTS (Booking) - V4
-  //  statuses: pending | accepted | cancelled | rejected
+  //  requests.status: pending | accepted | cancelled | rejected
   //  pending -> accepted / rejected (fundi), pending -> cancelled (customer)
   //  accepted / cancelled / rejected are locked
+  //  A request that became a job carries a nested `job` object
+  //  (job.status: pending | on-progress | completed).
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> createRequest({
@@ -399,7 +401,10 @@ class ApiService {
       _get('/v4/requests/$requestId/tracking');
 
   // ─────────────────────────────────────────────────────────────────────
-  //  JOBS (converted from accepted requests)
+  //  JOBS (created from accepted requests)
+  //  jobs.status: pending | on-progress | completed
+  //  Mark Complete  -> server SMSes a 6-digit code to the customer
+  //  Verify         -> job + ticket completed
   // ─────────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> getMyJobs() => _get('/v4/jobs');
@@ -412,6 +417,12 @@ class ApiService {
 
   Future<ApiResponse> verifyJobCompletion(int jobId, String otp) =>
       _post('/v4/jobs/$jobId/verify-completion', data: {'otp': otp});
+
+  // ── Aliases (so JobProvider can keep calling the shorter names) ──
+  Future<ApiResponse> markAsJob(int requestId) => markRequestAsJob(requestId);
+  Future<ApiResponse> requestCompletion(int jobId) => requestJobCompletion(jobId);
+  Future<ApiResponse> verifyCompletion(int jobId, String code) =>
+      verifyJobCompletion(jobId, code);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)

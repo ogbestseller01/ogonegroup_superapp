@@ -1,3 +1,4 @@
+// lib/providers/request_provider.dart
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -15,22 +16,19 @@ class RequestProvider extends ChangeNotifier {
   final Set<int> _pendingCancelIds = {};
   final Set<int> _pendingActionIds = {};
 
-  // ── GETTERS ───────────────────────────────────────────────────────────
   List<ServiceRequest> get requests => List.unmodifiable(_requests);
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   String? get error => _error;
 
-  // ── COUNTS ────────────────────────────────────────────────────────────
+  // ── COUNTS ──
   int get totalCount => _requests.length;
   int get pendingCount => _requests.where((r) => r.isPending).length;
   int get acceptedCount => _requests.where((r) => r.isAccepted).length;
-  int get inProgressCount => _requests.where((r) => r.isInProgress).length;
+  int get closedCount => _requests.where((r) => r.isClosed).length;
 
-  // ── RULES ─────────────────────────────────────────────────────────────
-  /// A PENDING request to this fundi blocks sending another one.
   bool hasActiveRequest(int technicianId) =>
-      _requests.any((r) => r.technicianId == technicianId && r.isActive);
+      _requests.any((r) => r.technicianId == technicianId && r.isPending);
 
   ServiceRequest? getRequestById(int id) {
     for (final r in _requests) {
@@ -42,7 +40,7 @@ class RequestProvider extends ChangeNotifier {
   bool isCancelling(int requestId) => _pendingCancelIds.contains(requestId);
   bool isActing(int requestId) => _pendingActionIds.contains(requestId);
 
-  // ── LOAD ──────────────────────────────────────────────────────────────
+  // ── LOAD ──
   Future<void> loadMyRequests() async {
     _isLoading = true;
     _error = null;
@@ -65,6 +63,7 @@ class RequestProvider extends ChangeNotifier {
         _requests = list
             .whereType<Map>()
             .map((e) => ServiceRequest.fromJson(Map<String, dynamic>.from(e)))
+            .where((r) => ServiceRequest.allStatuses.contains(r.status))
             .toList();
       } else {
         _error = res.message;
@@ -78,8 +77,7 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ── CREATE ────────────────────────────────────────────────────────────
-  // The server notifies the fundi by in-app/push + SMS + email.
+  // ── CREATE ──
   Future<bool> createRequest({
     required int technicianId,
     required int serviceId,
@@ -119,7 +117,6 @@ class RequestProvider extends ChangeNotifier {
       return false;
     } catch (e) {
       _error = e.toString();
-      debugPrint('❌ Error creating request: $e');
       return false;
     } finally {
       _isSubmitting = false;
@@ -127,7 +124,7 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ── CANCEL (customer, pending only) ───────────────────────────────────
+  // ── CANCEL (pending only) ──
   Future<bool> cancelRequest(int id) async {
     final request = getRequestById(id);
 
@@ -138,9 +135,8 @@ class RequestProvider extends ChangeNotifier {
     }
 
     if (!request.canBeCancelled) {
-      _error = request.isAccepted || request.isInProgress
-          ? 'An accepted request can no longer be cancelled.'
-          : 'This request is already ${request.statusLabel.toLowerCase()}.';
+      _error = 'Only pending requests can be cancelled. '
+          'This request is already ${request.statusLabel.toLowerCase()}.';
       notifyListeners();
       return false;
     }
@@ -161,7 +157,6 @@ class RequestProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = e.toString();
-      debugPrint('❌ Error cancelling request: $e');
       return false;
     } finally {
       _pendingCancelIds.remove(id);
@@ -169,7 +164,7 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ── FUNDI: ACCEPT / REJECT (pending only) ─────────────────────────────
+  // ── ACCEPT / REJECT (fundi side, pending only) ──
   Future<bool> acceptRequest(int id) =>
       _answer(id, ServiceRequest.acceptedStatus);
 

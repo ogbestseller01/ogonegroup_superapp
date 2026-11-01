@@ -1684,6 +1684,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not start completion.'**
   String get couldNotStartCompletion;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

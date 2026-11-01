@@ -285,5 +285,6 @@
   "completedJobs": "Kazi Zilizokamilika",
   "markComplete": "Weka Imekamilika",
   "jobCompletedMsg": "Kazi imekamilika. Tiketi imefungwa.",
-  "couldNotStartCompletion": "Imeshindwa kuanza kukamilisha."
+  "couldNotStartCompletion": "Imeshindwa kuanza kukamilisha.",
+  "viewDetails": "Angalia Maelezo"
 }
