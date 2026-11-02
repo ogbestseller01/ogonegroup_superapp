@@ -7,7 +7,8 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 import '../../providers/job_provider.dart';
-import '../payments/payment_channel_modal.dart';
+// TODO(payments): re-add this import when the Pay button is enabled again.
+// import '../payments/payment_channel_modal.dart';
 import 'confirm_completion_modal.dart';
 import 'confirm_completion_prompt_modal.dart';
 import 'job_review_sheet.dart';
@@ -363,11 +364,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
             // ── Actions: in progress ─────────────────────────────────
             if (job.isOnProgress) ...[
+              // Pay button is faded + disabled for now (payments come later).
+              // TODO(payments): enable with
+              //   onPressed: () => PaymentChannelModal.show(context, job),
+              // and switch the style back to _btnStyle(AppTheme.primary).
               ElevatedButton.icon(
-                onPressed: () => PaymentChannelModal.show(context, job),
+                onPressed: null,
                 icon: const Icon(Icons.payment_rounded),
                 label: Text(l10n.payForJob),
-                style: _btnStyle(AppTheme.primary),
+                style: _btnStyle(AppTheme.primary).copyWith(
+                  backgroundColor: WidgetStatePropertyAll(
+                    AppTheme.primary.withValues(alpha: 0.30),
+                  ),
+                  foregroundColor: const WidgetStatePropertyAll(Colors.white70),
+                  iconColor: const WidgetStatePropertyAll(Colors.white70),
+                ),
               ),
               const SizedBox(height: 10),
               ElevatedButton.icon(

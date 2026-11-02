@@ -4,18 +4,43 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 
 class ConfirmCompletionPromptModal extends StatelessWidget {
-  const ConfirmCompletionPromptModal({super.key});
+  const ConfirmCompletionPromptModal._({
+    required this.title,
+    required this.body,
+    required this.cancelLabel,
+    required this.confirmLabel,
+  });
 
+  final String title;
+  final String body;
+  final String cancelLabel;
+  final String confirmLabel;
+
+  /// Opens the dialog.
+  ///
+  /// Localizations are resolved here, from the CALLER's context (which sits
+  /// under MaterialApp/Localizations), and passed into the dialog as plain
+  /// strings. The dialog itself never calls AppLocalizations.of(context), so
+  /// it can never throw "Null check operator used on a null value" — even if
+  /// the dialog route's context cannot see the Localizations ancestor.
   static Future<bool?> show(BuildContext context) {
+    // `of` may return null if the delegate isn't visible — we don't use `!`.
+    final l10n = AppLocalizations.of(context);
+
     return showDialog<bool>(
       context: context,
-      builder: (_) => const ConfirmCompletionPromptModal(),
+      builder: (_) => ConfirmCompletionPromptModal._(
+        title: l10n?.confirmCompletionTitle ?? 'Confirm Completion',
+        body: l10n?.confirmCompletionBody ??
+            'Would you like to send the 6-digit verification code via SMS to complete this job?',
+        cancelLabel: l10n?.cancel ?? 'Cancel',
+        confirmLabel: l10n?.sendSmsCode ?? 'Send SMS Code',
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return AlertDialog(
@@ -29,13 +54,16 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
               color: AppTheme.success.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.verified_user_rounded,
-                color: AppTheme.success, size: 24),
+            child: const Icon(
+              Icons.verified_user_rounded,
+              color: AppTheme.success,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              l10n.confirmCompletionTitle,
+              title,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -46,7 +74,7 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
         ],
       ),
       content: Text(
-        l10n.confirmCompletionBody,
+        body,
         style: TextStyle(
           fontSize: 14,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -60,23 +88,28 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             side: BorderSide(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+            ),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          child: Text(l10n.cancel),
+          child: Text(cancelLabel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.success,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+              borderRadius: BorderRadius.circular(12),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
-          child: Text(l10n.sendSmsCode,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            confirmLabel,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );

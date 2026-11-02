@@ -57,6 +57,8 @@ class Job {
   final String technicianName;
   final String? technicianArea;
   final int technicianUserId;
+  final String? technicianPhone;
+  final String? technicianEmail;
 
   final String status;
   final DateTime? startedAt;
@@ -74,6 +76,8 @@ class Job {
     required this.technicianName,
     this.technicianArea,
     required this.technicianUserId,
+    this.technicianPhone,
+    this.technicianEmail,
     required this.status,
     this.startedAt,
     this.completedAt,
@@ -89,6 +93,10 @@ class Job {
   /// Customer can leave a review only once the job is completed (one per job).
   bool get canReview => isCompleted && review == null;
   bool get hasReview => review != null;
+
+  bool get hasTechnicianContact =>
+      (technicianPhone != null && technicianPhone!.isNotEmpty) ||
+          (technicianEmail != null && technicianEmail!.isNotEmpty);
 
   String get statusLabel => statusLabelFor(status);
   Color get statusColor => statusColorFor(status);
@@ -146,6 +154,11 @@ class Job {
     return result == null || result.isEmpty ? fallback : result;
   }
 
+  static String? _nullableString(dynamic value) {
+    final result = value?.toString().trim();
+    return (result == null || result.isEmpty) ? null : result;
+  }
+
   static DateTime? _date(dynamic value) {
     if (value == null) return null;
     return DateTime.tryParse(value.toString());
@@ -192,6 +205,10 @@ class Job {
       technicianName: technicianName,
       technicianArea: (tech?['area'] ?? json['technician_area'])?.toString(),
       technicianUserId: _int(tech?['user_id'] ?? json['technician_user_id']),
+      technicianPhone: _nullableString(
+          tech?['phone'] ?? techUser?['phone'] ?? json['technician_phone']),
+      technicianEmail: _nullableString(
+          tech?['email'] ?? techUser?['email'] ?? json['technician_email']),
       status: _string(json['status'], pendingStatus),
       startedAt: _date(json['started_at']),
       completedAt: _date(json['completed_at']),
@@ -209,6 +226,8 @@ class Job {
     'technician_name': technicianName,
     'technician_area': technicianArea,
     'technician_user_id': technicianUserId,
+    'technician_phone': technicianPhone,
+    'technician_email': technicianEmail,
     'status': status,
     'started_at': startedAt?.toIso8601String(),
     'completed_at': completedAt?.toIso8601String(),
@@ -231,6 +250,8 @@ class Job {
       technicianName: technicianName,
       technicianArea: technicianArea,
       technicianUserId: technicianUserId,
+      technicianPhone: technicianPhone,
+      technicianEmail: technicianEmail,
       status: status ?? this.status,
       startedAt: startedAt,
       completedAt: completedAt ?? this.completedAt,

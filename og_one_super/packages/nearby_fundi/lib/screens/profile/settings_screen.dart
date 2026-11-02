@@ -68,16 +68,52 @@ class SettingsScreen extends StatelessWidget {
             ),
             const Divider(),
 
-            // ─── Language Toggle ────────────────────────────────────────
-            _LanguageToggle(
-              currentLocale: settings.locale,
-              onChanged: (val) async {
-                if (val != null) {
-                  await settings.updateLocale(val);
-                  await auth.updateLocale(val);
-                  await serviceProvider.fetchServices(locale: val);
-                }
-              },
+            // ─── Language Selector Dropdown on Right (Warning Fixed) ─────
+            ListTile(
+              title: Text(
+                'Language',
+                style: theme.textTheme.titleMedium,
+              ),
+              trailing: Material(
+                color: Colors.transparent,
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: settings.locale,
+                    icon: const Icon(Icons.arrow_drop_down_rounded),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'en',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FlagIcon(emoji: '🇬🇧', height: 16),
+                            SizedBox(width: 8),
+                            Text('English'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'sw',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FlagIcon(emoji: '🇹🇿', height: 16),
+                            SizedBox(width: 8),
+                            Text('Kiswahili'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (val) async {
+                      if (val != null) {
+                        await settings.updateLocale(val);
+                        await auth.updateLocale(val);
+                        await serviceProvider.fetchServices(locale: val);
+                      }
+                    },
+                  ),
+                ),
+              ),
             ),
             const Divider(),
 
@@ -206,66 +242,6 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// ─── Language Toggle Widgets ──────────────────────────────────────────
-class _LanguageToggle extends StatelessWidget {
-  final String currentLocale;
-  final ValueChanged<String?> onChanged;
-
-  const _LanguageToggle({
-    required this.currentLocale,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isEnglish = currentLocale == 'en';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            'Language',
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.dividerColor.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _SegmentOption(
-                  isSelected: isEnglish,
-                  onTap: () => onChanged('en'),
-                  leading: const FlagIcon(emoji: '🇬🇧', height: 16),
-                  label: 'English',
-                ),
-              ),
-              Expanded(
-                child: _SegmentOption(
-                  isSelected: !isEnglish,
-                  onTap: () => onChanged('sw'),
-                  leading: const FlagIcon(emoji: '🇹🇿', height: 16),
-                  label: 'Kiswahili',
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ─── Theme Toggle Widgets ──────────────────────────────────────────────
 class _ThemeToggle extends StatelessWidget {
   final ThemeMode currentThemeMode;
@@ -334,9 +310,6 @@ class _ThemeToggle extends StatelessWidget {
 }
 
 // ─── Shared Segment Option ────────────────────────────────────────────
-/// A reusable, overflow-safe segment used by both the language and
-/// theme toggles. Shows a leading icon (or flag) + optional checkmark
-/// + label, all constrained with Flexible to prevent overflow.
 class _SegmentOption extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
@@ -383,7 +356,6 @@ class _SegmentOption extends StatelessWidget {
               ),
               const SizedBox(width: 4),
             ],
-            // Leading icon/flag — fades in color when not selected
             Opacity(
               opacity: isSelected ? 1.0 : 0.6,
               child: IconTheme(
@@ -395,7 +367,6 @@ class _SegmentOption extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            // Label — Flexible + ellipsis prevents the overflow you saw
             Flexible(
               child: Text(
                 label,

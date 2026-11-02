@@ -1,5 +1,6 @@
 // lib/screens/jobs/jobs_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
@@ -26,6 +27,11 @@ class JobsScreen extends StatefulWidget {
 class _JobsScreenState extends State<JobsScreen> {
   bool _initialLoadDone = false;
 
+  // ── Filter state ──────────────────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String? _statusFilter; // null = All
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +40,15 @@ class _JobsScreenState extends State<JobsScreen> {
       await context.read<JobProvider>().loadJobs();
       if (mounted) setState(() => _initialLoadDone = true);
     });
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _handleBack() {
@@ -51,8 +66,6 @@ class _JobsScreenState extends State<JobsScreen> {
     Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: job.id);
   }
 
-  /// Opens the review sheet, then re-fetches this job so the card
-  /// swaps "Rate this job" for the submitted stars + remark.
   Future<void> _rate(Job job) async {
     final submitted = await showJobReviewSheet(context, job);
     if (submitted == true && mounted) {
@@ -61,6 +74,151 @@ class _JobsScreenState extends State<JobsScreen> {
   }
 
   Future<void> _refresh() => context.read<JobProvider>().loadJobs(silent: true);
+
+  // ─────────────────────────────────────────────────────────────
+  // Filtering helpers
+  // ─────────────────────────────────────────────────────────────
+  bool _matchesFilter(Job job) {
+    if (_searchQuery.isNotEmpty) {
+      final name = job.serviceName.toLowerCase();
+      final tech = job.technicianName.toLowerCase();
+      final desc = job.description.toLowerCase();
+      final match = name.contains(_searchQuery) ||
+          tech.contains(_searchQuery) ||
+          desc.contains(_searchQuery);
+      if (!match) return false;
+    }
+    if (_statusFilter != null && job.status != _statusFilter) {
+      return false;
+    }
+    return true;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Contact Fundi dialog
+  // ─────────────────────────────────────────────────────────────
+  void _showContactDialog(Job job, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final phone = job.technicianPhone;
+    final email = job.technicianEmail;
+    final hasPhone = phone != null && phone.isNotEmpty;
+    final hasEmail = email != null && email.isNotEmpty;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.contact_phone_rounded, color: AppTheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${l10n.contact} ${job.technicianName}', // localized "Contact"
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!hasPhone && !hasEmail)
+              Text(
+                l10n.noContactDetails, // Added new key
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                ),
+              ),
+            if (hasPhone)
+              _contactRow(
+                icon: Icons.phone_rounded,
+                label: l10n.phone,
+                value: phone,
+                theme: theme,
+                l10n: l10n,
+              ),
+            if (hasPhone && hasEmail) const SizedBox(height: 12),
+            if (hasEmail)
+              _contactRow(
+                icon: Icons.email_rounded,
+                label: l10n.email,
+                value: email,
+                theme: theme,
+                l10n: l10n,
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.closeAction),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required ThemeData theme,
+    required AppLocalizations l10n,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppTheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                SelectableText(
+                  value,
+                  style: const TextStyle(
+                      fontSize: 14.5, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            tooltip: l10n.copy,
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: value));
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label ${l10n.copy}'), // localized "copied"
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,13 +300,98 @@ class _JobsScreenState extends State<JobsScreen> {
       );
     }
 
-    final active = provider.activeJobs;
-    final done = provider.completedJobs;
+    // ── Counts (from full list, not filtered) ─────────────────
+    final allJobs = provider.jobs;
+    final total = allJobs.length;
+    final pendingCount = allJobs.where((j) => j.isPending).length;
+    final inProgressCount = allJobs.where((j) => j.isOnProgress).length;
+
+    // ── Filtered list ────────────────────────────────────────
+    final filtered = allJobs.where(_matchesFilter).toList();
+    final active = filtered.where((j) => !j.isCompleted).toList();
+    final done = filtered.where((j) => j.isCompleted).toList();
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 28),
       children: [
+        // ── Search bar ────────────────────────────────────────
+        _searchBar(theme, l10n),
+        const SizedBox(height: 14),
+
+        // ── Status chips ──────────────────────────────────────
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _chip(null, l10n.allLabel),
+              const SizedBox(width: 8),
+              _chip(Job.pendingStatus, l10n.statusPending),
+              const SizedBox(width: 8),
+              _chip(Job.onProgressStatus, l10n.statusInProgress), // New key
+              const SizedBox(width: 8),
+              _chip(Job.completedStatus, l10n.statusCompleted), // New key
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Stats cards ───────────────────────────────────────
+        Row(
+          children: [
+            Expanded(
+              child: _statCard(
+                icon: Icons.list_alt_rounded,
+                iconColor: AppTheme.primary,
+                value: total,
+                label: l10n.statTotal,
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _statCard(
+                icon: Icons.hourglass_empty_rounded,
+                iconColor: Colors.blueGrey.shade600,
+                value: pendingCount,
+                label: l10n.statusPending,
+                theme: theme,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _statCard(
+                icon: Icons.check_circle_outline_rounded,
+                iconColor: Colors.green.shade700,
+                value: inProgressCount,
+                label: l10n.statusInProgress, // Replaced hardcoded 'In Progress'
+                theme: theme,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+
+        // ── Empty filter state ────────────────────────────────
+        if (filtered.isEmpty) ...[
+          const SizedBox(height: 40),
+          Icon(Icons.filter_alt_off_rounded,
+              size: 56,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              l10n.noJobsMatchFilter, // New key
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+
+        // ── Lists ─────────────────────────────────────────────
         if (active.isNotEmpty) ...[
           _sectionTitle(l10n.activeJobs, active.length, theme),
           const SizedBox(height: 10),
@@ -161,6 +404,136 @@ class _JobsScreenState extends State<JobsScreen> {
           ...done.map((j) => _jobCard(j, l10n, theme)),
         ],
       ],
+    );
+  }
+
+  // ── Search bar ────────────────────────────────────────────
+  Widget _searchBar(ThemeData theme, AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: l10n.filterByFundiOrService, // Using existing key
+          hintStyle: TextStyle(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(Icons.search_rounded,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+            icon: const Icon(Icons.close_rounded, size: 18),
+            onPressed: () => _searchController.clear(),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding:
+          const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        ),
+        style: TextStyle(
+          fontSize: 14,
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
+    );
+  }
+
+  // ── Status chip ───────────────────────────────────────────
+  Widget _chip(String? key, String label) {
+    final selected = _statusFilter == key;
+    return GestureDetector(
+      onTap: () => setState(() => _statusFilter = key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: selected
+                ? AppTheme.primary
+                : AppTheme.primary.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppTheme.primary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Stat card ─────────────────────────────────────────────
+  Widget _statCard({
+    required IconData icon,
+    required Color iconColor,
+    required int value,
+    required String label,
+    required ThemeData theme,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -222,7 +595,6 @@ class _JobsScreenState extends State<JobsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Title + status ─────────────────────────────────
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -242,7 +614,6 @@ class _JobsScreenState extends State<JobsScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // ── Fundi ──────────────────────────────────────────
                 Row(
                   children: [
                     Icon(Icons.handyman_rounded, size: 16, color: softColor),
@@ -281,7 +652,6 @@ class _JobsScreenState extends State<JobsScreen> {
                   ),
                 ],
 
-                // ── Description ────────────────────────────────────
                 if (job.description.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -305,7 +675,6 @@ class _JobsScreenState extends State<JobsScreen> {
                   ),
                 ],
 
-                // ── Dates ──────────────────────────────────────────
                 if (job.startedAt != null || job.isCompleted) ...[
                   const SizedBox(height: 12),
                   Wrap(
@@ -343,7 +712,6 @@ class _JobsScreenState extends State<JobsScreen> {
                   ),
                 ],
 
-                // ── Review row (completed jobs only) ───────────────
                 if (job.isCompleted) ...[
                   const SizedBox(height: 12),
                   if (job.review != null)
@@ -368,9 +736,9 @@ class _JobsScreenState extends State<JobsScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _rate(job),
                         icon: const Icon(Icons.star_rounded, size: 18),
-                        label: const Text(
-                          'Rate this job',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                        label: Text(
+                          l10n.rateThisJob, // Added new key
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.amber.shade800,
@@ -383,7 +751,6 @@ class _JobsScreenState extends State<JobsScreen> {
                     ),
                 ],
 
-                // ── Actions ────────────────────────────────────────
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -428,6 +795,27 @@ class _JobsScreenState extends State<JobsScreen> {
                       ),
                     ],
                   ],
+                ),
+
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showContactDialog(job, l10n),
+                    icon: const Icon(Icons.contact_phone_rounded, size: 18),
+                    label: Text(
+                      l10n.contactFundi, // Added new key
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      side: BorderSide(
+                          color: AppTheme.primary.withValues(alpha: 0.4)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -25,7 +25,6 @@ import 'blogs_screen.dart';
 
 import '../requests/my_requests_screen.dart';
 import '../jobs/jobs_screen.dart';
-import '../tickets/tickets_screen.dart';
 import '../profile/profile_screen.dart';
 import '../chat/chat_list_screen.dart';
 
@@ -44,21 +43,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Real screens:
-  // 0 Nearby, 1 Blog, 2 Requests, 3 Jobs, 4 Profile
   int _currentIndex = 0;
   String _currentLocale = 'en';
 
   static const double _tabletBreakpoint = 700;
   static const double _desktopBreakpoint = 1100;
 
-  /// Tabs that draw their own AppBar and their own pull-to-refresh.
   static const Set<int> _selfContainedTabs = {2, 3};
-
-  /// Every menu tab except Home needs an account.
   static const Set<int> _guardedTabs = {1, 2, 3, 4};
-
-  /// Tabs that call private APIs (not built for guests).
   static const Set<int> _privateTabs = {2, 3, 4};
 
   // ================================================================
@@ -75,10 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final settings = context.read<SettingsProvider>();
       _currentLocale = settings.locale;
 
-      // Public data: always load.
       context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
 
-      // Private data: only when logged in.
       if (AuthGuard.isLoggedIn(context)) {
         _loadNotifications();
         _initializeChat();
@@ -86,8 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /// Guests get an empty placeholder for private tabs so those screens
-  /// never run API calls without a token.
   List<Widget> _buildScreens(bool loggedIn) {
     Widget tab(int index, Widget child) =>
         (!loggedIn && _privateTabs.contains(index))
@@ -135,27 +123,27 @@ class _HomeScreenState extends State<HomeScreen> {
   // TAB SELECTION (with login check)
   // ================================================================
 
-  String _tabMessage(int index) {
+  String _tabMessage(int index, AppLocalizations l10n) {
     switch (index) {
       case 1:
-        return 'Sign in or create an account to read our blog and tips.';
+        return l10n.signInToReadBlog;
       case 2:
-        return 'Sign in or create an account to send and track '
-            'your service requests.';
+        return l10n.signInToRequests;
       case 3:
-        return 'Sign in or create an account to view and manage your jobs.';
+        return l10n.signInToJobs;
       case 4:
-        return 'Sign in or create an account to see and edit your profile.';
+        return l10n.signInToProfile;
       default:
-        return 'Please sign in or create an account to continue.';
+        return l10n.signInToContinue;
     }
   }
 
   void _selectTab(int index) {
     if (_currentIndex == index) return;
 
+    final l10n = AppLocalizations.of(context)!;
     if (_guardedTabs.contains(index) &&
-        !AuthGuard.ensure(context, message: _tabMessage(index))) {
+        !AuthGuard.ensure(context, message: _tabMessage(index, l10n))) {
       return;
     }
 
@@ -168,9 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
 
   void _openTickets() {
+    final l10n = AppLocalizations.of(context)!;
     if (!AuthGuard.ensure(
       context,
-      message: 'Sign in or create an account to view your tickets.',
+      message: l10n.signInToTickets,
     )) {
       return;
     }
@@ -244,9 +233,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
 
   void _onRefreshTap() {
+    final l10n = AppLocalizations.of(context)!;
     if (!AuthGuard.ensure(
       context,
-      message: 'Sign in or create an account to refresh your data.',
+      message: l10n.signInToRefresh,
     )) {
       return;
     }
@@ -330,15 +320,15 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
 
   void _showNotifications(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (!AuthGuard.ensure(
       context,
-      message: 'Sign in or create an account to see your notifications.',
+      message: l10n.signInToNotifications,
     )) {
       return;
     }
 
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
     final ink = _ink(theme);
 
     showModalBottomSheet(
@@ -402,8 +392,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const SizedBox(height: 2),
                                   Text(
                                     unread > 0
-                                        ? '$unread unread notification${unread == 1 ? '' : 's'}'
-                                        : 'You are all caught up',
+                                        ? '$unread ${l10n.unreadNotifications}'
+                                        : l10n.caughtUp,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: unread > 0
                                           ? _gold
@@ -497,11 +487,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleNotificationNavigation(Map<String, dynamic> notification) {
     final type = notification['type']?.toString() ?? '';
+    final l10n = AppLocalizations.of(context)!;
 
     if (type == 'chat_message') {
       if (!AuthGuard.ensure(
         context,
-        message: 'Sign in or create an account to chat with fundis.',
+        message: l10n.signInToChat,
       )) {
         return;
       }
@@ -517,29 +508,27 @@ class _HomeScreenState extends State<HomeScreen> {
     if (type == 'new_request' ||
         type == 'request_accepted' ||
         type == 'request_rejected') {
-      _selectTab(2); // Requests
+      _selectTab(2);
       return;
     }
 
-    // Future job-related notifications can land here
     if (type.contains('job')) {
-      _selectTab(3); // Jobs
+      _selectTab(3);
     }
   }
 
   // ================================================================
-  // DRAWER – Redesigned to match the Fund App UI
+  // DRAWER
   // ================================================================
 
   Widget _buildDrawer(ThemeData theme, AppLocalizations l10n) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final drawerWidth = screenWidth < 400 ? screenWidth * 0.85 : 340.0;
 
-    // Watch AuthProvider for user info
     final user = context.watch<AuthProvider>().user;
 
-    final name = user?.name ?? 'Guest User';
-    final phone = user?.phone ?? 'Not logged in';
+    final name = user?.name ?? l10n.guestUser;
+    final phone = user?.phone ?? l10n.notLoggedIn;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
 
     return Drawer(
@@ -574,7 +563,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Avatar
                       Container(
                         padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
@@ -594,7 +582,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      // Close button
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close_rounded, color: Colors.white),
@@ -606,7 +593,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Name
                   Text(
                     name,
                     maxLines: 1,
@@ -618,7 +604,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Phone
                   Text(
                     phone,
                     style: GoogleFonts.nunito(
@@ -637,17 +622,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
                   _ModernDrawerItem(
-                    icon: Icons.collections_bookmark_outlined,
-                    label: 'Portfolio',
-                    ink: _ink(theme),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _selectTab(4); // Go to Profile which typically has portfolio
-                    },
-                  ),
-                  _ModernDrawerItem(
                     icon: Icons.confirmation_number_outlined,
-                    label: 'Tickets',
+                    label: l10n.tickets,
                     ink: _ink(theme),
                     onTap: () {
                       Navigator.pop(context);
@@ -656,9 +632,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _ModernDrawerItem(
                     icon: Icons.payments_outlined,
-                    label: 'Payments',
+                    label: l10n.payments,
                     ink: _ink(theme),
-                    soonLabel: 'coming soon!',
+                    soonLabel: l10n.comingSoon,
                     onTap: () {
                       Navigator.pop(context);
                       _showComingSoon(l10n.payments);
@@ -918,7 +894,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // BOTTOM NAVIGATION – Home, Blog, Requests, Jobs, Profile
+  // BOTTOM NAVIGATION
   // ================================================================
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
@@ -1000,7 +976,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==================================================================
-// MODERN DRAWER ITEM (Matches Screenshot)
+// MODERN DRAWER ITEM
 // ==================================================================
 
 class _ModernDrawerItem extends StatelessWidget {
@@ -1023,7 +999,6 @@ class _ModernDrawerItem extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Soft background fill for the icon
     final iconBg = isDark
         ? Colors.white.withValues(alpha: 0.1)
         : const Color(0xFFF1F5F9);
@@ -1035,7 +1010,6 @@ class _ModernDrawerItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         child: Row(
           children: [
-            // Icon Container
             Container(
               width: 52,
               height: 52,
@@ -1046,8 +1020,6 @@ class _ModernDrawerItem extends StatelessWidget {
               child: Icon(icon, color: ink, size: 24),
             ),
             const SizedBox(width: 16),
-
-            // Label
             Expanded(
               child: Text(
                 label,
@@ -1058,8 +1030,6 @@ class _ModernDrawerItem extends StatelessWidget {
                 ),
               ),
             ),
-
-            // "coming soon" pill
             if (soonLabel != null)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1120,30 +1090,6 @@ class _BarButton extends StatelessWidget {
 }
 
 // ==================================================================
-// CHAT ICON
-// ==================================================================
-
-class _ChatIcon extends StatelessWidget {
-  final int unread;
-  final bool active;
-
-  const _ChatIcon({required this.unread, required this.active});
-
-  @override
-  Widget build(BuildContext context) {
-    return Badge(
-      isLabelVisible: unread > 0,
-      backgroundColor: AppTheme.error,
-      label: Text(unread > 99 ? '99+' : (unread > 9 ? '9+' : '$unread')),
-      child: Icon(
-        active ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
-        color: active ? _gold : null,
-      ),
-    );
-  }
-}
-
-// ==================================================================
 // EMPTY NOTIFICATIONS
 // ==================================================================
 
@@ -1155,6 +1101,7 @@ class _EmptyNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final ink = _ink(theme);
 
     return Center(
@@ -1185,7 +1132,7 @@ class _EmptyNotifications extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'We will notify you when there is something new.',
+              l10n.notifyWhenNew,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.hintColor,
@@ -1214,18 +1161,18 @@ class _NotificationTile extends StatelessWidget {
     required this.locale,
   });
 
-  String _getTypeLabel(String? type) {
+  String _getTypeLabel(String? type, AppLocalizations l10n) {
     switch (type) {
       case 'chat_message':
-        return 'Chat';
+        return l10n.chatLabel;
       case 'new_request':
-        return 'New Request';
+        return l10n.newRequestLabel;
       case 'request_accepted':
-        return 'Request Accepted';
+        return l10n.requestAcceptedLabel;
       case 'request_rejected':
-        return 'Request Rejected';
+        return l10n.requestRejectedLabel;
       default:
-        return 'Notification';
+        return l10n.notificationLabel;
     }
   }
 
@@ -1301,13 +1248,14 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final ink = _ink(theme);
     final isReadValue = notification['is_read'];
     final isRead =
         isReadValue == true || isReadValue == 1 || isReadValue == '1';
 
-    final title = notification['title']?.toString() ?? 'Notification';
+    final title = notification['title']?.toString() ?? l10n.notificationLabel;
     final body = notification['body']?.toString() ?? '';
     final type = notification['type']?.toString() ?? '';
     final relativeTime = _getRelativeTime(notification['created_at']);
@@ -1403,7 +1351,7 @@ class _NotificationTile extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              _getTypeLabel(type),
+                              _getTypeLabel(type, l10n),
                               style: GoogleFonts.nunito(
                                 color: iconColor,
                                 fontSize: 11.5,

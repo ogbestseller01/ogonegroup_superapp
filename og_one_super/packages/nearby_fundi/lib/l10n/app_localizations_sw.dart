@@ -117,12 +117,12 @@ class AppLocalizationsSw extends AppLocalizations {
   String get retry => 'Jaribu Tena';
 
   @override
-  String noResultsFor(Object service) {
+  String noResultsFor(String service) {
     return 'Hakuna Mafundi kwa $service';
   }
 
   @override
-  String noResultsForServiceCategory(Object category, Object service) {
+  String noResultsForServiceCategory(String service, String category) {
     return 'Hakuna Mafundi kwa $service ($category)';
   }
 
@@ -214,7 +214,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get welcomeBack => 'Karibu Tena';
 
   @override
-  String get signInToContinue => 'Ingia ili kuendelea';
+  String get signInToContinue => 'Tafadhali ingia au unda akaunti ili kuendelea.';
 
   @override
   String get signInManage => 'Ingia ili kusimamia huduma zako';
@@ -751,18 +751,18 @@ class AppLocalizationsSw extends AppLocalizations {
   String get pleaseEnterLocation => 'Tafadhali ingiza mahali';
 
   @override
-  String get searchServiceHint => 'Tafuta huduma (mfano. mabomba, umeme...)';
+  String get searchServiceHint => 'Tafuta huduma (mfano mabomba, umeme...)';
 
   @override
-  String noFundisForService(Object service) {
+  String noFundisForService(String service) {
     return 'Hakuna mafundi kwa $service';
   }
 
   @override
-  String get refreshed => 'Imefresha';
+  String get refreshed => 'Imesasishwa kwa mafanikio';
 
   @override
-  String get refreshFailed => 'Kufresha kumeshindwa';
+  String get refreshFailed => 'Imeshindwa kusasisha data';
 
   @override
   String get pullToRefresh => 'Buruta ili kufresha';
@@ -811,6 +811,24 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get viewDetails => 'Angalia Maelezo';
+
+  @override
+  String get statusInProgress => 'Inaendelea';
+
+  @override
+  String get statusCompleted => 'Imekamilika';
+
+  @override
+  String get noJobsMatchFilter => 'Hakuna kazi zinazolingana na kichujio chako';
+
+  @override
+  String get noContactDetails => 'Hakuna maelezo ya mawasiliano yaliyopatikana kwa fundi huyu.';
+
+  @override
+  String get rateThisJob => 'Kadiria kazi hii';
+
+  @override
+  String get contactFundi => 'Wasiliana na Fundi';
 
   @override
   String get noTicketsYet => 'Hakuna tiketi bado';
@@ -894,7 +912,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get resendCode => 'Tuma tena msimbo';
 
   @override
-  String resendIn(Object seconds) {
+  String resendIn(int seconds) {
     return 'Tuma tena baada ya sekunde $seconds';
   }
 
@@ -1016,4 +1034,58 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get closeAction => 'Funga';
+
+  @override
+  String get signInToReadBlog => 'Ingia au unda akaunti ili kusoma blogu na vidokezo vyetu.';
+
+  @override
+  String get signInToRequests => 'Ingia au unda akaunti ili kutuma na kufuatilia maombi yako ya huduma.';
+
+  @override
+  String get signInToJobs => 'Ingia au unda akaunti ili kuona na kusimamia kazi zako.';
+
+  @override
+  String get signInToProfile => 'Ingia au unda akaunti ili kuona na kuhariri profaili yako.';
+
+  @override
+  String get signInToTickets => 'Ingia au unda akaunti ili kuona tiketi zako.';
+
+  @override
+  String get signInToChat => 'Ingia au unda akaunti ili kuzungumza na mafundi.';
+
+  @override
+  String get signInToNotifications => 'Ingia au unda akaunti ili kuona arifa zako.';
+
+  @override
+  String get signInToRefresh => 'Ingia au unda akaunti ili kusasisha data yako.';
+
+  @override
+  String get guestUser => 'Mtumiaji Mgeni';
+
+  @override
+  String get notLoggedIn => 'Hujaingia';
+
+  @override
+  String get caughtUp => 'Umeshafika mwisho';
+
+  @override
+  String get notifyWhenNew => 'Tutakujulisha kukiwa na kitu kipya.';
+
+  @override
+  String get chatLabel => 'Mazungumzo';
+
+  @override
+  String get newRequestLabel => 'Ombi Jipya';
+
+  @override
+  String get requestAcceptedLabel => 'Ombi Limekubaliwa';
+
+  @override
+  String get requestRejectedLabel => 'Ombi Limekataliwa';
+
+  @override
+  String get notificationLabel => 'Arifa';
+
+  @override
+  String get unreadNotifications => 'arifa ambazo hazijasomwa';
 }

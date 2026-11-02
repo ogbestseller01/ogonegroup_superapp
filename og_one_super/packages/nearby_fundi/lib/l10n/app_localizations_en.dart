@@ -117,12 +117,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
-  String noResultsFor(Object service) {
+  String noResultsFor(String service) {
     return 'No Fundis for $service';
   }
 
   @override
-  String noResultsForServiceCategory(Object category, Object service) {
+  String noResultsForServiceCategory(String service, String category) {
     return 'No Fundis for $service ($category)';
   }
 
@@ -214,7 +214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeBack => 'Welcome Back';
 
   @override
-  String get signInToContinue => 'Sign in to continue';
+  String get signInToContinue => 'Please sign in or create an account to continue.';
 
   @override
   String get signInManage => 'Sign in to manage your services';
@@ -754,15 +754,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchServiceHint => 'Search for services (e.g. plumbing, electrician...)';
 
   @override
-  String noFundisForService(Object service) {
+  String noFundisForService(String service) {
     return 'No fundis for $service';
   }
 
   @override
-  String get refreshed => 'Refreshed';
+  String get refreshed => 'Refreshed successfully';
 
   @override
-  String get refreshFailed => 'Refresh failed';
+  String get refreshFailed => 'Failed to refresh data';
 
   @override
   String get pullToRefresh => 'Pull to refresh';
@@ -811,6 +811,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewDetails => 'View Details';
+
+  @override
+  String get statusInProgress => 'In progress';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get noJobsMatchFilter => 'No jobs match your filters';
+
+  @override
+  String get noContactDetails => 'No contact details available for this fundi.';
+
+  @override
+  String get rateThisJob => 'Rate this job';
+
+  @override
+  String get contactFundi => 'Contact Fundi';
 
   @override
   String get noTicketsYet => 'No tickets yet';
@@ -894,7 +912,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resendCode => 'Resend code';
 
   @override
-  String resendIn(Object seconds) {
+  String resendIn(int seconds) {
     return 'Resend in ${seconds}s';
   }
 
@@ -1016,4 +1034,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeAction => 'Close';
+
+  @override
+  String get signInToReadBlog => 'Sign in or create an account to read our blog and tips.';
+
+  @override
+  String get signInToRequests => 'Sign in or create an account to send and track your service requests.';
+
+  @override
+  String get signInToJobs => 'Sign in or create an account to view and manage your jobs.';
+
+  @override
+  String get signInToProfile => 'Sign in or create an account to see and edit your profile.';
+
+  @override
+  String get signInToTickets => 'Sign in or create an account to view your tickets.';
+
+  @override
+  String get signInToChat => 'Sign in or create an account to chat with fundis.';
+
+  @override
+  String get signInToNotifications => 'Sign in or create an account to see your notifications.';
+
+  @override
+  String get signInToRefresh => 'Sign in or create an account to refresh your data.';
+
+  @override
+  String get guestUser => 'Guest User';
+
+  @override
+  String get notLoggedIn => 'Not logged in';
+
+  @override
+  String get caughtUp => 'You are all caught up';
+
+  @override
+  String get notifyWhenNew => 'We will notify you when there is something new.';
+
+  @override
+  String get chatLabel => 'Chat';
+
+  @override
+  String get newRequestLabel => 'New Request';
+
+  @override
+  String get requestAcceptedLabel => 'Request Accepted';
+
+  @override
+  String get requestRejectedLabel => 'Request Rejected';
+
+  @override
+  String get notificationLabel => 'Notification';
+
+  @override
+  String get unreadNotifications => 'unread notifications';
 }

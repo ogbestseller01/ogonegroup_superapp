@@ -39,6 +39,8 @@ class JobProvider extends ChangeNotifier {
   }
 
   /// [silent] = refresh in the background, no spinner and no error banner.
+  /// Jobs are created automatically on the server when a request is accepted,
+  /// so loadJobs() is how they appear in the app.
   Future<void> loadJobs({bool silent = false}) async {
     if (!silent) {
       _isLoading = true;
@@ -92,27 +94,6 @@ class JobProvider extends ChangeNotifier {
     if (cached != null) return cached;
     await loadJobs();
     return getJobById(id);
-  }
-
-  Future<Job?> markAsJob(int requestId) async {
-    _error = null;
-    try {
-      final res = await _api.markAsJob(requestId);
-      if (res.success && res.data is Map) {
-        final job = Job.fromJson(Map<String, dynamic>.from(res.data as Map));
-        _jobs = [job, ..._jobs.where((j) => j.id != job.id)];
-        notifyListeners();
-        return job;
-      }
-      _error = res.message;
-      notifyListeners();
-      return null;
-    } catch (e) {
-      _error = e.toString();
-      debugPrint('❌ markAsJob failed: $e');
-      notifyListeners();
-      return null;
-    }
   }
 
   Future<bool> requestCompletion(int jobId) async {

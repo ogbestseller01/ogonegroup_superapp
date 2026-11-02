@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/request.dart';
-import '../../providers/job_provider.dart';
 import '../../providers/request_provider.dart';
 import '../../widgets/confirmation_dialog.dart';
 
@@ -44,16 +43,20 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   // ── Helpers ───────────────────────────────────────────────────────────
   int _statusPriority(String status) {
     switch (status) {
-      case ServiceRequest.pendingStatus:   return 0;
-      case ServiceRequest.acceptedStatus:  return 1;
-      case ServiceRequest.rejectedStatus:  return 2;
-      case ServiceRequest.cancelledStatus: return 3;
-      default:                             return 4;
+      case ServiceRequest.pendingStatus:
+        return 0;
+      case ServiceRequest.acceptedStatus:
+        return 1;
+      case ServiceRequest.rejectedStatus:
+        return 2;
+      case ServiceRequest.cancelledStatus:
+        return 3;
+      default:
+        return 4;
     }
   }
 
-  String _formatAgo(DateTime date) {
-    final l10n = AppLocalizations.of(context)!;
+  String _formatAgo(DateTime date, AppLocalizations l10n) {
     final diff = DateTime.now().difference(date);
     if (diff.inDays > 0) return l10n.timeAgoDays(diff.inDays);
     if (diff.inHours > 0) return l10n.timeAgoHours(diff.inHours);
@@ -68,6 +71,15 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     } else {
       navigator.pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
     }
+  }
+
+  void _showDetails(ServiceRequest r, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      useRootNavigator: false,
+      barrierDismissible: true,
+      builder: (_) => _RequestDetailModal(request: r, l10n: l10n),
+    );
   }
 
   // ── Actions ───────────────────────────────────────────────────────────
@@ -93,33 +105,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     }
   }
 
-  Future<void> _markAsJob(ServiceRequest r) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showConfirmationDialog(
-      context,
-      l10n.markAsJob,
-      l10n.markAsJobConfirm(r.technicianName),
-    );
-    if (confirmed != true || !mounted) return;
-
-    final jobs = context.read<JobProvider>();
-    final requests = context.read<RequestProvider>();
-
-    final job = await jobs.markAsJob(r.id);
-    if (!mounted) return;
-
-    if (job == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jobs.error ?? l10n.couldNotCreateJob)),
-      );
-      return;
-    }
-
-    await requests.loadMyRequests();
-    if (!mounted) return;
-    Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: job.id);
-  }
-
   void _openChat(ServiceRequest r) {
     if (r.technicianUserId == 0) return;
     Navigator.pushNamed(
@@ -129,9 +114,11 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
+  /// The job is created automatically when the fundi accepts.
   void _openJob(ServiceRequest r) {
-    if (r.jobId == null) return;
-    Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: r.jobId);
+    final jobId = r.jobId;
+    if (jobId == null) return;
+    Navigator.pushNamed(context, AppRoutes.jobDetail, arguments: jobId);
   }
 
   // ── Build ─────────────────────────────────────────────────────────────
@@ -195,7 +182,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.shadow.withOpacity(0.04),
+                    color: colors.shadow.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -206,8 +193,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 onChanged: (v) => setState(() => _searchQuery = v.trim()),
                 decoration: InputDecoration(
                   hintText: l10n.filterByFundiOrService,
-                  hintStyle: TextStyle(
-                      color: colors.onSurfaceVariant, fontSize: 14),
+                  hintStyle:
+                  TextStyle(color: colors.onSurfaceVariant, fontSize: 14),
                   prefixIcon: Icon(Icons.search_rounded,
                       color: colors.onSurfaceVariant, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -245,7 +232,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
           const SizedBox(height: 14),
 
-          // Stats
+          // Stats (Closed card removed — only 3 cards now)
           if (provider.requests.isNotEmpty)
             Padding(
               padding: EdgeInsets.symmetric(horizontal: hPad),
@@ -253,7 +240,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 children: [
                   Expanded(
                       child: _statCard(Icons.list_alt_rounded,
-                          '${provider.totalCount}', l10n.statTotal, colors.onSurfaceVariant)),
+                          '${provider.totalCount}', l10n.statTotal,
+                          colors.onSurfaceVariant)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.hourglass_empty_rounded,
@@ -264,11 +252,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                       child: _statCard(Icons.check_circle_outline_rounded,
                           '${provider.acceptedCount}', l10n.statusAccepted,
                           colors.primary)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: _statCard(Icons.cancel_outlined,
-                          '${provider.closedCount}', l10n.statClosed,
-                          colors.error)),
                 ],
               ),
             ),
@@ -307,7 +290,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             boxShadow: selected
                 ? [
               BoxShadow(
-                color: colors.primary.withOpacity(0.25),
+                color: colors.primary.withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               )
@@ -328,8 +311,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   Widget _statCard(IconData icon, String value, String label, Color color) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
@@ -337,7 +319,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withOpacity(0.04),
+            color: colors.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -348,7 +330,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 18, color: color),
@@ -392,7 +374,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         children: [
           const SizedBox(height: 120),
           Icon(Icons.inbox_outlined,
-              size: 72, color: colors.onSurfaceVariant.withOpacity(0.35)),
+              size: 72, color: colors.onSurfaceVariant.withValues(alpha: 0.35)),
           const SizedBox(height: 16),
           Center(
             child: Text(
@@ -418,7 +400,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         children: [
           const SizedBox(height: 100),
           Icon(Icons.filter_alt_off_rounded,
-              size: 56, color: colors.onSurfaceVariant.withOpacity(0.45)),
+              size: 56, color: colors.onSurfaceVariant.withValues(alpha: 0.45)),
           const SizedBox(height: 14),
           Center(
             child: Text(l10n.noRequestsMatchFilter,
@@ -439,13 +421,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         if (open.isNotEmpty) ...[
           _sectionTitle(l10n.sectionActiveRequests, open.length),
           const SizedBox(height: 10),
-          ...open.map((r) => _requestCard(r, provider)),
+          ...open.map((r) => _requestCard(r, provider, l10n)),
         ],
         if (closed.isNotEmpty) ...[
           if (open.isNotEmpty) const SizedBox(height: 8),
           _sectionTitle(l10n.sectionClosedRequests, closed.length),
           const SizedBox(height: 10),
-          ...closed.map((r) => _requestCard(r, provider)),
+          ...closed.map((r) => _requestCard(r, provider, l10n)),
         ],
       ],
     );
@@ -466,7 +448,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: colors.primary.withOpacity(0.12),
+            color: colors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -481,19 +463,19 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     );
   }
 
-  Widget _requestCard(ServiceRequest r, RequestProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+  Widget _requestCard(
+      ServiceRequest r, RequestProvider provider, AppLocalizations l10n) {
+    final colors = Theme.of(context).colorScheme;
     final statusColor = r.statusColor;
-    final statusBg = statusColor.withOpacity(0.12);
+    final statusBg = statusColor.withValues(alpha: 0.12);
     final cancelling = provider.isCancelling(r.id);
+    final category = r.categoryName;
+    final area = r.technicianArea;
 
     ButtonStyle outlined(Color c) => OutlinedButton.styleFrom(
       foregroundColor: c,
-      side: BorderSide(color: c.withOpacity(0.45)),
-      shape:
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      side: BorderSide(color: c.withValues(alpha: 0.45)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       padding: const EdgeInsets.symmetric(vertical: 12),
     );
 
@@ -511,21 +493,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               : Text(l10n.cancelAction,
               style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
-      if (r.canBeMarkedAsJob)
-        ElevatedButton.icon(
-          onPressed: () => _markAsJob(r),
-          icon: const Icon(Icons.work_outline_rounded, size: 16),
-          label: Text(l10n.markAsJob,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colors.primary,
-            foregroundColor: colors.onPrimary,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
+      // The job is created automatically when the request is accepted.
       if (r.hasJob)
         OutlinedButton.icon(
           onPressed: () => _openJob(r),
@@ -551,7 +519,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: colors.shadow.withOpacity(0.05),
+            color: colors.shadow.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -585,10 +553,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                             fontWeight: FontWeight.w700,
                             color: colors.onSurface),
                       ),
-                      if (r.categoryName != null &&
-                          r.categoryName!.isNotEmpty)
+                      if (category != null && category.isNotEmpty)
                         Text(
-                          r.categoryName!,
+                          category,
                           style: TextStyle(
                               fontSize: 12.5,
                               color: colors.primary,
@@ -638,7 +605,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               ],
             ),
 
-            if (r.technicianArea != null && r.technicianArea!.isNotEmpty) ...[
+            if (area != null && area.isNotEmpty) ...[
               const SizedBox(height: 6),
               Row(
                 children: [
@@ -647,7 +614,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      r.technicianArea!,
+                      area,
                       style: TextStyle(
                           fontSize: 13, color: colors.onSurfaceVariant),
                       maxLines: 1,
@@ -661,8 +628,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: colors.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
@@ -685,9 +651,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                     size: 14, color: colors.onSurfaceVariant),
                 const SizedBox(width: 5),
                 Text(
-                  _formatAgo(r.createdAt),
-                  style: TextStyle(
-                      fontSize: 12.5, color: colors.onSurfaceVariant),
+                  _formatAgo(r.createdAt, l10n),
+                  style:
+                  TextStyle(fontSize: 12.5, color: colors.onSurfaceVariant),
                 ),
               ],
             ),
@@ -705,11 +671,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () => showDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  builder: (_) => _RequestDetailModal(request: r),
-                ),
+                onPressed: () => _showDetails(r, l10n),
                 style: outlined(colors.primary),
                 child: Text(l10n.detailsAction,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -725,19 +687,19 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 // ── Detail Modal ──────────────────────────────────────────────────────────
 class _RequestDetailModal extends StatelessWidget {
   final ServiceRequest request;
-  const _RequestDetailModal({required this.request});
+  final AppLocalizations l10n;
+
+  const _RequestDetailModal({required this.request, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
     final statusColor = request.statusColor;
-    final statusBg = statusColor.withOpacity(0.12);
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final dialogWidth = MediaQuery.sizeOf(context).width > 480
-        ? 480.0
-        : MediaQuery.sizeOf(context).width - 40;
+    final statusBg = statusColor.withValues(alpha: 0.12);
+    final size = MediaQuery.sizeOf(context);
+    final dialogWidth = size.width > 480 ? 480.0 : size.width - 40;
+    final category = request.categoryName;
+    final area = request.technicianArea;
 
     return Dialog(
       insetPadding: const EdgeInsets.all(20),
@@ -745,7 +707,7 @@ class _RequestDetailModal extends StatelessWidget {
       backgroundColor: colors.surface,
       child: Container(
         width: dialogWidth,
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
+        constraints: BoxConstraints(maxHeight: size.height * 0.88),
         padding: const EdgeInsets.fromLTRB(22, 18, 22, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -755,7 +717,7 @@ class _RequestDetailModal extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: colors.primary.withOpacity(0.1),
+                    color: colors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.request_page_rounded,
@@ -781,10 +743,9 @@ class _RequestDetailModal extends StatelessWidget {
                   children: [
                     _infoTile(context, Icons.construction_rounded,
                         l10n.fieldService, request.serviceName),
-                    if (request.categoryName != null &&
-                        request.categoryName!.isNotEmpty)
+                    if (category != null && category.isNotEmpty)
                       _infoTile(context, Icons.category_rounded,
-                          l10n.fieldCategory, request.categoryName!),
+                          l10n.fieldCategory, category),
                     _statusTile(context, statusColor, statusBg),
                     Container(
                       width: double.infinity,
@@ -811,19 +772,18 @@ class _RequestDetailModal extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(request.description,
-                              style: const TextStyle(
-                                  fontSize: 14, height: 1.5)),
+                              style: const TextStyle(fontSize: 14, height: 1.5)),
                         ],
                       ),
                     ),
-                    _infoTile(context, Icons.handyman_rounded,
-                        l10n.fieldFundi, request.technicianName),
-                    if (request.technicianArea != null &&
-                        request.technicianArea!.isNotEmpty)
+                    _infoTile(context, Icons.handyman_rounded, l10n.fieldFundi,
+                        request.technicianName),
+                    if (area != null && area.isNotEmpty)
                       _infoTile(context, Icons.location_on_outlined,
-                          l10n.fieldArea, request.technicianArea!),
+                          l10n.fieldArea, area),
                     _infoTile(context, Icons.calendar_today_outlined,
-                        l10n.fieldRequestedOn, formatDateFull(request.createdAt)),
+                        l10n.fieldRequestedOn,
+                        formatDateFull(request.createdAt)),
                   ],
                 ),
               ),
@@ -868,7 +828,7 @@ class _RequestDetailModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colors.primary.withOpacity(0.08),
+              color: colors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 18, color: colors.primary),
@@ -896,23 +856,22 @@ class _RequestDetailModal extends StatelessWidget {
   }
 
   Widget _statusTile(BuildContext context, Color color, Color bg) {
-    final l10n = AppLocalizations.of(context)!;
     final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: bg.withOpacity(0.5),
+        color: bg.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-                color: bg, borderRadius: BorderRadius.circular(10)),
+            decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
             child: Icon(request.statusIcon, size: 18, color: color),
           ),
           const SizedBox(width: 12),

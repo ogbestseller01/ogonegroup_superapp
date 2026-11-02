@@ -1,4 +1,4 @@
-// lib/main.dart
+// /lib/main.dart
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
@@ -63,6 +63,7 @@ import 'screens/technicians/technician_detail_screen.dart';
 import 'screens/tickets/tickets_screen.dart';
 
 import 'services/api_service.dart';
+import 'services/app_security_middleware.dart'; // <-- Comprehensive Security Middleware
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
@@ -104,6 +105,18 @@ Future<void> main() async {
     return true;
   };
 
+  // ==========================================================
+  // 🛡️ COMPREHENSIVE APP SECURITY MIDDLEWARE ENFORCEMENT
+  // ==========================================================
+  try {
+    await AppSecurityMiddleware.initialize();
+  } catch (error, stack) {
+    _logError('AppSecurityMiddleware', error, stack);
+    SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+    return;
+  }
+  // ==========================================================
+
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp();
@@ -115,6 +128,7 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   try {
+    // Keeps sensitive screens hidden from system task switchers / screenshots
     await SecurityService.enableSecureScreen();
   } catch (error, stack) {
     _logError('Secure screen', error, stack);
@@ -135,7 +149,6 @@ Future<void> main() async {
 
   runApp(const MyApp());
 
-  // Initialize FCM without delaying the first frame.
   unawaited(_initializeFcm());
 }
 
@@ -214,91 +227,66 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
   switch (routeSettings.name) {
     case AppRoutes.splash:
       return route(const SplashScreen());
-
     case AppRoutes.onboarding:
       return route(const OnboardingScreen());
-
     case AppRoutes.login:
       return route(const LoginScreen());
-
     case AppRoutes.register:
       return route(const RegisterScreen());
-
     case AppRoutes.otp:
       return route(OtpVerificationScreen(email: _stringArg(args)));
-
     case AppRoutes.forgot:
       return route(const ForgotPasswordScreen());
-
     case AppRoutes.reset:
       return route(ResetPasswordScreen(email: _stringArg(args)));
-
     case AppRoutes.home:
       return route(const HomeScreen());
-
     case AppRoutes.technicianDetail:
       return route(TechnicianDetailScreen(technicianId: _intArg(args)));
-
     case AppRoutes.postDetail:
       return route(PostDetailScreen(postId: _intArg(args)));
-
     case AppRoutes.myRequests:
       return route(const MyRequestsScreen());
-
     case AppRoutes.editProfile:
       return route(const EditProfileScreen());
-
     case AppRoutes.settings:
       return route(const SettingsScreen());
-
     case AppRoutes.about:
       return route(const AboutScreen());
-
     case AppRoutes.terms:
       return route(const TermsScreen());
-
     case AppRoutes.faq:
       return route(const FaqScreen());
-
     case AppRoutes.contactUs:
       return route(const ContactUsScreen());
-
     case AppRoutes.chatList:
       return route(const ChatListScreen());
-
     case AppRoutes.chatScreen:
       if (args is ChatConversation) {
         return route(ChatScreen(conversation: args));
       }
-      // Screens pass the fundi's users.id (an int): resolve the conversation first.
       final fundiUserId = _intArg(args);
       if (fundiUserId > 0) {
         return route(_ChatLauncher(fundiUserId: fundiUserId));
       }
       return route(const ChatListScreen());
-
     case AppRoutes.jobs:
       return route(const JobsScreen());
-
     case AppRoutes.jobDetail:
       return route(JobDetailScreen(jobId: _intArg(args)));
-
     case AppRoutes.tickets:
       return route(const TicketsScreen());
-
     case AppRoutes.notifications:
       return route(const NotificationsScreen());
-
     case AppRoutes.privacyPolicy:
       return route(const PrivacyPolicyScreen());
-
     default:
       return route(const SplashScreen());
   }
 }
 
 // ============================================================
-// CHAT LAUNCHER  (fundi users.id -> conversation -> ChatScreen)
+// CHAT LAUNCHER
 // ============================================================
 
 class _ChatLauncher extends StatefulWidget {
@@ -323,7 +311,6 @@ class _ChatLauncherState extends State<_ChatLauncher> {
     if (mounted) setState(() => _error = null);
 
     try {
-      // ASSUMPTION: AuthProvider exposes the signed-in user as `user?.id`.
       final myId = int.tryParse('${context.read<AuthProvider>().user?.id}') ?? 0;
       if (myId == 0) {
         throw Exception('Please sign in again.');
@@ -338,7 +325,6 @@ class _ChatLauncherState extends State<_ChatLauncher> {
         throw Exception(res.message);
       }
 
-      // ASSUMPTION: ChatConversation.fromJson(Map<String, dynamic>) exists.
       final raw = Map<String, dynamic>.from(res.data as Map);
       final data = raw['conversation'] is Map
           ? Map<String, dynamic>.from(raw['conversation'] as Map)

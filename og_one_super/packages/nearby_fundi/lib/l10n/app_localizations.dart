@@ -315,13 +315,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'No Fundis for {service}'**
-  String noResultsFor(Object service);
+  String noResultsFor(String service);
 
   /// No description provided for @noResultsForServiceCategory.
   ///
   /// In en, this message translates to:
   /// **'No Fundis for {service} ({category})'**
-  String noResultsForServiceCategory(Object category, Object service);
+  String noResultsForServiceCategory(String service, String category);
 
   /// No description provided for @tryDifferentCategoryOrService.
   ///
@@ -500,7 +500,7 @@ abstract class AppLocalizations {
   /// No description provided for @signInToContinue.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to continue'**
+  /// **'Please sign in or create an account to continue.'**
   String get signInToContinue;
 
   /// No description provided for @signInManage.
@@ -1581,18 +1581,18 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'No fundis for {service}'**
-  String noFundisForService(Object service);
+  String noFundisForService(String service);
 
   /// No description provided for @refreshed.
   ///
   /// In en, this message translates to:
-  /// **'Refreshed'**
+  /// **'Refreshed successfully'**
   String get refreshed;
 
   /// No description provided for @refreshFailed.
   ///
   /// In en, this message translates to:
-  /// **'Refresh failed'**
+  /// **'Failed to refresh data'**
   String get refreshFailed;
 
   /// No description provided for @pullToRefresh.
@@ -1690,6 +1690,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Details'**
   String get viewDetails;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @noJobsMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs match your filters'**
+  String get noJobsMatchFilter;
+
+  /// No description provided for @noContactDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'No contact details available for this fundi.'**
+  String get noContactDetails;
+
+  /// No description provided for @rateThisJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this job'**
+  String get rateThisJob;
+
+  /// No description provided for @contactFundi.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Fundi'**
+  String get contactFundi;
 
   /// No description provided for @noTicketsYet.
   ///
@@ -1857,7 +1893,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Resend in {seconds}s'**
-  String resendIn(Object seconds);
+  String resendIn(int seconds);
 
   /// No description provided for @sending.
   ///
@@ -2080,6 +2116,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get closeAction;
+
+  /// No description provided for @signInToReadBlog.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to read our blog and tips.'**
+  String get signInToReadBlog;
+
+  /// No description provided for @signInToRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to send and track your service requests.'**
+  String get signInToRequests;
+
+  /// No description provided for @signInToJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to view and manage your jobs.'**
+  String get signInToJobs;
+
+  /// No description provided for @signInToProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to see and edit your profile.'**
+  String get signInToProfile;
+
+  /// No description provided for @signInToTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to view your tickets.'**
+  String get signInToTickets;
+
+  /// No description provided for @signInToChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to chat with fundis.'**
+  String get signInToChat;
+
+  /// No description provided for @signInToNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to see your notifications.'**
+  String get signInToNotifications;
+
+  /// No description provided for @signInToRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to refresh your data.'**
+  String get signInToRefresh;
+
+  /// No description provided for @guestUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Guest User'**
+  String get guestUser;
+
+  /// No description provided for @notLoggedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not logged in'**
+  String get notLoggedIn;
+
+  /// No description provided for @caughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'You are all caught up'**
+  String get caughtUp;
+
+  /// No description provided for @notifyWhenNew.
+  ///
+  /// In en, this message translates to:
+  /// **'We will notify you when there is something new.'**
+  String get notifyWhenNew;
+
+  /// No description provided for @chatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatLabel;
+
+  /// No description provided for @newRequestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'New Request'**
+  String get newRequestLabel;
+
+  /// No description provided for @requestAcceptedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Accepted'**
+  String get requestAcceptedLabel;
+
+  /// No description provided for @requestRejectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Rejected'**
+  String get requestRejectedLabel;
+
+  /// No description provided for @notificationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get notificationLabel;
+
+  /// No description provided for @unreadNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'unread notifications'**
+  String get unreadNotifications;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

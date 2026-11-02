@@ -1,6 +1,7 @@
 // screens/home/map_location_picker_screen.dart
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -23,6 +24,7 @@ class MapLocationPickerScreen extends StatefulWidget {
 class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   static const double _minZoom = TanzaniaMap.minZoom;
   static const double _maxZoom = TanzaniaMap.maxZoom;
+  static const double _pickZoom = 15;
 
   static const Map<String, String> _nominatimHeaders = {
     'User-Agent': 'NearbyFundi/1.0',
@@ -31,38 +33,39 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-
-  // One client for all Nominatim calls (keep-alive connection)
   final http.Client _http = http.Client();
 
-  // Map readiness (the controller must not be used before the map is built)
+  // Built exactly once. Rebuilding MapOptions on every setState makes
+  // flutter_map re-assert cameraConstraint, which throws if the live camera
+  // has drifted outside the bounding box.
+  late final MapOptions _mapOptions = _buildMapOptions();
+
   bool _mapReady = false;
   LatLng? _pendingCenter;
-  double _pendingZoom = 15;
+  double _pendingZoom = _pickZoom;
 
   LatLng? _selectedPoint;
   String? _placeName;
   bool _isReverseGeocoding = false;
   bool _isLocating = false;
 
-  // Search state
   List<dynamic> _searchResults = [];
   bool _isSearching = false;
   Timer? _debounceTimer;
   int _searchRequestId = 0;
 
-  // Reverse geocoding state
   Timer? _geocodeTimer;
   int _geocodeRequestId = 0;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialCenter != null) {
-      _selectedPoint = widget.initialCenter;
-      _scheduleReverseGeocode(_selectedPoint!, delay: Duration.zero);
+    final initial = widget.initialCenter;
+    if (initial != null &&
+        TanzaniaMap.contains(initial.latitude, initial.longitude)) {
+      _selectedPoint = initial;
+      _scheduleReverseGeocode(initial, delay: Duration.zero);
     } else {
-      // Try the current location on startup
       _getCurrentLocation(moveToLocation: true);
     }
   }
@@ -79,6 +82,30 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     _searchFocusNode.dispose();
     _mapController.dispose();
     super.dispose();
+  }
+
+  // ==============================================================
+  // MAP OPTIONS (built once)
+  // ==============================================================
+
+  MapOptions _buildMapOptions() {
+    final raw = _selectedPoint ?? TanzaniaMap.center;
+    final safeCenter = TanzaniaMap.contains(raw.latitude, raw.longitude)
+        ? raw
+        : TanzaniaMap.center;
+
+    return MapOptions(
+      initialCenter: safeCenter,
+      initialZoom: _selectedPoint != null ? _pickZoom : TanzaniaMap.defaultZoom,
+      minZoom: _minZoom,
+      maxZoom: _maxZoom,
+      cameraConstraint: TanzaniaMap.constraint,
+      onMapReady: _onMapReady,
+      onTap: _onMapTap,
+      interactionOptions: const InteractionOptions(
+        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+      ),
+    );
   }
 
   // ==============================================================
@@ -99,7 +126,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       );
   }
 
-  /// Moves the map now, or as soon as it is ready.
   void _moveMap(LatLng point, double zoom) {
     if (!mounted) return;
     if (!_mapReady) {
@@ -180,7 +206,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       });
       _scheduleReverseGeocode(point, delay: Duration.zero);
 
-      if (moveToLocation) _moveMap(point, 15);
+      if (moveToLocation) _moveMap(point, _pickZoom);
     } catch (e) {
       debugPrint('Error getting current location: $e');
       _showSnack('Could not get your location. Please try again.');
@@ -193,13 +219,12 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   // PLACE SEARCH
   // ==============================================================
 
-  /// Debounced search to keep network usage low.
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     final q = query.trim();
 
     if (q.length < 2) {
-      _searchRequestId++; // drop any in-flight response
+      _searchRequestId++;
       setState(() {
         _searchResults = [];
         _isSearching = false;
@@ -207,14 +232,13 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       return;
     }
 
-    setState(() {}); // refreshes the clear (x) button
+    setState(() {});
     _debounceTimer = Timer(
       const Duration(milliseconds: 350),
           () => _searchPlaces(q),
     );
   }
 
-  /// OpenStreetMap Nominatim, restricted to Tanzania.
   Future<void> _searchPlaces(String query) async {
     if (!mounted) return;
 
@@ -267,7 +291,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     final shortName = displayName.split(',').take(2).join(',').trim();
     final point = LatLng(lat, lon);
 
-    // Late responses must not overwrite this choice
     _debounceTimer?.cancel();
     _geocodeTimer?.cancel();
     _searchRequestId++;
@@ -283,15 +306,13 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     });
 
     _searchFocusNode.unfocus();
-    _moveMap(point, 15);
+    _moveMap(point, _pickZoom);
   }
 
   // ==============================================================
   // REVERSE GEOCODING
   // ==============================================================
 
-  /// Shows "Getting address…" at once and waits a moment before calling
-  /// Nominatim, so quick successive taps make only one request.
   void _scheduleReverseGeocode(
       LatLng point, {
         Duration delay = const Duration(milliseconds: 350),
@@ -331,7 +352,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       debugPrint('Reverse geocode error or timeout: $e');
     }
 
-    // A newer tap / search result replaced this request
     if (!mounted || requestId != _geocodeRequestId) return;
 
     final resolved =
@@ -340,7 +360,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     setState(() {
       _placeName = resolved;
       _isReverseGeocoding = false;
-      // Never overwrite what the user is typing
       if (!_searchFocusNode.hasFocus) _searchController.text = resolved;
     });
   }
@@ -429,7 +448,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      // The map must not resize / jump when the keyboard opens
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Pick location'),
@@ -446,21 +464,10 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       ),
       body: Stack(
         children: [
-          // MAP
+          // MAP — uses the cached MapOptions (built once)
           FlutterMap(
             mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _selectedPoint ?? TanzaniaMap.center,
-              initialZoom: _selectedPoint != null ? 15 : TanzaniaMap.defaultZoom,
-              minZoom: _minZoom,
-              maxZoom: _maxZoom,
-              cameraConstraint: TanzaniaMap.constraint,
-              onMapReady: _onMapReady,
-              onTap: _onMapTap,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
-            ),
+            options: _mapOptions,
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
