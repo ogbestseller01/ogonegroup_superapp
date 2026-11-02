@@ -1,6 +1,7 @@
 // lib/screens/jobs/confirm_completion_prompt_modal.dart
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 class ConfirmCompletionPromptModal extends StatelessWidget {
   const ConfirmCompletionPromptModal({super.key});
@@ -14,7 +15,11 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
     return AlertDialog(
+      backgroundColor: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
@@ -24,41 +29,54 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
               color: AppTheme.success.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.verified_user_rounded, color: AppTheme.success, size: 24),
+            child: const Icon(Icons.verified_user_rounded,
+                color: AppTheme.success, size: 24),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Text(
-              'Confirm Completion',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              l10n.confirmCompletionTitle,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ],
       ),
-      content: const Text(
-        'Would you like to send the 6-digit verification code via SMS to complete this job?',
-        style: TextStyle(fontSize: 14, color: Color(0xFF475569), height: 1.4),
+      content: Text(
+        l10n.confirmCompletionBody,
+        style: TextStyle(
+          fontSize: 14,
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          height: 1.4,
+        ),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
         OutlinedButton(
           onPressed: () => Navigator.pop(context, false),
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.grey.shade700,
-            side: BorderSide(color: Colors.grey.shade300),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            side: BorderSide(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.success,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
-          child: const Text('Send SMS Code', style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(l10n.sendSmsCode,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
         ),
       ],
     );

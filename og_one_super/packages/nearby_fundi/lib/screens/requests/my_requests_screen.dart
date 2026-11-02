@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
-import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/request.dart';
 import '../../providers/job_provider.dart';
@@ -54,11 +53,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   String _formatAgo(DateTime date) {
+    final l10n = AppLocalizations.of(context)!;
     final diff = DateTime.now().difference(date);
-    if (diff.inDays > 0) return '${diff.inDays}d ago';
-    if (diff.inHours > 0) return '${diff.inHours}h ago';
-    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-    return 'Just now';
+    if (diff.inDays > 0) return l10n.timeAgoDays(diff.inDays);
+    if (diff.inHours > 0) return l10n.timeAgoHours(diff.inHours);
+    if (diff.inMinutes > 0) return l10n.timeAgoMinutes(diff.inMinutes);
+    return l10n.timeAgoJustNow;
   }
 
   void _handleBack() {
@@ -87,17 +87,18 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       final ok = await provider.cancelRequest(r.id);
       if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.error ?? 'Could not cancel request.')),
+          SnackBar(content: Text(provider.error ?? l10n.couldNotCancelRequest)),
         );
       }
     }
   }
 
   Future<void> _markAsJob(ServiceRequest r) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showConfirmationDialog(
       context,
-      'Mark as job',
-      'Start this job with ${r.technicianName}? A ticket will be created.',
+      l10n.markAsJob,
+      l10n.markAsJobConfirm(r.technicianName),
     );
     if (confirmed != true || !mounted) return;
 
@@ -109,7 +110,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
     if (job == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(jobs.error ?? 'Could not create the job.')),
+        SnackBar(content: Text(jobs.error ?? l10n.couldNotCreateJob)),
       );
       return;
     }
@@ -139,6 +140,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     final provider = context.watch<RequestProvider>();
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final hPad = MediaQuery.of(context).size.width > 600 ? 28.0 : 16.0;
 
     final filtered = provider.requests.where((r) {
@@ -159,7 +161,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           l10n.myRequests,
@@ -167,8 +169,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
         ),
         elevation: 0,
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: _handleBack,
@@ -189,11 +191,11 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             child: Container(
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colors.surface,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: colors.shadow.withOpacity(0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -203,15 +205,15 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 controller: _searchController,
                 onChanged: (v) => setState(() => _searchQuery = v.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Filter by fundi or service...',
+                  hintText: l10n.filterByFundiOrService,
                   hintStyle: TextStyle(
-                      color: theme.hintColor.withOpacity(0.7), fontSize: 14),
+                      color: colors.onSurfaceVariant, fontSize: 14),
                   prefixIcon: Icon(Icons.search_rounded,
-                      color: theme.hintColor, size: 22),
+                      color: colors.onSurfaceVariant, size: 22),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                     icon: Icon(Icons.close_rounded,
-                        size: 18, color: theme.hintColor),
+                        size: 18, color: colors.onSurfaceVariant),
                     onPressed: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
@@ -232,11 +234,11 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.symmetric(horizontal: hPad),
               children: [
-                _filterChip(null, 'All'),
-                _filterChip(ServiceRequest.pendingStatus, 'Pending'),
-                _filterChip(ServiceRequest.acceptedStatus, 'Accepted'),
-                _filterChip(ServiceRequest.rejectedStatus, 'Rejected'),
-                _filterChip(ServiceRequest.cancelledStatus, 'Cancelled'),
+                _filterChip(null, l10n.allLabel),
+                _filterChip(ServiceRequest.pendingStatus, l10n.statusPending),
+                _filterChip(ServiceRequest.acceptedStatus, l10n.statusAccepted),
+                _filterChip(ServiceRequest.rejectedStatus, l10n.statusRejected),
+                _filterChip(ServiceRequest.cancelledStatus, l10n.statusCancelled),
               ],
             ),
           ),
@@ -251,22 +253,22 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 children: [
                   Expanded(
                       child: _statCard(Icons.list_alt_rounded,
-                          '${provider.totalCount}', 'Total', theme.hintColor)),
+                          '${provider.totalCount}', l10n.statTotal, colors.onSurfaceVariant)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.hourglass_empty_rounded,
-                          '${provider.pendingCount}', 'Pending',
-                          AppTheme.warning)),
+                          '${provider.pendingCount}', l10n.statusPending,
+                          colors.tertiary)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.check_circle_outline_rounded,
-                          '${provider.acceptedCount}', 'Accepted',
-                          AppTheme.success)),
+                          '${provider.acceptedCount}', l10n.statusAccepted,
+                          colors.primary)),
                   const SizedBox(width: 10),
                   Expanded(
                       child: _statCard(Icons.cancel_outlined,
-                          '${provider.closedCount}', 'Closed',
-                          AppTheme.error)),
+                          '${provider.closedCount}', l10n.statClosed,
+                          colors.error)),
                 ],
               ),
             ),
@@ -277,7 +279,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: provider.loadMyRequests,
-              color: AppTheme.primary,
+              color: colors.primary,
               child: _buildList(provider, filtered, theme, l10n, hPad),
             ),
           ),
@@ -287,6 +289,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   Widget _filterChip(String? value, String label) {
+    final colors = Theme.of(context).colorScheme;
     final selected = _statusFilter == value;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -296,15 +299,15 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? AppTheme.primary : Colors.white,
+            color: selected ? colors.primary : colors.surface,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: selected ? AppTheme.primary : Colors.grey.shade200,
+              color: selected ? colors.primary : colors.outlineVariant,
             ),
             boxShadow: selected
                 ? [
               BoxShadow(
-                color: AppTheme.primary.withOpacity(0.25),
+                color: colors.primary.withOpacity(0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               )
@@ -314,7 +317,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? Colors.white : Colors.grey.shade700,
+              color: selected ? colors.onPrimary : colors.onSurfaceVariant,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               fontSize: 13,
             ),
@@ -325,14 +328,16 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   Widget _statCard(IconData icon, String value, String label, Color color) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colors.shadow.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -361,7 +366,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
                 fontSize: 11,
-                color: Colors.grey.shade600,
+                color: colors.onSurfaceVariant,
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -376,9 +381,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       AppLocalizations l10n,
       double hPad,
       ) {
+    final colors = theme.colorScheme;
     if (provider.isLoading && provider.requests.isEmpty) {
-      return const Center(
-          child: CircularProgressIndicator(color: AppTheme.primary));
+      return Center(child: CircularProgressIndicator(color: colors.primary));
     }
 
     if (provider.requests.isEmpty) {
@@ -387,21 +392,21 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         children: [
           const SizedBox(height: 120),
           Icon(Icons.inbox_outlined,
-              size: 72, color: theme.hintColor.withOpacity(0.35)),
+              size: 72, color: colors.onSurfaceVariant.withOpacity(0.35)),
           const SizedBox(height: 16),
           Center(
             child: Text(
               provider.error ?? l10n.noRequestsYet,
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.hintColor, fontWeight: FontWeight.w600),
+                  color: colors.onSurfaceVariant, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(height: 6),
           Center(
             child: Text(l10n.requestsWillAppear,
                 style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.hintColor)),
+                    ?.copyWith(color: colors.onSurfaceVariant)),
           ),
         ],
       );
@@ -413,18 +418,17 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         children: [
           const SizedBox(height: 100),
           Icon(Icons.filter_alt_off_rounded,
-              size: 56, color: theme.hintColor.withOpacity(0.45)),
+              size: 56, color: colors.onSurfaceVariant.withOpacity(0.45)),
           const SizedBox(height: 14),
           Center(
-            child: Text('No requests match your filter',
+            child: Text(l10n.noRequestsMatchFilter,
                 style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.hintColor)),
+                    ?.copyWith(color: colors.onSurfaceVariant)),
           ),
         ],
       );
     }
 
-    // Open = pending or accepted. Closed = cancelled or rejected.
     final open = filtered.where((r) => !r.isClosed).toList();
     final closed = filtered.where((r) => r.isClosed).toList();
 
@@ -433,13 +437,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 28),
       children: [
         if (open.isNotEmpty) ...[
-          _sectionTitle('Active Requests', open.length),
+          _sectionTitle(l10n.sectionActiveRequests, open.length),
           const SizedBox(height: 10),
           ...open.map((r) => _requestCard(r, provider)),
         ],
         if (closed.isNotEmpty) ...[
           if (open.isNotEmpty) const SizedBox(height: 8),
-          _sectionTitle('Closed Requests', closed.length),
+          _sectionTitle(l10n.sectionClosedRequests, closed.length),
           const SizedBox(height: 10),
           ...closed.map((r) => _requestCard(r, provider)),
         ],
@@ -448,28 +452,29 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   Widget _sectionTitle(String title, int count) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1E293B)),
+              color: colors.onSurface),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.12),
+            color: colors.primary.withOpacity(0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.primary),
+                color: colors.primary),
           ),
         ),
       ],
@@ -477,6 +482,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 
   Widget _requestCard(ServiceRequest r, RequestProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final statusColor = r.statusColor;
     final statusBg = statusColor.withOpacity(0.12);
     final cancelling = provider.isCancelling(r.id);
@@ -489,30 +497,29 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 12),
     );
 
-    // Action buttons, laid out in a wrapping row so four never overflow.
     final actions = <Widget>[
       if (r.canBeCancelled)
         OutlinedButton(
           onPressed: cancelling ? null : () => _confirmCancel(r),
-          style: outlined(AppTheme.error),
+          style: outlined(colors.error),
           child: cancelling
               ? const SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
-              : const Text('Cancel',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+              : Text(l10n.cancelAction,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
       if (r.canBeMarkedAsJob)
         ElevatedButton.icon(
           onPressed: () => _markAsJob(r),
           icon: const Icon(Icons.work_outline_rounded, size: 16),
-          label: const Text('Mark as Job',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+          label: Text(l10n.markAsJob,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accent,
-            foregroundColor: Colors.white,
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
@@ -523,28 +530,28 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         OutlinedButton.icon(
           onPressed: () => _openJob(r),
           icon: const Icon(Icons.work_outline_rounded, size: 16),
-          label: const Text('View Job',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          style: outlined(AppTheme.accent),
+          label: Text(l10n.viewJob,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          style: outlined(colors.primary),
         ),
       if (r.technicianUserId != 0)
         OutlinedButton.icon(
           onPressed: () => _openChat(r),
           icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-          label: const Text('Chat',
-              style: TextStyle(fontWeight: FontWeight.w600)),
-          style: outlined(AppTheme.primary),
+          label: Text(l10n.chatAction,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          style: outlined(colors.primary),
         ),
     ];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colors.shadow.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -555,7 +562,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Container(
@@ -574,18 +580,18 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                     children: [
                       Text(
                         r.serviceName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B)),
+                            color: colors.onSurface),
                       ),
                       if (r.categoryName != null &&
                           r.categoryName!.isNotEmpty)
                         Text(
                           r.categoryName!,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12.5,
-                              color: AppTheme.primary,
+                              color: colors.primary,
                               fontWeight: FontWeight.w500),
                         ),
                     ],
@@ -613,18 +619,17 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
 
             const SizedBox(height: 14),
 
-            // Fundi
             Row(
               children: [
                 Icon(Icons.person_outline_rounded,
-                    size: 16, color: Colors.grey.shade600),
+                    size: 16, color: colors.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     r.technicianName,
                     style: TextStyle(
                         fontSize: 13.5,
-                        color: Colors.grey.shade800,
+                        color: colors.onSurface,
                         fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -638,13 +643,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               Row(
                 children: [
                   Icon(Icons.location_on_outlined,
-                      size: 15, color: Colors.grey.shade600),
+                      size: 15, color: colors.onSurfaceVariant),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       r.technicianArea!,
                       style: TextStyle(
-                          fontSize: 13, color: Colors.grey.shade700),
+                          fontSize: 13, color: colors.onSurfaceVariant),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -653,36 +658,36 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               ),
             ],
 
-            // Description
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: colors.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 r.description,
                 style: TextStyle(
-                    fontSize: 13.5, color: Colors.grey.shade700, height: 1.4),
+                    fontSize: 13.5,
+                    color: colors.onSurfaceVariant,
+                    height: 1.4),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
 
-            // Time
             const SizedBox(height: 12),
             Row(
               children: [
                 Icon(Icons.access_time_rounded,
-                    size: 14, color: Colors.grey.shade500),
+                    size: 14, color: colors.onSurfaceVariant),
                 const SizedBox(width: 5),
                 Text(
                   _formatAgo(r.createdAt),
-                  style:
-                  TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                  style: TextStyle(
+                      fontSize: 12.5, color: colors.onSurfaceVariant),
                 ),
               ],
             ),
@@ -696,7 +701,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               ),
             ],
 
-            // Details button on its own row
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -706,9 +710,9 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   barrierDismissible: true,
                   builder: (_) => _RequestDetailModal(request: r),
                 ),
-                style: outlined(AppTheme.primary),
-                child: const Text('Details',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
+                style: outlined(colors.primary),
+                child: Text(l10n.detailsAction,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -718,14 +722,16 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   }
 }
 
-// ── Detail Modal (no contact info) ────────────────────────────────────────
+// ── Detail Modal ──────────────────────────────────────────────────────────
 class _RequestDetailModal extends StatelessWidget {
   final ServiceRequest request;
   const _RequestDetailModal({required this.request});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final statusColor = request.statusColor;
     final statusBg = statusColor.withOpacity(0.12);
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -736,7 +742,7 @@ class _RequestDetailModal extends StatelessWidget {
     return Dialog(
       insetPadding: const EdgeInsets.all(20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surface,
       child: Container(
         width: dialogWidth,
         constraints: BoxConstraints(maxHeight: screenHeight * 0.88),
@@ -749,20 +755,20 @@ class _RequestDetailModal extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
+                    color: colors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.request_page_rounded,
-                      color: AppTheme.primary, size: 24),
+                  child: Icon(Icons.request_page_rounded,
+                      color: colors.primary, size: 24),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
-                  child: Text('Request Details',
-                      style: TextStyle(
+                Expanded(
+                  child: Text(l10n.requestDetailsTitle,
+                      style: const TextStyle(
                           fontSize: 19, fontWeight: FontWeight.w700)),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close_rounded, color: theme.hintColor),
+                  icon: Icon(Icons.close_rounded, color: colors.onSurfaceVariant),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -773,19 +779,19 @@ class _RequestDetailModal extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
-                    _infoTile(Icons.construction_rounded, 'Service',
-                        request.serviceName),
+                    _infoTile(context, Icons.construction_rounded,
+                        l10n.fieldService, request.serviceName),
                     if (request.categoryName != null &&
                         request.categoryName!.isNotEmpty)
-                      _infoTile(Icons.category_rounded, 'Category',
-                          request.categoryName!),
-                    _statusTile(statusColor, statusBg),
+                      _infoTile(context, Icons.category_rounded,
+                          l10n.fieldCategory, request.categoryName!),
+                    _statusTile(context, statusColor, statusBg),
                     Container(
                       width: double.infinity,
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: colors.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Column(
@@ -793,14 +799,14 @@ class _RequestDetailModal extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.description_outlined,
-                                  size: 17, color: AppTheme.primary),
+                              Icon(Icons.description_outlined,
+                                  size: 17, color: colors.primary),
                               const SizedBox(width: 7),
-                              Text('Description',
+                              Text(l10n.fieldDescription,
                                   style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade600)),
+                                      color: colors.onSurfaceVariant)),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -810,14 +816,14 @@ class _RequestDetailModal extends StatelessWidget {
                         ],
                       ),
                     ),
-                    _infoTile(Icons.handyman_rounded, 'Fundi',
-                        request.technicianName),
+                    _infoTile(context, Icons.handyman_rounded,
+                        l10n.fieldFundi, request.technicianName),
                     if (request.technicianArea != null &&
                         request.technicianArea!.isNotEmpty)
-                      _infoTile(Icons.location_on_outlined, 'Area',
-                          request.technicianArea!),
-                    _infoTile(Icons.calendar_today_outlined, 'Requested On',
-                        formatDateFull(request.createdAt)),
+                      _infoTile(context, Icons.location_on_outlined,
+                          l10n.fieldArea, request.technicianArea!),
+                    _infoTile(context, Icons.calendar_today_outlined,
+                        l10n.fieldRequestedOn, formatDateFull(request.createdAt)),
                   ],
                 ),
               ),
@@ -828,16 +834,16 @@ class _RequestDetailModal extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14)),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,
                 ),
-                child: const Text('Close',
-                    style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                child: Text(l10n.closeAction,
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -846,13 +852,15 @@ class _RequestDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _infoTile(IconData icon, String label, String value) {
+  Widget _infoTile(
+      BuildContext context, IconData icon, String label, String value) {
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -860,10 +868,10 @@ class _RequestDetailModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.08),
+              color: colors.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: AppTheme.primary),
+            child: Icon(icon, size: 18, color: colors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -873,7 +881,7 @@ class _RequestDetailModal extends StatelessWidget {
                 Text(label,
                     style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: colors.onSurfaceVariant,
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
                 Text(value,
@@ -887,7 +895,9 @@ class _RequestDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _statusTile(Color color, Color bg) {
+  Widget _statusTile(BuildContext context, Color color, Color bg) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
@@ -909,10 +919,10 @@ class _RequestDetailModal extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Status',
+              Text(l10n.fieldStatus,
                   style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade600,
+                      color: colors.onSurfaceVariant,
                       fontWeight: FontWeight.w500)),
               const SizedBox(height: 3),
               Container(

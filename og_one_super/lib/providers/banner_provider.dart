@@ -24,7 +24,7 @@ class BannerProvider extends ChangeNotifier {
 
       if (res.success && res.data is List) {
         _banners = (res.data as List)
-            .whereType<Map>()
+            .whereType()
             .map((e) => BannerItem.fromJson(Map<String, dynamic>.from(e)))
             .where((b) => b.image.isNotEmpty)
             .toList();

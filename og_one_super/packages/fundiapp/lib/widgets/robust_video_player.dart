@@ -8,10 +8,14 @@ import 'package:video_player/video_player.dart';
 
 import '../config/app_theme.dart';
 
-/// A cross-platform, production-ready video player that:
+/// A cross-platform video player that:
 ///  * Plays HLS (.m3u8) and MP4/MOV from HTTP(S)
+///  * Does NOT send custom Range/Accept headers (AVPlayer on iOS manages
+///    byte ranges itself; forcing `Range: bytes=0-` breaks it)
 ///  * Handles iOS CoreMediaErrorDomain -11850 / -12939 gracefully
 ///  * Auto-pauses when scrolled out of view using native layout metrics
+///    (no visibility_detector dependency needed)
+///  * Pauses when the app goes to the background
 ///  * Shows a retry / "Open externally" fallback on unrecoverable errors
 class RobustVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -33,7 +37,8 @@ class RobustVideoPlayer extends StatefulWidget {
   State<RobustVideoPlayer> createState() => _RobustVideoPlayerState();
 }
 
-class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
+class _RobustVideoPlayerState extends State<RobustVideoPlayer>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _initialized = false;
   bool _hasError = false;
@@ -44,12 +49,29 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initialize();
   }
 
-  Future<void> _initialize() async {
-    await _controller?.dispose();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed &&
+        (_controller?.value.isPlaying ?? false)) {
+      _controller?.pause();
+    }
+  }
+
+  Future<void> _disposeController() async {
+    final old = _controller;
     _controller = null;
+    if (old != null) {
+      old.removeListener(_onControllerUpdate);
+      await old.dispose();
+    }
+  }
+
+  Future<void> _initialize() async {
+    await _disposeController();
 
     if (mounted) {
       setState(() {
@@ -64,16 +86,17 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
 
       final VideoPlayerController controller;
       if (uri.scheme == 'http' || uri.scheme == 'https') {
+        // IMPORTANT: no custom httpHeaders here.
+        // On iOS, headers are passed to AVURLAsset and a forced
+        // `Range: bytes=0-` header conflicts with AVPlayer's own range
+        // requests, which causes -11850 / -12939 on many servers.
         controller = VideoPlayerController.networkUrl(
           uri,
+          formatHint: _isHls(uri) ? VideoFormat.hls : null,
           videoPlayerOptions: VideoPlayerOptions(
             mixWithOthers: true,
             allowBackgroundPlayback: false,
           ),
-          httpHeaders: const {
-            'Accept': 'video/*,*/*;q=0.8',
-            'Range': 'bytes=0-',
-          },
         );
       } else if (kIsWeb) {
         controller = VideoPlayerController.networkUrl(uri);
@@ -85,6 +108,7 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
 
       if (controller.value.duration == Duration.zero &&
           controller.value.size == Size.zero) {
+        await controller.dispose();
         throw const FormatException(
           'Video reported zero duration/size. Server may not support Range requests (HTTP 206).',
         );
@@ -100,13 +124,14 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
         return;
       }
 
+      controller.addListener(_onControllerUpdate);
+
       setState(() {
         _controller = controller;
         _initialized = true;
         _hasError = false;
       });
 
-      _controller!.addListener(_onControllerUpdate);
       _scheduleHideControls();
     } catch (e) {
       debugPrint('❌ Video init failed for ${widget.videoUrl}: $e');
@@ -118,9 +143,13 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
     }
   }
 
+  bool _isHls(Uri uri) => uri.path.toLowerCase().endsWith('.m3u8');
+
   String _friendlyError(Object e) {
     final msg = e.toString();
-    if (msg.contains('-12939') || msg.contains('-11850')) {
+    if (msg.contains('-12939') ||
+        msg.contains('-11850') ||
+        msg.contains('Operation Stopped')) {
       return 'The video server is not correctly configured (missing HTTP Range support).';
     }
     if (msg.contains('FormatException')) {
@@ -172,6 +201,7 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _hideControlsTimer?.cancel();
     _controller?.removeListener(_onControllerUpdate);
     _controller?.dispose();
@@ -188,7 +218,8 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
           if (renderBox != null && renderBox.attached) {
             final translation = renderBox.localToGlobal(Offset.zero);
             final screenHeight = MediaQuery.of(context).size.height;
-            if (translation.dy + renderBox.size.height < 0 || translation.dy > screenHeight) {
+            if (translation.dy + renderBox.size.height < 0 ||
+                translation.dy > screenHeight) {
               _controller?.pause();
             }
           }
@@ -217,13 +248,15 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.videocam_off_rounded, color: Colors.white70, size: 48),
+                  const Icon(Icons.videocam_off_rounded,
+                      color: Colors.white70, size: 48),
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Text(
                       _errorMessage ?? 'Unable to load video',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -233,9 +266,12 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                     children: [
                       OutlinedButton.icon(
                         onPressed: _initialize,
-                        icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
-                        label: const Text('Retry', style: TextStyle(color: Colors.white)),
-                        style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white54)),
+                        icon: const Icon(Icons.refresh_rounded,
+                            size: 18, color: Colors.white),
+                        label: const Text('Retry',
+                            style: TextStyle(color: Colors.white)),
+                        style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white54)),
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
@@ -269,7 +305,8 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
           );
         } else {
           final ar = _controller!.value.aspectRatio;
-          final safeAr = (ar.isFinite && ar > 0) ? ar : (widget.aspectRatio ?? 16 / 9);
+          final safeAr =
+          (ar.isFinite && ar > 0) ? ar : (widget.aspectRatio ?? 16 / 9);
 
           content = AspectRatio(
             aspectRatio: safeAr,
@@ -334,7 +371,8 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                           bufferedColor: Colors.white24,
                           backgroundColor: Colors.white10,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 12),
                       ),
                     ),
                     AnimatedPositioned(
@@ -342,14 +380,16 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                       top: _showControls ? 8 : -40,
                       right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '${_fmt(_controller!.value.position)} / ${_fmt(_controller!.value.duration)}',
-                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11),
                         ),
                       ),
                     ),

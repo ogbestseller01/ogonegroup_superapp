@@ -244,9 +244,11 @@ class ApiService {
 
   Future<ApiResponse> getTechnicianProfile() => _get('/v2/technicians/profile');
 
+  // FIX: backend route is POST /v2/technicians/services (was PUT)
   Future<ApiResponse> updateTechnicianServices(List<int> serviceIds) =>
-      _put('/v2/technicians/services', data: {'service_ids': serviceIds});
+      _post('/v2/technicians/services', data: {'service_ids': serviceIds});
 
+  // NOTE: no matching backend route yet (/v2/technicians/online-status)
   Future<ApiResponse> toggleTechnicianOnline(bool isOnline) =>
       _patch('/v2/technicians/online-status', data: {'is_online': isOnline});
 
@@ -275,6 +277,7 @@ class ApiService {
     return _post('/v2/technicians/profile/photo', data: formData);
   }
 
+  // NOTE: no matching backend route yet (/v2/technicians/service-prices)
   Future<ApiResponse> updateServicePrices(Map<String, dynamic> pricesData) =>
       _put('/v2/technicians/service-prices', data: pricesData);
 
@@ -405,9 +408,12 @@ class ApiService {
   //  jobs.status: pending | on-progress | completed
   //  Mark Complete  -> server SMSes a 6-digit code to the customer
   //  Verify         -> job + ticket completed
+  //  Review         -> customer rates the completed job (1-5 + remark)
   // ─────────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> getMyJobs() => _get('/v4/jobs');
+
+  Future<ApiResponse> getJob(int jobId) => _get('/v4/jobs/$jobId');
 
   Future<ApiResponse> markRequestAsJob(int requestId) =>
       _post('/v4/requests/$requestId/mark-as-job', data: {});
@@ -423,6 +429,25 @@ class ApiService {
   Future<ApiResponse> requestCompletion(int jobId) => requestJobCompletion(jobId);
   Future<ApiResponse> verifyCompletion(int jobId, String code) =>
       verifyJobCompletion(jobId, code);
+
+  /// Customer reviews a COMPLETED job: rating (1-5) + optional remark.
+  Future<ApiResponse> submitJobReview(
+      int jobId, {
+        required int rating,
+        String? comment,
+      }) =>
+      _post('/v4/jobs/$jobId/review', data: {
+        'rating': rating,
+        if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+      });
+
+  // ─────────────────────────────────────────────────────────────────────
+  //  TICKETS (read-only)
+  // ─────────────────────────────────────────────────────────────────────
+
+  Future<ApiResponse> getTickets() => _get('/v4/tickets');
+
+  Future<ApiResponse> getTicket(int ticketId) => _get('/v4/tickets/$ticketId');
 
   // ═══════════════════════════════════════════════════════════════════════
   //  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)
@@ -569,6 +594,7 @@ class ApiService {
   //  CONTACT
   // ═══════════════════════════════════════════════════════════════════════
 
+  // NOTE: no matching backend route yet (/v1/contact). Feedback lives at POST /v23/feedback.
   Future<ApiResponse> sendContactMessage(Map<String, dynamic> data) =>
       _post('/v1/contact', data: data);
 
@@ -807,22 +833,12 @@ class ApiService {
       _get('/v17/service-categories/dropdown/active', query: {'locale': locale});
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  REVIEWS & PRIVACY POLICY (V18)
+  //  REVIEWS (V4) & PRIVACY POLICY (V18)
   // ═══════════════════════════════════════════════════════════════════════
 
+  /// Reviews of a technician (rating + remark + customer name).
   Future<ApiResponse> getTechnicianReviews(int technicianId) =>
-      _get('/v18/technicians/$technicianId/reviews');
-
-  Future<ApiResponse> submitReview({
-    required int requestId,
-    required int rating,
-    String? comment,
-  }) =>
-      _post('/v18/reviews', data: {
-        'request_id': requestId,
-        'rating': rating,
-        if (comment != null) 'comment': comment,
-      });
+      _get('/v4/technicians/$technicianId/reviews');
 
   Future<ApiResponse> getPrivacyPolicy() => _get('/v18/privacy-policy');
 

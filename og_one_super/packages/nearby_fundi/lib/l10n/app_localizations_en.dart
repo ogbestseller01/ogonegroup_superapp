@@ -27,7 +27,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get requests => 'Requests';
 
   @override
-  String get myRequests => 'Requests';
+  String get myRequests => 'My Requests';
 
   @override
   String get profile => 'Profile';
@@ -457,10 +457,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get noRequestsYet => 'No requests yet';
+  String get noRequestsYet => 'You have no requests yet';
 
   @override
-  String get requestsWillAppear => 'Your requests will appear here';
+  String get requestsWillAppear => 'Your service requests will appear here.';
 
   @override
   String get cancelRequest => 'Cancel Request';
@@ -811,4 +811,209 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewDetails => 'View Details';
+
+  @override
+  String get noTicketsYet => 'No tickets yet';
+
+  @override
+  String get noTicketsHint => 'A ticket is created when you mark a request as a job.';
+
+  @override
+  String get fundiLabel => 'Fundi';
+
+  @override
+  String get createdOn => 'Created';
+
+  @override
+  String get completedOn => 'Completed';
+
+  @override
+  String get searchByFundiName => 'Search by fundi name...';
+
+  @override
+  String get checkBackLater => 'Check back later for updates from our technicians.';
+
+  @override
+  String get noPostsMatch => 'No posts match';
+
+  @override
+  String get imageNotAvailable => 'Image not available';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get tapToPlayVideo => 'Tap to play video';
+
+  @override
+  String get startedOn => 'Started';
+
+  @override
+  String get completedOnLabel => 'Completed';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get ticketLabel => 'Ticket';
+
+  @override
+  String get payForJob => 'Pay for Job';
+
+  @override
+  String get confirmCompletion => 'Confirm Completion';
+
+  @override
+  String get sendingSmsCode => 'Sending SMS Code…';
+
+  @override
+  String get jobCompletedSuccess => 'Job completed successfully!';
+
+  @override
+  String get jobNotFound => 'Job not found';
+
+  @override
+  String get couldNotSendSms => 'Could not send verification code via SMS.';
+
+  @override
+  String get enterSixDigitCode => 'Enter the 6-digit code received via SMS.';
+
+  @override
+  String get invalidCodeTryAgain => 'Invalid code. Check SMS and try again.';
+
+  @override
+  String get couldNotResendSms => 'Could not resend SMS code.';
+
+  @override
+  String get enterSmsCodeHint => 'Enter the 6-digit code sent by SMS to your phone to confirm completion.';
+
+  @override
+  String get verifyAndComplete => 'Verify & Complete';
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String resendIn(Object seconds) {
+    return 'Resend in ${seconds}s';
+  }
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get confirmCompletionTitle => 'Confirm Completion';
+
+  @override
+  String get confirmCompletionBody => 'Would you like to send the 6-digit verification code via SMS to complete this job?';
+
+  @override
+  String get sendSmsCode => 'Send SMS Code';
+
+  @override
+  String get completionCodeHint => '------';
+
+  @override
+  String get filterByFundiOrService => 'Filter by fundi or service...';
+
+  @override
+  String get allLabel => 'All';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusAccepted => 'Accepted';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get statTotal => 'Total';
+
+  @override
+  String get statClosed => 'Closed';
+
+  @override
+  String get noRequestsMatchFilter => 'No requests match your filter';
+
+  @override
+  String get sectionActiveRequests => 'Active Requests';
+
+  @override
+  String get sectionClosedRequests => 'Closed Requests';
+
+  @override
+  String get cancelAction => 'Cancel';
+
+  @override
+  String get viewJob => 'View Job';
+
+  @override
+  String get chatAction => 'Chat';
+
+  @override
+  String get detailsAction => 'Details';
+
+  @override
+  String get couldNotCancelRequest => 'Could not cancel request.';
+
+  @override
+  String get markAsJob => 'Mark as job';
+
+  @override
+  String markAsJobConfirm(String name) {
+    return 'Start this job with $name? A ticket will be created.';
+  }
+
+  @override
+  String get couldNotCreateJob => 'Could not create the job.';
+
+  @override
+  String get timeAgoJustNow => 'Just now';
+
+  @override
+  String timeAgoMinutes(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String timeAgoHours(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String timeAgoDays(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get requestDetailsTitle => 'Request Details';
+
+  @override
+  String get fieldService => 'Service';
+
+  @override
+  String get fieldCategory => 'Category';
+
+  @override
+  String get fieldDescription => 'Description';
+
+  @override
+  String get fieldFundi => 'Fundi';
+
+  @override
+  String get fieldArea => 'Area';
+
+  @override
+  String get fieldRequestedOn => 'Requested On';
+
+  @override
+  String get fieldStatus => 'Status';
+
+  @override
+  String get closeAction => 'Close';
 }

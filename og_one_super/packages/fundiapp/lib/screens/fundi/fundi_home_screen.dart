@@ -701,6 +701,24 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
+                  // ── NEW: Earnings (below Subscription) ──
+                  _DrawerItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Earnings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.earnings);
+                    },
+                  ),
+                  // ── NEW: Reports ──
+                  _DrawerItem(
+                    icon: Icons.bar_chart_rounded,
+                    label: 'Reports',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.reports);
+                    },
+                  ),
                   _DrawerItem(
                     icon: Icons.file_download_rounded,
                     label: 'Downloads',

@@ -63,10 +63,12 @@ class $AssetsAppsGen {
 class $AssetsGoogleFontsGen {
   const $AssetsGoogleFontsGen();
 
+  final String a007MWT29102026 = 'google_fonts/007MWT29102026.pdf';
   final String nunitoBlack = 'google_fonts/Nunito-Black.ttf';
   final String nunitoBlackItalic = 'google_fonts/Nunito-BlackItalic.ttf';
   final String nunitoBold = 'google_fonts/Nunito-Bold.ttf';
   final String nunitoBoldItalic = 'google_fonts/Nunito-BoldItalic.ttf';
+  final String nunitoExtraBold = 'google_fonts/Nunito-ExtraBold.ttf';
   final String nunitoExtraBoldItalic =
       'google_fonts/Nunito-ExtraBoldItalic.ttf';
   final String nunitoExtraLight = 'google_fonts/Nunito-ExtraLight.ttf';

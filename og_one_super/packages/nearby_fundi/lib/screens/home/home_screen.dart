@@ -167,23 +167,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // DRAWER ACTIONS
   // ================================================================
 
-  /// Chat now lives in the drawer and opens as its own screen.
-  void _openChat() {
-    if (!AuthGuard.ensure(
-      context,
-      message: 'Sign in or create an account to chat with fundis.',
-    )) {
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => ChatListScreen(onBack: () => Navigator.pop(ctx)),
-      ),
-    );
-  }
-
   void _openTickets() {
     if (!AuthGuard.ensure(
       context,
@@ -516,7 +499,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final type = notification['type']?.toString() ?? '';
 
     if (type == 'chat_message') {
-      _openChat();
+      if (!AuthGuard.ensure(
+        context,
+        message: 'Sign in or create an account to chat with fundis.',
+      )) {
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => ChatListScreen(onBack: () => Navigator.pop(ctx)),
+        ),
+      );
       return;
     }
 
@@ -534,120 +528,137 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // DRAWER – Chat, Tickets, Payments + Close button
+  // DRAWER – Redesigned to match the Fund App UI
   // ================================================================
 
   Widget _buildDrawer(ThemeData theme, AppLocalizations l10n) {
-    final ink = _ink(theme);
-
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final drawerWidth = screenWidth < 400 ? screenWidth * 0.88 : 340.0;
+    final drawerWidth = screenWidth < 400 ? screenWidth * 0.85 : 340.0;
+
+    // Watch AuthProvider for user info
+    final user = context.watch<AuthProvider>().user;
+
+    final name = user?.name ?? 'Guest User';
+    final phone = user?.phone ?? 'Not logged in';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
 
     return Drawer(
       width: drawerWidth,
       backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
         child: Column(
           children: [
-            // Header with Close button
+            // ── HEADER ──
             Container(
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(
                 20,
-                MediaQuery.paddingOf(context).top + 16,
-                12,
-                20,
+                MediaQuery.paddingOf(context).top + 20,
+                16,
+                24,
               ),
               decoration: const BoxDecoration(
                 color: AppTheme.primary,
                 borderRadius: BorderRadius.only(
-                  bottomRight: Radius.circular(28),
+                  bottomRight: Radius.circular(24),
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 5,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: _gold,
-                      borderRadius: BorderRadius.circular(3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Avatar
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _gold, width: 2.5),
+                        ),
+                        child: CircleAvatar(
+                          radius: 34,
+                          backgroundColor: Colors.white,
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Close button
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          shape: const CircleBorder(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Name
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.nunito(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      l10n.appTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.nunito(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  // Close button (top right)
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: Colors.white),
-                    tooltip: 'Close',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  const SizedBox(height: 4),
+                  // Phone
+                  Text(
+                    phone,
+                    style: GoogleFonts.nunito(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 12),
-
-            // Menu items
+            // ── MENU LIST ──
             Expanded(
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
-                  // Chat (with unread badge)
-                  Consumer<ChatProvider>(
-                    builder: (context, chatProvider, child) {
-                      return _DrawerItem(
-                        icon: _ChatIcon(
-                            unread: chatProvider.totalUnread, active: false),
-                        label: l10n.chat,
-                        ink: ink,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _openChat();
-                        },
-                      );
+                  _ModernDrawerItem(
+                    icon: Icons.collections_bookmark_outlined,
+                    label: 'Portfolio',
+                    ink: _ink(theme),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _selectTab(4); // Go to Profile which typically has portfolio
                     },
                   ),
-
-                  // Tickets (now real)
-                  _DrawerItem(
-                    icon: const Icon(Icons.confirmation_number_outlined),
-                    label: l10n.tickets,
-                    ink: ink,
+                  _ModernDrawerItem(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Tickets',
+                    ink: _ink(theme),
                     onTap: () {
                       Navigator.pop(context);
                       _openTickets();
                     },
                   ),
-
-                  // Payments (still coming soon)
-                  _DrawerItem(
-                    icon: const Icon(Icons.payments_outlined),
-                    label: l10n.payments,
-                    ink: ink,
-                    soon: true,
-                    soonLabel: l10n.soon,
+                  _ModernDrawerItem(
+                    icon: Icons.payments_outlined,
+                    label: 'Payments',
+                    ink: _ink(theme),
+                    soonLabel: 'coming soon!',
                     onTap: () {
                       Navigator.pop(context);
                       _showComingSoon(l10n.payments);
@@ -989,67 +1000,84 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ==================================================================
-// DRAWER ITEM
+// MODERN DRAWER ITEM (Matches Screenshot)
 // ==================================================================
 
-class _DrawerItem extends StatelessWidget {
-  final Widget icon;
+class _ModernDrawerItem extends StatelessWidget {
+  final IconData icon;
   final String label;
   final Color ink;
   final VoidCallback onTap;
-  final bool soon;
-  final String soonLabel;
+  final String? soonLabel;
 
-  const _DrawerItem({
+  const _ModernDrawerItem({
     required this.icon,
     required this.label,
     required this.ink,
     required this.onTap,
-    this.soon = false,
-    this.soonLabel = 'Soon',
+    this.soonLabel,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        leading: IconTheme(
-          data: IconThemeData(color: ink, size: 24),
-          child: icon,
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: ink,
-            fontWeight: FontWeight.w700,
-            fontSize: 15.5,
-          ),
-        ),
-        trailing: soon
-            ? Container(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: _gold.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            soonLabel,
-            style: TextStyle(
-              color: theme.brightness == Brightness.dark
-                  ? _gold
-                  : const Color(0xFF8A6200),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
+    // Soft background fill for the icon
+    final iconBg = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : const Color(0xFFF1F5F9);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          children: [
+            // Icon Container
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: ink, size: 24),
             ),
-          ),
-        )
-            : null,
+            const SizedBox(width: 16),
+
+            // Label
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.nunito(
+                  color: ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+
+            // "coming soon" pill
+            if (soonLabel != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _gold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  soonLabel!,
+                  style: TextStyle(
+                    color: isDark ? _gold : const Color(0xFF8A6200),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

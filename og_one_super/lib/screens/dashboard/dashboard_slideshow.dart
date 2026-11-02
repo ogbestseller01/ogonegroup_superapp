@@ -53,7 +53,7 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
     super.didChangeDependencies();
     final w = MediaQuery.sizeOf(context).width;
     final fraction =
-    ((w - 2 * widget.hPad + 2 * _gap) / w).clamp(0.6, 0.95).toDouble();
+    ((w - (2 * widget.hPad) + (2 * _gap)) / w).clamp(0.6, 0.95).toDouble();
 
     if (fraction != _fraction) {
       final old = _ctrl;
@@ -150,9 +150,37 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
       );
     }
 
-    // No banners → hide the whole slider
+    // No banners → show "Banner not found" fallback state
     if (widget.banners.isEmpty) {
-      return const SizedBox.shrink();
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: widget.hPad),
+        child: Container(
+          height: _baseHeight,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.image_not_supported_outlined,
+                    color: Colors.grey.shade400, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Banner not found',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final scale =
@@ -186,9 +214,9 @@ class _DashboardSlideshowState extends State<DashboardSlideshow>
                       : _page.toDouble();
                   final d = (page - i).abs().clamp(0.0, 1.0);
                   return Opacity(
-                    opacity: 1 - 0.35 * d,
+                    opacity: 1 - (0.35 * d),
                     child: Transform.scale(
-                      scale: 1 - 0.05 * d,
+                      scale: 1 - (0.05 * d),
                       child: child,
                     ),
                   );
@@ -262,7 +290,6 @@ class _BannerCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Image
                   Image.network(
                     banner.image,
                     fit: BoxFit.cover,
@@ -284,8 +311,6 @@ class _BannerCard extends StatelessWidget {
                       );
                     },
                   ),
-
-                  // Soft bottom gradient for better contrast (optional)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -315,7 +340,7 @@ class _BannerCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Dots (same as before)
+// Dots
 // ─────────────────────────────────────────────────────────────
 class _PageDots extends StatelessWidget {
   final int count;

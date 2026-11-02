@@ -11,6 +11,7 @@ import '../models/service.dart';
 import '../config/app_theme.dart';
 import '../services/location_service.dart';
 import '../utils/auth_guard.dart';
+import '../utils/contact_validator.dart'; // IMPORT THE VALIDATOR
 
 class RequestDialog extends StatefulWidget {
   final Technician technician;
@@ -24,6 +25,9 @@ class RequestDialog extends StatefulWidget {
 class _RequestDialogState extends State<RequestDialog> {
   final TextEditingController _descController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // Listenable to track contact info errors dynamically
+  final ValueNotifier<String?> _contactError = ValueNotifier<String?>(null);
 
   int? _selectedServiceId;
   int? _selectedCategoryId;
@@ -92,6 +96,7 @@ class _RequestDialogState extends State<RequestDialog> {
   @override
   void dispose() {
     _descController.dispose();
+    _contactError.dispose();
     super.dispose();
   }
 
@@ -145,6 +150,13 @@ class _RequestDialogState extends State<RequestDialog> {
     final failedLabel = l10n?.failed ?? 'Something went wrong';
 
     if (!AuthGuard.ensure(context, message: 'Sign in to send a request.')) {
+      return;
+    }
+
+    // Ensure no contact info bypassed the live check
+    final contactCheck = ContactValidator.validate(_descController.text);
+    if (contactCheck != null) {
+      _contactError.value = contactCheck;
       return;
     }
 
@@ -414,6 +426,10 @@ class _RequestDialogState extends State<RequestDialog> {
                         controller: _descController,
                         maxLines: 4,
                         maxLength: 1000,
+                        onChanged: (value) {
+                          // Check contact info dynamically as they type
+                          _contactError.value = ContactValidator.validate(value);
+                        },
                         decoration: _fieldDecoration(
                           theme,
                           label: describeIssue,
@@ -426,9 +442,30 @@ class _RequestDialogState extends State<RequestDialog> {
                           if (v == null || v.trim().length < 5) {
                             return describeIssue;
                           }
-                          return null;
+                          // Final form validation check
+                          return ContactValidator.validate(v);
                         },
                       ),
+
+                      // Dynamic Contact Warning (Visible before submitting)
+                      ValueListenableBuilder<String?>(
+                        valueListenable: _contactError,
+                        builder: (context, error, child) {
+                          if (error == null) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4, bottom: 8),
+                            child: Text(
+                              error,
+                              style: const TextStyle(
+                                color: AppTheme.error,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
                       const SizedBox(height: 8),
 
                       // ── Job location ──
@@ -500,27 +537,34 @@ class _RequestDialogState extends State<RequestDialog> {
                       const SizedBox(height: 20),
 
                       // ── Submit ──
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _submitRequest,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: _contactError,
+                        builder: (context, error, child) {
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              // Disable button if there's a contact error
+                              onPressed: error != null ? null : _submitRequest,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: AppTheme.primary.withOpacity(0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: Text(
+                                submitLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                ),
+                              ),
                             ),
-                            elevation: 2,
-                          ),
-                          child: Text(
-                            submitLabel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),

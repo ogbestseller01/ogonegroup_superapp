@@ -13,7 +13,8 @@
 // - Route results are applied in throttled batches (not one setState each)
 // - Map is fitted as soon as results arrive (before routes finish)
 // - Pulse animation only runs while a search origin is on the map
-// - Avatars are decoded at display size (cacheWidth)
+// - Avatars are decoded at display size (cacheWidth) and a failed image URL
+//   (404) is requested only once (SafeNetworkImage)
 // - RepaintBoundary isolation (map, markers, carousel, search panel)
 
 import 'dart:async';
@@ -37,6 +38,7 @@ import '../../utils/image_utils.dart';
 import '../../utils/auth_guard.dart';
 import '../../services/route_service.dart';
 import '../../widgets/route_polylines.dart';
+import '../../widgets/safe_network_image.dart';
 import 'nearby_map_screen.dart';
 import 'map_location_picker_screen.dart';
 
@@ -820,10 +822,17 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final bounds = LatLngBounds.fromPoints([origin, ...techPoints]);
 
+    // Keep the markers clear of the search panel (top) and the carousel
+    // (bottom) without eating too much of a small screen.
+    final height = MediaQuery.sizeOf(context).height;
+    final topPadding =
+    _isHeaderVisible ? (height * 0.34).clamp(120.0, 260.0) : 110.0;
+    final bottomPadding = (height * 0.24).clamp(140.0, 200.0);
+
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: bounds,
-        padding: const EdgeInsets.fromLTRB(60, 260, 60, 200),
+        padding: EdgeInsets.fromLTRB(60, topPadding, 60, bottomPadding),
         maxZoom: 16,
         minZoom: 4,
       ),
@@ -916,10 +925,12 @@ class _NearbyScreenState extends State<NearbyScreen>
     final contextIconSize = iconSize ?? contextSize * 0.5;
     final dpr = MediaQuery.devicePixelRatioOf(context);
 
-    final fallback = Icon(
-      Icons.build_rounded,
-      size: contextIconSize,
-      color: AppTheme.greyText,
+    final fallback = Center(
+      child: Icon(
+        Icons.build_rounded,
+        size: contextIconSize,
+        color: AppTheme.greyText,
+      ),
     );
 
     return Container(
@@ -937,15 +948,15 @@ class _NearbyScreenState extends State<NearbyScreen>
         ],
       ),
       child: ClipOval(
-        child: tech.profilePhoto != null
-            ? Image.network(
-          ImageUtils.getFullImageUrl(tech.profilePhoto!),
-          fit: BoxFit.cover,
+        // A missing file (404) is requested once, then the icon is shown
+        child: SafeNetworkImage(
+          url: tech.profilePhoto == null
+              ? null
+              : ImageUtils.getFullImageUrl(tech.profilePhoto!),
+          size: contextSize,
           cacheWidth: (contextSize * dpr).round(),
-          gaplessPlayback: true,
-          errorBuilder: (_, __, ___) => fallback,
-        )
-            : fallback,
+          fallback: fallback,
+        ),
       ),
     );
   }
@@ -1213,10 +1224,11 @@ class _NearbyScreenState extends State<NearbyScreen>
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
         onTap: () {
+          // Take the navigator first: the sheet's context is gone after pop
+          final navigator = Navigator.of(context);
           setState(() => _selectedTechnicianId = tech.id);
-          Navigator.pop(context);
-          Navigator.pushNamed(
-            context,
+          navigator.pop();
+          navigator.pushNamed(
             AppRoutes.technicianDetail,
             arguments: tech.id,
           );

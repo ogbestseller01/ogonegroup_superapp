@@ -32,6 +32,10 @@ class AppRoutes {
   static const String tickets       = '/tickets';
   static const String jobs          = '/jobs';
 
+  // ===== EARNINGS & REPORTS (Added) =====
+  static const String earnings      = '/earnings';
+  static const String reports       = '/reports';
+
   // ===== CHAT ROUTES =====
   static const String chatList  = '/chat-list';
   static const String chat      = '/chat';
@@ -110,6 +114,8 @@ class AppRoutes {
     // Added to routeNames map as well
     tickets: 'Tickets',
     jobs: 'Jobs',
+    earnings: 'Earnings',
+    reports: 'Reports',
 
     chatList: 'Chat List',
     chat: 'Chat',

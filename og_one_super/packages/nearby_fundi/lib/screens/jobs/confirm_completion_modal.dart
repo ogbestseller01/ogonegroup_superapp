@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/job_provider.dart';
 
 class ConfirmCompletionModal extends StatefulWidget {
@@ -64,9 +64,10 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
   }
 
   Future<void> _verify() async {
+    final l10n = AppLocalizations.of(context)!;
     final value = _code.text.trim();
     if (value.length != 6) {
-      setState(() => _error = 'Enter the 6-digit code received via SMS.');
+      setState(() => _error = l10n.enterSixDigitCode);
       return;
     }
 
@@ -84,12 +85,13 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
     } else {
       setState(() {
         _verifying = false;
-        _error = provider.error ?? 'Invalid code. Check SMS and try again.';
+        _error = provider.error ?? l10n.invalidCodeTryAgain;
       });
     }
   }
 
   Future<void> _resend() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<JobProvider>();
     setState(() {
       _resending = true;
@@ -101,7 +103,7 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
 
     setState(() {
       _resending = false;
-      if (!ok) _error = provider.error ?? 'Could not resend SMS code.';
+      if (!ok) _error = provider.error ?? l10n.couldNotResendSms;
     });
     if (ok) {
       _code.clear();
@@ -111,8 +113,15 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final busy = _verifying || _resending;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    final resendLabel = _secondsLeft > 0
+        ? l10n.resendIn(_secondsLeft)
+        : l10n.resendCode;
 
     return Container(
       width: double.infinity,
@@ -122,9 +131,9 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
         top: 20,
         bottom: bottomInset + 20,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -136,31 +145,30 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: colors.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             if (busy) ...[
-              const LinearProgressIndicator(
+              LinearProgressIndicator(
                 backgroundColor: Colors.transparent,
-                color: AppTheme.primary,
+                color: colors.primary,
                 minHeight: 3,
               ),
               const SizedBox(height: 12),
             ],
             Row(
               children: [
-                const Icon(Icons.verified_rounded, color: AppTheme.primary, size: 28),
+                Icon(Icons.verified_rounded, color: colors.primary, size: 28),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Confirm Completion',
-                    style: TextStyle(
-                      fontSize: 18,
+                    l10n.confirmCompletionTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: colors.onSurface,
                     ),
                   ),
                 ),
@@ -172,8 +180,10 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter the 6-digit code sent by SMS to your phone to confirm completion.',
-              style: TextStyle(fontSize: 13.5, color: Colors.grey.shade600),
+              l10n.enterSmsCodeHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -184,20 +194,20 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
               textAlign: TextAlign.center,
               maxLength: 6,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
-                fontSize: 26,
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 10,
+                color: colors.onSurface,
               ),
               decoration: InputDecoration(
                 counterText: '',
-                hintText: '------',
+                hintText: l10n.completionCodeHint,
                 errorText: _error,
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: colors.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: colors.outline),
                 ),
               ),
               onChanged: (_) {
@@ -211,17 +221,11 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
               children: [
                 TextButton(
                   onPressed: busy ? null : () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
+                  child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
                 ),
                 TextButton(
                   onPressed: (_secondsLeft == 0 && !busy) ? _resend : null,
-                  child: Text(
-                    _resending
-                        ? 'Sending…'
-                        : _secondsLeft > 0
-                        ? 'Resend in ${_secondsLeft}s'
-                        : 'Resend code',
-                  ),
+                  child: Text(_resending ? l10n.sending : resendLabel),
                 ),
               ],
             ),
@@ -229,24 +233,28 @@ class _ConfirmCompletionModalState extends State<ConfirmCompletionModal> {
             FilledButton(
               onPressed: busy ? null : _verify,
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.primary,
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: _verifying
-                  ? const SizedBox(
+                  ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: colors.onPrimary,
                 ),
               )
-                  : const Text(
-                'Verify & Complete',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  : Text(
+                l10n.verifyAndComplete,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

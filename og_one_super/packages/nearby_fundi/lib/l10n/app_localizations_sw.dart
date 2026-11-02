@@ -27,7 +27,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get requests => 'Maombi';
 
   @override
-  String get myRequests => 'Maombi';
+  String get myRequests => 'Maombi Yangu';
 
   @override
   String get profile => 'Profaili';
@@ -93,7 +93,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get viewOnMap => 'Angalia kwenye ramani';
 
   @override
-  String get refresh => 'Fresha';
+  String get refresh => 'Sasisha';
 
   @override
   String get noFundisFound => 'Hakuna Mafundi Waliopatikana';
@@ -457,10 +457,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get version => 'Toleo';
 
   @override
-  String get noRequestsYet => 'Hakuna maombi bado';
+  String get noRequestsYet => 'Bado huna maombi yoyote';
 
   @override
-  String get requestsWillAppear => 'Maombi yako yataonekana hapa';
+  String get requestsWillAppear => 'Maombi yako ya huduma yataonekana hapa.';
 
   @override
   String get cancelRequest => 'Ghairi Ombi';
@@ -811,4 +811,209 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get viewDetails => 'Angalia Maelezo';
+
+  @override
+  String get noTicketsYet => 'Hakuna tiketi bado';
+
+  @override
+  String get noTicketsHint => 'Tiketi huundwa unapoweka ombi kama kazi.';
+
+  @override
+  String get fundiLabel => 'Fundi';
+
+  @override
+  String get createdOn => 'Imeundwa';
+
+  @override
+  String get completedOn => 'Imekamilika';
+
+  @override
+  String get searchByFundiName => 'Tafuta kwa jina la fundi...';
+
+  @override
+  String get checkBackLater => 'Angalia baadaye kwa masasisho kutoka kwa mafundi wetu.';
+
+  @override
+  String get noPostsMatch => 'Hakuna machapisho yanayolingana na';
+
+  @override
+  String get imageNotAvailable => 'Picha haipatikani';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get tapToPlayVideo => 'Gusa kucheza video';
+
+  @override
+  String get startedOn => 'Ilianza';
+
+  @override
+  String get completedOnLabel => 'Imekamilika';
+
+  @override
+  String get descriptionLabel => 'Maelezo';
+
+  @override
+  String get ticketLabel => 'Tiketi';
+
+  @override
+  String get payForJob => 'Lipia Kazi';
+
+  @override
+  String get confirmCompletion => 'Thibitisha Ukamilishaji';
+
+  @override
+  String get sendingSmsCode => 'Inatuma Msimbo wa SMS…';
+
+  @override
+  String get jobCompletedSuccess => 'Kazi imekamilika kwa mafanikio!';
+
+  @override
+  String get jobNotFound => 'Kazi haipatikani';
+
+  @override
+  String get couldNotSendSms => 'Imeshindwa kutuma msimbo wa uthibitishaji kwa SMS.';
+
+  @override
+  String get enterSixDigitCode => 'Ingiza msimbo wa tarakimu 6 uliopokea kwa SMS.';
+
+  @override
+  String get invalidCodeTryAgain => 'Msimbo si sahihi. Angalia SMS na ujaribu tena.';
+
+  @override
+  String get couldNotResendSms => 'Imeshindwa kutuma tena msimbo wa SMS.';
+
+  @override
+  String get enterSmsCodeHint => 'Ingiza msimbo wa tarakimu 6 uliotumwa kwa SMS kwenye simu yako ili kuthibitisha ukamilishaji.';
+
+  @override
+  String get verifyAndComplete => 'Thibitisha na Ukamilishe';
+
+  @override
+  String get resendCode => 'Tuma tena msimbo';
+
+  @override
+  String resendIn(Object seconds) {
+    return 'Tuma tena baada ya sekunde $seconds';
+  }
+
+  @override
+  String get sending => 'Inatuma…';
+
+  @override
+  String get confirmCompletionTitle => 'Thibitisha Ukamilishaji';
+
+  @override
+  String get confirmCompletionBody => 'Je, ungependa kutuma msimbo wa uthibitishaji wa tarakimu 6 kwa SMS ili kukamilisha kazi hii?';
+
+  @override
+  String get sendSmsCode => 'Tuma Msimbo wa SMS';
+
+  @override
+  String get completionCodeHint => '------';
+
+  @override
+  String get filterByFundiOrService => 'Chuja kwa fundi au huduma...';
+
+  @override
+  String get allLabel => 'Zote';
+
+  @override
+  String get statusPending => 'Inasubiri';
+
+  @override
+  String get statusAccepted => 'Imekubaliwa';
+
+  @override
+  String get statusRejected => 'Imekataliwa';
+
+  @override
+  String get statusCancelled => 'Imeghairiwa';
+
+  @override
+  String get statTotal => 'Jumla';
+
+  @override
+  String get statClosed => 'Zilizofungwa';
+
+  @override
+  String get noRequestsMatchFilter => 'Hakuna maombi yanayolingana na kichujio chako';
+
+  @override
+  String get sectionActiveRequests => 'Maombi Yanayoendelea';
+
+  @override
+  String get sectionClosedRequests => 'Maombi Yaliyofungwa';
+
+  @override
+  String get cancelAction => 'Ghairi';
+
+  @override
+  String get viewJob => 'Tazama Kazi';
+
+  @override
+  String get chatAction => 'Piga Gumzo';
+
+  @override
+  String get detailsAction => 'Maelezo';
+
+  @override
+  String get couldNotCancelRequest => 'Imeshindwa kughairi ombi.';
+
+  @override
+  String get markAsJob => 'Weka kama kazi';
+
+  @override
+  String markAsJobConfirm(String name) {
+    return 'Anza kazi hii na $name? Tiketi itaundwa.';
+  }
+
+  @override
+  String get couldNotCreateJob => 'Imeshindwa kuunda kazi.';
+
+  @override
+  String get timeAgoJustNow => 'Sasa hivi';
+
+  @override
+  String timeAgoMinutes(int count) {
+    return 'Dakika $count zilizopita';
+  }
+
+  @override
+  String timeAgoHours(int count) {
+    return 'Saa $count zilizopita';
+  }
+
+  @override
+  String timeAgoDays(int count) {
+    return 'Siku $count zilizopita';
+  }
+
+  @override
+  String get requestDetailsTitle => 'Maelezo ya Ombi';
+
+  @override
+  String get fieldService => 'Huduma';
+
+  @override
+  String get fieldCategory => 'Kategoria';
+
+  @override
+  String get fieldDescription => 'Maelezo';
+
+  @override
+  String get fieldFundi => 'Fundi';
+
+  @override
+  String get fieldArea => 'Eneo';
+
+  @override
+  String get fieldRequestedOn => 'Iliombwa';
+
+  @override
+  String get fieldStatus => 'Hali';
+
+  @override
+  String get closeAction => 'Funga';
 }

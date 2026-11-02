@@ -7,7 +7,10 @@ class BannerItem {
     this.link,
   });
 
-  factory BannerItem.fromJson(Map<String, dynamic> json) {
+  factory BannerItem.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return const BannerItem(image: '');
+    }
     return BannerItem(
       image: (json['image'] ?? '').toString(),
       link: json['link']?.toString(),

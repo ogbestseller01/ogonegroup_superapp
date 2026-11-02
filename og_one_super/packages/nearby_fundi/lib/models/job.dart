@@ -4,6 +4,40 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import 'ticket.dart';
 
+/// The customer's review of a completed job (rating 1-5 + remark).
+class JobReview {
+  final int id;
+  final double rating;
+  final String? comment;
+  final DateTime? createdAt;
+
+  JobReview({
+    required this.id,
+    required this.rating,
+    this.comment,
+    this.createdAt,
+  });
+
+  factory JobReview.fromJson(Map<String, dynamic> json) {
+    final comment = json['comment']?.toString().trim();
+    return JobReview(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      rating: double.tryParse(json['rating']?.toString() ?? '') ?? 0,
+      comment: (comment == null || comment.isEmpty) ? null : comment,
+      createdAt: json['created_at'] == null
+          ? null
+          : DateTime.tryParse(json['created_at'].toString()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'rating': rating,
+    'comment': comment,
+    'created_at': createdAt?.toIso8601String(),
+  };
+}
+
 class Job {
   static const String pendingStatus = 'pending';
   static const String onProgressStatus = 'on-progress';
@@ -30,6 +64,7 @@ class Job {
   final DateTime? createdAt;
 
   final Ticket? ticket;
+  final JobReview? review;
 
   Job({
     required this.id,
@@ -44,11 +79,16 @@ class Job {
     this.completedAt,
     this.createdAt,
     this.ticket,
+    this.review,
   });
 
   bool get isPending => status == pendingStatus;
   bool get isOnProgress => status == onProgressStatus;
   bool get isCompleted => status == completedStatus;
+
+  /// Customer can leave a review only once the job is completed (one per job).
+  bool get canReview => isCompleted && review == null;
+  bool get hasReview => review != null;
 
   String get statusLabel => statusLabelFor(status);
   Color get statusColor => statusColorFor(status);
@@ -142,6 +182,8 @@ class Job {
       );
     }
 
+    final reviewMap = _map(json['review']);
+
     return Job(
       id: _int(json['id']),
       serviceName: _string(service?['name'] ?? json['service_name'], 'Service'),
@@ -155,6 +197,7 @@ class Job {
       completedAt: _date(json['completed_at']),
       createdAt: _date(json['created_at']),
       ticket: parsedTicket,
+      review: reviewMap != null ? JobReview.fromJson(reviewMap) : null,
     );
   }
 
@@ -171,12 +214,14 @@ class Job {
     'completed_at': completedAt?.toIso8601String(),
     'created_at': createdAt?.toIso8601String(),
     'ticket': ticket?.toJson(),
+    'review': review?.toJson(),
   };
 
   Job copyWith({
     String? status,
     DateTime? completedAt,
     Ticket? ticket,
+    JobReview? review,
   }) {
     return Job(
       id: id,
@@ -191,6 +236,7 @@ class Job {
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt,
       ticket: ticket ?? this.ticket,
+      review: review ?? this.review,
     );
   }
 }

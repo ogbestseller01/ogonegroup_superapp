@@ -41,12 +41,15 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
 
-    # Force every pod to use at least iOS 15.5
     target.build_configurations.each do |config|
+      # Force every pod to use at least iOS 15.5
       current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
       if current.nil? || current.to_f < 15.5
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
       end
+
+      # ML Kit has no arm64 simulator slice: build pods for x86_64 on simulators only
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
     end
   end
 end

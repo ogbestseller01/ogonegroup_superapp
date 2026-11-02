@@ -134,7 +134,7 @@ abstract class AppLocalizations {
   /// No description provided for @myRequests.
   ///
   /// In en, this message translates to:
-  /// **'Requests'**
+  /// **'My Requests'**
   String get myRequests;
 
   /// No description provided for @profile.
@@ -986,13 +986,13 @@ abstract class AppLocalizations {
   /// No description provided for @noRequestsYet.
   ///
   /// In en, this message translates to:
-  /// **'No requests yet'**
+  /// **'You have no requests yet'**
   String get noRequestsYet;
 
   /// No description provided for @requestsWillAppear.
   ///
   /// In en, this message translates to:
-  /// **'Your requests will appear here'**
+  /// **'Your service requests will appear here.'**
   String get requestsWillAppear;
 
   /// No description provided for @cancelRequest.
@@ -1690,6 +1690,396 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Details'**
   String get viewDetails;
+
+  /// No description provided for @noTicketsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets yet'**
+  String get noTicketsYet;
+
+  /// No description provided for @noTicketsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket is created when you mark a request as a job.'**
+  String get noTicketsHint;
+
+  /// No description provided for @fundiLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fundi'**
+  String get fundiLabel;
+
+  /// No description provided for @createdOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get createdOn;
+
+  /// No description provided for @completedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedOn;
+
+  /// No description provided for @searchByFundiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by fundi name...'**
+  String get searchByFundiName;
+
+  /// No description provided for @checkBackLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for updates from our technicians.'**
+  String get checkBackLater;
+
+  /// No description provided for @noPostsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts match'**
+  String get noPostsMatch;
+
+  /// No description provided for @imageNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Image not available'**
+  String get imageNotAvailable;
+
+  /// No description provided for @video.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get video;
+
+  /// No description provided for @tapToPlayVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play video'**
+  String get tapToPlayVideo;
+
+  /// No description provided for @startedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get startedOn;
+
+  /// No description provided for @completedOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedOnLabel;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get descriptionLabel;
+
+  /// No description provided for @ticketLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket'**
+  String get ticketLabel;
+
+  /// No description provided for @payForJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay for Job'**
+  String get payForJob;
+
+  /// No description provided for @confirmCompletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Completion'**
+  String get confirmCompletion;
+
+  /// No description provided for @sendingSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending SMS Code…'**
+  String get sendingSmsCode;
+
+  /// No description provided for @jobCompletedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Job completed successfully!'**
+  String get jobCompletedSuccess;
+
+  /// No description provided for @jobNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Job not found'**
+  String get jobNotFound;
+
+  /// No description provided for @couldNotSendSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send verification code via SMS.'**
+  String get couldNotSendSms;
+
+  /// No description provided for @enterSixDigitCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code received via SMS.'**
+  String get enterSixDigitCode;
+
+  /// No description provided for @invalidCodeTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid code. Check SMS and try again.'**
+  String get invalidCodeTryAgain;
+
+  /// No description provided for @couldNotResendSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not resend SMS code.'**
+  String get couldNotResendSms;
+
+  /// No description provided for @enterSmsCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6-digit code sent by SMS to your phone to confirm completion.'**
+  String get enterSmsCodeHint;
+
+  /// No description provided for @verifyAndComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify & Complete'**
+  String get verifyAndComplete;
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @resendIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend in {seconds}s'**
+  String resendIn(Object seconds);
+
+  /// No description provided for @sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sending;
+
+  /// No description provided for @confirmCompletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Completion'**
+  String get confirmCompletionTitle;
+
+  /// No description provided for @confirmCompletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to send the 6-digit verification code via SMS to complete this job?'**
+  String get confirmCompletionBody;
+
+  /// No description provided for @sendSmsCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Send SMS Code'**
+  String get sendSmsCode;
+
+  /// No description provided for @completionCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'------'**
+  String get completionCodeHint;
+
+  /// No description provided for @filterByFundiOrService.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by fundi or service...'**
+  String get filterByFundiOrService;
+
+  /// No description provided for @allLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allLabel;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @statTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get statTotal;
+
+  /// No description provided for @statClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get statClosed;
+
+  /// No description provided for @noRequestsMatchFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests match your filter'**
+  String get noRequestsMatchFilter;
+
+  /// No description provided for @sectionActiveRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Requests'**
+  String get sectionActiveRequests;
+
+  /// No description provided for @sectionClosedRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed Requests'**
+  String get sectionClosedRequests;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
+
+  /// No description provided for @viewJob.
+  ///
+  /// In en, this message translates to:
+  /// **'View Job'**
+  String get viewJob;
+
+  /// No description provided for @chatAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatAction;
+
+  /// No description provided for @detailsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsAction;
+
+  /// No description provided for @couldNotCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not cancel request.'**
+  String get couldNotCancelRequest;
+
+  /// No description provided for @markAsJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as job'**
+  String get markAsJob;
+
+  /// No description provided for @markAsJobConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Start this job with {name}? A ticket will be created.'**
+  String markAsJobConfirm(String name);
+
+  /// No description provided for @couldNotCreateJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the job.'**
+  String get couldNotCreateJob;
+
+  /// No description provided for @timeAgoJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get timeAgoJustNow;
+
+  /// No description provided for @timeAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}m ago'**
+  String timeAgoMinutes(int count);
+
+  /// No description provided for @timeAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h ago'**
+  String timeAgoHours(int count);
+
+  /// No description provided for @timeAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d ago'**
+  String timeAgoDays(int count);
+
+  /// No description provided for @requestDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Details'**
+  String get requestDetailsTitle;
+
+  /// No description provided for @fieldService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get fieldService;
+
+  /// No description provided for @fieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get fieldCategory;
+
+  /// No description provided for @fieldDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get fieldDescription;
+
+  /// No description provided for @fieldFundi.
+  ///
+  /// In en, this message translates to:
+  /// **'Fundi'**
+  String get fieldFundi;
+
+  /// No description provided for @fieldArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get fieldArea;
+
+  /// No description provided for @fieldRequestedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested On'**
+  String get fieldRequestedOn;
+
+  /// No description provided for @fieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get fieldStatus;
+
+  /// No description provided for @closeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeAction;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

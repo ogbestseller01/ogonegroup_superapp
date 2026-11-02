@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 class Assets {
   Assets._();
 
+  static const AssetGenImage appIconForeground =
+      AssetGenImage('assets/icons/app_icon_foreground.png');
   static const SvgGenImage audioIcon =
       SvgGenImage('assets/icons/chat/audio_icon.svg');
   static const SvgGenImage chatIcon =
