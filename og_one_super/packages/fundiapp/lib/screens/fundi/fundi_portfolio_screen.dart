@@ -1,3 +1,5 @@
+// FILE: lib/screens/fundi/fundi_portfolio_screen.dart
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -30,6 +32,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<PortfolioProvider>();
 
     return Scaffold(
@@ -49,10 +52,15 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
               onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Text(
-                'My Portfolio',
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                l10n.myPortfolio,
+                style: const TextStyle(
+                    inherit: true,
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800
+                ),
               ),
             ),
             _AppBarButton(
@@ -65,7 +73,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
       body: provider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : provider.items.isEmpty
-          ? _buildEmptyState(context)
+          ? _buildEmptyState(context, l10n)
           : RefreshIndicator(
         color: AppTheme.primary,
         onRefresh: () => context.read<PortfolioProvider>().loadPortfolio(),
@@ -78,7 +86,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
             return _PortfolioFeedCard(
               item: item,
               onEdit: () => _showEditSheet(context, item),
-              onDelete: () => _deleteItem(context, item.id),
+              onDelete: () => _deleteItem(context, item.id, l10n),
             );
           },
         ),
@@ -86,23 +94,33 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.photo_library_outlined, size: 64, color: AppTheme.primary),
-          const SizedBox(height: 16),
-          const Text('No Posts Yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Upload photos of your work to showcase your skills.'),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _showUploadSheet(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Create Post'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.photo_library_outlined, size: 64, color: AppTheme.primary),
+            const SizedBox(height: 16),
+            Text(
+                l10n.noPostsYet,
+                style: const TextStyle(inherit: true, fontSize: 18, fontWeight: FontWeight.bold)
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.uploadPhotosToShowcase,
+              textAlign: TextAlign.center,
+              style: const TextStyle(inherit: true, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => _showUploadSheet(context),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.createPost),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -111,6 +129,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
   // CREATE POST
   // ================================================================
   void _showUploadSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     List<File> selectedImages = [];
     bool isUploading = false;
@@ -133,7 +152,10 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('New Portfolio Post', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+                  Text(
+                      l10n.newPortfolioPost,
+                      style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800)
+                  ),
                   const SizedBox(height: 12),
                   if (selectedImages.isNotEmpty)
                     Container(
@@ -167,19 +189,22 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                     child: Container(
                       height: 100,
                       decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFD0D5DD))),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined, size: 32, color: AppTheme.primary),
-                          SizedBox(height: 8),
-                          Text('Tap to select images', style: TextStyle(fontWeight: FontWeight.w600)),
+                          const Icon(Icons.add_photo_alternate_outlined, size: 32, color: AppTheme.primary),
+                          const SizedBox(height: 8),
+                          Text(
+                              l10n.tapToSelectImages,
+                              style: const TextStyle(inherit: true, fontWeight: FontWeight.w600)
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   CustomButton(
-                    text: 'Post',
+                    text: l10n.post,
                     isLoading: isUploading,
                     onPressed: selectedImages.isEmpty || isUploading ? null : () async {
                       modalSetState(() => isUploading = true);
@@ -201,6 +226,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
   // EDIT POST (ADD / REMOVE IMAGES)
   // ================================================================
   void _showEditSheet(BuildContext context, PortfolioItem item) {
+    final l10n = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     List<File> newImages = [];
     List<PortfolioImage> existingImages = List.from(item.images);
@@ -225,7 +251,10 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Edit Post', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+                  Text(
+                      l10n.editPost,
+                      style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800)
+                  ),
                   const SizedBox(height: 12),
 
                   // Image Grid
@@ -290,18 +319,21 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                     child: Container(
                       height: 80,
                       decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFD0D5DD))),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_photo_alternate_outlined, color: AppTheme.primary),
-                          Text('Add more images', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.primary),
+                          Text(
+                              l10n.addMoreImages,
+                              style: const TextStyle(inherit: true, fontWeight: FontWeight.w600, fontSize: 13)
+                          ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
                   CustomButton(
-                    text: 'Save Changes',
+                    text: l10n.saveChanges,
                     isLoading: isUpdating,
                     onPressed: isUpdating ? null : () async {
                       modalSetState(() => isUpdating = true);
@@ -325,20 +357,29 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
     );
   }
 
-  Future<void> _deleteItem(BuildContext context, int id) async {
+  Future<void> _deleteItem(BuildContext context, int id, AppLocalizations l10n) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Delete Post?', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Are you sure you want to remove this entire post?'),
+        title: Text(
+            l10n.deletePostTitle,
+            style: const TextStyle(inherit: true, fontWeight: FontWeight.w800)
+        ),
+        content: Text(
+          l10n.deletePostConfirmation,
+          style: const TextStyle(inherit: true),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel, style: const TextStyle(inherit: true))
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error, foregroundColor: Colors.white),
-            child: const Text('Delete'),
+            child: Text(l10n.delete, style: const TextStyle(inherit: true)),
           ),
         ],
       ),
@@ -405,6 +446,7 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final images = widget.item.images;
     final hasMultiple = images.length > 1;
 
@@ -431,8 +473,11 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
                   child: Icon(Icons.person, color: AppTheme.primary, size: 20),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('My Portfolio', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                Expanded(
+                  child: Text(
+                      l10n.myPortfolio,
+                      style: const TextStyle(inherit: true, fontWeight: FontWeight.w700, fontSize: 15)
+                  ),
                 ),
                 PopupMenuButton<String>(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -441,14 +486,14 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
                     if (v == 'edit') widget.onEdit();
                     if (v == 'delete') widget.onDelete();
                   },
-                  itemBuilder: (_) => const [
+                  itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_outlined, color: AppTheme.primary, size: 20),
-                          SizedBox(width: 8),
-                          Text('Edit Images', style: TextStyle(color: AppTheme.primary)),
+                          const Icon(Icons.edit_outlined, color: AppTheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(l10n.editImages, style: const TextStyle(inherit: true, color: AppTheme.primary)),
                         ],
                       ),
                     ),
@@ -456,9 +501,9 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                          SizedBox(width: 8),
-                          Text('Delete Post', style: TextStyle(color: Colors.redAccent)),
+                          const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                          const SizedBox(width: 8),
+                          Text(l10n.deletePost, style: const TextStyle(inherit: true, color: Colors.redAccent)),
                         ],
                       ),
                     ),

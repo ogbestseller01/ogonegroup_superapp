@@ -1,4 +1,3 @@
-// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -83,31 +82,38 @@ class _HomeScreenState extends State<HomeScreen> {
             : child;
 
     return [
-      const NearbyScreen(),          // 0
-      const BlogsScreen(),           // 1
+      const NearbyScreen(), // 0
+      const BlogsScreen(), // 1
       tab(2, const MyRequestsScreen()), // 2
-      tab(3, const JobsScreen()),    // 3
+      tab(3, const JobsScreen()), // 3
       tab(4, const ProfileScreen()), // 4
     ];
   }
 
-  void _initializeChat() {
+  /// Fixed: now also refreshes conversations so totalUnread is available on Home
+  Future<void> _initializeChat() async {
     final authProvider = context.read<AuthProvider>();
     final chatProvider = context.read<ChatProvider>();
     final user = authProvider.user;
     final token = authProvider.token;
 
-    if (user != null && token != null) {
-      chatProvider.initialize(
-        token: token,
-        currentUser: ChatUser(
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          avatar: null,
-        ),
-      );
+    if (user == null || token == null) return;
+
+    chatProvider.initialize(
+      token: token,
+      currentUser: ChatUser(
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: null,
+      ),
+    );
+
+    try {
+      await chatProvider.refreshConversations();
+    } catch (e) {
+      debugPrint('Chat init / refresh error: $e');
     }
   }
 
@@ -154,6 +160,23 @@ class _HomeScreenState extends State<HomeScreen> {
   // ================================================================
   // DRAWER ACTIONS
   // ================================================================
+
+  void _openChat() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!AuthGuard.ensure(
+      context,
+      message: l10n.signInToChat,
+    )) {
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => ChatListScreen(onBack: () => Navigator.pop(ctx)),
+      ),
+    );
+  }
 
   void _openTickets() {
     final l10n = AppLocalizations.of(context)!;
@@ -269,6 +292,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
       await context.read<NotificationProvider>().loadNotifications();
+
+      // Also refresh chat unread count
+      if (!mounted) return;
+      try {
+        await context.read<ChatProvider>().refreshConversations();
+      } catch (_) {}
 
       if (!mounted) return;
       final settings = context.read<SettingsProvider>();
@@ -622,6 +651,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
                   _ModernDrawerItem(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: l10n.chat,
+                    ink: _ink(theme),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _openChat();
+                    },
+                  ),
+                  _ModernDrawerItem(
                     icon: Icons.confirmation_number_outlined,
                     label: l10n.tickets,
                     ink: _ink(theme),
@@ -725,40 +763,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // APP BAR
+  // APP BAR  (responsive)
   // ================================================================
 
   PreferredSizeWidget _buildAppBar(ThemeData theme, AppLocalizations l10n) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < 380; // very small phones
+
     return AppBar(
       backgroundColor: AppTheme.primary,
       foregroundColor: Colors.white,
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
-      toolbarHeight: 66,
+      toolbarHeight: isCompact ? 58 : 66,
       automaticallyImplyLeading: false,
       centerTitle: false,
-      leadingWidth: 62,
-      titleSpacing: 8,
+      leadingWidth: isCompact ? 54 : 62,
+      titleSpacing: isCompact ? 4 : 8,
       iconTheme: const IconThemeData(color: Colors.white),
       systemOverlayStyle: SystemUiOverlayStyle.light,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
       leading: Padding(
-        padding: const EdgeInsets.only(left: 14),
+        padding: EdgeInsets.only(left: isCompact ? 10 : 14),
         child: Builder(
           builder: (barContext) {
             final unread = context.watch<ChatProvider>().totalUnread;
             return _BarButton(
+              size: isCompact ? 40 : 44,
               tooltip: 'Menu',
               onTap: () => Scaffold.of(barContext).openDrawer(),
               child: Badge(
                 isLabelVisible: unread > 0,
                 backgroundColor: AppTheme.error,
                 smallSize: 9,
-                child: const Icon(Icons.menu_rounded,
-                    color: Colors.white, size: 22),
+                child: Icon(Icons.menu_rounded,
+                    color: Colors.white, size: isCompact ? 20 : 22),
               ),
             );
           },
@@ -768,20 +810,20 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Container(
             width: 5,
-            height: 24,
+            height: isCompact ? 20 : 24,
             decoration: BoxDecoration(
               color: _gold,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: isCompact ? 8 : 10),
           Flexible(
             child: Text(
               l10n.appTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.nunito(
-                fontSize: 21,
+                fontSize: isCompact ? 18 : 21,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
@@ -790,30 +832,65 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       actions: [
+        // ── Chat icon with badge ──
+        Consumer<ChatProvider>(
+          builder: (context, chat, _) {
+            final unread = chat.totalUnread;
+            return _BarButton(
+              size: isCompact ? 40 : 44,
+              tooltip: l10n.chat,
+              onTap: _openChat,
+              child: Badge(
+                isLabelVisible: unread > 0,
+                backgroundColor: AppTheme.error,
+                label: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                child: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: Colors.white,
+                  size: isCompact ? 20 : 22,
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(width: isCompact ? 4 : 6),
+
+        // Refresh
         _BarButton(
+          size: isCompact ? 40 : 44,
           tooltip: l10n.refresh,
           onTap: _onRefreshTap,
-          child: const Icon(Icons.refresh_rounded,
-              color: Colors.white, size: 22),
+          child: Icon(Icons.refresh_rounded,
+              color: Colors.white, size: isCompact ? 20 : 22),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: isCompact ? 4 : 6),
+
+        // Notifications
         Consumer<NotificationProvider>(
           builder: (context, provider, child) {
             final unread = provider.unreadCount;
             return _BarButton(
+              size: isCompact ? 40 : 44,
               tooltip: l10n.notifications,
               onTap: () => _showNotifications(context),
               child: Badge(
                 isLabelVisible: unread > 0,
                 backgroundColor: AppTheme.error,
                 label: Text(unread > 9 ? '9+' : '$unread'),
-                child: const Icon(Icons.notifications_none_rounded,
-                    color: Colors.white, size: 22),
+                child: Icon(Icons.notifications_none_rounded,
+                    color: Colors.white, size: isCompact ? 20 : 22),
               ),
             );
           },
         ),
-        const SizedBox(width: 14),
+        SizedBox(width: isCompact ? 8 : 12),
       ],
     );
   }
@@ -899,6 +976,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
     final ink = _ink(theme);
+    final width = MediaQuery.sizeOf(context).width;
+    final isCompact = width < 380;
 
     return Container(
       decoration: BoxDecoration(
@@ -919,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen> {
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(
-                fontSize: 12,
+                fontSize: isCompact ? 11 : 12,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: selected ? ink : theme.hintColor,
               );
@@ -928,13 +1007,14 @@ class _HomeScreenState extends State<HomeScreen> {
               final selected = states.contains(WidgetState.selected);
               return IconThemeData(
                 color: selected ? _gold : theme.hintColor,
+                size: isCompact ? 22 : 24,
               );
             }),
           ),
           child: NavigationBar(
             selectedIndex: _currentIndex,
             onDestinationSelected: _selectTab,
-            height: 70,
+            height: isCompact ? 64 : 70,
             elevation: 0,
             backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
@@ -1054,18 +1134,20 @@ class _ModernDrawerItem extends StatelessWidget {
 }
 
 // ==================================================================
-// APP BAR BUTTON
+// APP BAR BUTTON  (now supports custom size for responsiveness)
 // ==================================================================
 
 class _BarButton extends StatelessWidget {
   final Widget child;
   final String tooltip;
   final VoidCallback onTap;
+  final double size;
 
   const _BarButton({
     required this.child,
     required this.tooltip,
     required this.onTap,
+    this.size = 44,
   });
 
   @override
@@ -1079,8 +1161,8 @@ class _BarButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: SizedBox(
-            width: 44,
-            height: 44,
+            width: size,
+            height: size,
             child: Center(child: child),
           ),
         ),

@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app_badge_plus/app_badge_plus.dart';
+// ✅ Replaced app_badge_plus with flutter_app_badger_plus
+import 'package:flutter_app_badger_plus/flutter_app_badger_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -197,12 +198,18 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> _updateAppBadge() async {
     try {
       if (Platform.isIOS) {
-        final supported = await AppBadgePlus.isSupported();
+        // ✅ Updated to use FlutterAppBadger
+        final supported = await FlutterAppBadger.isAppBadgeSupported();
         if (!supported) {
           debugPrint('ℹ️ iOS badge not supported on this device');
           return;
         }
-        await AppBadgePlus.updateBadge(_unreadCount); // 0 clears
+
+        if (_unreadCount > 0) {
+          await FlutterAppBadger.updateBadgeCount(_unreadCount);
+        } else {
+          await FlutterAppBadger.removeBadge();
+        }
         debugPrint('🔴 iOS badge set to $_unreadCount');
       } else if (Platform.isAndroid) {
         if (_unreadCount > 0) {

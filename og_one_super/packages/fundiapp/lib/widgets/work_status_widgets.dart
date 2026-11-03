@@ -234,7 +234,7 @@ class WorkFilterBar extends StatelessWidget {
     required this.options,
     required this.selected,
     required this.counts,
-    required this.onSelected,
+    required this.onSelected, required Map<String, String> labels,
   });
 
   @override

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
 import '../../models/request.dart';
 import '../../providers/request_provider.dart';
+import '../../providers/job_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
@@ -29,7 +30,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RequestProvider>().loadMyRequests();
+      if (mounted) context.read<RequestProvider>().loadMyRequests();
     });
   }
 
@@ -136,6 +137,64 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
+  // ─── ACCEPT / REJECT ────────────────────────────────────────────────────
+  // Uses the SCREEN's mounted flag (not the card's context): the card can be
+  // rebuilt while the request is in flight, but the screen stays alive.
+  Future<void> _answerRequest(
+      ServiceRequest request, {
+        required bool accept,
+      }) async {
+    final tag = accept ? 'ACCEPT' : 'REJECT';
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<RequestProvider>();
+    final jobs = context.read<JobProvider>();
+
+    debugPrint('🟡 [$tag] tapped → request #${request.id} '
+        'status=${request.status} acting=${provider.isActing(request.id)}');
+
+    if (provider.isActing(request.id)) {
+      debugPrint('⚠️ [$tag] ignored: request #${request.id} already in flight');
+      return;
+    }
+
+    final success = accept
+        ? await provider.acceptRequest(request.id)
+        : await provider.rejectRequest(request.id);
+
+    debugPrint('${success ? '🟢' : '🔴'} [$tag] request #${request.id} '
+        'result success=$success error=${provider.error}');
+
+    if (!mounted) {
+      debugPrint('⚠️ [$tag] screen no longer mounted, skipping UI feedback');
+      return;
+    }
+
+    // The backend created the Job + Ticket (pending) when the request was accepted.
+    if (success && accept) {
+      debugPrint('🟢 [ACCEPT] refreshing jobs (job auto-created by the server)');
+      await jobs.loadJobs(silent: true);
+      if (!mounted) return;
+    }
+
+    _showSnack(
+      context,
+      success
+          ? (accept ? l10n.requestAccepted : l10n.requestRejected)
+          : (provider.error ?? (accept ? 'Failed to accept' : 'Failed to reject')),
+      isError: !success,
+    );
+  }
+
+  // ─── Job ────────────────────────────────────────────────────────────────
+  void _openJob(ServiceRequest request) {
+    debugPrint('🟡 [VIEW JOB] request #${request.id} jobId=${request.jobId} '
+        'jobNumber=${request.jobNumber}');
+    if (request.jobId == null) return;
+
+    // Opens the fundi Jobs list, where the auto-created job (pending) is listed.
+    Navigator.pushNamed(context, AppRoutes.jobs);
+  }
+
   // ─── Chat ───────────────────────────────────────────────────────────────
   Future<void> _startChat(BuildContext context, ServiceRequest request) async {
     try {
@@ -195,7 +254,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             children: [
               _buildTitleRow(context, provider, l10n, isDark),
               Expanded(
-                child: provider.isLoading
+                // Spinner only on the very first load — never while the list
+                // is on screen, otherwise the tapped card is destroyed.
+                child: provider.isLoading && provider.requests.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : Column(
                   children: [
@@ -745,6 +806,32 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               ],
             ),
 
+            // Job auto-created on accept
+            if (isAccepted && request.hasJob && request.jobNumber != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.work_outline_rounded,
+                      size: 14, color: _accent(isDark)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Job ${request.jobNumber}'
+                          '${request.jobStatus != null ? ' • ${request.jobStatus}' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        inherit: true,
+                        color: _accent(isDark),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 16),
 
             // Actions
@@ -761,26 +848,18 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   // ─── ACTIONS ────────────────────────────────────────────────────────────
   Widget _buildPendingActions(
       BuildContext context, ServiceRequest request, AppLocalizations l10n) {
+    final acting = context.read<RequestProvider>().isActing(request.id);
+
     return Row(
       children: [
         Expanded(
           child: _PrimaryButton(
             label: l10n.accept,
             color: AppTheme.primary,
-            onPressed: () async {
-              final provider = context.read<RequestProvider>();
-              final success = await provider.acceptRequest(request.id);
-
-              if (context.mounted) {
-                _showSnack(
-                  context,
-                  success
-                      ? l10n.requestAccepted
-                      : (provider.error ?? 'Failed to accept'),
-                  isError: !success,
-                );
-              }
-            },
+            loading: acting,
+            onPressed: acting
+                ? null
+                : () => _answerRequest(request, accept: true),
           ),
         ),
         const SizedBox(width: 10),
@@ -789,20 +868,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             label: l10n.reject,
             color: AppTheme.error,
             outlined: true,
-            onPressed: () async {
-              final provider = context.read<RequestProvider>();
-              final success = await provider.rejectRequest(request.id);
-
-              if (context.mounted) {
-                _showSnack(
-                  context,
-                  success
-                      ? l10n.requestRejected
-                      : (provider.error ?? 'Failed to reject'),
-                  isError: !success,
-                );
-              }
-            },
+            onPressed: acting
+                ? null
+                : () => _answerRequest(request, accept: false),
           ),
         ),
       ],
@@ -811,14 +879,31 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
 
   Widget _buildAcceptedActions(
       BuildContext context, ServiceRequest request, AppLocalizations l10n) {
-    return SizedBox(
-      width: double.infinity,
-      child: _PrimaryButton(
-        label: l10n.chatWithCustomer,
-        color: AppTheme.primary,
-        icon: Icons.chat_bubble_outline_rounded,
-        onPressed: () => _startChat(context, request),
-      ),
+    return Column(
+      children: [
+        if (request.hasJob && request.jobId != null) ...[
+          SizedBox(
+            width: double.infinity,
+            child: _PrimaryButton(
+              label: 'View Job',
+              color: AppTheme.primary,
+              outlined: true,
+              icon: Icons.work_outline_rounded,
+              onPressed: () => _openJob(request),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: _PrimaryButton(
+            label: l10n.chatWithCustomer,
+            color: AppTheme.primary,
+            icon: Icons.chat_bubble_outline_rounded,
+            onPressed: () => _startChat(context, request),
+          ),
+        ),
+      ],
     );
   }
 
@@ -853,7 +938,8 @@ class _PrimaryButton extends StatelessWidget {
   final Color color;
   final IconData? icon;
   final bool outlined;
-  final VoidCallback onPressed;
+  final bool loading;
+  final VoidCallback? onPressed; // null = disabled
 
   const _PrimaryButton({
     required this.label,
@@ -861,6 +947,7 @@ class _PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.outlined = false,
+    this.loading = false,
   });
 
   @override
@@ -871,19 +958,30 @@ class _PrimaryButton extends StatelessWidget {
     (color == AppTheme.primary && isDark) ? AppTheme.secondary : color;
     final onBase = base == AppTheme.secondary ? AppTheme.primary : Colors.white;
 
-    final child = icon == null
-        ? Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)
-        : Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 17, color: outlined ? base : onBase),
-        const SizedBox(width: 7),
-        Flexible(
-            child: Text(label,
-                maxLines: 1, overflow: TextOverflow.ellipsis)),
-      ],
-    );
+    final Widget child;
+    if (loading) {
+      child = SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.2,
+          color: outlined ? base : onBase,
+        ),
+      );
+    } else if (icon == null) {
+      child = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+    } else {
+      child = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 17, color: outlined ? base : onBase),
+          const SizedBox(width: 7),
+          Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
+        ],
+      );
+    }
 
     final shape =
     RoundedRectangleBorder(borderRadius: BorderRadius.circular(15));

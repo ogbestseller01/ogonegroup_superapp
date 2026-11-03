@@ -344,9 +344,8 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
       maxScaleFactor: 1.25,
       child: Scaffold(
         key: _scaffoldKey,
-        backgroundColor: isDark
-            ? AppTheme.darkBackground
-            : theme.scaffoldBackgroundColor,
+        backgroundColor:
+        isDark ? AppTheme.darkBackground : theme.scaffoldBackgroundColor,
         drawer: _FundiDrawer(onLogout: () => _logoutWithConfirmation(context)),
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -375,7 +374,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
           foregroundColor: Colors.white,
           actions: [
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: l10n.refresh,
               onPressed: _isRefreshing ? null : _manualRefresh,
               icon: _isRefreshing
                   ? const SizedBox(
@@ -464,7 +463,7 @@ class _FundiDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                'Subscription',
+                l10n.comingSoonTitle,
                 style: TextStyle(
                   inherit: true,
                   fontSize: 20,
@@ -474,8 +473,7 @@ class _FundiDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Premium version — Coming soon 🚀\n'
-                    'Unlock more features and grow your business.',
+                l10n.comingSoonBody,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   inherit: true,
@@ -537,6 +535,26 @@ class _FundiDrawer extends StatelessWidget {
     );
   }
 
+  Widget _comingSoonBadge(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.secondary.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        l10n.comingSoon,
+        style: const TextStyle(
+          inherit: true,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: AppTheme.primary,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -557,7 +575,7 @@ class _FundiDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Drawer header
+            // ── Drawer header ───────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 12, 8, 24),
@@ -607,7 +625,10 @@ class _FundiDrawer extends StatelessWidget {
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(
-                            Icons.close_rounded, color: Colors.white, size: 26),
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
                         tooltip: 'Close',
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withOpacity(0.15),
@@ -645,7 +666,7 @@ class _FundiDrawer extends StatelessWidget {
               ),
             ),
 
-            // Drawer menu
+            // ── Drawer menu ─────────────────────────────────
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
@@ -660,7 +681,7 @@ class _FundiDrawer extends StatelessWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.confirmation_number_outlined,
-                    label: 'Tickets',
+                    label: l10n.tickets,
                     trailing: _countPill(totalTickets),
                     onTap: () {
                       Navigator.pop(context);
@@ -669,62 +690,63 @@ class _FundiDrawer extends StatelessWidget {
                   ),
                   _DrawerItem(
                     icon: Icons.work_outline_rounded,
-                    label: 'Jobs',
+                    label: l10n.jobs,
                     trailing: _countPill(totalJobs),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.pushNamed(context, AppRoutes.jobs);
                     },
                   ),
+
+                  // ── My Balance (replaces Payments) ──
                   _DrawerItem(
-                    icon: Icons.workspace_premium_rounded,
-                    label: 'Subscription',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondary.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        l10n.comingSoon,
-                        style: const TextStyle(
-                          inherit: true,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                    ),
+                    icon: Icons.account_balance_wallet_rounded,
+                    label: l10n.myBalance,
+                    trailing: _comingSoonBadge(context),
                     onTap: () {
                       Navigator.pop(context);
                       _showComingSoon(context);
                     },
                   ),
-                  // ── NEW: Earnings (below Subscription) ──
+
+                  // ── Subscription (coming soon) ──
                   _DrawerItem(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Earnings',
+                    icon: Icons.workspace_premium_rounded,
+                    label: l10n.subscription,
+                    trailing: _comingSoonBadge(context),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.earnings);
+                      _showComingSoon(context);
                     },
                   ),
-                  // ── NEW: Reports ──
+                  // ── Earnings (coming soon) ──
+                  _DrawerItem(
+                    icon: Icons.trending_up_rounded,
+                    label: l10n.earnings,
+                    trailing: _comingSoonBadge(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showComingSoon(context);
+                    },
+                  ),
+                  // ── Reports (coming soon) ──
                   _DrawerItem(
                     icon: Icons.bar_chart_rounded,
-                    label: 'Reports',
+                    label: l10n.reports,
+                    trailing: _comingSoonBadge(context),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.reports);
+                      _showComingSoon(context);
                     },
                   ),
+                  // ── Downloads (coming soon) ──
                   _DrawerItem(
                     icon: Icons.file_download_rounded,
-                    label: 'Downloads',
+                    label: l10n.downloads,
+                    trailing: _comingSoonBadge(context),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.downloads);
+                      _showComingSoon(context);
                     },
                   ),
                   _DrawerItem(
@@ -739,7 +761,7 @@ class _FundiDrawer extends StatelessWidget {
               ),
             ),
 
-            // Logout
+            // ── Logout ──────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
               child: Material(
@@ -753,7 +775,9 @@ class _FundiDrawer extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 15),
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -1021,7 +1045,7 @@ class _HomeDashboardContent extends StatelessWidget {
     final pendingCount = requestProvider.pendingCount;
     final completedCount = requestProvider.acceptedCount; // Accepted = Completed
 
-    final greeting = _greeting();
+    final greeting = _greeting(l10n);
 
     // Helper to navigate to Requests tab
     void goToRequests() {
@@ -1047,38 +1071,41 @@ class _HomeDashboardContent extends StatelessWidget {
           32,
         ),
         children: [
-          // ── Hero Card (Jobs & Tickets chips removed) ──────────
+          // ── Hero Card ───────────────────────────────────────
           _HeroCard(
             name: name,
             initial: initial,
             greeting: greeting,
-            pendingText:
-            pendingRequests > 0 ? '$pendingRequests Pending' : null,
+            pendingText: pendingRequests > 0
+                ? l10n.pendingCount(pendingRequests)
+                : null,
             isTablet: isTablet,
           ),
 
           const SizedBox(height: 18),
 
-          // ── REQUEST STATS (Total / Pending / Completed) ───────
-          // Tapping ANY card navigates to Requests screen
+          // ── Request stats ───────────────────────────────────
           _RequestStatsRow(
             total: totalRequests,
             pending: pendingCount,
             completed: completedCount,
             isDark: isDark,
             onTap: goToRequests,
+            totalLabel: l10n.totalRequests,
+            pendingLabel: l10n.pending,
+            completedLabel: l10n.completed,
           ),
 
           const SizedBox(height: 18),
 
-          // ── Quick Actions (Jobs & Tickets) ────────────────────
+          // ── Quick actions (Jobs & Tickets) ──────────────────
           Row(
             children: [
               Expanded(
                 child: _QuickAction(
                   icon: Icons.work_outline_rounded,
-                  label: 'Jobs',
-                  subtitle: 'View all',
+                  label: l10n.jobs,
+                  subtitle: l10n.viewAllShort,
                   count: totalJobs,
                   color: AppTheme.primary,
                   onTap: () => Navigator.pushNamed(context, AppRoutes.jobs),
@@ -1088,8 +1115,8 @@ class _HomeDashboardContent extends StatelessWidget {
               Expanded(
                 child: _QuickAction(
                   icon: Icons.confirmation_number_outlined,
-                  label: 'Tickets',
-                  subtitle: 'View all',
+                  label: l10n.tickets,
+                  subtitle: l10n.viewAllShort,
                   count: totalTickets,
                   color: AppTheme.primary,
                   onTap: () => Navigator.pushNamed(context, AppRoutes.tickets),
@@ -1100,11 +1127,12 @@ class _HomeDashboardContent extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // ── Recent Requests ───────────────────────────────────
+          // ── Recent requests ─────────────────────────────────
           _SectionHeader(
             title: l10n.latestRequests,
             showAction: requestProvider.requests.isNotEmpty,
             onViewAll: goToRequests,
+            viewAllLabel: l10n.viewAll,
           ),
           const SizedBox(height: 12),
 
@@ -1129,11 +1157,12 @@ class _HomeDashboardContent extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // ── Recent Jobs ───────────────────────────────────────
+          // ── Recent jobs ─────────────────────────────────────
           _SectionHeader(
-            title: 'Recent Jobs',
+            title: l10n.recentJobs,
             showAction: jobProvider.jobs.isNotEmpty,
             onViewAll: () => Navigator.pushNamed(context, AppRoutes.jobs),
+            viewAllLabel: l10n.viewAll,
           ),
           const SizedBox(height: 12),
 
@@ -1142,7 +1171,7 @@ class _HomeDashboardContent extends StatelessWidget {
           else if (jobProvider.jobs.isEmpty)
             _EmptyBox(
               icon: Icons.work_outline_rounded,
-              message: 'No jobs yet',
+              message: l10n.noJobsYet,
               cardBg: isDark ? AppTheme.darkSurface : Colors.white,
               mutedText:
               isDark ? AppTheme.darkTextSecondary : AppTheme.greyText,
@@ -1153,11 +1182,12 @@ class _HomeDashboardContent extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          // ── Recent Tickets ────────────────────────────────────
+          // ── Recent tickets ──────────────────────────────────
           _SectionHeader(
-            title: 'Recent Tickets',
+            title: l10n.recentTickets,
             showAction: ticketProvider.tickets.isNotEmpty,
             onViewAll: () => Navigator.pushNamed(context, AppRoutes.tickets),
+            viewAllLabel: l10n.viewAll,
           ),
           const SizedBox(height: 12),
 
@@ -1166,7 +1196,7 @@ class _HomeDashboardContent extends StatelessWidget {
           else if (ticketProvider.tickets.isEmpty)
             _EmptyBox(
               icon: Icons.confirmation_number_outlined,
-              message: 'No tickets yet',
+              message: l10n.noTicketsYet,
               cardBg: isDark ? AppTheme.darkSurface : Colors.white,
               mutedText:
               isDark ? AppTheme.darkTextSecondary : AppTheme.greyText,
@@ -1182,18 +1212,18 @@ class _HomeDashboardContent extends StatelessWidget {
   }
 
   /// Greeting forced to East Africa Time (UTC+3)
-  String _greeting() {
+  String _greeting(AppLocalizations l10n) {
     final eat = DateTime.now().toUtc().add(const Duration(hours: 3));
     final hour = eat.hour; // 0–23
 
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return l10n.goodMorning;
+    if (hour < 17) return l10n.goodAfternoon;
+    return l10n.goodEvening;
   }
 }
 
 // ================================================================
-// REQUEST STATS ROW (Total / Pending / Completed)
+// REQUEST STATS ROW
 // ================================================================
 
 class _RequestStatsRow extends StatelessWidget {
@@ -1202,6 +1232,9 @@ class _RequestStatsRow extends StatelessWidget {
   final int completed;
   final bool isDark;
   final VoidCallback onTap;
+  final String totalLabel;
+  final String pendingLabel;
+  final String completedLabel;
 
   const _RequestStatsRow({
     required this.total,
@@ -1209,6 +1242,9 @@ class _RequestStatsRow extends StatelessWidget {
     required this.completed,
     required this.isDark,
     required this.onTap,
+    required this.totalLabel,
+    required this.pendingLabel,
+    required this.completedLabel,
   });
 
   @override
@@ -1219,10 +1255,9 @@ class _RequestStatsRow extends StatelessWidget {
           child: _StatCard(
             icon: Icons.list_alt_rounded,
             value: total,
-            label: 'Total Requests',
-            iconBg: isDark
-                ? AppTheme.primary.withOpacity(0.25)
-                : AppTheme.navy50,
+            label: totalLabel,
+            iconBg:
+            isDark ? AppTheme.primary.withOpacity(0.25) : AppTheme.navy50,
             iconColor: isDark ? AppTheme.secondary : AppTheme.primary,
             isDark: isDark,
             onTap: onTap,
@@ -1233,7 +1268,7 @@ class _RequestStatsRow extends StatelessWidget {
           child: _StatCard(
             icon: Icons.more_horiz_rounded,
             value: pending,
-            label: 'Pending',
+            label: pendingLabel,
             iconBg: AppTheme.warning.withOpacity(isDark ? 0.22 : 0.15),
             iconColor: AppTheme.warning,
             isDark: isDark,
@@ -1245,7 +1280,7 @@ class _RequestStatsRow extends StatelessWidget {
           child: _StatCard(
             icon: Icons.check_circle_outline_rounded,
             value: completed,
-            label: 'Completed',
+            label: completedLabel,
             iconBg: AppTheme.success.withOpacity(isDark ? 0.22 : 0.14),
             iconColor: AppTheme.success,
             isDark: isDark,
@@ -1367,8 +1402,8 @@ class _NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isRead = notification['is_read'] == true ||
-        notification['read_at'] != null;
+    final isRead =
+        notification['is_read'] == true || notification['read_at'] != null;
 
     return Material(
       color: isRead
@@ -1447,15 +1482,15 @@ class _RequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     final status = request.status?.toString() ?? 'pending';
     final statusColor = _requestStatusColor(status);
-    final created = request.createdAt != null
-        ? _formatDate(request.createdAt)
-        : '';
+    final created =
+    request.createdAt != null ? _formatDate(request.createdAt) : '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1517,13 +1552,15 @@ class _RequestTile extends StatelessWidget {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: statusColor.withOpacity(0.13),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              _requestStatusLabel(status),
+                              _requestStatusLabel(status, l10n),
                               style: TextStyle(
                                 inherit: true,
                                 color: statusColor,
@@ -1538,8 +1575,11 @@ class _RequestTile extends StatelessWidget {
                       const SizedBox(height: 7),
                       Row(
                         children: [
-                          Icon(Icons.person_outline_rounded,
-                              size: 15, color: mutedText),
+                          Icon(
+                            Icons.person_outline_rounded,
+                            size: 15,
+                            color: mutedText,
+                          ),
                           const SizedBox(width: 5),
                           Expanded(
                             child: Text(
@@ -1560,8 +1600,11 @@ class _RequestTile extends StatelessWidget {
                         const SizedBox(height: 5),
                         Row(
                           children: [
-                            Icon(Icons.access_time_rounded,
-                                size: 14, color: mutedText),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 14,
+                              color: mutedText,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               created,
@@ -1612,17 +1655,17 @@ class _RequestTile extends StatelessWidget {
     }
   }
 
-  String _requestStatusLabel(String status) {
+  String _requestStatusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'accepted':
-        return 'ACCEPTED';
+        return l10n.acceptedStatus;
       case 'rejected':
-        return 'REJECTED';
+        return l10n.rejectedStatus;
       case 'cancelled':
-        return 'CANCELLED';
+        return l10n.cancelledStatus;
       case 'pending':
       default:
-        return 'PENDING';
+        return l10n.pendingStatus;
     }
   }
 
@@ -1644,11 +1687,13 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final bool showAction;
   final VoidCallback onViewAll;
+  final String viewAllLabel;
 
   const _SectionHeader({
     required this.title,
     required this.showAction,
     required this.onViewAll,
+    required this.viewAllLabel,
   });
 
   @override
@@ -1694,14 +1739,17 @@ class _SectionHeader extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: accent,
               backgroundColor: accent.withOpacity(0.08),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 6,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
-            child: const Text(
-              'View All',
-              style: TextStyle(
+            child: Text(
+              viewAllLabel,
+              style: const TextStyle(
                 inherit: true,
                 fontWeight: FontWeight.w700,
                 fontSize: 12.5,
@@ -1941,7 +1989,9 @@ class _QuickAction extends StatelessWidget {
                         minHeight: 25,
                       ),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 4),
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.12),
@@ -1975,8 +2025,7 @@ class _QuickAction extends StatelessWidget {
 }
 
 // ================================================================
-// HERO CARD  – always dark navy + white text
-// Jobs & Tickets chips REMOVED
+// HERO CARD
 // ================================================================
 
 class _HeroCard extends StatelessWidget {
@@ -2030,8 +2079,8 @@ class _HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            AppTheme.primary,     // #001D45
-            AppTheme.primaryDark, // #001533
+            AppTheme.primary,
+            AppTheme.primaryDark,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -2132,7 +2181,6 @@ class _HeroCard extends StatelessWidget {
                         letterSpacing: -0.4,
                       ),
                     ),
-                    // Only show Pending chip (Jobs & Tickets removed)
                     if (pendingText != null) ...[
                       const SizedBox(height: 10),
                       _chip(pendingText!, filled: true),

@@ -1,4 +1,3 @@
-// lib/main.dart
 // ============================================================
 //  FundiApp SDK — root entry point.
 // ============================================================
@@ -11,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:fundiapp_sdk/payments/chanel/mock_channel.dart';
 import 'package:provider/provider.dart';
 
 // ── Local: core ──────────────────────────────────────────────
@@ -37,7 +37,12 @@ import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/ticket_provider.dart';
 
+// ── Local: payments ──────────────────────────────────────────
+import 'payments/provider/payment_provider.dart';
+import 'payments/screens/payment_screen.dart';
+
 // ── Local: services ──────────────────────────────────────────
+import 'services/app_security_middleware.dart'; // <-- 🛡️ Comprehensive Security Middleware
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
@@ -56,8 +61,6 @@ import 'screens/auth/register_flow/register_step5_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/chat/chat_list_screen.dart';
 import 'screens/chat/chat_screen.dart';
-import 'screens/chat/video_call_screen.dart';
-import 'screens/chat/voice_call_screen.dart';
 import 'screens/fundi/fundi_home_screen.dart';
 import 'screens/fundi/fundi_portfolio_screen.dart';
 import 'screens/fundi/fundi_posts_screen.dart';
@@ -73,10 +76,6 @@ import 'screens/static/contact_us_screen.dart';
 import 'screens/static/faq_screen.dart';
 import 'screens/static/privacy_policy_screen.dart';
 import 'screens/static/terms_screen.dart';
-import 'screens/subscription/downloads_screen.dart';
-import 'screens/subscription/my_subscriptions_screen.dart';
-import 'screens/subscription/payment_methods_screen.dart';
-import 'screens/subscription/rate_cards_screen.dart';
 import 'screens/tickets/tickets_screen.dart';
 
 // ============================================================
@@ -107,6 +106,20 @@ Future<void> main() async {
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
     return true;
   };
+
+  // ==========================================================
+  // 🛡️ 0/5  STRICT APP SECURITY MIDDLEWARE ENFORCEMENT
+  // ==========================================================
+  try {
+    await AppSecurityMiddleware.initialize();
+  } catch (error) {
+    // Terminate app immediately if critical compromise check fails
+    try {
+      SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+    } catch (_) {}
+    return;
+  }
+  // ==========================================================
 
   // ── 1/5  Firebase ─────────────────────────────────────────
   if (Firebase.apps.isEmpty) {
@@ -163,6 +176,11 @@ Future<void> main() async {
         // ── Tickets & Jobs ──
         ChangeNotifierProvider(create: (_) => TicketProvider()),
         ChangeNotifierProvider(create: (_) => JobProvider()),
+
+        // ── Payment System ──
+        ChangeNotifierProvider(
+          create: (_) => PaymentProvider(channel: MockPaymentChannel()),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -338,26 +356,17 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
     case AppRoutes.jobs:
       return route(const JobsScreen());
 
-  // ── Chat / calls ──────────────────────────────────────
-    case AppRoutes.chatList:
-      return route(const ChatListScreen());
-    case AppRoutes.chat:
-      if (args is ChatConversation) {
-        return route(ChatScreen(conversation: args));
+  // ── Payment (NEW) ─────────────────────────────────────
+    case AppRoutes.payment:
+      if (args is Map<String, dynamic>) {
+        return route(PaymentScreen(
+          reference: args['reference']?.toString() ?? 'UNKNOWN',
+          requestsCount: args['requestsCount'] as int?,
+          customerPhone: args['customerPhone']?.toString(),
+        ));
       }
-      return route(const ChatListScreen());
-    case AppRoutes.voiceCall:
-      final a = _getMapArgument(args);
-      return route(VoiceCallScreen(
-        userName: a?['userName']?.toString() ?? 'Unknown',
-        userId: a?['userId']?.toString() ?? '',
-      ));
-    case AppRoutes.videoCall:
-      final a = _getMapArgument(args);
-      return route(VideoCallScreen(
-        userName: a?['userName']?.toString() ?? 'Unknown',
-        userId: a?['userId']?.toString() ?? '',
-      ));
+      return route(const SplashScreen()); // fallback if no args
+
 
   // ── Static pages ──────────────────────────────────────
     case AppRoutes.about:
@@ -370,18 +379,6 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(const ContactUsScreen());
     case AppRoutes.privacy:
       return route(const PrivacyPolicyScreen());
-
-  // ── Subscriptions ─────────────────────────────────────
-    case AppRoutes.rateCards:
-      return route(const RateCardsScreen());
-    case AppRoutes.paymentMethods:
-      return route(const PaymentMethodsScreen());
-    case AppRoutes.subscriptions:
-      return route(const MySubscriptionsScreen());
-    case AppRoutes.createSubscription:
-      return route(const RateCardsScreen());
-    case AppRoutes.downloads:
-      return route(const DownloadsScreen());
 
     default:
       return route(const SplashScreen());

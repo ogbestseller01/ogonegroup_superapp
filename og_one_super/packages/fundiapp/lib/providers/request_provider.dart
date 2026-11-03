@@ -1,3 +1,4 @@
+// lib/providers/request_provider.dart
 import 'package:flutter/material.dart';
 import '../models/request.dart';
 import '../services/api_service.dart';
@@ -5,11 +6,17 @@ import '../services/api_service.dart';
 class RequestProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
 
+  static const _validStatuses = ['pending', 'accepted', 'cancelled', 'rejected'];
+
   List<ServiceRequest> _requests = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
   String? _error;
   double _submissionProgress = 0.0;
+
+  /// Requests with an accept / reject / cancel call in flight.
+  /// Tracked per request so the whole screen never swaps to a spinner.
+  final Set<int> _pendingActionIds = {};
 
   // ─── Getters ────────────────────────────────────────────────
   List<ServiceRequest> get requests => List.unmodifiable(_requests);
@@ -27,18 +34,34 @@ class RequestProvider extends ChangeNotifier {
   int get acceptedCount => acceptedRequests.length;
   int get totalCount => _requests.length;
 
+  bool isActing(int requestId) => _pendingActionIds.contains(requestId);
+
+  ServiceRequest? getRequestById(int id) {
+    for (final r in _requests) {
+      if (r.id == id) return r;
+    }
+    return null;
+  }
+
   bool hasActiveRequest(int technicianId) {
     return _requests.any((r) => r.technicianId == technicianId && r.isActive);
   }
 
   // ─── Load My Requests ───────────────────────────────────────
-  Future<void> loadMyRequests() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  /// [silent] = refresh in the background: no spinner, and the current list
+  /// is kept if the call fails.
+  Future<void> loadMyRequests({bool silent = false}) async {
+    debugPrint('🔄 [RequestProvider.loadMyRequests] silent=$silent');
+
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+    }
 
     try {
       final res = await _api.getMyRequests();
+      debugPrint('🔄 [loadMyRequests] success=${res.success} message=${res.message}');
 
       if (res.success && res.data != null) {
         final data = res.data;
@@ -58,14 +81,19 @@ class RequestProvider extends ChangeNotifier {
             .whereType<Map>()
             .map((e) => ServiceRequest.fromJson(Map<String, dynamic>.from(e)))
             .toList();
-      } else {
+
+        debugPrint('🔄 [loadMyRequests] loaded ${_requests.length} requests '
+            '(pending=$pendingCount accepted=$acceptedCount)');
+      } else if (!silent) {
         _error = res.message ?? 'Failed to load requests';
         _requests = [];
       }
-    } catch (e) {
-      _error = 'Failed to load requests: $e';
-      _requests = [];
-      debugPrint('❌ loadMyRequests error: $e');
+    } catch (e, st) {
+      debugPrint('❌ [loadMyRequests] error: $e\n$st');
+      if (!silent) {
+        _error = 'Failed to load requests: $e';
+        _requests = [];
+      }
     }
 
     _isLoading = false;
@@ -127,60 +155,76 @@ class RequestProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Update Status (only pending → accepted | rejected | cancelled) ────
+  // ─── Update Status (pending → accepted | rejected | cancelled) ──────────
+  // Accepting also makes the backend create the Job + Ticket (pending).
   Future<bool> updateStatus(int id, String status) async {
-    // Only allow the 4 valid statuses
-    if (!['pending', 'accepted', 'cancelled', 'rejected'].contains(status)) {
+    debugPrint('🔵 [RequestProvider.updateStatus] request=$id → $status');
+
+    if (!_validStatuses.contains(status)) {
+      debugPrint('❌ [updateStatus] invalid status "$status"');
       _error = 'Invalid status';
       notifyListeners();
       return false;
     }
 
-    _isLoading = true;
+    if (_pendingActionIds.contains(id)) {
+      debugPrint('⚠️ [updateStatus] request=$id already in flight, ignored');
+      return false;
+    }
+
+    _pendingActionIds.add(id);
     _error = null;
     notifyListeners();
 
     try {
       final res = await _api.updateRequestStatus(id, status);
+      debugPrint('🔵 [updateStatus] response success=${res.success} '
+          'message=${res.message} data=${res.data}');
 
       if (res.success) {
-        await loadMyRequests();
+        await loadMyRequests(silent: true); // no spinner, list stays on screen
         return true;
-      } else {
-        _error = res.message ?? 'Failed to update status';
-        return false;
       }
-    } catch (e) {
+
+      _error = res.message ?? 'Failed to update status';
+      debugPrint('❌ [updateStatus] server refused: $_error');
+      return false;
+    } catch (e, st) {
       _error = 'Failed to update status: $e';
-      debugPrint('❌ updateStatus exception: $e');
+      debugPrint('❌ [updateStatus] exception: $e\n$st');
       return false;
     } finally {
-      _isLoading = false;
+      _pendingActionIds.remove(id);
       notifyListeners();
     }
   }
 
   // ─── Cancel Request (customer only, pending → cancelled) ────────────────
   Future<bool> cancelRequest(int id) async {
-    _isLoading = true;
+    debugPrint('🔵 [RequestProvider.cancelRequest] request=$id');
+
+    if (_pendingActionIds.contains(id)) return false;
+
+    _pendingActionIds.add(id);
     _error = null;
     notifyListeners();
 
     try {
       final res = await _api.cancelRequest(id);
+      debugPrint('🔵 [cancelRequest] success=${res.success} message=${res.message}');
 
       if (res.success) {
-        await loadMyRequests();
+        await loadMyRequests(silent: true);
         return true;
-      } else {
-        _error = res.message ?? 'Failed to cancel request';
-        return false;
       }
-    } catch (e) {
+      _error = res.message ?? 'Failed to cancel request';
+      return false;
+    } catch (e, st) {
       _error = 'Failed to cancel request: $e';
+      debugPrint('❌ [cancelRequest] exception: $e\n$st');
       return false;
     } finally {
-      _isLoading = false;
+      _pendingActionIds.remove(id);
       notifyListeners();
     }
   }
@@ -200,5 +244,5 @@ class RequestProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refresh() async => await loadMyRequests();
+  Future<void> refresh() => loadMyRequests(silent: true);
 }

@@ -1,3 +1,5 @@
+// lib/models/request.dart
+
 class ServiceRequest {
   final int id;
   final int technicianId;
@@ -13,8 +15,12 @@ class ServiceRequest {
   final String? technicianPhone;
   final double? technicianRating;
   final bool canCancel;
-  final bool canMarkAsJob;
+
+  // The job is created automatically by the backend when the request is accepted.
   final bool hasJob;
+  final int? jobId;
+  final String? jobNumber;
+  final String? jobStatus; // pending | on-progress | completed
 
   ServiceRequest({
     required this.id,
@@ -31,8 +37,10 @@ class ServiceRequest {
     this.technicianPhone,
     this.technicianRating,
     this.canCancel = false,
-    this.canMarkAsJob = false,
     this.hasJob = false,
+    this.jobId,
+    this.jobNumber,
+    this.jobStatus,
   });
 
   // ─── Status helpers (only the 4 allowed statuses) ───────────────────────
@@ -42,6 +50,12 @@ class ServiceRequest {
   bool get isRejected  => status == 'rejected';
 
   bool get isActive => isPending || isAccepted;
+
+  static int _int(dynamic v, [int fallback = 0]) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse('${v ?? ''}') ?? fallback;
+  }
 
   factory ServiceRequest.fromJson(Map<String, dynamic> json) {
     String techName = 'Unknown';
@@ -71,13 +85,13 @@ class ServiceRequest {
 
     String customerName = 'Customer';
     String? customerPhone;
-    int customerId = json['customer_id'] ?? 0;
+    int customerId = _int(json['customer_id']);
 
     if (json['customer'] != null && json['customer'] is Map) {
       final customer = json['customer'] as Map;
       customerName = customer['name']?.toString() ?? customerName;
       customerPhone = customer['phone']?.toString();
-      customerId = customer['id'] ?? customerId;
+      customerId = _int(customer['id'], customerId);
     }
 
     if (json['customer_name'] != null) {
@@ -87,25 +101,30 @@ class ServiceRequest {
       customerPhone = json['customer_phone'].toString();
     }
 
+    // Job (auto-created on accept)
+    final jobMap = json['job'] is Map ? json['job'] as Map : null;
+    final jobId = jobMap != null ? _int(jobMap['id']) : null;
+
     return ServiceRequest(
-      id: json['id'] ?? 0,
-      technicianId: json['technician_id'] ?? 0,
+      id: _int(json['id']),
+      technicianId: _int(json['technician_id']),
       customerId: customerId,
-      description: json['description'] ?? '',
-      status: json['status'] ?? 'pending',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+      description: json['description']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
+      createdAt: DateTime.tryParse('${json['created_at'] ?? ''}') ?? DateTime.now(),
       technicianName: techName,
-      serviceName: json['service']?['name'] ?? json['service_name'] ?? 'Service',
+      serviceName:
+      json['service']?['name']?.toString() ?? json['service_name']?.toString() ?? 'Service',
       customerName: customerName,
       customerPhone: customerPhone,
       technicianArea: techArea,
       technicianPhone: techPhone,
       technicianRating: techRating,
       canCancel: json['can_cancel'] == true,
-      canMarkAsJob: json['can_mark_as_job'] == true,
-      hasJob: json['has_job'] == true,
+      hasJob: json['has_job'] == true || jobMap != null,
+      jobId: (jobId != null && jobId != 0) ? jobId : null,
+      jobNumber: jobMap?['job_number']?.toString(),
+      jobStatus: jobMap?['status']?.toString(),
     );
   }
 }

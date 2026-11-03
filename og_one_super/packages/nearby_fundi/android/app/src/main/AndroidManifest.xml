@@ -25,10 +25,13 @@
          CAMERA & MEDIA PERMISSIONS
          ═══════════════════════════════════════════════════════ -->
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
+    <!-- Android 12 (API 32) and below -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
@@ -64,8 +67,7 @@
         android:usesCleartextTraffic="false"
         android:allowBackup="true"
         android:supportsRtl="true"
-        android:theme="@style/LaunchTheme"
-        tools:targetApi="34">
+        android:theme="@style/LaunchTheme">
 
         <!-- MAIN ACTIVITY -->
         <activity
@@ -93,7 +95,6 @@
         <!-- ═══════════════════════════════════════════════════
              FIREBASE CLOUD MESSAGING METADATA
              ═══════════════════════════════════════════════════
-
              ⚠️ IMPORTANT: Do NOT declare `default_notification_icon`
              or `default_notification_channel_id` as meta-data here.
 

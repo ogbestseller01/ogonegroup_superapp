@@ -55,10 +55,13 @@ class Post {
           .toList();
     }
 
+    // Prefer the Range-capable streaming URL (needed on iOS), fall back to the old one.
+    final String? video = (json['video_stream_url'] ?? json['video_url'])?.toString();
+
     return Post(
       id: json['id'],
       images: imagesList,
-      videoUrl: json['video_url'],
+      videoUrl: (video != null && video.isNotEmpty) ? video : null,
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
       technicianName: techName,

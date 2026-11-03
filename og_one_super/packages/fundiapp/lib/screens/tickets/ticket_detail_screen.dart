@@ -1,17 +1,21 @@
+// FILE: lib/screens/tickets/ticket_detail_screen.dart
+
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../models/job.dart';
 import '../../widgets/work_status_widgets.dart';
+import '../../l10n/app_localizations.dart';
 
 class TicketDetailScreen extends StatelessWidget {
   final WorkTicket ticket;
   const TicketDetailScreen({super.key, required this.ticket});
 
   void _downloadTicket(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Downloading ticket ${ticket.ticketNumber}...'),
+        content: Text(l10n.downloadingTicket(ticket.ticketNumber)),
         backgroundColor: AppTheme.primary,
       ),
     );
@@ -20,12 +24,14 @@ class TicketDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final color = workStatusColor(ticket.status);
 
     return Scaffold(
-      backgroundColor:
-      isDark ? AppTheme.darkBackground : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark
+          ? AppTheme.darkBackground
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primary,
         elevation: 0,
@@ -41,10 +47,11 @@ class TicketDetailScreen extends StatelessWidget {
               onTap: () => Navigator.pop(context),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Ticket Details',
-                style: TextStyle(
+                l10n.ticketDetails,
+                style: const TextStyle(
+                  inherit: true,
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -71,20 +78,26 @@ class TicketDetailScreen extends StatelessWidget {
                     color: color.withOpacity(0.13),
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: Icon(Icons.confirmation_number_rounded,
-                      color: color, size: 28),
+                  child: Icon(
+                    Icons.confirmation_number_rounded,
+                    color: color,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(ticket.ticketNumber,
-                          style: TextStyle(
-                              inherit: true,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: primaryText)),
+                      Text(
+                        ticket.ticketNumber,
+                        style: TextStyle(
+                          inherit: true,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       WorkStatusBadge(status: ticket.status),
                     ],
@@ -98,47 +111,60 @@ class TicketDetailScreen extends StatelessWidget {
             child: Column(
               children: [
                 WorkInfoRow(
-                    icon: Icons.tag_rounded,
-                    label: 'Ticket number',
-                    value: ticket.ticketNumber),
+                  icon: Icons.tag_rounded,
+                  label: l10n.ticketNumber,
+                  value: ticket.ticketNumber,
+                ),
                 WorkInfoRow(
-                    icon: Icons.title_rounded,
-                    label: 'Title',
-                    value: ticket.title),
+                  icon: Icons.title_rounded,
+                  label: l10n.title,
+                  value: ticket.title,
+                ),
                 if (ticket.description != null)
                   WorkInfoRow(
-                      icon: Icons.description_outlined,
-                      label: 'Description',
-                      value: ticket.description!),
+                    icon: Icons.description_outlined,
+                    label: l10n.description,
+                    value: ticket.description!,
+                  ),
                 WorkInfoRow(
-                    icon: Icons.work_outline_rounded,
-                    label: 'Job',
-                    value: ticket.jobNumber ?? '—'),
+                  icon: Icons.work_outline_rounded,
+                  label: l10n.jobs,
+                  value: ticket.jobNumber ?? '—',
+                ),
                 if (ticket.jobStatus != null)
                   WorkInfoRow(
-                      icon: Icons.flag_outlined,
-                      label: 'Job status',
-                      value: workStatusLabel(ticket.jobStatus!)),
+                    icon: Icons.flag_outlined,
+                    label: l10n.jobStatus,
+                    value: workStatusLabel(ticket.jobStatus!),
+                  ),
                 WorkInfoRow(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Customer',
-                    value: ticket.customerName ?? '—'),
+                  icon: Icons.person_outline_rounded,
+                  label: l10n.customer,
+                  value: ticket.customerName ?? '—',
+                ),
                 WorkInfoRow(
-                    icon: Icons.build_outlined,
-                    label: 'Service',
-                    value: ticket.serviceName ?? '—'),
+                  icon: Icons.build_outlined,
+                  label: l10n.service,
+                  value: ticket.serviceName ?? '—',
+                ),
                 WorkInfoRow(
-                    icon: Icons.flag_circle_outlined,
-                    label: 'Ticket status',
-                    value: workStatusLabel(ticket.status)),
-                WorkInfoRow(
+                  icon: Icons.flag_circle_outlined,
+                  label: l10n.ticketStatus,
+                  value: workStatusLabel(ticket.status),
+                ),
+                // ── only show when a date exists ──
+                if (ticket.createdAt != null)
+                  WorkInfoRow(
                     icon: Icons.access_time_rounded,
-                    label: 'Created',
-                    value: formatEAT(ticket.createdAt)),
-                WorkInfoRow(
+                    label: l10n.created,
+                    value: formatEAT(ticket.createdAt),
+                  ),
+                if (ticket.completedAt != null)
+                  WorkInfoRow(
                     icon: Icons.check_circle_outline_rounded,
-                    label: 'Completed',
-                    value: formatEAT(ticket.completedAt)),
+                    label: l10n.completedLabel,
+                    value: formatEAT(ticket.completedAt),
+                  ),
               ],
             ),
           ),
@@ -155,9 +181,13 @@ class TicketDetailScreen extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.download_rounded),
-              label: const Text(
-                'Download Ticket',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              label: Text(
+                l10n.downloadTicket,
+                style: const TextStyle(
+                  inherit: true,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
               onPressed: () => _downloadTicket(context),
             ),

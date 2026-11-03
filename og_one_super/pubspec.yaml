@@ -64,7 +64,7 @@ dependency_overrides:
   # Force a compatible version of `js` so pusher_channels_flutter and flutter_secure_storage can coexist
   js: ^0.7.1
 
-  # ===== Fix iOS 26 arm64 simulator (Xcode 26 / Apple Silicon) =====
+  # ===== Fix iOS arm64 simulator (Xcode / Apple Silicon) =====
   google_mlkit_face_detection: ^0.15.1
   google_mlkit_commons: ^0.13.0
 

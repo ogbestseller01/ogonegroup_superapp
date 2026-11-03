@@ -10,11 +10,12 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/post.dart';
 import '../../providers/post_provider.dart';
+import '../../widgets/post_video_player.dart';
 import '../../widgets/app_network_image.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/robust_video_player.dart';
 
 const int _maxImages = 10;
+const int _maxVideoBytes = 20 * 1024 * 1024; // must match server limit (20480 KB)
 const double _maxCardWidth = 640;
 const Color _gold = Color(0xFFF2B93B);
 
@@ -386,6 +387,18 @@ class _PostFormSheetState extends State<_PostFormSheet> {
 
   bool get _isEdit => widget.post != null;
   int get _total => _kept.length + _new.length;
+  bool get _hasExistingVideo => widget.post?.hasVideo == true && !_removeVideo;
+  bool get _hasVideo => _videoPath != null || _hasExistingVideo;
+
+  void _warn(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   Future<void> _addPhotos() async {
     final room = _maxImages - _total;
@@ -400,15 +413,27 @@ class _PostFormSheetState extends State<_PostFormSheet> {
       source: ImageSource.gallery,
       maxDuration: const Duration(minutes: 2),
     );
-    if (file != null) {
-      setState(() {
-        _videoPath = file.path;
-        _removeVideo = false;
-      });
+    if (file == null || !mounted) return;
+
+    final size = await File(file.path).length();
+    if (!mounted) return;
+    if (size > _maxVideoBytes) {
+      _warn('Video is too large. Maximum size is 20 MB.');
+      return;
     }
+
+    setState(() {
+      _videoPath = file.path;
+      _removeVideo = false;
+    });
   }
 
   Future<void> _save() async {
+    if (_total == 0 && !_hasVideo) {
+      _warn('Add at least one photo or a video.');
+      return;
+    }
+
     setState(() => _saving = true);
 
     final provider = context.read<PostProvider>();
@@ -483,9 +508,7 @@ class _PostFormSheetState extends State<_PostFormSheet> {
   }
 
   Widget _videoSection(ThemeData theme) {
-    final hasExisting = widget.post?.hasVideo == true && !_removeVideo;
-
-    if (_videoPath == null && !hasExisting) {
+    if (!_hasVideo) {
       return InkWell(
         onTap: _pickVideo,
         borderRadius: BorderRadius.circular(12),
@@ -502,7 +525,7 @@ class _PostFormSheetState extends State<_PostFormSheet> {
               Icon(Icons.video_call_rounded, color: AppTheme.primary),
               SizedBox(width: 8),
               Text(
-                'Attach a short video clip',
+                'Attach a short video clip (max 20 MB)',
                 style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600),
               ),
             ],
@@ -534,7 +557,7 @@ class _PostFormSheetState extends State<_PostFormSheet> {
             onPressed: () {
               setState(() {
                 _videoPath = null;
-                _removeVideo = true;
+                if (widget.post?.hasVideo == true) _removeVideo = true;
               });
             },
           ),
@@ -656,25 +679,17 @@ class _PostCardState extends State<_PostCard> {
         children: [
           _PostHeader(post: post, onEdit: widget.onEdit, onDelete: widget.onDelete),
 
-          // ✅ FIXED: bounded width for video
+          // Video (iOS + Android safe)
           if (post.hasVideo)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: RobustVideoPlayer(
-                    videoUrl: post.videoUrl!,
-                    autoPlay: false,
-                    loop: false,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+                child: PostVideoPlayer(videoUrl: post.videoUrl!),
               ),
             ),
 
-          // ✅ Images
+          // Images
           if (post.hasImages)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

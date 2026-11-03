@@ -1,5 +1,4 @@
 // lib/services/api_service.dart
-
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -24,68 +23,15 @@ class ApiResponse {
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) => ApiResponse(
     success: json['success'] ?? (json['status'] == 'success'),
-    message: json['message'] ?? 'No message from server',
+    message: json['message']?.toString() ?? 'No message from server',
     data: json['data'],
-    errors: json['errors'] as Map<String, dynamic>?,
+    errors: json['errors'] is Map
+        ? Map<String, dynamic>.from(json['errors'] as Map)
+        : null,
   );
 }
 
 /// Main API service — handles all HTTP requests across the application.
-///
-/// Full method index (use these numbers for reference):
-///   #1   register                        #52  getPortfoliosByTechnician
-///   #2   registerFundi                   #53  createRequest
-///   #3   login                           #54  getMyRequests
-///   #4   verifyOtp                       #55  updateRequestStatus
-///   #5   resendOtp                       #56  cancelRequest
-///   #6   forgotPassword                  #57  markOnTheWay
-///   #7   resetPassword                   #58  markArrived
-///   #8   logout                          #59  getTrackingData
-///   #9   getProfile                      #60  getPosts
-///   #10  updateProfile                   #61  getPostDetail
-///   #11  changePassword                  #62  likePost
-///   #12  updateLocale                    #63  commentOnPost
-///   #13  updateDeviceToken               #64  deleteComment
-///   #14  updateFcmDeviceToken            #65  getAbout
-///   #15  deleteAccount                   #66  getFaqs
-///   #16  getServices                     #67  getTerms
-///   #17  getMyTechnicianProfile          #68  sendFeedback
-///   #18  updateTechnicianProfile         #69  getOrCreateConversation
-///   #19  uploadProfilePhoto              #70  getConversations
-///   #20  updateTechnicianServices        #71  getMessages
-///   #21  sendTechnicianHeartbeat         #72  sendMessage
-///   #22  updateLocation                  #73  markMessageAsRead
-///   #23  registerTechnicianStep1         #74  markConversationAsRead
-///   #24  verifyDraftOtp                  #75  deleteMessage
-///   #25  resendDraftOtp                  #76  addReaction
-///   #26  registerTechnicianStep2         #77  removeReaction
-///   #27  registerTechnicianStep3         #78  getUnreadCount
-///   #28  registerTechnicianStep4         #79  uploadChatFile
-///   #29  registerTechnicianStep5         #80  sendTypingStatus
-///   #30  submitTechnicianRegistration    #81  downloadChatFile
-///   #31  getRegistrationStatus           #82  downloadChatFileToPath
-///   #32  getMyRegistrationStatus         #83  getFileInfo
-///   #33  getPublicTechnicians            #84  deleteFile
-///   #34  getTechnicianDetail             #85  deleteConversation
-///   #35  getPublicPortfoliosByTechnician #86  getNotifications
-///   #36  getAdminTechnicians             #87  getUnreadNotificationCount
-///   #37  getPendingTechnicians           #88  markNotificationAsRead
-///   #38  getApprovedTechnicians          #89  markAllNotificationsAsRead
-///   #39  getTechnicianBiometrics         #90  deleteNotification
-///   #40  approveTechnicianByAdmin        #91  clearNotifications
-///   #41  verifyTechnician                #92  getRateCards
-///   #42  getMyPosts                      #93  getPaymentMethods
-///   #43  createPost                      #94  createSubscription
-///   #44  updatePost                      #95  getMySubscriptions
-///   #45  deletePost                      #96  getMyInvoices
-///   #46  getMyPortfolios                 #97  checkSubscriptionStatus
-///   #47  createPortfolio                 #98  downloadInvoice
-///   #48  updatePortfolio                 #99  getPrivacyPolicy
-///   #49  deletePortfolio                 #100 updatePrivacyPolicy
-///   #50  updatePortfolioSocialLinks      #101 searchNearbyFundis
-///   #51  getPortfolios                   #102 searchNearbyByPlace
-///   #103 getMyJobs                       #105 getMyTickets
-///   #104 getJobDetail                    #106 getTicketDetail
 class ApiService {
   late final Dio _dio;
   void Function()? onSessionExpired;
@@ -95,6 +41,8 @@ class ApiService {
       baseUrl: AppConfig.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
+      // Video uploads (up to 20 MB) need more time
+      sendTimeout: const Duration(minutes: 2),
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -471,14 +419,11 @@ class ApiService {
   // SECTION 7: POSTS & FEED
   // ============================================================
 
-  // [API #42] GET /v5/my-posts
   Future<ApiResponse> getMyPosts() => _get('/v5/my-posts');
 
-  // [API #43] POST /v5/posts
   Future<ApiResponse> createPost(Map<String, dynamic> data) async {
     final formData = FormData();
 
-    // Add Video
     if (data['video'] != null && data['video'] is String && data['video'].isNotEmpty) {
       final file = File(data['video']);
       if (await file.exists()) {
@@ -489,7 +434,6 @@ class ApiService {
       }
     }
 
-    // Add Images
     if (data['images'] != null && data['images'] is List) {
       for (final path in data['images']) {
         if (path is String && path.isNotEmpty) {
@@ -507,12 +451,10 @@ class ApiService {
     return _post('/v5/posts', data: formData);
   }
 
-  // [API #44] POST /v5/posts/{id} (with _method=PUT)
   Future<ApiResponse> updatePost(int id, Map<String, dynamic> data) async {
     final formData = FormData();
     formData.fields.add(const MapEntry('_method', 'PUT'));
 
-    // Add Video
     if (data['video'] != null && data['video'] is String && data['video'].isNotEmpty) {
       final file = File(data['video']);
       if (await file.exists()) {
@@ -523,12 +465,10 @@ class ApiService {
       }
     }
 
-    // Remove Video
     if (data['remove_video'] == true) {
       formData.fields.add(const MapEntry('remove_video', '1'));
     }
 
-    // Add Images
     if (data['images'] != null && data['images'] is List) {
       for (final path in data['images']) {
         if (path is String && path.isNotEmpty) {
@@ -543,7 +483,6 @@ class ApiService {
       }
     }
 
-    // Keep Images
     if (data['keep_images'] != null && data['keep_images'] is List) {
       for (final path in data['keep_images']) {
         formData.fields.add(MapEntry('keep_images[]', path.toString()));
@@ -554,7 +493,6 @@ class ApiService {
     return _post('/v5/posts/$id', data: formData);
   }
 
-  // [API #45] DELETE /v5/posts/{id}
   Future<ApiResponse> deletePost(int id) => _delete('/v5/posts/$id');
 
   // ============================================================
@@ -644,25 +582,21 @@ class ApiService {
       _get('/v4/requests/$requestId/tracking');
 
   // ============================================================
-  // SECTION 9B: JOBS & TICKETS            (NEW)
+  // SECTION 9B: JOBS & TICKETS
   // ============================================================
 
-  // [API #103] GET /v4/jobs            (optional ?status=pending|on-progress|completed)
   Future<ApiResponse> getMyJobs({String? status}) =>
       _get('/v4/jobs', query: {
         if (status != null && status.isNotEmpty) 'status': status,
       });
 
-  // [API #104] GET /v4/jobs/{id}
   Future<ApiResponse> getJobDetail(int id) => _get('/v4/jobs/$id');
 
-  // [API #105] GET /v4/tickets         (optional ?status=on-progress|completed)
   Future<ApiResponse> getMyTickets({String? status}) =>
       _get('/v4/tickets', query: {
         if (status != null && status.isNotEmpty) 'status': status,
       });
 
-  // [API #106] GET /v4/tickets/{id}
   Future<ApiResponse> getTicketDetail(int id) => _get('/v4/tickets/$id');
 
   // ============================================================
@@ -696,7 +630,7 @@ class ApiService {
       _post('/v23/feedback', data: data);
 
   // ============================================================
-  // SECTION 12: CHAT & MESSAGING
+  // SECTION 12: CHAT & MESSAGING (V14 – CLEANED)
   // ============================================================
 
   Future<ApiResponse> getOrCreateConversation({
@@ -710,47 +644,51 @@ class ApiService {
 
   Future<ApiResponse> getConversations() => _get('/v14/chat/conversations');
 
+  /// Supports both initial load and pagination.
+  /// - afterId  → only newer messages (used by polling)
+  /// - beforeId → older page (scroll up)
   Future<ApiResponse> getMessages({
     required int conversationId,
-    int limit = 50,
-    int offset = 0,
+    int limit = 40,
+    int? afterId,
+    int? beforeId,
   }) =>
       _get('/v14/chat/conversations/$conversationId/messages', query: {
         'limit': limit,
-        'offset': offset,
+        if (afterId != null) 'after_id': afterId,
+        if (beforeId != null) 'before_id': beforeId,
       });
 
+  /// Send text and/or file.
+  /// Backend decides message_type from the uploaded file.
   Future<ApiResponse> sendMessage({
     required int conversationId,
     String? content,
     String? filePath,
-    String messageType = 'text',
-    int? voiceDuration,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     if (filePath != null && filePath.isNotEmpty) {
       final file = File(filePath);
       if (await file.exists()) {
         final formData = FormData.fromMap({
           'conversation_id': conversationId,
-          'content': content ?? '',
-          'message_type': messageType,
-          if (voiceDuration != null) 'voice_duration': voiceDuration,
+          if (content != null && content.trim().isNotEmpty) 'content': content.trim(),
           'file': await MultipartFile.fromFile(file.path),
         });
-        return _post('/v14/chat/send', data: formData);
+
+        return _post(
+          '/v14/chat/send',
+          data: formData,
+          onSendProgress: onSendProgress,
+        );
       }
     }
 
     return _post('/v14/chat/send', data: {
       'conversation_id': conversationId,
-      'content': content ?? '',
-      'message_type': messageType,
-      if (voiceDuration != null) 'voice_duration': voiceDuration,
+      'content': content?.trim() ?? '',
     });
   }
-
-  Future<ApiResponse> markMessageAsRead(int messageId) =>
-      _put('/v14/chat/messages/$messageId/read');
 
   Future<ApiResponse> markConversationAsRead(int conversationId) =>
       _post('/v14/chat/conversations/$conversationId/read');
@@ -758,56 +696,7 @@ class ApiService {
   Future<ApiResponse> deleteMessage(int messageId) =>
       _delete('/v14/chat/messages/$messageId');
 
-  Future<ApiResponse> addReaction(int messageId, String reaction) =>
-      _post('/v14/chat/messages/$messageId/reaction', data: {'reaction': reaction});
-
-  Future<ApiResponse> removeReaction(int messageId) =>
-      _delete('/v14/chat/messages/$messageId/reaction');
-
   Future<ApiResponse> getUnreadCount() => _get('/v14/chat/unread');
-
-  Future<ApiResponse> uploadChatFile(File file) async {
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(file.path),
-    });
-    return _post('/v14/chat/upload', data: formData);
-  }
-
-  Future<ApiResponse> sendTypingStatus({
-    required int conversationId,
-    required bool isTyping,
-  }) =>
-      _post('/v14/chat/typing', data: {
-        'conversation_id': conversationId,
-        'is_typing': isTyping,
-      });
-
-  Future<ApiResponse> downloadChatFile(int messageId) =>
-      _get('/v14/chat/files/$messageId/download', query: {'download': 'true'});
-
-  Future<String?> downloadChatFileToPath(int messageId, String savePath) async {
-    try {
-      final token = await StorageService.getToken();
-      await _dio.download(
-        '/v14/chat/files/$messageId/download?download=true',
-        savePath,
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-          responseType: ResponseType.bytes,
-        ),
-      );
-      return savePath;
-    } catch (e) {
-      debugPrint('❌ Download file error: $e');
-      return null;
-    }
-  }
-
-  Future<ApiResponse> getFileInfo(int messageId) =>
-      _get('/v14/chat/files/$messageId/info');
-
-  Future<ApiResponse> deleteFile(int messageId) =>
-      _delete('/v14/chat/files/$messageId');
 
   Future<ApiResponse> deleteConversation(int conversationId) =>
       _delete('/v14/chat/conversations/$conversationId');
@@ -975,12 +864,14 @@ class ApiService {
       String path, {
         dynamic data,
         Map<String, String>? headers,
+        void Function(int, int)? onSendProgress,
       }) async {
     try {
       final res = await _dio.post(
         path,
         data: data,
         options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        onSendProgress: onSendProgress,
       );
       return ApiResponse.fromJson(res.data);
     } catch (e) {
@@ -1060,8 +951,10 @@ class ApiService {
         final data = error.response!.data as Map;
         return ApiResponse(
           success: false,
-          message: data['message'] ?? 'Validation failed',
-          errors: data['errors'] as Map<String, dynamic>?,
+          message: data['message']?.toString() ?? 'Validation failed',
+          errors: data['errors'] is Map
+              ? Map<String, dynamic>.from(data['errors'] as Map)
+              : null,
         );
       }
 
@@ -1069,7 +962,7 @@ class ApiService {
         final data = error.response!.data as Map;
         return ApiResponse(
           success: false,
-          message: data['message'] ?? 'Something went wrong',
+          message: data['message']?.toString() ?? 'Something went wrong',
         );
       }
     }

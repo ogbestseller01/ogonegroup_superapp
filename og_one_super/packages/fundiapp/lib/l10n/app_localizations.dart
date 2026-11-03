@@ -620,7 +620,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPost.
   ///
   /// In en, this message translates to:
-  /// **'Create your first post'**
+  /// **'Create Post'**
   String get createPost;
 
   /// No description provided for @createPostTitle.
@@ -2620,6 +2620,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Created'**
   String get created;
+
+  /// No description provided for @areYouSureDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this message?'**
+  String get areYouSureDeleteMessage;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterOnProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'On progress'**
+  String get filterOnProgress;
+
+  /// No description provided for @filterCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterCompleted;
+
+  /// No description provided for @payments.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get payments;
+
+  /// No description provided for @myPortfolio.
+  ///
+  /// In en, this message translates to:
+  /// **'My Portfolio'**
+  String get myPortfolio;
+
+  /// No description provided for @noPostsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No Posts Yet'**
+  String get noPostsYet;
+
+  /// No description provided for @uploadPhotosToShowcase.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photos of your work to showcase your skills.'**
+  String get uploadPhotosToShowcase;
+
+  /// No description provided for @newPortfolioPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New Portfolio Post'**
+  String get newPortfolioPost;
+
+  /// No description provided for @tapToSelectImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select images'**
+  String get tapToSelectImages;
+
+  /// No description provided for @editPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Post'**
+  String get editPost;
+
+  /// No description provided for @addMoreImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Add more images'**
+  String get addMoreImages;
+
+  /// No description provided for @post.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get post;
+
+  /// No description provided for @deletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post?'**
+  String get deletePostTitle;
+
+  /// No description provided for @deletePostConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this entire post?'**
+  String get deletePostConfirmation;
+
+  /// No description provided for @editImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Images'**
+  String get editImages;
+
+  /// No description provided for @myBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'My Balance'**
+  String get myBalance;
+
+  /// No description provided for @earnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Earnings'**
+  String get earnings;
+
+  /// No description provided for @reports.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports'**
+  String get reports;
+
+  /// No description provided for @recentJobs.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Jobs'**
+  String get recentJobs;
+
+  /// No description provided for @recentTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Tickets'**
+  String get recentTickets;
+
+  /// No description provided for @noJobsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No jobs yet'**
+  String get noJobsYet;
+
+  /// No description provided for @noTicketsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets yet'**
+  String get noTicketsYet;
+
+  /// No description provided for @comingSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming Soon'**
+  String get comingSoonTitle;
+
+  /// No description provided for @comingSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is coming soon 🚀\nStay tuned for updates.'**
+  String get comingSoonBody;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get goodMorning;
+
+  /// No description provided for @goodAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get goodAfternoon;
+
+  /// No description provided for @goodEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get goodEvening;
+
+  /// No description provided for @pendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Pending'**
+  String pendingCount(int count);
+
+  /// No description provided for @acceptedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'ACCEPTED'**
+  String get acceptedStatus;
+
+  /// No description provided for @rejectedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'REJECTED'**
+  String get rejectedStatus;
+
+  /// No description provided for @cancelledStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'CANCELLED'**
+  String get cancelledStatus;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

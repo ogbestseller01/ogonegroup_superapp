@@ -5,38 +5,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class Assets {
   Assets._();
-
-  static const AssetGenImage appIconForeground =
-      AssetGenImage('assets/icons/app_icon_foreground.png');
-  static const SvgGenImage audioIcon =
-      SvgGenImage('assets/icons/chat/audio_icon.svg');
-  static const SvgGenImage chatIcon =
-      SvgGenImage('assets/icons/chat/chat_icon.svg');
-  static const AssetGenImage nearbylogo =
-      AssetGenImage('assets/icons/nearbylogo.png');
-  static const $AssetsAssetsGen assets = $AssetsAssetsGen();
-}
-
-class $AssetsAssetsGen {
-  const $AssetsAssetsGen();
-
-  final $AssetsImagesGen images = const $AssetsImagesGen();
-}
-
-class $AssetsImagesGen {
-  const $AssetsImagesGen();
-
-  final AssetGenImage appIcon =
-      const AssetGenImage('assets/images/app_icon.png');
-  final AssetGenImage backimg =
-      const AssetGenImage('assets/images/backimg.jpg');
-  final AssetGenImage googleLogo =
-      const AssetGenImage('assets/images/google_logo.png');
-  final AssetGenImage home = const AssetGenImage('assets/images/home.jpg');
-  final AssetGenImage nearbyfundiLogo =
-      const AssetGenImage('assets/images/nearbyfundi-logo.png');
-  final AssetGenImage nearbyfundiImage =
-      const AssetGenImage('assets/images/nearbyfundi_image.jpg');
 }
 
 class AssetGenImage {
@@ -108,61 +76,6 @@ class AssetGenImage {
       _assetName,
       bundle: bundle,
       package: package,
-    );
-  }
-
-  Widget custom({
-    Key? key,
-    required Widget Function(BuildContext context, String assetPath) builder,
-  }) {
-    return Builder(
-      key: key,
-      builder: (context) => builder(context, _assetName),
-    );
-  }
-
-  String get path => _assetName;
-
-  String get keyName => _assetName;
-}
-
-class SvgGenImage {
-  const SvgGenImage(this._assetName);
-
-  final String _assetName;
-
-  SvgPicture svg({
-    Key? key,
-    bool matchTextDirection = false,
-    AssetBundle? bundle,
-    String? package,
-    double? width,
-    double? height,
-    BoxFit fit = BoxFit.contain,
-    AlignmentGeometry alignment = Alignment.center,
-    bool allowDrawingOutsideViewBox = false,
-    WidgetBuilder? placeholderBuilder,
-    String? semanticsLabel,
-    bool excludeFromSemantics = false,
-    SvgTheme? theme,
-    Clip clipBehavior = Clip.hardEdge,
-  }) {
-    return SvgPicture.asset(
-      _assetName,
-      key: key,
-      matchTextDirection: matchTextDirection,
-      bundle: bundle,
-      package: package,
-      width: width,
-      height: height,
-      fit: fit,
-      alignment: alignment,
-      allowDrawingOutsideViewBox: allowDrawingOutsideViewBox,
-      placeholderBuilder: placeholderBuilder,
-      semanticsLabel: semanticsLabel,
-      excludeFromSemantics: excludeFromSemantics,
-      theme: theme,
-      clipBehavior: clipBehavior,
     );
   }
 

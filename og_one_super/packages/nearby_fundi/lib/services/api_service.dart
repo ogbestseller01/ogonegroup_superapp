@@ -2,8 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:path/path.dart' as path;
 import '../config/app_config.dart';
 import 'storage_service.dart';
@@ -26,9 +25,11 @@ class ApiResponse {
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) => ApiResponse(
     success: json['success'] ?? (json['status'] == 'success'),
-    message: json['message'] ?? 'No message from server',
+    message: json['message']?.toString() ?? 'No message from server',
     data: json['data'],
-    errors: json['errors'] as Map<String, dynamic>?,
+    errors: json['errors'] is Map
+        ? Map<String, dynamic>.from(json['errors'] as Map)
+        : null,
   );
 }
 
@@ -39,24 +40,44 @@ class ApiService {
 
   Dio get dio => _dio;
 
+  /// Endpoints that are used while logged out. A 401 here means "wrong
+  /// credentials", not "session expired", and no token must be attached.
+  static const List<String> _publicAuthPaths = [
+    '/v1/auth/login',
+    '/v1/auth/google',
+    '/v1/auth/register',
+    '/v1/auth/register-fundi',
+    '/v1/auth/verify-otp',
+    '/v1/auth/resend-otp',
+    '/v1/auth/forgot-password',
+    '/v1/auth/reset-password',
+  ];
+
+  bool _isPublicAuthPath(String p) => _publicAuthPaths.any(p.contains);
+
   ApiService() {
     _dio = Dio(BaseOptions(
       baseUrl: AppConfig.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
+      // Uploads (photos / videos up to 20 MB) need more time
+      sendTimeout: const Duration(minutes: 2),
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await StorageService.getToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
+        if (!_isPublicAuthPath(options.path)) {
+          final token = await StorageService.getToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
         }
         options.headers['Accept'] = 'application/json';
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
+        if (e.response?.statusCode == 401 &&
+            !_isPublicAuthPath(e.requestOptions.path)) {
           await StorageService.clearAll();
           onSessionExpired?.call();
         }
@@ -244,7 +265,7 @@ class ApiService {
 
   Future<ApiResponse> getTechnicianProfile() => _get('/v2/technicians/profile');
 
-  // FIX: backend route is POST /v2/technicians/services (was PUT)
+  // Backend route is POST /v2/technicians/services
   Future<ApiResponse> updateTechnicianServices(List<int> serviceIds) =>
       _post('/v2/technicians/services', data: {'service_ids': serviceIds});
 
@@ -324,7 +345,7 @@ class ApiService {
       }) async {
     if (imageFile != null) {
       final formData = FormData();
-      formData.fields.add(MapEntry('_method', 'PUT'));
+      formData.fields.add(const MapEntry('_method', 'PUT'));
       if (description != null) formData.fields.add(MapEntry('description', description));
       if (instagram != null) formData.fields.add(MapEntry('instagram', instagram));
       if (facebook != null) formData.fields.add(MapEntry('facebook', facebook));
@@ -415,6 +436,7 @@ class ApiService {
 
   Future<ApiResponse> getJob(int jobId) => _get('/v4/jobs/$jobId');
 
+  // NOTE: no `mark-as-job` route is registered in routes/api.php yet.
   Future<ApiResponse> markRequestAsJob(int requestId) =>
       _post('/v4/requests/$requestId/mark-as-job', data: {});
 
@@ -450,7 +472,8 @@ class ApiService {
   Future<ApiResponse> getTicket(int ticketId) => _get('/v4/tickets/$ticketId');
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  BLOG (Posts, Comments, Likes) - V1 & V5  (MULTI-IMAGE)
+  //  BLOG (Posts, Comments, Likes) - V1 & V5
+  //  A post is media only: up to 10 images + an optional video.
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getPosts({int page = 1, int? technicianId}) =>
@@ -470,111 +493,58 @@ class ApiService {
 
   Future<ApiResponse> deleteComment(int id) => _delete('/v5/comments/$id');
 
-  /// Create post – supports multiple images (Fundi style)
+  /// Adds a local file (by path) to [formData] under [field] if it exists.
+  Future<void> _addFile(FormData formData, String field, dynamic p) async {
+    if (p is! String || p.isEmpty) return;
+    final file = File(p);
+    if (!await file.exists()) return;
+    formData.files.add(MapEntry(
+      field,
+      await MultipartFile.fromFile(file.path, filename: path.basename(file.path)),
+    ));
+  }
+
+  /// Create post. data keys: `images` (List<String> paths), `video` (String path).
   Future<ApiResponse> createPost(Map<String, dynamic> data) async {
     final formData = FormData();
 
-    formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
-    formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
+    await _addFile(formData, 'video', data['video']);
 
-    if (data['youtube_url'] != null && data['youtube_url'].toString().isNotEmpty) {
-      formData.fields.add(MapEntry('youtube_url', data['youtube_url'].toString()));
-    }
-
-    // Multi-image
-    if (data['images'] != null && data['images'] is List) {
-      for (final p in data['images']) {
-        if (p is String && p.isNotEmpty) {
-          final file = File(p);
-          if (await file.exists()) {
-            formData.files.add(MapEntry(
-              'images[]',
-              await MultipartFile.fromFile(
-                file.path,
-                filename: path.basename(file.path),
-              ),
-            ));
-          }
-        }
-      }
-    }
-    // Backward-compat single image
-    else if (data['image'] != null &&
-        data['image'] is String &&
-        (data['image'] as String).isNotEmpty) {
-      final file = File(data['image']);
-      if (await file.exists()) {
-        formData.files.add(MapEntry(
-          'images[]',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: path.basename(file.path),
-          ),
-        ));
+    if (data['images'] is List) {
+      for (final p in data['images'] as List) {
+        await _addFile(formData, 'images[]', p);
       }
     }
 
     return _post('/v5/posts', data: formData);
   }
 
-  /// Update post – multi-image + keep_images support
+  /// Update post. data keys: `images` (new paths), `keep_images` (existing
+  /// URLs/paths to keep), `video` (new path), `remove_video` (bool).
   Future<ApiResponse> updatePost(int id, Map<String, dynamic> data) async {
     final formData = FormData();
     formData.fields.add(const MapEntry('_method', 'PUT'));
 
-    if (data.containsKey('title')) {
-      formData.fields.add(MapEntry('title', data['title']?.toString() ?? ''));
-    }
-    if (data.containsKey('content')) {
-      formData.fields.add(MapEntry('content', data['content']?.toString() ?? ''));
-    }
-    if (data.containsKey('youtube_url')) {
-      formData.fields.add(MapEntry(
-        'youtube_url',
-        data['youtube_url']?.toString() ?? '',
-      ));
+    await _addFile(formData, 'video', data['video']);
+
+    if (data['remove_video'] == true) {
+      formData.fields.add(const MapEntry('remove_video', '1'));
     }
 
-    // Keep existing images
-    if (data['keep_images'] != null && data['keep_images'] is List) {
-      for (final url in data['keep_images']) {
+    if (data['images'] is List) {
+      for (final p in data['images'] as List) {
+        await _addFile(formData, 'images[]', p);
+      }
+    }
+
+    if (data['keep_images'] is List) {
+      for (final url in data['keep_images'] as List) {
         if (url != null && url.toString().isNotEmpty) {
           formData.fields.add(MapEntry('keep_images[]', url.toString()));
         }
       }
-    }
-
-    // New images
-    if (data['images'] != null && data['images'] is List) {
-      for (final p in data['images']) {
-        if (p is String && p.isNotEmpty) {
-          final file = File(p);
-          if (await file.exists()) {
-            formData.files.add(MapEntry(
-              'images[]',
-              await MultipartFile.fromFile(
-                file.path,
-                filename: path.basename(file.path),
-              ),
-            ));
-          }
-        }
-      }
-    }
-    // Backward-compat single image
-    else if (data['image'] != null &&
-        data['image'] is String &&
-        (data['image'] as String).isNotEmpty) {
-      final file = File(data['image']);
-      if (await file.exists()) {
-        formData.files.add(MapEntry(
-          'images[]',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: path.basename(file.path),
-          ),
-        ));
-      }
+      // Tells the backend the kept list is authoritative
+      formData.fields.add(const MapEntry('images_managed', '1'));
     }
 
     return _post('/v5/posts/$id', data: formData);
@@ -970,36 +940,49 @@ class ApiService {
 
   ApiResponse _handleError(dynamic error) {
     if (error is DioException) {
-      if (error.response?.statusCode == 401) {
+      final status = error.response?.statusCode;
+      final body = error.response?.data;
+
+      if (status == 401) {
+        // Wrong credentials on a login-type call: not a session expiry
+        if (_isPublicAuthPath(error.requestOptions.path)) {
+          final serverMessage = body is Map ? body['message']?.toString() : null;
+          return ApiResponse(
+            success: false,
+            message: (serverMessage != null && serverMessage.isNotEmpty)
+                ? serverMessage
+                : 'Invalid Credentials.',
+          );
+        }
         return ApiResponse(
           success: false,
-          message: 'Invalid Credentials.',
+          message: 'Session expired. Please log in again.',
           sessionExpired: true,
         );
       }
 
-      if (error.response?.statusCode == 422 && error.response?.data is Map) {
-        final data = error.response!.data as Map<String, dynamic>;
-        String errorMessage = data['message'] ?? 'Validation failed';
+      if (status == 422 && body is Map) {
+        final data = Map<String, dynamic>.from(body);
+        String message = data['message']?.toString() ?? 'Validation failed';
 
-        if (data.containsKey('errors') && data['errors'] is Map) {
-          final errors = data['errors'] as Map<String, dynamic>;
-          final firstError = errors.values.first;
-          if (firstError is List && firstError.isNotEmpty) {
-            errorMessage = firstError.first.toString();
+        final errs = data['errors'];
+        if (errs is Map && errs.isNotEmpty) {
+          final first = errs.values.first;
+          if (first is List && first.isNotEmpty) {
+            message = first.first.toString();
           }
         }
         return ApiResponse(
           success: false,
-          message: errorMessage,
-          errors: data['errors'] as Map<String, dynamic>?,
+          message: message,
+          errors: errs is Map ? Map<String, dynamic>.from(errs) : null,
         );
       }
 
-      if (error.response?.data is Map) {
+      if (body is Map) {
         return ApiResponse(
           success: false,
-          message: error.response!.data['message'] ?? 'Something went wrong',
+          message: body['message']?.toString() ?? 'Something went wrong',
         );
       }
     }

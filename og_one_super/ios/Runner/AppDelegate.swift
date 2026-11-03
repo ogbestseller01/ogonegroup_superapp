@@ -1,6 +1,6 @@
 import Flutter
 import UIKit
-import Darwin
+// `import Darwin` is not required — Foundation re-exports it.
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -25,6 +25,8 @@ import Darwin
       switch call.method {
       case "isDeveloperMode":
         result(self?.isDebuggerAttached() ?? false)
+      case "isJailbroken":
+        result(self?.isJailbroken() ?? false)   // ← added, see below
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -32,17 +34,42 @@ import Darwin
     // ─────────────────────────────────────────────────────────
   }
 
-  /// Detects if a debugger is attached (closest iOS equivalent of debug mode)
+  /// Detects if a debugger is attached.
   private func isDebuggerAttached() -> Bool {
     var info = kinfo_proc()
     var size = MemoryLayout<kinfo_proc>.stride
     var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+    guard sysctl(&mib, u_int(mib.count), &info, &size, nil, 0) == 0 else { return false }
+    return (info.kp_proc.p_flag & P_TRACED) != 0
+  }
 
-    let sysctlResult = sysctl(&mib, u_int(mib.count), &info, &size, nil, 0)
-    if sysctlResult != 0 {
+  /// Basic jailbreak heuristic — extend as needed.
+  private func isJailbroken() -> Bool {
+    #if targetEnvironment(simulator)
+    return false
+    #else
+    let suspiciousPaths = [
+      "/Applications/Cydia.app",
+      "/Library/MobileSubstrate/MobileSubstrate.dylib",
+      "/bin/bash",
+      "/usr/sbin/sshd",
+      "/etc/apt",
+      "/private/var/lib/apt/",
+      "/private/var/lib/cydia",
+      "/private/var/stash"
+    ]
+    for path in suspiciousPaths where FileManager.default.fileExists(atPath: path) {
+      return true
+    }
+    // Sandbox escape test
+    let testPath = "/private/jailbreak_test_\(UUID().uuidString)"
+    do {
+      try "test".write(toFile: testPath, atomically: true, encoding: .utf8)
+      try FileManager.default.removeItem(atPath: testPath)
+      return true
+    } catch {
       return false
     }
-
-    return (info.kp_proc.p_flag & P_TRACED) != 0
+    #endif
   }
 }

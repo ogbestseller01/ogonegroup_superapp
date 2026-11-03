@@ -11,57 +11,39 @@ import '../models/chat_user.dart';
 import '../services/chat_service.dart';
 
 class ChatProvider extends ChangeNotifier {
-  final ChatService _chatService = ChatService();
+  final ChatService _service = ChatService();
 
   bool _disposed = false;
   bool _notifyScheduled = false;
-
-  /// Remembers which user/token is already initialized, so calling
-  /// initialize() again (HomeScreen + ChatListScreen) does nothing.
   String? _initKey;
 
-  // ============================================================
-  // GETTERS
-  // ============================================================
-
-  List<ChatConversation> get conversations =>
-      _chatService.conversations.value;
-
-  List<ChatMessage> get currentMessages =>
-      _chatService.currentMessages.value;
-
-  int get totalUnread => _chatService.totalUnreadCount.value;
-
-  bool get isTyping => _chatService.isTyping.value;
-
-  bool get isConnected => _chatService.isConnected.value;
-
-  ChatUser? get currentUser => _chatService.currentUser;
-
   bool isLoading = false;
-
+  bool isLoadingMessages = false;
   String? _error;
 
-  String? get error => _error;
+  // ── Getters ────────────────────────────────────────────
+  List<ChatConversation> get conversations => _service.conversations.value;
+  List<ChatMessage> get messages => _service.messages.value;
+  List<ChatMessage> get pins => _service.pins.value;
 
-  // ============================================================
-  // CONSTRUCTOR
-  // ============================================================
+  /// Alias kept for older screens.
+  List<ChatMessage> get currentMessages => messages;
+
+  int get totalUnread => _service.totalUnread.value;
+  bool get hasMoreOlder => _service.hasMoreOlder;
+  ChatUser? get currentUser => _service.currentUser;
+  Map<String, String> get authHeaders => _service.authHeaders;
+  ValueListenable<bool> get peerTyping => _service.peerTyping;
+  String? get error => _error ?? _service.listError;
 
   ChatProvider() {
-    _chatService.conversations.addListener(_safeNotify);
-    _chatService.currentMessages.addListener(_safeNotify);
-    _chatService.totalUnreadCount.addListener(_safeNotify);
-    _chatService.isTyping.addListener(_safeNotify);
-    _chatService.isConnected.addListener(_safeNotify);
+    _service.conversations.addListener(_safeNotify);
+    _service.messages.addListener(_safeNotify);
+    _service.pins.addListener(_safeNotify);
+    _service.totalUnread.addListener(_safeNotify);
   }
 
-  // ============================================================
-  // SAFE NOTIFY
-  // ============================================================
-
   /// Never notifies while the widget tree is building or after dispose.
-  /// If a frame is in progress, the notification is sent after the frame.
   void _safeNotify() {
     if (_disposed) return;
 
@@ -74,49 +56,39 @@ class ChatProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
     if (_notifyScheduled) return;
     _notifyScheduled = true;
-
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _notifyScheduled = false;
       if (!_disposed) notifyListeners();
     });
   }
 
-  // ============================================================
-  // INITIALIZATION
-  // ============================================================
-
-  void initialize({
-    required String token,
-    required ChatUser currentUser,
-  }) {
+  // ── Setup ──────────────────────────────────────────────
+  /// Safe to call many times: repeat calls for the same user are ignored.
+  void initialize({required String token, required ChatUser currentUser}) {
     final key = '${currentUser.id}:$token';
-    if (_initKey == key) return; // already initialized
+    if (_initKey == key) return;
     _initKey = key;
-
-    _chatService.initialize(
-      token: token,
-      currentUser: currentUser,
-    );
-
-    _chatService.connectWebSocket();
+    _service.initialize(token: token, currentUser: currentUser);
   }
 
-  // ============================================================
-  // CONVERSATIONS
-  // ============================================================
+  /// Compatibility: older code called these. Chat now uses polling.
+  void connectWebSocket() {}
 
+  /// Call on logout: stops polling and clears all chat data.
+  void disconnectWebSocket() {
+    _service.reset();
+    _initKey = null;
+  }
+
+  // ── Conversations ──────────────────────────────────────
   Future<void> refreshConversations() async {
     isLoading = true;
     _error = null;
     _safeNotify();
-
     try {
-      await _chatService.loadConversations();
-    } catch (e) {
-      _error = e.toString();
+      await _service.loadConversations();
     } finally {
       isLoading = false;
       _safeNotify();
@@ -126,181 +98,83 @@ class ChatProvider extends ChangeNotifier {
   Future<ChatConversation> createConversation({
     required int customerId,
     required int fundiId,
-  }) async {
+  }) =>
+      _service.createConversation(customerId: customerId, fundiId: fundiId);
+
+  Future<void> markConversationAsRead(int conversationId) =>
+      _service.markConversationAsRead(conversationId);
+
+  // ── Open chat ──────────────────────────────────────────
+  Future<void> openConversation(int id) async {
+    isLoadingMessages = true;
+    _safeNotify();
     try {
-      _error = null;
-
-      return await _chatService.createConversation(
-        customerId: customerId,
-        fundiId: fundiId,
-      );
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
-    }
-  }
-
-  // ============================================================
-  // MESSAGES
-  // ============================================================
-
-  Future<List<ChatMessage>> getMessages({
-    required int conversationId,
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    try {
-      _error = null;
-      isLoading = true;
-      _safeNotify();
-
-      return await _chatService.getMessages(
-        conversationId: conversationId,
-        limit: limit,
-        offset: offset,
-      );
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
+      await _service.openConversation(id);
     } finally {
-      isLoading = false;
+      isLoadingMessages = false;
       _safeNotify();
     }
   }
 
-  Future<ChatMessage> sendMessage({
+  void closeConversation() => _service.closeConversation();
+
+  Future<void> loadOlder() => _service.loadOlder();
+
+  /// Loads history up to [messageId] so the screen can jump to it.
+  Future<bool> loadUntil(int messageId) => _service.loadUntil(messageId);
+
+  // ── Send / retry / delete / view ───────────────────────
+  /// Optimistic: returns immediately, the bubble shows its own sending state.
+  void send({
     required int conversationId,
     String? content,
     File? file,
-    String messageType = 'text',
-    int? voiceDuration,
-  }) async {
-    try {
-      _error = null;
-
-      return await _chatService.sendMessage(
+    ReplyRef? replyTo,
+  }) =>
+      _service.send(
         conversationId: conversationId,
         content: content,
         file: file,
-        messageType: messageType,
-        voiceDuration: voiceDuration,
+        replyTo: replyTo,
       );
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
-    }
-  }
 
-  Future<void> markConversationAsRead(int conversationId) async {
-    try {
-      _error = null;
+  void retry(int tempId) => _service.retry(tempId);
+  void discardPending(int tempId) => _service.discardPending(tempId);
+  Future<void> sendTyping(int conversationId) =>
+      _service.sendTyping(conversationId);
 
-      await _chatService.markConversationAsRead(conversationId);
-    } catch (e) {
-      _error = e.toString();
-    }
-  }
+  Future<void> deleteMessage(int messageId) => _service.deleteMessage(messageId);
 
-  Future<void> deleteMessage(int messageId) async {
-    try {
-      _error = null;
+  Future<File> fetchForViewing(ChatMessage message) =>
+      _service.fetchForViewing(message);
 
-      await _chatService.deleteMessage(messageId);
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
-    }
-  }
+  // ── WhatsApp-style actions ─────────────────────────────
+  Future<void> react(int messageId, String? emoji) =>
+      _service.react(messageId, emoji);
 
-  Future<void> addReaction(
-      int messageId,
-      String reaction,
-      ) async {
-    try {
-      _error = null;
+  Future<bool> toggleStar(int messageId) => _service.toggleStar(messageId);
 
-      await _chatService.addReaction(
-        messageId,
-        reaction,
-      );
-    } catch (e) {
-      _error = e.toString();
-      rethrow;
-    }
-  }
+  Future<bool> togglePin(int messageId) => _service.togglePin(messageId);
 
-  // ============================================================
-  // TYPING
-  // ============================================================
+  Future<void> forward({
+    required List<int> messageIds,
+    required List<int> conversationIds,
+  }) =>
+      _service.forward(messageIds: messageIds, conversationIds: conversationIds);
 
-  Future<void> sendTypingStatus({
-    required int conversationId,
-    required bool typing,
-  }) async {
-    try {
-      // ChatService.sendTypingStatus() is synchronous.
-      _chatService.sendTypingStatus(
-        conversationId: conversationId,
-        typing: typing,
-      );
-    } catch (e) {
-      // Typing status should not interrupt the chat.
-      debugPrint('Typing status error: $e');
-    }
-  }
+  Future<MessageInfo> fetchInfo(int messageId) => _service.fetchInfo(messageId);
 
-  // ============================================================
-  // USER SUBSCRIPTIONS
-  // ============================================================
-
-  void subscribeToUser(int userId) {
-    _chatService.subscribeToUser(userId);
-  }
-
-  void unsubscribeFromUser(int userId) {
-    _chatService.unsubscribeFromUser(userId);
-  }
-
-  // ============================================================
-  // WEBSOCKET
-  // ============================================================
-
-  void connectWebSocket() {
-    _chatService.connectWebSocket();
-  }
-
-  void disconnectWebSocket() {
-    _chatService.disconnectWebSocket();
-    // Allow initialize() to run again after the next login.
-    _initKey = null;
-  }
-
-  // ============================================================
-  // HELPERS
-  // ============================================================
-
-  bool isCurrentUserMessage(ChatMessage message) {
-    return message.senderId == _chatService.currentUser?.id;
-  }
-
-  // ============================================================
-  // DISPOSE
-  // ============================================================
+  Future<List<ChatMessage>> fetchStarred(int conversationId) =>
+      _service.fetchStarred(conversationId);
 
   @override
   void dispose() {
     _disposed = true;
-
-    _chatService.conversations.removeListener(_safeNotify);
-    _chatService.currentMessages.removeListener(_safeNotify);
-    _chatService.totalUnreadCount.removeListener(_safeNotify);
-    _chatService.isTyping.removeListener(_safeNotify);
-    _chatService.isConnected.removeListener(_safeNotify);
-
-    // dispose() returns void.
-    // Do NOT await it or use its return value.
-    _chatService.dispose();
-
+    _service.conversations.removeListener(_safeNotify);
+    _service.messages.removeListener(_safeNotify);
+    _service.pins.removeListener(_safeNotify);
+    _service.totalUnread.removeListener(_safeNotify);
+    _service.dispose();
     super.dispose();
   }
 }

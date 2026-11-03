@@ -270,7 +270,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPosts => 'No posts yet.';
 
   @override
-  String get createPost => 'Create your first post';
+  String get createPost => 'Create Post';
 
   @override
   String get createPostTitle => 'Create Post';
@@ -1306,4 +1306,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get created => 'Created';
+
+  @override
+  String get areYouSureDeleteMessage => 'Are you sure you want to delete this message?';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterOnProgress => 'On progress';
+
+  @override
+  String get filterCompleted => 'Completed';
+
+  @override
+  String get payments => 'Payments';
+
+  @override
+  String get myPortfolio => 'My Portfolio';
+
+  @override
+  String get noPostsYet => 'No Posts Yet';
+
+  @override
+  String get uploadPhotosToShowcase => 'Upload photos of your work to showcase your skills.';
+
+  @override
+  String get newPortfolioPost => 'New Portfolio Post';
+
+  @override
+  String get tapToSelectImages => 'Tap to select images';
+
+  @override
+  String get editPost => 'Edit Post';
+
+  @override
+  String get addMoreImages => 'Add more images';
+
+  @override
+  String get post => 'Post';
+
+  @override
+  String get deletePostTitle => 'Delete Post?';
+
+  @override
+  String get deletePostConfirmation => 'Are you sure you want to remove this entire post?';
+
+  @override
+  String get editImages => 'Edit Images';
+
+  @override
+  String get myBalance => 'My Balance';
+
+  @override
+  String get earnings => 'Earnings';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get recentJobs => 'Recent Jobs';
+
+  @override
+  String get recentTickets => 'Recent Tickets';
+
+  @override
+  String get noJobsYet => 'No jobs yet';
+
+  @override
+  String get noTicketsYet => 'No tickets yet';
+
+  @override
+  String get comingSoonTitle => 'Coming Soon';
+
+  @override
+  String get comingSoonBody => 'This feature is coming soon 🚀\nStay tuned for updates.';
+
+  @override
+  String get goodMorning => 'Good morning';
+
+  @override
+  String get goodAfternoon => 'Good afternoon';
+
+  @override
+  String get goodEvening => 'Good evening';
+
+  @override
+  String pendingCount(int count) {
+    return '$count Pending';
+  }
+
+  @override
+  String get acceptedStatus => 'ACCEPTED';
+
+  @override
+  String get rejectedStatus => 'REJECTED';
+
+  @override
+  String get cancelledStatus => 'CANCELLED';
 }

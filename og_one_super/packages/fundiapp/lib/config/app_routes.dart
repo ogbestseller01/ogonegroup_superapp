@@ -60,6 +60,10 @@ class AppRoutes {
   static const String invoiceDetails      = '/invoice-details';
   static const String paymentMethods      = '/payment-methods';
 
+
+  // ===== PAYMENTS =====
+  static const String payment = '/payment';
+
   // ===== DOWNLOADS =====
   static const String downloads = '/downloads';
 

@@ -1,5 +1,4 @@
 // lib/models/chat_user.dart
-
 class ChatUser {
   final int id;
   final String name;
@@ -8,9 +7,8 @@ class ChatUser {
   final String? avatar;
   final bool isOnline;
   final String? lastSeen;
-  final String? fcmToken;
 
-  ChatUser({
+  const ChatUser({
     required this.id,
     required this.name,
     required this.email,
@@ -18,32 +16,33 @@ class ChatUser {
     this.avatar,
     this.isOnline = false,
     this.lastSeen,
-    this.fcmToken,
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'],
-      avatar: json['profile_photo'] ?? json['avatar'],
-      isOnline: json['is_online'] ?? false,
-      lastSeen: json['last_seen'] ?? json['last_login_at'],
-      fcmToken: json['fcm_device_token'],
+      id: _toInt(json['id']),
+      name: json['name']?.toString() ?? 'Unknown',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      avatar: (json['profile_photo'] ?? json['avatar'])?.toString(),
+      isOnline: json['is_online'] == true,
+      lastSeen: (json['last_seen'] ?? json['last_login_at'])?.toString(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'profile_photo': avatar,
-      'is_online': isOnline,
-      'last_login_at': lastSeen,
-      'fcm_device_token': fcmToken,
-    };
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'profile_photo': avatar,
+    'is_online': isOnline,
+    'last_seen': lastSeen,
+  };
+
+  static int _toInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? 0;
   }
 }

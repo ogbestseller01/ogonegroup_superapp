@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0" # Aligned with root app
 
 dependencies:
   flutter:
@@ -17,25 +17,22 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_spinkit: ^5.2.1
   toastification: ^2.3.0
-  font_awesome_flutter:
-    git:
-      url: https://github.com/fluttercommunity/font_awesome_flutter.git
-      ref: master
+  font_awesome_flutter: ^10.8.0 # Changed from git to match root
 
   # ── Media & Files ───────────────────────────────────────
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
-  record: ^5.1.2
+  record: ^7.1.1 # Aligned
   audioplayers: ^6.0.0
-  emoji_picker_flutter: ^3.0.0
-  file_picker: ^8.1.2
-  open_file: ^3.3.2
+  emoji_picker_flutter: ^4.4.0 # Aligned
+  file_picker: ^10.3.10 # Aligned
+  open_file: ^4.0.0 # Aligned
   path_provider: ^2.1.4
   country_flags: ^4.1.2
   gallery_saver_plus: ^3.0.0
   pdf: ^3.10.8
   printing: ^5.13.1
-  share_plus: ^10.0.0
+  share_plus: ^11.0.0 # Aligned
   video_player: ^2.10.1
 
   # ── YouTube & Browser ───────────────────────────────────
@@ -55,12 +52,12 @@ dependencies:
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
   flutter_local_notifications: ^19.0.0
-  app_badge_plus: ^1.0.0
+  flutter_app_badger_plus: ^1.0.0 # Changed from app_badge_plus to match root
 
   # ── Device ──────────────────────────────────────────────
   geolocator: ^13.0.1
-  permission_handler: ^11.3.1
-  connectivity_plus: ^6.0.5
+  permission_handler: ^12.0.3 # Aligned
+  connectivity_plus: ^7.2.0 # Aligned
 
   # ── Maps ────────────────────────────────────────────────
   flutter_map: ^7.0.2
@@ -69,8 +66,7 @@ dependencies:
   # ── QR Scanner ──────────────────────────────────────────
   qr_code_scanner_plus: ^2.0.10
   camera: ^0.11.0+2
-  google_mlkit_face_detection: ^0.15.1
-
+  # REMOVED: google_mlkit_face_detection
 
   # ── Biometric Auth (Face + Fingerprint) ─────────────────
   biometric_security: ^0.1.0
@@ -84,9 +80,7 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   flutter_launcher_icons: ^0.14.3
 
-dependency_overrides:
-  record_linux: ^1.2.0
-  record_platform_interface: ^1.2.0
+# REMOVED: dependency_overrides (let the root app handle them)
 
 flutter:
   generate: true

@@ -17,6 +17,7 @@ import 'providers/settings_provider.dart';
 import 'screens/dashboard/super_app_dashboard.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/app_security_middleware.dart'; // <-- 🛡️ Comprehensive Security Middleware
 import 'services/internet_checker.dart';
 import 'services/security_service.dart';
 import 'widgets/app_gates.dart';
@@ -43,6 +44,20 @@ void main() {
 
 Future<void> _bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ==========================================================
+  // 🛡️ STRICT APP SECURITY MIDDLEWARE ENFORCEMENT
+  // ==========================================================
+  try {
+    await AppSecurityMiddleware.initialize();
+  } catch (e, st) {
+    _reportError(e, st, context: 'Security middleware violation');
+    try {
+      SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+    } catch (_) {}
+    return;
+  }
+  // ==========================================================
 
   // Disable runtime font downloading – use only the fonts declared in assets
   GoogleFonts.config.allowRuntimeFetching = false;

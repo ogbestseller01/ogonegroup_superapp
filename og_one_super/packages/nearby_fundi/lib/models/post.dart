@@ -1,9 +1,8 @@
 // FILE: lib/models/post.dart
-// Matches the backend `posts` table exactly:
+// Matches the backend `posts` table:
 //   id, technician_id, images (json array), video, created_at, updated_at
-// plus the relations the API returns: technician.user, comments.user,
-// likes_count / comments_count, image_urls, video_url.
-// (No title, content or YouTube fields any more.)
+// plus what the API adds: technician.user, comments.user, likes_count,
+// comments_count, image_urls, video_url, video_stream_url.
 
 int _asInt(dynamic value, [int fallback = 0]) {
   if (value is int) return value;
@@ -12,7 +11,7 @@ int _asInt(dynamic value, [int fallback = 0]) {
 }
 
 DateTime _asDate(dynamic value) =>
-    DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+    (DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now()).toLocal();
 
 class Comment {
   final int id;
@@ -43,7 +42,10 @@ class Comment {
 class Post {
   final int id;
   final List<String> images;
+
+  /// Full playable video URL (null when the post has no video).
   final String? video;
+
   int likesCount;
   int commentsCount;
   final String technicianName;
@@ -115,10 +117,20 @@ class Post {
     }
 
     // ---- video ----
+    // Prefer the Range-capable streaming URL (required by iOS AVPlayer),
+    // then the plain public URL. A raw storage path (not http) can't play,
+    // so it is ignored.
     String? videoUrl;
-    final rawVideo = json['video_url'] ?? json['video'];
-    if (rawVideo != null && rawVideo.toString().isNotEmpty) {
-      videoUrl = rawVideo.toString();
+    for (final candidate in [
+      json['video_stream_url'],
+      json['video_url'],
+      json['video'],
+    ]) {
+      final s = candidate?.toString() ?? '';
+      if (s.startsWith('http')) {
+        videoUrl = s;
+        break;
+      }
     }
 
     // ---- comments ----

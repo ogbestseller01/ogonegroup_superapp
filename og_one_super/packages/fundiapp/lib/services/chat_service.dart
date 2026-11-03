@@ -1,622 +1,348 @@
 // lib/services/chat_service.dart
-
+import 'dart:async';
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../config/app_config.dart';
-import '../models/chat_user.dart';
-import '../models/chat_message.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../models/chat_conversation.dart';
-import 'websocket_service.dart';
+import '../models/chat_message.dart';
+import '../models/chat_user.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
-import '../utils/badge_helper.dart'; // 👈 ADD THIS
 
 class ChatService {
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
   ChatService._internal();
 
-  // Dependencies
-  late ApiService _apiService;
-  WebSocketService? _webSocketService;
+  final ApiService _api = ApiService();
 
-  // State
+  // ── State ──────────────────────────────────────────────────────────────
   final ValueNotifier<List<ChatConversation>> conversations = ValueNotifier([]);
-  final ValueNotifier<List<ChatMessage>> currentMessages = ValueNotifier([]);
-  final ValueNotifier<int> totalUnreadCount = ValueNotifier(0);
-  final ValueNotifier<bool> isTyping = ValueNotifier(false);
-  final ValueNotifier<bool> _isConnected = ValueNotifier(false);
+  final ValueNotifier<List<ChatMessage>> messages = ValueNotifier([]);
+  final ValueNotifier<int> totalUnread = ValueNotifier(0);
+  final ValueNotifier<double?> uploadProgress = ValueNotifier(null);
 
-  // Current user
-  ChatUser? _currentUser;
+  ChatUser? currentUser;
   String? _token;
+  int? _openConversationId;
+  bool _hasMoreOlder = true;
+  String? listError;
 
-  // Getters
-  bool get isConnected => _isConnected.value;
-  ChatUser? get currentUser => _currentUser;
+  Timer? _pollTimer;
+  bool _isSending = false; // prevents concurrent sends
 
-  // ============================================
-  // INITIALIZATION
-  // ============================================
+  // ── Getters ────────────────────────────────────────────────────────────
+  bool get hasMoreOlder => _hasMoreOlder;
+  List<ChatMessage> get currentMessages => messages.value;
 
-  void initialize({required String token, required ChatUser currentUser}) {
-    _token = token;
-    _currentUser = currentUser;
-    _apiService = ApiService();
-
-    _webSocketService = WebSocketService(
-      token: token,
-      userId: currentUser.id,
-      onNewMessage: _handleNewMessage,
-      onMessageRead: _handleMessageRead,
-      onUserTyping: _handleUserTyping,
-      onConnected: _handleConnected,
-      onDisconnected: _handleDisconnected,
-    );
-
-    loadConversations();
-    loadUnreadCount();
+  Map<String, String> get authHeaders {
+    final t = _token;
+    return t == null || t.isEmpty
+        ? {'Accept': 'application/json'}
+        : {
+      'Authorization': 'Bearer $t',
+      'Accept': 'application/json',
+    };
   }
 
-  // ============================================
-  // CONVERSATIONS
-  // ============================================
+  // ── Init / Reset ───────────────────────────────────────────────────────
+  void initialize({required String token, required ChatUser currentUser}) {
+    _token = token;
+    this.currentUser = currentUser;
+  }
 
-  Future<ChatConversation> getOrCreateConversation({
+  void reset() {
+    _stopPolling();
+    conversations.value = [];
+    messages.value = [];
+    totalUnread.value = 0;
+    uploadProgress.value = null;
+    _openConversationId = null;
+    currentUser = null;
+    _token = null;
+    listError = null;
+    _hasMoreOlder = true;
+    _isSending = false;
+  }
+
+  // ── Conversations ──────────────────────────────────────────────────────
+  Future<void> loadConversations() async {
+    listError = null;
+    try {
+      final res = await _api.getConversations();
+      if (!res.success) {
+        listError = res.message;
+        return;
+      }
+
+      final raw = res.data;
+      final List list = raw is List
+          ? raw
+          : (raw is Map && raw['data'] is List)
+          ? raw['data']
+          : [];
+
+      final loaded = list
+          .map((e) => ChatConversation.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+
+      conversations.value = loaded;
+      totalUnread.value = loaded.fold(0, (sum, c) => sum + c.unreadCount);
+    } catch (e) {
+      listError = e.toString();
+      debugPrint('loadConversations error: $e');
+    }
+  }
+
+  Future<ChatConversation> createConversation({
     required int customerId,
     required int fundiId,
   }) async {
-    try {
-      final response = await _apiService.getOrCreateConversation(
-        customerId: customerId,
-        fundiId: fundiId,
-      );
-
-      if (response.success) {
-        final conversation = ChatConversation.fromJson(response.data);
-        await loadConversations();
-        return conversation;
-      }
-      throw Exception(response.message);
-    } catch (e) {
-      throw Exception('Failed to create conversation: $e');
-    }
-  }
-
-  Future<void> loadConversations() async {
-    try {
-      final response = await _apiService.getConversations();
-
-      if (response.success) {
-        final data = response.data;
-        List<dynamic> conversationsData;
-
-        if (data is List) {
-          conversationsData = data;
-        } else if (data is Map && data.containsKey('data')) {
-          conversationsData = data['data'] as List? ?? [];
-        } else {
-          conversationsData = [];
-        }
-
-        final List<ChatConversation> loaded = conversationsData
-            .map((item) => ChatConversation.fromJson(item))
-            .toList();
-
-        conversations.value = loaded;
-
-        for (var conv in loaded) {
-          _webSocketService?.subscribeToTyping(conv.id);
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to load conversations: $e');
-    }
-  }
-
-  Future<void> refreshConversations() async {
-    await loadConversations();
-  }
-
-  ChatConversation? getConversationById(int id) {
-    try {
-      return conversations.value.firstWhere((conv) => conv.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // ============================================
-  // MESSAGES
-  // ============================================
-
-  Future<List<ChatMessage>> getMessages({
-    required int conversationId,
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    try {
-      final response = await _apiService.getMessages(
-        conversationId: conversationId,
-        limit: limit,
-        offset: offset,
-      );
-
-      if (response.success) {
-        final data = response.data;
-        List<dynamic> messagesData;
-
-        if (data is Map) {
-          messagesData = data['messages'] as List? ?? [];
-        } else if (data is List) {
-          messagesData = data;
-        } else {
-          messagesData = [];
-        }
-
-        final List<ChatMessage> messages = messagesData
-            .map((item) => ChatMessage.fromJson(item))
-            .toList();
-
-        if (offset == 0) {
-          currentMessages.value = messages;
-        } else {
-          currentMessages.value = [...messages, ...currentMessages.value];
-        }
-
-        return messages;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('Failed to get messages: $e');
-      return [];
-    }
-  }
-
-  Future<List<ChatMessage>> loadMoreMessages({
-    required int conversationId,
-    int limit = 50,
-  }) async {
-    final currentCount = currentMessages.value.length;
-    return await getMessages(
-      conversationId: conversationId,
-      limit: limit,
-      offset: currentCount,
+    final res = await _api.getOrCreateConversation(
+      customerId: customerId,
+      fundiId: fundiId,
     );
-  }
+    if (!res.success) throw Exception(res.message);
 
-  Future<ChatMessage> sendMessage({
-    required int conversationId,
-    String? content,
-    File? file,
-    String messageType = 'text',
-    int? voiceDuration,
-  }) async {
-    try {
-      final response = await _apiService.sendMessage(
-        conversationId: conversationId,
-        content: content,
-        filePath: file?.path,
-        messageType: messageType,
-        voiceDuration: voiceDuration,
-      );
-
-      if (response.success) {
-        final messageData = response.data['message'] ?? response.data;
-        final message = ChatMessage.fromJson(messageData);
-
-        final currentList = currentMessages.value;
-        if (!currentList.any((m) => m.id == message.id)) {
-          currentMessages.value = [...currentList, message];
-        }
-
-        await loadConversations();
-        return message;
-      }
-      throw Exception(response.message);
-    } catch (e) {
-      throw Exception('Failed to send message: $e');
-    }
-  }
-
-  /// Send multiple messages (text + files)
-  Future<List<ChatMessage>> sendMultipleMessages({
-    required int conversationId,
-    List<File>? files,
-    String? content,
-    String messageType = 'image',
-  }) async {
-    final List<ChatMessage> sentMessages = [];
-
-    if (content != null && content.isNotEmpty) {
-      final textMessage = await sendMessage(
-        conversationId: conversationId,
-        content: content,
-        messageType: 'text',
-      );
-      sentMessages.add(textMessage);
-    }
-
-    if (files != null) {
-      for (final file in files) {
-        try {
-          final message = await sendMessage(
-            conversationId: conversationId,
-            file: file,
-            messageType: messageType,
-            content: messageType == 'image' ? '📷 Image' : '📎 File',
-          );
-          sentMessages.add(message);
-        } catch (e) {
-          debugPrint('Failed to send file: $e');
-        }
-      }
-    }
-
-    return sentMessages;
-  }
-
-  Future<void> markMessageAsRead(int messageId) async {
-    try {
-      await _apiService.markMessageAsRead(messageId);
-      final messages = currentMessages.value.map((m) {
-        if (m.id == messageId) {
-          return ChatMessage(
-            id: m.id,
-            conversationId: m.conversationId,
-            senderId: m.senderId,
-            senderName: m.senderName,
-            senderType: m.senderType,
-            receiverId: m.receiverId,
-            messageType: m.messageType,
-            content: m.content,
-            isRead: true,
-            readAt: DateTime.now().toIso8601String(),
-            isDelivered: m.isDelivered,
-            deliveredAt: m.deliveredAt,
-            createdAt: m.createdAt,
-            file: m.file,
-            voiceDuration: m.voiceDuration,
-          );
-        }
-        return m;
-      }).toList();
-      currentMessages.value = messages;
-    } catch (e) {
-      debugPrint('Failed to mark message as read: $e');
-    }
+    final conv = ChatConversation.fromJson(Map<String, dynamic>.from(res.data));
+    await loadConversations();
+    return conv;
   }
 
   Future<void> markConversationAsRead(int conversationId) async {
     try {
-      await _apiService.markConversationAsRead(conversationId);
-      await loadConversations();
-      await loadUnreadCount();
-      // ✅ Update badge after unread count changes
-      BadgeHelper.updateBadge(totalUnreadCount.value);
+      await _api.markConversationAsRead(conversationId);
+
+      conversations.value = conversations.value.map((c) {
+        if (c.id == conversationId) return c.copyWith(unreadCount: 0);
+        return c;
+      }).toList();
+
+      totalUnread.value =
+          conversations.value.fold(0, (sum, c) => sum + c.unreadCount);
     } catch (e) {
-      debugPrint('Failed to mark conversation as read: $e');
+      debugPrint('markConversationAsRead error: $e');
+    }
+  }
+
+  Future<bool> deleteConversation(int conversationId) async {
+    try {
+      final res = await _api.deleteConversation(conversationId);
+      if (!res.success) return false;
+
+      conversations.value =
+          conversations.value.where((c) => c.id != conversationId).toList();
+      totalUnread.value =
+          conversations.value.fold(0, (sum, c) => sum + c.unreadCount);
+
+      if (_openConversationId == conversationId) {
+        closeConversation();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('deleteConversation error: $e');
+      return false;
+    }
+  }
+
+  // ── Open / Close conversation ──────────────────────────────────────────
+  Future<void> openConversation(int conversationId) async {
+    _openConversationId = conversationId;
+    _hasMoreOlder = true;
+    messages.value = [];
+    await _loadLatest(conversationId);
+    _startPolling(conversationId);
+  }
+
+  void closeConversation() {
+    _stopPolling();
+    _openConversationId = null;
+    messages.value = [];
+  }
+
+  Future<void> _loadLatest(int conversationId) async {
+    final res = await _api.getMessages(
+      conversationId: conversationId,
+      limit: 40,
+    );
+    if (!res.success) return;
+
+    final data = res.data is Map ? res.data as Map : {};
+    final list = (data['messages'] as List? ?? [])
+        .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
+    _hasMoreOlder = data['has_more'] == true;
+    messages.value = list;
+  }
+
+  Future<void> loadOlder() async {
+    if (!_hasMoreOlder || messages.value.isEmpty || _openConversationId == null) {
+      return;
+    }
+
+    final oldestId = messages.value.first.id;
+    final res = await _api.getMessages(
+      conversationId: _openConversationId!,
+      limit: 30,
+      beforeId: oldestId,
+    );
+    if (!res.success) return;
+
+    final data = res.data is Map ? res.data as Map : {};
+    final older = (data['messages'] as List? ?? [])
+        .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
+    _hasMoreOlder = data['has_more'] == true;
+    if (older.isEmpty) return;
+
+    messages.value = [...older, ...messages.value];
+  }
+
+  // ── Send ───────────────────────────────────────────────────────────────
+  Future<ChatMessage> sendMessage({
+    required int conversationId,
+    String? content,
+    File? file,
+  }) async {
+    // Prevent concurrent / double sends
+    if (_isSending) {
+      throw Exception('Already sending a message');
+    }
+    _isSending = true;
+    uploadProgress.value = file != null ? 0.0 : null;
+
+    try {
+      final res = await _api.sendMessage(
+        conversationId: conversationId,
+        content: content,
+        filePath: file?.path,
+        onSendProgress: file == null
+            ? null
+            : (sent, total) {
+          if (total > 0) {
+            uploadProgress.value = sent / total;
+          }
+        },
+      );
+
+      uploadProgress.value = null;
+
+      if (!res.success) throw Exception(res.message);
+
+      final raw = res.data is Map ? (res.data['message'] ?? res.data) : null;
+      if (raw == null) throw Exception('Invalid response from server');
+
+      final msg = ChatMessage.fromJson(Map<String, dynamic>.from(raw));
+
+      // Safe append (deduplicated)
+      if (_openConversationId == conversationId) {
+        _appendMessages([msg]);
+      }
+
+      await loadConversations();
+      return msg;
+    } catch (e) {
+      uploadProgress.value = null;
+      rethrow;
+    } finally {
+      _isSending = false;
     }
   }
 
   Future<void> deleteMessage(int messageId) async {
-    try {
-      await _apiService.deleteMessage(messageId);
-      await loadConversations();
-      currentMessages.value = currentMessages.value
-          .where((m) => m.id != messageId)
-          .toList();
-    } catch (e) {
-      debugPrint('Failed to delete message: $e');
+    final res = await _api.deleteMessage(messageId);
+    if (!res.success) throw Exception(res.message);
+
+    messages.value = messages.value.where((m) => m.id != messageId).toList();
+    await loadConversations();
+  }
+
+  // ── Private file fetch ─────────────────────────────────────────────────
+  Future<File> fetchForViewing(ChatMessage message) async {
+    final url = message.file?.url;
+    if (url == null || url.isEmpty) {
+      throw Exception('No file URL');
     }
+
+    final dir = await getTemporaryDirectory();
+    final ext = message.file?.extension ?? 'bin';
+    final local = File('${dir.path}/chat_${message.id}.$ext');
+
+    if (await local.exists()) return local;
+
+    final token = await StorageService.getToken();
+    final dio = Dio();
+
+    await dio.download(
+      url,
+      local.path,
+      options: Options(
+        headers: {
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          'Accept': '*/*',
+        },
+        responseType: ResponseType.bytes,
+      ),
+    );
+
+    return local;
   }
 
-  Future<void> addReaction(int messageId, String reaction) async {
-    try {
-      await _apiService.addReaction(messageId, reaction);
-    } catch (e) {
-      debugPrint('Failed to add reaction: $e');
-    }
+  // ── Polling ────────────────────────────────────────────────────────────
+  void _startPolling(int conversationId) {
+    _stopPolling();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+      if (_openConversationId != conversationId) return;
+      await _pollNewMessages(conversationId);
+    });
   }
 
-  Future<void> removeReaction(int messageId) async {
-    try {
-      await _apiService.removeReaction(messageId);
-    } catch (e) {
-      debugPrint('Failed to remove reaction: $e');
-    }
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
-  // ============================================
-  // FILE OPERATIONS
-  // ============================================
+  Future<void> _pollNewMessages(int conversationId) async {
+    if (messages.value.isEmpty) return;
 
-  /// Download a file from a message to a local path.
-  Future<String?> downloadFile(int messageId, String savePath) async {
-    try {
-      return await _apiService.downloadChatFileToPath(messageId, savePath);
-    } catch (e) {
-      debugPrint('Failed to download file: $e');
-      return null;
-    }
+    final lastId = messages.value.last.id;
+    final res = await _api.getMessages(
+      conversationId: conversationId,
+      afterId: lastId,
+    );
+    if (!res.success) return;
+
+    final data = res.data is Map ? res.data as Map : {};
+    final newer = (data['messages'] as List? ?? [])
+        .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
+    if (newer.isEmpty) return;
+
+    // Critical: deduplicate so the same message is never shown twice
+    _appendMessages(newer);
+    await loadConversations();
   }
 
-  /// Download file using message URL from local messages (alternate method)
-  Future<String?> downloadFileFromUrl(int messageId, String savePath) async {
-    try {
-      final message = currentMessages.value.firstWhere((m) => m.id == messageId);
-      if (message.file?.url == null) return null;
+  /// Safely append messages without duplicates
+  void _appendMessages(List<ChatMessage> incoming) {
+    if (incoming.isEmpty) return;
 
-      final url = message.file!.url!;
-      final dio = Dio();
-      await dio.download(url, savePath);
-      return savePath;
-    } catch (e) {
-      debugPrint('Failed to download file: $e');
-      return null;
-    }
+    final existingIds = messages.value.map((m) => m.id).toSet();
+    final unique = incoming.where((m) => !existingIds.contains(m.id)).toList();
+
+    if (unique.isEmpty) return;
+
+    messages.value = [...messages.value, ...unique];
   }
 
-  /// Get file info (metadata)
-  Future<Map<String, dynamic>?> getFileInfo(int messageId) async {
-    try {
-      final response = await _apiService.getFileInfo(messageId);
-      if (response.success) {
-        return response.data;
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Failed to get file info: $e');
-      return null;
-    }
-  }
-
-  /// Delete file from message
-  Future<bool> deleteFile(int messageId) async {
-    try {
-      final response = await _apiService.deleteFile(messageId);
-      if (response.success) {
-        // Update local message
-        final messages = currentMessages.value.map((m) {
-          if (m.id == messageId) {
-            return ChatMessage(
-              id: m.id,
-              conversationId: m.conversationId,
-              senderId: m.senderId,
-              senderName: m.senderName,
-              senderType: m.senderType,
-              receiverId: m.receiverId,
-              messageType: 'text',
-              content: m.content ?? 'File removed',
-              isRead: m.isRead,
-              readAt: m.readAt,
-              isDelivered: m.isDelivered,
-              deliveredAt: m.deliveredAt,
-              createdAt: m.createdAt,
-              file: null,
-              voiceDuration: m.voiceDuration,
-            );
-          }
-          return m;
-        }).toList();
-        currentMessages.value = messages;
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Failed to delete file: $e');
-      return false;
-    }
-  }
-
-  /// Upload a file separately (for composing messages)
-  Future<Map<String, dynamic>?> uploadFile(File file) async {
-    try {
-      final response = await _apiService.uploadChatFile(file);
-      if (response.success) {
-        return response.data;
-      }
-      return null;
-    } catch (e) {
-      debugPrint('Failed to upload file: $e');
-      return null;
-    }
-  }
-
-  /// Delete entire conversation
-  Future<bool> deleteConversation(int conversationId) async {
-    try {
-      final response = await _apiService.deleteConversation(conversationId);
-      if (response.success) {
-        conversations.value = conversations.value
-            .where((conv) => conv.id != conversationId)
-            .toList();
-        final currentConvId = currentMessages.value.isNotEmpty
-            ? currentMessages.value.first.conversationId
-            : null;
-        if (currentConvId == conversationId) {
-          currentMessages.value = [];
-        }
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Failed to delete conversation: $e');
-      return false;
-    }
-  }
-
-  // ============================================
-  // TYPING INDICATOR
-  // ============================================
-
-  Future<void> sendTypingStatus({
-    required int conversationId,
-    required bool typing,
-  }) async {
-    try {
-      await _apiService.sendTypingStatus(
-        conversationId: conversationId,
-        isTyping: typing,
-      );
-      _webSocketService?.sendTypingStatus(conversationId, typing);
-    } catch (e) {
-      debugPrint('Failed to send typing status: $e');
-    }
-  }
-
-  // ============================================
-  // UNREAD COUNTS
-  // ============================================
-
-  Future<void> loadUnreadCount() async {
-    try {
-      final response = await _apiService.getUnreadCount();
-      if (response.success) {
-        totalUnreadCount.value = response.data?['total_unread'] ?? 0;
-        // ✅ Update badge after loading unread count
-        BadgeHelper.updateBadge(totalUnreadCount.value);
-      }
-    } catch (e) {
-      debugPrint('Failed to load unread count: $e');
-    }
-  }
-
-  int getUnreadCountForConversation(int conversationId) {
-    final conv = getConversationById(conversationId);
-    return conv?.unreadCount ?? 0;
-  }
-
-  // ============================================
-  // WEBSOCKET HANDLERS
-  // ============================================
-
-  void _handleNewMessage(Map<String, dynamic> data) {
-    try {
-      final message = ChatMessage.fromJson(data);
-      final currentIds = currentMessages.value.map((m) => m.id).toList();
-      if (!currentIds.contains(message.id)) {
-        currentMessages.value = [...currentMessages.value, message];
-      }
-      loadConversations();
-      loadUnreadCount().then((_) {
-        // ✅ Ensure badge is updated after unread count is refreshed
-        BadgeHelper.updateBadge(totalUnreadCount.value);
-      });
-    } catch (e) {
-      debugPrint('Failed to handle new message: $e');
-    }
-  }
-
-  void _handleMessageRead(Map<String, dynamic> data) {
-    try {
-      final messageId = data['message_id']?.toString();
-      if (messageId == null) return;
-
-      final messages = currentMessages.value.map((m) {
-        if (m.id.toString() == messageId) {
-          return ChatMessage(
-            id: m.id,
-            conversationId: m.conversationId,
-            senderId: m.senderId,
-            senderName: m.senderName,
-            senderType: m.senderType,
-            receiverId: m.receiverId,
-            messageType: m.messageType,
-            content: m.content,
-            isRead: true,
-            readAt: DateTime.now().toIso8601String(),
-            isDelivered: m.isDelivered,
-            deliveredAt: m.deliveredAt,
-            createdAt: m.createdAt,
-            file: m.file,
-            voiceDuration: m.voiceDuration,
-          );
-        }
-        return m;
-      }).toList();
-      currentMessages.value = messages;
-    } catch (e) {
-      debugPrint('Failed to handle message read: $e');
-    }
-  }
-
-  void _handleUserTyping(Map<String, dynamic> data) {
-    try {
-      final userId = data['user_id']?.toString();
-      final typing = data['is_typing'] == true;
-      if (userId != null && userId != _currentUser?.id.toString()) {
-        isTyping.value = typing;
-      }
-    } catch (e) {
-      debugPrint('Failed to handle typing: $e');
-    }
-  }
-
-  void _handleConnected() {
-    _isConnected.value = true;
-    debugPrint('WebSocket connected');
-  }
-
-  void _handleDisconnected() {
-    _isConnected.value = false;
-    debugPrint('WebSocket disconnected');
-  }
-
-  // ============================================
-  // WEBSOCKET MANAGEMENT
-  // ============================================
-
-  void connectWebSocket() {
-    _webSocketService?.connect();
-  }
-
-  void disconnectWebSocket() {
-    _webSocketService?.disconnect();
-  }
-
-  void subscribeToUser(int userId) {
-    _webSocketService?.subscribeToUser(userId);
-  }
-
-  void unsubscribeFromUser(int userId) {
-    _webSocketService?.unsubscribeFromUser(userId);
-  }
-
-  Future<void> reconnectWebSocket() async {
-    disconnectWebSocket();
-    await Future.delayed(const Duration(seconds: 1));
-    connectWebSocket();
-  }
-
-  // ============================================
-  // UTILITY METHODS
-  // ============================================
-
-  void clearMessages() {
-    currentMessages.value = [];
-  }
-
-  ChatUser? getOtherParty(int conversationId) {
-    final conv = getConversationById(conversationId);
-    return conv?.otherParty;
-  }
-
-  bool conversationExists(int conversationId) {
-    return getConversationById(conversationId) != null;
-  }
-
-  // ============================================
-  // CLEANUP
-  // ============================================
-
+  // ── Cleanup ────────────────────────────────────────────────────────────
   void dispose() {
-    conversations.dispose();
-    currentMessages.dispose();
-    totalUnreadCount.dispose();
-    isTyping.dispose();
-    _isConnected.dispose();
-    disconnectWebSocket();
+    _stopPolling();
   }
 }

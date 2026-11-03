@@ -19,6 +19,7 @@ class TicketsScreen extends StatefulWidget {
 }
 
 class _TicketsScreenState extends State<TicketsScreen> {
+  // Raw status slugs (must match backend values). Labels are localized below.
   static const _filters = ['all', 'on-progress', 'completed'];
 
   String _filter = 'all';
@@ -45,6 +46,13 @@ class _TicketsScreenState extends State<TicketsScreen> {
     }).toList();
   }
 
+  /// Localizes the filter bar labels while keeping the raw slug as the value.
+  Map<String, String> _filterLabels(AppLocalizations l10n) => {
+    'all': l10n.filterAll,
+    'on-progress': l10n.filterOnProgress,
+    'completed': l10n.filterCompleted,
+  };
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -58,8 +66,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
     };
 
     return Scaffold(
-      backgroundColor:
-      isDark ? AppTheme.darkBackground : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark
+          ? AppTheme.darkBackground
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primary,
         elevation: 0,
@@ -72,13 +81,15 @@ class _TicketsScreenState extends State<TicketsScreen> {
           children: [
             _AppBarButton(
               icon: Icons.arrow_back_ios_new_rounded,
-              onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
+              onTap: () =>
+                  Navigator.pushReplacementNamed(context, AppRoutes.home),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 l10n.tickets,
                 style: const TextStyle(
+                  inherit: true,
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -102,6 +113,8 @@ class _TicketsScreenState extends State<TicketsScreen> {
             options: _filters,
             selected: _filter,
             counts: counts,
+            // Localized labels; the raw slug is still the option value.
+            labels: _filterLabels(l10n),
             onSelected: (v) => setState(() => _filter = v),
           ),
           const SizedBox(height: 8),
@@ -111,9 +124,15 @@ class _TicketsScreenState extends State<TicketsScreen> {
     );
   }
 
-  Widget _buildBody(TicketProvider provider, List<WorkTicket> filtered, AppLocalizations l10n) {
+  Widget _buildBody(
+      TicketProvider provider,
+      List<WorkTicket> filtered,
+      AppLocalizations l10n,
+      ) {
     if (provider.isLoading && provider.tickets.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primary),
+      );
     }
     if (provider.error != null && provider.tickets.isEmpty) {
       return WorkEmptyState(
@@ -197,7 +216,11 @@ class _TicketCard extends StatelessWidget {
               color: color.withOpacity(0.13),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(Icons.confirmation_number_rounded, color: color, size: 24),
+            child: Icon(
+              Icons.confirmation_number_rounded,
+              color: color,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -246,10 +269,12 @@ class _TicketCard extends StatelessWidget {
                   icon: Icons.build_outlined,
                   text: ticket.serviceName ?? '—',
                 ),
-                WorkMetaLine(
-                  icon: Icons.access_time_rounded,
-                  text: '${l10n.created} ${formatEAT(ticket.createdAt)}',
-                ),
+                if (ticket.createdAt != null)
+                  WorkMetaLine(
+                    icon: Icons.access_time_rounded,
+                    text:
+                    '${l10n.created} ${formatEAT(ticket.createdAt)}',
+                  ),
               ],
             ),
           ),

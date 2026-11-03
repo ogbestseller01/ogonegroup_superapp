@@ -1,38 +1,29 @@
 // lib/widgets/message_bubble.dart
 import 'package:flutter/material.dart';
-import '../models/chat_message.dart';
-import '../utils/image_utils.dart';
-import '../l10n/app_localizations.dart';
+
 import '../config/app_theme.dart';
+import '../l10n/app_localizations.dart';
+import '../models/chat_message.dart';
 
 class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isCurrentUser;
   final VoidCallback? onLongPress;
-  final VoidCallback? onDownload;
-  final VoidCallback? onDeleteFile;
-  final VoidCallback? onPlayVoice;
-  final bool isPlaying;
-  final Duration playbackPosition;
-  final Duration playbackDuration;
+  final VoidCallback? onTap;
+  final Map<String, String>? authHeaders;
 
   const MessageBubble({
     super.key,
     required this.message,
     required this.isCurrentUser,
     this.onLongPress,
-    this.onDownload,
-    this.onDeleteFile,
-    this.onPlayVoice,
-    this.isPlaying = false,
-    this.playbackPosition = Duration.zero,
-    this.playbackDuration = Duration.zero,
+    this.onTap,
+    this.authHeaders,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isImage = message.messageType == 'image';
 
     final bubbleColor = isCurrentUser
         ? AppTheme.primary
@@ -46,23 +37,26 @@ class MessageBubble extends StatelessWidget {
         ? Colors.white.withOpacity(0.75)
         : (isDark ? AppTheme.darkTextSecondary : AppTheme.greyText);
 
+    final isMedia = message.isImage || message.isVideo || message.messageType == 'file';
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       child: Row(
         mainAxisAlignment:
-            isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Flexible(
             child: GestureDetector(
               onLongPress: onLongPress,
+              onTap: onTap,
               child: Container(
                 constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                  maxWidth: MediaQuery.of(context).size.width * 0.78,
                 ),
-                padding: isImage
+                padding: isMedia
                     ? EdgeInsets.zero
-                    : const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    : const EdgeInsets.fromLTRB(12, 8, 12, 6),
                 decoration: BoxDecoration(
                   color: bubbleColor,
                   borderRadius: BorderRadius.only(
@@ -74,25 +68,32 @@ class MessageBubble extends StatelessWidget {
                   border: isCurrentUser
                       ? null
                       : Border.all(
-                          color: isDark
-                              ? AppTheme.darkBorder
-                              : AppTheme.borderLight.withOpacity(0.5),
-                          width: 0.8,
-                        ),
+                    color: isDark
+                        ? AppTheme.darkBorder
+                        : AppTheme.borderLight.withOpacity(0.5),
+                    width: 0.8,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+                      color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
                       blurRadius: 2,
                       offset: const Offset(0, 1),
                     ),
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    _buildMessageContent(context, textColor, mutedColor, isDark),
-                    const SizedBox(height: 2),
-                    _buildTimestamp(context, mutedColor),
+                    _buildContent(context, textColor, mutedColor, isDark),
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: isMedia ? 8 : 0,
+                        right: isMedia ? 8 : 0,
+                        bottom: isMedia ? 6 : 0,
+                        top: 3,
+                      ),
+                      child: _buildTimestamp(mutedColor),
+                    ),
                   ],
                 ),
               ),
@@ -103,153 +104,229 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageContent(
-    BuildContext context,
-    Color textColor,
-    Color mutedColor,
-    bool isDark,
-  ) {
+  Widget _buildContent(
+      BuildContext context,
+      Color textColor,
+      Color mutedColor,
+      bool isDark,
+      ) {
     switch (message.messageType) {
       case 'text':
-        return Text(
-          message.content ?? '',
-          style: TextStyle(
-            inherit: true,
-            color: textColor,
-            fontSize: 15,
-            height: 1.3,
+        final rawContent = message.content ?? '';
+
+        // Check and parse quoted reply format: "↩ Name: quote\nActual message"
+        if (rawContent.startsWith('↩ ')) {
+          final splitIndex = rawContent.indexOf('\n');
+          if (splitIndex != -1) {
+            final quoteHeader = rawContent.substring(2, splitIndex);
+            final actualMessage = rawContent.substring(splitIndex + 1);
+
+            final quoteParts = quoteHeader.split(': ');
+            final quoteSender = quoteParts.isNotEmpty ? quoteParts[0] : 'Sender';
+            final quoteText = quoteParts.length > 1 ? quoteParts.sublist(1).join(': ') : '';
+
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isCurrentUser
+                          ? Colors.black.withOpacity(0.15)
+                          : (isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04)),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        left: BorderSide(
+                          color: isCurrentUser ? Colors.white : AppTheme.primary,
+                          width: 3.5,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          quoteSender,
+                          style: TextStyle(
+                            color: isCurrentUser ? Colors.white : AppTheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          quoteText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: mutedColor,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    actualMessage,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15.5,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 2),
+            child: Text(
+              rawContent,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 15.5,
+                height: 1.3,
+              ),
+            ),
           ),
         );
 
       case 'image':
-        final imageUrl = message.file?.url ?? '';
-        final fullUrl = ImageUtils.getFullImageUrl(imageUrl);
-
+        final url = message.file?.url;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    fullUrl,
-                    width: 220,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+            if (url != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  url,
+                  headers: authHeaders,
+                  width: 220,
+                  height: 220,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
                       width: 220,
-                      height: 200,
-                      color: isDark
-                          ? AppTheme.darkSurfaceLight
-                          : AppTheme.navy50,
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 50,
-                        color: mutedColor,
+                      height: 220,
+                      color: isDark ? Colors.black26 : Colors.grey.shade200,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                    ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 220,
+                    height: 220,
+                    color: isDark ? AppTheme.darkSurfaceLight : AppTheme.navy50,
+                    child: Icon(Icons.broken_image, size: 48, color: mutedColor),
                   ),
                 ),
-                if (onDownload != null)
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.download, color: Colors.white),
-                      onPressed: onDownload,
-                    ),
-                  ),
-              ],
-            ),
-            if (message.content != null && message.content!.isNotEmpty)
+              ),
+            if ((message.content ?? '').trim().isNotEmpty)
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
                 child: Text(
                   message.content!,
-                  style: TextStyle(inherit: true, color: textColor),
+                  style: TextStyle(color: textColor, fontSize: 14.5),
                 ),
-              ),
-          ],
-        );
-
-      case 'voice':
-        return Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                color: isCurrentUser ? AppTheme.secondary : AppTheme.primary,
-                size: 32,
-              ),
-              onPressed: onPlayVoice,
-            ),
-            Expanded(
-              child: LinearProgressIndicator(
-                value: playbackDuration.inMilliseconds > 0
-                    ? playbackPosition.inMilliseconds /
-                        playbackDuration.inMilliseconds
-                    : 0,
-                backgroundColor: isCurrentUser
-                    ? Colors.white.withOpacity(0.25)
-                    : (isDark
-                        ? AppTheme.darkBorder
-                        : AppTheme.navy100),
-                valueColor: AlwaysStoppedAnimation(
-                  isCurrentUser ? AppTheme.secondary : AppTheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${message.voiceDuration ?? 0}s',
-              style: TextStyle(
-                inherit: true,
-                color: mutedColor,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        );
-
-      case 'file':
-        return Row(
-          children: [
-            Icon(
-              Icons.insert_drive_file,
-              color: isCurrentUser ? AppTheme.secondary : AppTheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message.file?.name ?? 'File',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(inherit: true, color: textColor),
-              ),
-            ),
-            if (onDownload != null)
-              IconButton(
-                icon: Icon(Icons.download, color: textColor),
-                onPressed: onDownload,
               ),
           ],
         );
 
       case 'video':
-        return GestureDetector(
-          onTap: onDownload,
-          child: Container(
-            width: 220,
-            height: 150,
-            color: isDark ? AppTheme.darkSurfaceLight : AppTheme.navy100,
-            child: const Center(
-              child: Icon(
-                Icons.play_circle_filled,
-                size: 60,
-                color: Colors.white,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 220,
+                    height: 160,
+                    color: isDark ? AppTheme.darkSurfaceLight : AppTheme.navy100,
+                    child: const Icon(
+                      Icons.videocam_rounded,
+                      size: 48,
+                      color: Colors.white54,
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                ],
               ),
             ),
+            if ((message.content ?? '').trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 4),
+                child: Text(
+                  message.content!,
+                  style: TextStyle(color: textColor, fontSize: 14.5),
+                ),
+              ),
+          ],
+        );
+
+      case 'file':
+        final accent = isCurrentUser ? AppTheme.secondary : AppTheme.primary;
+        return Container(
+          margin: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: isCurrentUser
+                ? Colors.white.withOpacity(0.12)
+                : AppTheme.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_fileIcon(message.file?.ext ?? ''), color: accent, size: 26),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message.file?.name ?? 'File',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    if (message.file?.size != null)
+                      Text(
+                        message.file!.formattedSize,
+                        style: TextStyle(fontSize: 12, color: mutedColor),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
 
@@ -258,25 +335,19 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  Widget _buildTimestamp(BuildContext context, Color mutedColor) {
-    final l10n = AppLocalizations.of(context)!;
-
+  Widget _buildTimestamp(Color mutedColor) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          _formatTime(message.createdAt, l10n),
-          style: TextStyle(
-            inherit: true,
-            fontSize: 11,
-            color: mutedColor,
-          ),
+          message.timeLabel,
+          style: TextStyle(fontSize: 11, color: mutedColor),
         ),
         if (isCurrentUser) ...[
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
           Icon(
             message.isRead ? Icons.done_all : Icons.done,
-            size: 16,
+            size: 15,
             color: message.isRead
                 ? AppTheme.secondary
                 : Colors.white.withOpacity(0.6),
@@ -286,17 +357,16 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  String _formatTime(String? timestamp, AppLocalizations l10n) {
-    if (timestamp == null) return '';
-    try {
-      final parsed = DateTime.parse(timestamp);
-      final diff = DateTime.now().difference(parsed);
-      if (diff.inDays > 0) return '${diff.inDays}d';
-      if (diff.inHours > 0) return '${diff.inHours}h';
-      if (diff.inMinutes > 0) return '${diff.inMinutes}m';
-      return l10n.justNow;
-    } catch (_) {
-      return '';
-    }
+  IconData _fileIcon(String ext) {
+    final e = ext.toLowerCase();
+    if (['pdf'].contains(e)) return Icons.picture_as_pdf;
+    if (['doc', 'docx'].contains(e)) return Icons.description;
+    if (['xls', 'xlsx', 'csv'].contains(e)) return Icons.table_chart;
+    if (['ppt', 'pptx'].contains(e)) return Icons.slideshow;
+    if (['zip', 'rar', '7z'].contains(e)) return Icons.folder_zip;
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(e)) return Icons.image;
+    if (['mp4', 'mov', 'avi', 'mkv'].contains(e)) return Icons.video_file;
+    if (['mp3', 'wav', 'aac'].contains(e)) return Icons.audio_file;
+    return Icons.insert_drive_file;
   }
 }

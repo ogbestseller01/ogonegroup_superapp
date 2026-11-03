@@ -1,3 +1,5 @@
+// FILE: lib/screens/jobs/job_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +7,7 @@ import '../../config/app_theme.dart';
 import '../../models/job.dart';
 import '../../providers/job_provider.dart';
 import '../../widgets/work_status_widgets.dart';
+import '../../l10n/app_localizations.dart';
 import '../tickets/ticket_detail_screen.dart';
 
 class JobDetailScreen extends StatefulWidget {
@@ -32,12 +35,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final primaryText = isDark ? Colors.white : AppTheme.primary;
     final color = workStatusColor(_job.status);
 
     return Scaffold(
-      backgroundColor:
-      isDark ? AppTheme.darkBackground : Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: isDark
+          ? AppTheme.darkBackground
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.primary,
         elevation: 0,
@@ -53,10 +58,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               onTap: () => Navigator.pop(context),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Job Details',
-                style: TextStyle(
+                l10n.jobDetails,
+                style: const TextStyle(
+                  inherit: true,
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -84,20 +90,26 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       color: color.withOpacity(0.13),
                       borderRadius: BorderRadius.circular(18),
                     ),
-                    child: Icon(workStatusIcon(_job.status),
-                        color: color, size: 28),
+                    child: Icon(
+                      workStatusIcon(_job.status),
+                      color: color,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_job.jobNumber,
-                            style: TextStyle(
-                                inherit: true,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: primaryText)),
+                        Text(
+                          _job.jobNumber,
+                          style: TextStyle(
+                            inherit: true,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: primaryText,
+                          ),
+                        ),
                         const SizedBox(height: 6),
                         WorkStatusBadge(status: _job.status),
                       ],
@@ -113,48 +125,58 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               child: Column(
                 children: [
                   WorkInfoRow(
-                      icon: Icons.tag_rounded,
-                      label: 'Job number',
-                      value: _job.jobNumber),
+                    icon: Icons.tag_rounded,
+                    label: l10n.jobNumber,
+                    value: _job.jobNumber,
+                  ),
                   WorkInfoRow(
-                      icon: Icons.person_outline_rounded,
-                      label: 'Customer',
-                      value: _job.customerName ?? '—'),
+                    icon: Icons.person_outline_rounded,
+                    label: l10n.customer,
+                    value: _job.customerName ?? '—',
+                  ),
                   WorkInfoRow(
-                      icon: Icons.build_outlined,
-                      label: 'Service',
-                      value: _job.serviceName ?? '—'),
+                    icon: Icons.build_outlined,
+                    label: l10n.service,
+                    value: _job.serviceName ?? '—',
+                  ),
                   if (_job.categoryName != null)
                     WorkInfoRow(
-                        icon: Icons.category_outlined,
-                        label: 'Category',
-                        value: _job.categoryName!),
+                      icon: Icons.category_outlined,
+                      label: l10n.category,
+                      value: _job.categoryName!,
+                    ),
                   if (_job.description != null)
                     WorkInfoRow(
-                        icon: Icons.description_outlined,
-                        label: 'Request description',
-                        value: _job.description!),
+                      icon: Icons.description_outlined,
+                      label: l10n.requestDescription,
+                      value: _job.description!,
+                    ),
                   WorkInfoRow(
-                      icon: Icons.flag_outlined,
-                      label: 'Status',
-                      value: workStatusLabel(_job.status)),
+                    icon: Icons.flag_outlined,
+                    label: l10n.jobStatus,
+                    value: workStatusLabel(_job.status),
+                  ),
                   WorkInfoRow(
-                      icon: Icons.access_time_rounded,
-                      label: 'Created',
-                      value: formatEAT(_job.createdAt)),
+                    icon: Icons.access_time_rounded,
+                    label: l10n.created,
+                    value: formatEAT(_job.createdAt),
+                  ),
                   WorkInfoRow(
-                      icon: Icons.play_circle_outline_rounded,
-                      label: 'Started',
-                      value: formatEAT(_job.startedAt)),
+                    icon: Icons.play_circle_outline_rounded,
+                    label: l10n.started,
+                    value: formatEAT(_job.startedAt),
+                  ),
                   WorkInfoRow(
-                      icon: Icons.check_circle_outline_rounded,
-                      label: 'Completed',
-                      value: formatEAT(_job.completedAt)),
+                    icon: Icons.check_circle_outline_rounded,
+                    label: l10n.completedLabel,
+                    value: formatEAT(_job.completedAt),
+                  ),
                   if (_job.notes != null)
                     WorkInfoRow(
-                        icon: Icons.sticky_note_2_outlined,
-                        label: 'Notes',
-                        value: _job.notes!),
+                      icon: Icons.sticky_note_2_outlined,
+                      label: l10n.notes,
+                      value: _job.notes!,
+                    ),
                 ],
               ),
             ),
@@ -172,19 +194,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text('Tickets (${_job.tickets.length})',
-                    style: TextStyle(
-                        inherit: true,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: primaryText)),
+                Text(
+                  l10n.ticketsCount(_job.tickets.length),
+                  style: TextStyle(
+                    inherit: true,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: primaryText,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             if (_job.tickets.isEmpty)
-              const WorkEmptyState(
+              WorkEmptyState(
                 icon: Icons.confirmation_number_outlined,
-                message: 'No tickets for this job',
+                message: l10n.noTicketsForJob,
               )
             else
               ..._job.tickets.map(
@@ -194,7 +219,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => TicketDetailScreen(ticket: t)),
+                        builder: (_) => TicketDetailScreen(ticket: t),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -202,23 +228,30 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(t.ticketNumber,
-                                  style: TextStyle(
-                                      inherit: true,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13.5,
-                                      color: primaryText)),
+                              Text(
+                                t.ticketNumber,
+                                style: TextStyle(
+                                  inherit: true,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                  color: primaryText,
+                                ),
+                              ),
                               const SizedBox(height: 3),
-                              Text(t.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      inherit: true,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600)),
+                              Text(
+                                t.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  inherit: true,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               WorkMetaLine(
-                                  icon: Icons.access_time_rounded,
-                                  text: formatEAT(t.createdAt)),
+                                icon: Icons.access_time_rounded,
+                                text: formatEAT(t.createdAt),
+                              ),
                             ],
                           ),
                         ),

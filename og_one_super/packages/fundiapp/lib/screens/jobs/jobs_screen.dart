@@ -103,7 +103,7 @@ class _JobsScreenState extends State<JobsScreen> {
             options: _filters,
             selected: _filter,
             counts: counts,
-            onSelected: (v) => setState(() => _filter = v),
+            onSelected: (v) => setState(() => _filter = v), labels: {},
           ),
           const SizedBox(height: 8),
           Expanded(child: _buildBody(provider, filtered, l10n)),

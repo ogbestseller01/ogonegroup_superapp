@@ -1,19 +1,18 @@
 // FILE: lib/screens/home/blogs_screen.dart
 // Posts feed: each post is media only (images + optional video) by a fundi,
-// with likes and comments. No title / content / YouTube any more.
+// with likes and comments. Videos play inline (iOS + Android safe).
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/post_provider.dart';
 import '../../models/post.dart';
 import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/app_routes.dart';
-import '../../utils/image_utils.dart';
 import '../../widgets/app_network_image.dart';
+import '../../widgets/post_video_player.dart';
 import '../modals.dart';
 
 const double _maxCardWidth = 640;
@@ -125,46 +124,55 @@ class _BlogsScreenState extends State<BlogsScreen> {
                     child: CircularProgressIndicator(color: AppTheme.primary),
                   ),
                 )
-              else if (posts.isEmpty)
+              else if (posts.isEmpty && provider.error != null)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _buildEmptyState(context, l10n),
+                  child: _buildErrorState(
+                    context,
+                    provider.error!,
+                        () => provider.fetchPosts(refresh: true),
+                  ),
                 )
-              else if (filteredPosts.isEmpty)
+              else if (posts.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: _buildNoResultsState(context),
+                    child: _buildEmptyState(context, l10n),
                   )
-                else
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 24.0 : 16.0,
-                      vertical: 8.0,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                            (ctx, i) {
-                          final post = filteredPosts[i];
-                          return Center(
-                            child: ConstrainedBox(
-                              constraints:
-                              const BoxConstraints(maxWidth: _maxCardWidth),
-                              child: _PostCard(
-                                key: ValueKey(post.id),
-                                post: post,
-                                onImageTap: _openImage,
-                                onTechnicianTap: _goToTechnicianDetail,
-                                onLike: () => context
-                                    .read<PostProvider>()
-                                    .likePost(post.id),
+                else if (filteredPosts.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _buildNoResultsState(context, provider),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 24.0 : 16.0,
+                        vertical: 8.0,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                              (ctx, i) {
+                            final post = filteredPosts[i];
+                            return Center(
+                              child: ConstrainedBox(
+                                constraints:
+                                const BoxConstraints(maxWidth: _maxCardWidth),
+                                child: _PostCard(
+                                  key: ValueKey(post.id),
+                                  post: post,
+                                  onImageTap: _openImage,
+                                  onTechnicianTap: _goToTechnicianDetail,
+                                  onLike: () => context
+                                      .read<PostProvider>()
+                                      .likePost(post.id),
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        childCount: filteredPosts.length,
+                            );
+                          },
+                          childCount: filteredPosts.length,
+                        ),
                       ),
                     ),
-                  ),
 
               // Loading more indicator
               if (provider.isLoading && posts.isNotEmpty)
@@ -311,7 +319,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
   }
 
   // ==============================================================
-  // EMPTY STATES
+  // EMPTY / ERROR STATES
   // ==============================================================
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
@@ -352,7 +360,45 @@ class _BlogsScreenState extends State<BlogsScreen> {
     );
   }
 
-  Widget _buildNoResultsState(BuildContext context) {
+  Widget _buildErrorState(
+      BuildContext context,
+      String message,
+      VoidCallback onRetry,
+      ) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off_rounded,
+                size: 56,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+              ),
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState(BuildContext context, PostProvider provider) {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
@@ -371,6 +417,14 @@ class _BlogsScreenState extends State<BlogsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+            // The name filter only covers posts loaded so far
+            if (provider.hasMore) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: provider.isLoading ? null : () => provider.fetchPosts(),
+                child: const Text('Load more posts'),
+              ),
+            ],
           ],
         ),
       ),
@@ -436,12 +490,6 @@ class _FullscreenImageViewer extends StatelessWidget {
 
 // ═══════════════════════════ CARD ═══════════════════════════════════
 
-Future<void> _openVideo(String url) async {
-  final uri = Uri.tryParse(ImageUtils.getFullImageUrl(url));
-  if (uri == null) return;
-  await launchUrl(uri, mode: LaunchMode.externalApplication);
-}
-
 class _PostCard extends StatefulWidget {
   final Post post;
   final void Function(String url, String tag) onImageTap;
@@ -493,46 +541,61 @@ class _PostCardState extends State<_PostCard> {
       shadowColor: Colors.black.withValues(alpha: 0.05),
       clipBehavior: Clip.antiAlias,
       color: theme.colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(theme, post),
 
-          // Media (multi-image + optional video)
-          if (post.hasMedia)
-            GestureDetector(
-              onDoubleTap: post.hasImages ? _doubleTapLike : null,
-              onTap: post.hasImages ? _openPostModal : null,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  _MediaSection(
-                    images: post.images,
-                    videoUrl: post.hasVideo ? post.video : null,
-                    postId: post.id,
-                    onImageTap: widget.onImageTap,
-                  ),
-                  IgnorePointer(
-                    child: AnimatedOpacity(
-                      opacity: _heart ? 1 : 0,
-                      duration: const Duration(milliseconds: 150),
-                      child: AnimatedScale(
-                        scale: _heart ? 1.2 : 0.5,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutBack,
-                        child: const Icon(
-                          Icons.favorite_rounded,
-                          size: 100,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(color: Colors.black38, blurRadius: 20),
-                          ],
+          // Video (plays inline, iOS + Android safe)
+          if (post.hasVideo)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: PostVideoPlayer(videoUrl: post.video!),
+              ),
+            ),
+
+          // Images
+          if (post.hasImages)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: GestureDetector(
+                  onDoubleTap: _doubleTapLike,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _MediaSection(
+                        images: post.images,
+                        postId: post.id,
+                        onImageTap: widget.onImageTap,
+                      ),
+                      IgnorePointer(
+                        child: AnimatedOpacity(
+                          opacity: _heart ? 1 : 0,
+                          duration: const Duration(milliseconds: 150),
+                          child: AnimatedScale(
+                            scale: _heart ? 1.2 : 0.5,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutBack,
+                            child: const Icon(
+                              Icons.favorite_rounded,
+                              size: 100,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(color: Colors.black38, blurRadius: 20),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
 
@@ -678,17 +741,15 @@ class _PostCardState extends State<_PostCard> {
   }
 }
 
-// ───────────── MEDIA (multi-image + video) ─────────────
+// ───────────── MEDIA (multi-image carousel) ─────────────
 
 class _MediaSection extends StatefulWidget {
   final List<String> images;
-  final String? videoUrl;
   final int postId;
   final void Function(String url, String tag) onImageTap;
 
   const _MediaSection({
     required this.images,
-    required this.videoUrl,
     required this.postId,
     required this.onImageTap,
   });
@@ -710,14 +771,7 @@ class _MediaSectionState extends State<_MediaSection> {
   @override
   Widget build(BuildContext context) {
     final images = widget.images;
-    final video = widget.videoUrl;
-
-    // Video only (no images)
-    if (images.isEmpty) {
-      return video == null
-          ? const SizedBox.shrink()
-          : _VideoTile(url: video, height: 220);
-    }
+    if (images.isEmpty) return const SizedBox.shrink();
 
     return Stack(
       children: [
@@ -772,18 +826,6 @@ class _MediaSectionState extends State<_MediaSection> {
             ),
           ),
         ],
-        if (video != null)
-          Positioned(
-            top: 12,
-            left: 12,
-            child: GestureDetector(
-              onTap: () => _openVideo(video),
-              child: const _OverlayChip(
-                label: 'Video',
-                icon: Icons.play_circle_fill_rounded,
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -791,74 +833,23 @@ class _MediaSectionState extends State<_MediaSection> {
 
 class _OverlayChip extends StatelessWidget {
   final String label;
-  final IconData? icon;
 
-  const _OverlayChip({required this.label, this.icon});
+  const _OverlayChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: icon == null ? 10 : 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, color: Colors.white, size: 16),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Shown when a post has a video but no images.
-class _VideoTile extends StatelessWidget {
-  final String url;
-  final double height;
-
-  const _VideoTile({required this.url, required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openVideo(url),
-      child: Container(
-        height: height,
-        width: double.infinity,
-        color: Colors.grey.shade900,
-        alignment: Alignment.center,
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.play_arrow_rounded,
-                  color: Colors.white, size: 48),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Tap to play video',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

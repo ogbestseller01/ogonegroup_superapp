@@ -270,7 +270,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noPosts => 'Bado hakuna machapisho.';
 
   @override
-  String get createPost => 'Unda chapisho lako la kwanza';
+  String get createPost => 'Unda Chapisho';
 
   @override
   String get createPostTitle => 'Unda Chapisho';
@@ -1306,4 +1306,102 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get created => 'Imeundwa';
+
+  @override
+  String get areYouSureDeleteMessage => 'Una uhakika unataka kufuta ujumbe huu?';
+
+  @override
+  String get filterAll => 'Zote';
+
+  @override
+  String get filterOnProgress => 'Zinaendelea';
+
+  @override
+  String get filterCompleted => 'Zilizokamilika';
+
+  @override
+  String get payments => 'Malipo';
+
+  @override
+  String get myPortfolio => 'Kwingineko Yangu';
+
+  @override
+  String get noPostsYet => 'Bado Hakuna Machapisho';
+
+  @override
+  String get uploadPhotosToShowcase => 'Pakia picha za kazi yako kuonyesha ujuzi wako.';
+
+  @override
+  String get newPortfolioPost => 'Chapisho Jipya la Kwingineko';
+
+  @override
+  String get tapToSelectImages => 'Gonga kuchagua picha';
+
+  @override
+  String get editPost => 'Hariri Chapisho';
+
+  @override
+  String get addMoreImages => 'Ongeza picha zaidi';
+
+  @override
+  String get post => 'Chapisha';
+
+  @override
+  String get deletePostTitle => 'Futa Chapisho?';
+
+  @override
+  String get deletePostConfirmation => 'Una uhakika unataka kuondoa chapisho hili lote?';
+
+  @override
+  String get editImages => 'Hariri Picha';
+
+  @override
+  String get myBalance => 'Salio Langu';
+
+  @override
+  String get earnings => 'Mapato';
+
+  @override
+  String get reports => 'Ripoti';
+
+  @override
+  String get recentJobs => 'Kazi za Hivi Karibuni';
+
+  @override
+  String get recentTickets => 'Tiketi za Hivi Karibuni';
+
+  @override
+  String get noJobsYet => 'Bado hakuna kazi';
+
+  @override
+  String get noTicketsYet => 'Bado hakuna tiketi';
+
+  @override
+  String get comingSoonTitle => 'Inakuja Hivi Karibuni';
+
+  @override
+  String get comingSoonBody => 'Kipengele hiki kinakuja hivi karibuni 🚀\nEndelea kufuatilia.';
+
+  @override
+  String get goodMorning => 'Habari za asubuhi';
+
+  @override
+  String get goodAfternoon => 'Habari za mchana';
+
+  @override
+  String get goodEvening => 'Habari za jioni';
+
+  @override
+  String pendingCount(int count) {
+    return '$count Zinazosubiri';
+  }
+
+  @override
+  String get acceptedStatus => 'IMEKUBALIWA';
+
+  @override
+  String get rejectedStatus => 'IMEKATALIWA';
+
+  @override
+  String get cancelledStatus => 'IMEFUTWA';
 }
