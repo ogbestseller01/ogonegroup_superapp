@@ -14,7 +14,11 @@ enum _Filter { all, unread, pinned }
 class ConversationsTab extends StatefulWidget {
   final bool archived;
   final VoidCallback onFindTechnicians;
-  const ConversationsTab({super.key, this.archived = false, required this.onFindTechnicians});
+  const ConversationsTab({
+    super.key,
+    this.archived = false,
+    required this.onFindTechnicians,
+  });
 
   @override
   State<ConversationsTab> createState() => _ConversationsTabState();
@@ -39,19 +43,22 @@ class _ConversationsTabState extends State<ConversationsTab> {
         content: Text(m),
         backgroundColor: error ? AppTheme.error : null,
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(12),
       ));
   }
 
   Future<void> _openChat(ChatConversation c) async {
     final chat = context.read<ChatProvider>();
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(conversation: c)));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ChatScreen(conversation: c)),
+    );
     if (mounted) await chat.refreshConversations();
   }
 
   Future<void> _longPress(ChatConversation c) async {
     final chat = context.read<ChatProvider>();
 
-    // Show the bottom sheet with options
     final act = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -89,7 +96,9 @@ class _ConversationsTabState extends State<ConversationsTab> {
           context: context,
           builder: (d) => AlertDialog(
             title: Text('Delete chat with ${c.otherParty.name}?'),
-            content: const Text('All messages and files in this chat will be removed for both of you.'),
+            content: const Text(
+              'All messages and files in this chat will be removed for both of you.',
+            ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
               TextButton(
@@ -114,8 +123,9 @@ class _ConversationsTabState extends State<ConversationsTab> {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final chat = context.watch<ChatProvider>();
+    final screenW = MediaQuery.of(context).size.width;
+    final isWide = screenW >= 700;
 
-    // Determine which list to show based on the tab
     var list = widget.archived ? chat.archivedChats : chat.activeChats;
 
     if (!widget.archived) {
@@ -123,139 +133,169 @@ class _ConversationsTabState extends State<ConversationsTab> {
       if (_filter == _Filter.pinned) list = list.where((c) => c.isPinned).toList();
     }
     final q = _q.toLowerCase();
-    if (q.isNotEmpty) list = list.where((c) => c.otherParty.name.toLowerCase().contains(q)).toList();
+    if (q.isNotEmpty) {
+      list = list.where((c) => c.otherParty.name.toLowerCase().contains(q)).toList();
+    }
 
     final total = widget.archived ? chat.archivedChats.length : chat.activeChats.length;
 
-    return Column(children: [
-      Container(
-        color: dark ? const Color(0xFF1F2C34) : Colors.white,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
         child: Column(children: [
           Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: dark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: TextField(
-              controller: _search,
-              onChanged: (v) => setState(() => _q = v.trim()),
-              decoration: InputDecoration(
-                hintText: 'Search',
-                prefixIcon: const Icon(Icons.search_rounded, size: 22),
-                suffixIcon: _q.isEmpty
-                    ? null
-                    : IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  onPressed: () {
-                    _search.clear();
-                    setState(() => _q = '');
-                  },
+            color: dark ? const Color(0xFF1F2C34) : Colors.white,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+            child: Column(children: [
+              Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: dark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
+                  borderRadius: BorderRadius.circular(22),
                 ),
-                border: InputBorder.none,
-                filled: false,
-                contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                child: TextField(
+                  controller: _search,
+                  onChanged: (v) => setState(() => _q = v.trim()),
+                  decoration: InputDecoration(
+                    hintText: 'Search',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                    suffixIcon: _q.isEmpty
+                        ? null
+                        : IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _search.clear();
+                        setState(() => _q = '');
+                      },
+                    ),
+                    border: InputBorder.none,
+                    filled: false,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                  ),
+                ),
+              ),
+              if (!widget.archived)
+                SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(top: 8),
+                    children: [
+                      for (final f in _Filter.values)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(switch (f) {
+                              _Filter.all => 'All',
+                              _Filter.unread =>
+                              chat.unreadChats > 0 ? 'Unread ${chat.unreadChats}' : 'Unread',
+                              _Filter.pinned => 'Pinned',
+                            }),
+                            selected: _filter == f,
+                            showCheckmark: false,
+                            selectedColor: AppTheme.primary.withValues(alpha: dark ? 0.55 : 0.14),
+                            labelStyle: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: _filter == f
+                                  ? (dark ? Colors.white : AppTheme.primary)
+                                  : null,
+                            ),
+                            onSelected: (_) => setState(() => _filter = f),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ]),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppTheme.primary,
+              onRefresh: chat.refreshConversations,
+              child: (chat.isLoading && chat.conversations.isEmpty)
+                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                  : list.isEmpty
+                  ? _Empty(
+                archived: widget.archived,
+                noChatsAtAll: total == 0,
+                onFind: widget.onFindTechnicians,
+              )
+                  : ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: list.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  indent: 78,
+                  color: dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.18),
+                ),
+                itemBuilder: (_, i) {
+                  final c = list[i];
+                  return ConversationTile(
+                    conversation: c,
+                    onTap: () => _openChat(c),
+                    onLongPress: () => _longPress(c),
+                    onStatusTap: c.technicianId == null
+                        ? null
+                        : () => openTechnicianBlog(context, c.technicianId!),
+                  );
+                },
               ),
             ),
           ),
-          if (!widget.archived)
-            SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(top: 8),
-                children: [
-                  for (final f in _Filter.values)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(switch (f) {
-                          _Filter.all => 'All',
-                          _Filter.unread => chat.unreadChats > 0 ? 'Unread ${chat.unreadChats}' : 'Unread',
-                          _Filter.pinned => 'Pinned',
-                        }),
-                        selected: _filter == f,
-                        showCheckmark: false,
-                        // Fixed: withOpacity -> withValues
-                        selectedColor: AppTheme.primary.withValues(alpha: dark ? 0.55 : 0.14),
-                        labelStyle: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: _filter == f ? (dark ? Colors.white : AppTheme.primary) : null,
-                        ),
-                        onSelected: (_) => setState(() => _filter = f),
-                      ),
-                    ),
-                ],
-              ),
-            ),
         ]),
       ),
-      Expanded(
-        child: RefreshIndicator(
-          color: AppTheme.primary,
-          onRefresh: chat.refreshConversations,
-          child: (chat.isLoading && chat.conversations.isEmpty)
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
-              : list.isEmpty
-              ? _Empty(archived: widget.archived, noChatsAtAll: total == 0, onFind: widget.onFindTechnicians)
-              : ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: list.length,
-            separatorBuilder: (_, __) => Divider(
-              height: 1,
-              thickness: 0.5,
-              indent: 78,
-              // Fixed: withOpacity -> withValues
-              color: dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.18),
-            ),
-            itemBuilder: (_, i) {
-              final c = list[i];
-              return ConversationTile(
-                conversation: c,
-                onTap: () => _openChat(c),
-                // Trigger the long press menu
-                onLongPress: () => _longPress(c),
-                onStatusTap: c.technicianId == null ? null : () => openTechnicianBlog(context, c.technicianId!),
-              );
-            },
-          ),
-        ),
-      ),
-    ]);
+    );
   }
 }
 
 class _Empty extends StatelessWidget {
   final bool archived, noChatsAtAll;
   final VoidCallback onFind;
-  const _Empty({required this.archived, required this.noChatsAtAll, required this.onFind});
+  const _Empty({
+    required this.archived,
+    required this.noChatsAtAll,
+    required this.onFind,
+  });
 
   @override
   Widget build(BuildContext context) {
     final hint = Theme.of(context).hintColor;
-    return ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
-      const SizedBox(height: 110),
-      // Fixed: withOpacity -> withValues
-      Icon(archived ? Icons.archive_outlined : Icons.chat_bubble_outline_rounded, size: 64, color: hint.withValues(alpha: 0.4)),
-      const SizedBox(height: 16),
-      Center(
-        child: Text(
-          archived ? 'No archived chats' : (noChatsAtAll ? 'No conversations yet' : 'Nothing here'),
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: hint),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      children: [
+        const SizedBox(height: 110),
+        Icon(
+          archived ? Icons.archive_outlined : Icons.chat_bubble_outline_rounded,
+          size: 64,
+          color: hint.withValues(alpha: 0.4),
         ),
-      ),
-      if (!archived && noChatsAtAll) ...[
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         Center(
-          child: OutlinedButton.icon(
-            onPressed: onFind,
-            icon: const Icon(Icons.search_rounded),
-            label: const Text('Find technicians'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 44), shape: const StadiumBorder()),
+          child: Text(
+            archived
+                ? 'No archived chats'
+                : (noChatsAtAll ? 'No conversations yet' : 'Nothing here'),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: hint),
+            textAlign: TextAlign.center,
           ),
         ),
+        if (!archived && noChatsAtAll) ...[
+          const SizedBox(height: 18),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: onFind,
+              icon: const Icon(Icons.search_rounded),
+              label: const Text('Find technicians'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+                shape: const StadiumBorder(),
+              ),
+            ),
+          ),
+        ],
       ],
-    ]);
+    );
   }
 }
