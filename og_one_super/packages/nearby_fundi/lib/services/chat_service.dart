@@ -194,7 +194,10 @@ class ChatService {
     final before = conversations.value;
     conversations.value = [for (final c in before) if (c.id == id) c.copyWith(isPinned: pinned, isArchived: archived) else c];
     try {
-      await _request(() => _dio.post('/v14/chat/conversations/$id/state', data: {if (pinned != null) 'pinned': pinned, if (archived != null) 'archived': archived}));
+      await _request(() => _dio.post('/v14/chat/conversations/$id/state', data: {
+        if (pinned != null) 'pinned': pinned,
+        if (archived != null) 'archived': archived
+      }));
       unawaited(loadConversations());
     } catch (e) {
       conversations.value = before;
@@ -444,7 +447,7 @@ class ChatService {
     if (file != null) {
       final ext = p.extension(file.path).replaceFirst('.', '').toLowerCase();
       messageFile = MessageFile(
-        url: '', // will be replaced by server
+        url: '',
         name: p.basename(file.path),
         ext: ext,
         size: file.lengthSync(),
@@ -499,7 +502,6 @@ class ChatService {
       var encrypted = false;
       final path = msg.file?.localPath;
 
-      // FIXED: pass dio and peerId, which matches encrypt
       if (kE2ee && path == null && text.isNotEmpty) {
         final me = _currentUser;
         final peerId = _peerOf[msg.conversationId];
@@ -525,7 +527,6 @@ class ChatService {
       if (raw is! Map) throw const ChatException('Unexpected response from server.');
       var sent = ChatMessage.fromJson(Map<String, dynamic>.from(raw));
 
-      // FIXED: decrypt does NOT take peerId
       if (encrypted && sent.content != null) {
         final me = _currentUser;
         if (me != null) {
@@ -601,7 +602,6 @@ class ChatService {
       final m = ChatMessage.fromJson(Map<String, dynamic>.from(e));
       if (m.id <= 0) continue;
 
-      // FIXED: decrypt does NOT take peerId
       if (kE2ee && me != null && peer != null && E2eeService.isEncrypted(m.content)) {
         final plain = await _e2ee.decrypt(m.content!, myId: me);
         out.add(m.copyWith(content: plain ?? '🔒 Message can’t be opened on this device'));

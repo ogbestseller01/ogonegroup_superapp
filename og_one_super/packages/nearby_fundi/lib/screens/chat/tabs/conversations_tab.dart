@@ -1,4 +1,4 @@
-// lib/screens/chat/tabs/conversations_tab.dart  (NEW) — used for both "Chats" and "Archives"
+// lib/screens/chat/tabs/conversations_tab.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -50,6 +50,8 @@ class _ConversationsTabState extends State<ConversationsTab> {
 
   Future<void> _longPress(ChatConversation c) async {
     final chat = context.read<ChatProvider>();
+
+    // Show the bottom sheet with options
     final act = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -63,7 +65,7 @@ class _ConversationsTabState extends State<ConversationsTab> {
           ),
           ListTile(
             leading: Icon(c.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined),
-            title: Text(c.isArchived ? 'Unarchive' : 'Archive'),
+            title: Text(c.isArchived ? 'Unarchive chat' : 'Archive chat'),
             onTap: () => Navigator.pop(s, 'archive'),
           ),
           ListTile(
@@ -113,7 +115,9 @@ class _ConversationsTabState extends State<ConversationsTab> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final chat = context.watch<ChatProvider>();
 
+    // Determine which list to show based on the tab
     var list = widget.archived ? chat.archivedChats : chat.activeChats;
+
     if (!widget.archived) {
       if (_filter == _Filter.unread) list = list.where((c) => c.unreadCount > 0).toList();
       if (_filter == _Filter.pinned) list = list.where((c) => c.isPinned).toList();
@@ -173,7 +177,8 @@ class _ConversationsTabState extends State<ConversationsTab> {
                         }),
                         selected: _filter == f,
                         showCheckmark: false,
-                        selectedColor: AppTheme.primary.withOpacity(dark ? 0.55 : 0.14),
+                        // Fixed: withOpacity -> withValues
+                        selectedColor: AppTheme.primary.withValues(alpha: dark ? 0.55 : 0.14),
                         labelStyle: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: _filter == f ? (dark ? Colors.white : AppTheme.primary) : null,
@@ -201,13 +206,15 @@ class _ConversationsTabState extends State<ConversationsTab> {
               height: 1,
               thickness: 0.5,
               indent: 78,
-              color: dark ? Colors.white10 : Colors.grey.withOpacity(0.18),
+              // Fixed: withOpacity -> withValues
+              color: dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.18),
             ),
             itemBuilder: (_, i) {
               final c = list[i];
               return ConversationTile(
                 conversation: c,
                 onTap: () => _openChat(c),
+                // Trigger the long press menu
                 onLongPress: () => _longPress(c),
                 onStatusTap: c.technicianId == null ? null : () => openTechnicianBlog(context, c.technicianId!),
               );
@@ -229,7 +236,8 @@ class _Empty extends StatelessWidget {
     final hint = Theme.of(context).hintColor;
     return ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
       const SizedBox(height: 110),
-      Icon(archived ? Icons.archive_outlined : Icons.chat_bubble_outline_rounded, size: 64, color: hint.withOpacity(0.4)),
+      // Fixed: withOpacity -> withValues
+      Icon(archived ? Icons.archive_outlined : Icons.chat_bubble_outline_rounded, size: 64, color: hint.withValues(alpha: 0.4)),
       const SizedBox(height: 16),
       Center(
         child: Text(
