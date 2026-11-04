@@ -39,9 +39,21 @@ class JobProvider extends ChangeNotifier {
   }
 
   /// [silent] = refresh in the background, no spinner and no error banner.
-  /// Jobs are created automatically on the server when a request is accepted,
-  /// so loadJobs() is how they appear in the app.
-  Future<void> loadJobs({bool silent = false}) async {
+  ///
+  /// Optional server-side filters (all safe to omit):
+  ///   [search] free-text
+  ///   [sort]   created_at | completed_at | status | title | ticket_number
+  ///   [order]  asc | desc
+  ///   [limit]  1..200
+  ///   [status] pending | on-progress | completed
+  Future<void> loadJobs({
+    bool silent = false,
+    String? search,
+    String? sort,
+    String? order,
+    int? limit,
+    String? status,
+  }) async {
     if (!silent) {
       _isLoading = true;
       _error = null;
@@ -49,7 +61,14 @@ class JobProvider extends ChangeNotifier {
     }
 
     try {
-      final res = await _api.getMyJobs();
+      final res = await _api.getMyJobs(
+        search: search,
+        sort: sort,
+        order: order,
+        limit: limit,
+        status: status,
+      );
+
       if (res.success && res.data != null) {
         _jobs = _extractList(res.data)
             .whereType<Map>()
@@ -118,7 +137,6 @@ class JobProvider extends ChangeNotifier {
       if (res.success) {
         await refreshJob(jobId);
 
-        // If the refresh failed, still show "completed" locally.
         final j = getJobById(jobId);
         if (j != null && !j.isCompleted) {
           _jobs = _jobs
@@ -144,7 +162,6 @@ class JobProvider extends ChangeNotifier {
   }
 
   /// Customer submits rating (1-5) + remark for a completed job.
-  /// The review shows on the job immediately; screens then call refreshJob().
   Future<bool> submitReview(
       int jobId, {
         required int rating,
@@ -152,14 +169,17 @@ class JobProvider extends ChangeNotifier {
       }) async {
     _error = null;
     try {
-      final res =
-      await _api.submitJobReview(jobId, rating: rating, comment: comment);
+      final res = await _api.submitJobReview(
+        jobId,
+        rating: rating,
+        comment: comment,
+      );
 
       if (res.success) {
         JobReview? review;
         if (res.data is Map) {
-          review =
-              JobReview.fromJson(Map<String, dynamic>.from(res.data as Map));
+          review = JobReview.fromJson(
+              Map<String, dynamic>.from(res.data as Map));
         }
         review ??= JobReview(
           id: 0,
@@ -179,7 +199,6 @@ class JobProvider extends ChangeNotifier {
 
       _error = res.message;
 
-      // Already reviewed on the server → pull that review into the UI.
       if (res.message.toLowerCase().contains('already been reviewed')) {
         await refreshJob(jobId);
       }

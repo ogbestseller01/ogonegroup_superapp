@@ -118,7 +118,8 @@ class ApiService {
   }
 
   Future<ApiResponse> login(String identifier, String password) =>
-      _post('/v1/auth/login', data: {'email': identifier, 'password': password});
+      _post('/v1/auth/login',
+          data: {'email': identifier, 'password': password});
 
   Future<ApiResponse> loginWithGoogle(String idToken, {String? fcmToken}) async {
     final body = <String, dynamic>{
@@ -188,7 +189,8 @@ class ApiService {
   Future<ApiResponse> getServicesGroupedByCategory({String locale = 'en'}) =>
       _get('/v11/services/grouped-by-category', query: {'locale': locale});
 
-  Future<ApiResponse> getServicesByCategory(int categoryId, {String locale = 'en'}) =>
+  Future<ApiResponse> getServicesByCategory(int categoryId,
+      {String locale = 'en'}) =>
       _get('/v11/services/by-category/$categoryId', query: {'locale': locale});
 
   Future<ApiResponse> getCategoriesWithServiceCount({String locale = 'en'}) =>
@@ -197,7 +199,8 @@ class ApiService {
   Future<ApiResponse> getServicesDropdown({String locale = 'en'}) =>
       _get('/v11/services/dropdown', query: {'locale': locale});
 
-  Future<ApiResponse> getServicesByCategorySlug(String slug, {String locale = 'en'}) =>
+  Future<ApiResponse> getServicesByCategorySlug(String slug,
+      {String locale = 'en'}) =>
       _get('/v11/services/by-category-slug/$slug', query: {'locale': locale});
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -369,7 +372,8 @@ class ApiService {
 
   Future<ApiResponse> deletePortfolio(int id) => _delete('/v3/portfolios/$id');
 
-  Future<ApiResponse> updatePortfolioSocialLinks(int id, Map<String, dynamic> socialLinks) =>
+  Future<ApiResponse> updatePortfolioSocialLinks(
+      int id, Map<String, dynamic> socialLinks) =>
       _put('/v3/portfolios/$id/social-links', data: socialLinks);
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -430,9 +434,30 @@ class ApiService {
   //  Mark Complete  -> server SMSes a 6-digit code to the customer
   //  Verify         -> job + ticket completed
   //  Review         -> customer rates the completed job (1-5 + remark)
+  //
+  //  Optional server-side filters (all safe to omit):
+  //    [search] free-text
+  //    [sort]   created_at | completed_at | status | title | ticket_number
+  //    [order]  asc | desc
+  //    [limit]  1..200
+  //    [status] pending | on-progress | completed
   // ─────────────────────────────────────────────────────────────────────
 
-  Future<ApiResponse> getMyJobs() => _get('/v4/jobs');
+  Future<ApiResponse> getMyJobs({
+    String? search,
+    String? sort,
+    String? order,
+    int? limit,
+    String? status,
+  }) {
+    final params = <String, dynamic>{};
+    if (search != null && search.trim().isNotEmpty) params['search'] = search.trim();
+    if (sort != null && sort.isNotEmpty)             params['sort']   = sort;
+    if (order != null && order.isNotEmpty)           params['order']  = order;
+    if (limit != null)                               params['limit']  = limit;
+    if (status != null && status.isNotEmpty)         params['status'] = status;
+    return _get('/v4/jobs', query: params.isEmpty ? null : params);
+  }
 
   Future<ApiResponse> getJob(int jobId) => _get('/v4/jobs/$jobId');
 
@@ -460,14 +485,36 @@ class ApiService {
       }) =>
       _post('/v4/jobs/$jobId/review', data: {
         'rating': rating,
-        if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+        if (comment != null && comment.trim().isNotEmpty)
+          'comment': comment.trim(),
       });
 
   // ─────────────────────────────────────────────────────────────────────
   //  TICKETS (read-only)
+  //  Backend TicketController::index() accepts:
+  //    ?status=  pending | on-progress | completed
+  //    ?search=  free-text across ticket_number/title/description
+  //    ?sort=    created_at | completed_at | status | title | ticket_number
+  //    ?order=   asc | desc
+  //    ?limit=   1..200 (default 50)
+  //  `created_at` is NOT returned by the API anymore.
   // ─────────────────────────────────────────────────────────────────────
 
-  Future<ApiResponse> getTickets() => _get('/v4/tickets');
+  Future<ApiResponse> getTickets({
+    String? search,
+    String? sort,
+    String? order,
+    int? limit,
+    String? status,
+  }) {
+    final params = <String, dynamic>{};
+    if (search != null && search.trim().isNotEmpty) params['search'] = search.trim();
+    if (sort != null && sort.isNotEmpty)             params['sort']   = sort;
+    if (order != null && order.isNotEmpty)           params['order']  = order;
+    if (limit != null)                               params['limit']  = limit;
+    if (status != null && status.isNotEmpty)         params['status'] = status;
+    return _get('/v4/tickets', query: params.isEmpty ? null : params);
+  }
 
   Future<ApiResponse> getTicket(int ticketId) => _get('/v4/tickets/$ticketId');
 
@@ -500,7 +547,8 @@ class ApiService {
     if (!await file.exists()) return;
     formData.files.add(MapEntry(
       field,
-      await MultipartFile.fromFile(file.path, filename: path.basename(file.path)),
+      await MultipartFile.fromFile(file.path,
+          filename: path.basename(file.path)),
     ));
   }
 
@@ -698,13 +746,15 @@ class ApiService {
 
   Future<ApiResponse> getNotifications({String? excludeType, String? type}) =>
       _get('/v15/notifications', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
         if (type != null && type.isNotEmpty) 'type': type,
       });
 
   Future<ApiResponse> getUnreadNotificationCount({String? excludeType}) =>
       _get('/v15/notifications/unread-count', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   Future<ApiResponse> markNotificationAsRead(String notificationId) =>
@@ -712,7 +762,8 @@ class ApiService {
 
   Future<ApiResponse> markAllNotificationsAsRead({String? excludeType}) =>
       _put('/v15/notifications/read-all', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   Future<ApiResponse> deleteNotification(String notificationId) =>
@@ -720,7 +771,8 @@ class ApiService {
 
   Future<ApiResponse> clearNotifications({String? excludeType}) =>
       _delete('/v15/notifications/clear', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -743,11 +795,13 @@ class ApiService {
       formData.fields.addAll([
         MapEntry('rate_card_id', rateCardId.toString()),
         MapEntry('payment_method_id', paymentMethodId.toString()),
-        if (paymentReference != null) MapEntry('payment_reference', paymentReference),
+        if (paymentReference != null)
+          MapEntry('payment_reference', paymentReference),
         if (notes != null) MapEntry('notes', notes),
       ]);
       formData.files.add(
-        MapEntry('payment_proof', await MultipartFile.fromFile(paymentProof.path)),
+        MapEntry('payment_proof',
+            await MultipartFile.fromFile(paymentProof.path)),
       );
       return _post('/v16/subscriptions', data: formData);
     }
@@ -763,7 +817,8 @@ class ApiService {
 
   Future<ApiResponse> getMyInvoices() => _get('/v16/my-invoices');
 
-  Future<ApiResponse> checkSubscriptionStatus() => _get('/v16/check-subscription');
+  Future<ApiResponse> checkSubscriptionStatus() =>
+      _get('/v16/check-subscription');
 
   Future<String?> downloadInvoice(int invoiceId) async {
     try {
@@ -793,14 +848,16 @@ class ApiService {
   Future<ApiResponse> getServiceCategory(int id, {String locale = 'en'}) =>
       _get('/v17/service-categories/$id', query: {'locale': locale});
 
-  Future<ApiResponse> getServiceCategoryBySlug(String slug, {String locale = 'en'}) =>
+  Future<ApiResponse> getServiceCategoryBySlug(String slug,
+      {String locale = 'en'}) =>
       _get('/v17/service-categories/slug/$slug', query: {'locale': locale});
 
   Future<ApiResponse> getCategoriesDropdown({String locale = 'en'}) =>
       _get('/v17/service-categories/dropdown/by-id', query: {'locale': locale});
 
   Future<ApiResponse> getActiveCategoriesDropdown({String locale = 'en'}) =>
-      _get('/v17/service-categories/dropdown/active', query: {'locale': locale});
+      _get('/v17/service-categories/dropdown/active',
+          query: {'locale': locale});
 
   // ═══════════════════════════════════════════════════════════════════════
   //  REVIEWS (V4) & PRIVACY POLICY (V18)
@@ -890,7 +947,8 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> _post(String path, {dynamic data, Map<String, dynamic>? query}) async {
+  Future<ApiResponse> _post(String path,
+      {dynamic data, Map<String, dynamic>? query}) async {
     _logRequest('POST', path, query: query);
     try {
       final res = await _dio.post(path, data: data, queryParameters: query);
@@ -902,7 +960,8 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> _put(String path, {dynamic data, Map<String, dynamic>? query}) async {
+  Future<ApiResponse> _put(String path,
+      {dynamic data, Map<String, dynamic>? query}) async {
     _logRequest('PUT', path, query: query);
     try {
       final res = await _dio.put(path, data: data, queryParameters: query);
@@ -914,7 +973,8 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> _patch(String path, {dynamic data, Map<String, dynamic>? query}) async {
+  Future<ApiResponse> _patch(String path,
+      {dynamic data, Map<String, dynamic>? query}) async {
     _logRequest('PATCH', path, query: query);
     try {
       final res = await _dio.patch(path, data: data, queryParameters: query);

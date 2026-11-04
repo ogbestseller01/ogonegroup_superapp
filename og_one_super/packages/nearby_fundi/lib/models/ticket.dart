@@ -3,6 +3,34 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 
+/// Sort options exposed by the Tickets screen. Maps to backend `sort`/`order`.
+enum TicketSortKey { newest, oldest, completedNewest, titleAZ }
+
+extension TicketSortLabel on TicketSortKey {
+  String get label {
+    switch (this) {
+      case TicketSortKey.newest:          return 'Newest first';
+      case TicketSortKey.oldest:          return 'Oldest first';
+      case TicketSortKey.completedNewest: return 'Recently completed';
+      case TicketSortKey.titleAZ:         return 'Title A–Z';
+    }
+  }
+
+  String get sortField {
+    switch (this) {
+      case TicketSortKey.newest:
+      case TicketSortKey.oldest:
+        return 'created_at';
+      case TicketSortKey.completedNewest:
+        return 'completed_at';
+      case TicketSortKey.titleAZ:
+        return 'title';
+    }
+  }
+
+  String get sortOrder => this == TicketSortKey.oldest ? 'asc' : 'desc';
+}
+
 class Ticket {
   final int id;
   final String ticketNumber;
@@ -12,7 +40,7 @@ class Ticket {
   final String? technicianName;
   final String? jobNumber;
   final DateTime? completedAt;
-  final DateTime? createdAt;
+  final DateTime? createdAt; // kept for sorting only — never displayed
   final DateTime? updatedAt;
 
   const Ticket({
@@ -28,12 +56,12 @@ class Ticket {
     this.updatedAt,
   });
 
-  static const String openStatus = 'open';
-  static const String pendingStatus = 'pending';
-  static const String inProgressStatus = 'in-progress';
-  static const String onProgressStatus = 'on-progress';
-  static const String completedStatus = 'completed';
-  static const String closedStatus = 'closed';
+  static const String openStatus        = 'open';
+  static const String pendingStatus     = 'pending';
+  static const String inProgressStatus  = 'in-progress';
+  static const String onProgressStatus  = 'on-progress';
+  static const String completedStatus   = 'completed';
+  static const String closedStatus      = 'closed';
 
   bool get isCompleted =>
       status.toLowerCase() == completedStatus ||
@@ -41,34 +69,57 @@ class Ticket {
 
   String get statusLabel {
     switch (status.toLowerCase()) {
-      case openStatus:
-        return 'Open';
-      case pendingStatus:
-        return 'Pending';
+      case openStatus:       return 'Open';
+      case pendingStatus:    return 'Pending';
       case inProgressStatus:
       case onProgressStatus:
-      case 'in_progress':
-        return 'In progress';
-      case completedStatus:
-        return 'Completed';
-      case closedStatus:
-        return 'Closed';
+      case 'in_progress':    return 'In progress';
+      case completedStatus:  return 'Completed';
+      case closedStatus:     return 'Closed';
       default:
         return status
             .replaceAll('-', ' ')
             .replaceAll('_', ' ')
             .split(' ')
-            .map((w) =>
-        w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+            .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
             .join(' ');
     }
   }
 
   Color get statusColor => JobTicketStatus.colorFor(status);
 
+  /// Case-insensitive match across the fields the API searches on.
+  bool matchesQuery(String q) {
+    final term = q.trim().toLowerCase();
+    if (term.isEmpty) return true;
+    return title.toLowerCase().contains(term) ||
+        ticketNumber.toLowerCase().contains(term) ||
+        (description ?? '').toLowerCase().contains(term) ||
+        (jobNumber ?? '').toLowerCase().contains(term);
+  }
+
+  int compareBy(TicketSortKey key, Ticket other) {
+    switch (key) {
+      case TicketSortKey.newest:
+        return (other.createdAt ?? DateTime(0))
+            .compareTo(createdAt ?? DateTime(0));
+      case TicketSortKey.oldest:
+        return (createdAt ?? DateTime(0))
+            .compareTo(other.createdAt ?? DateTime(0));
+      case TicketSortKey.completedNewest:
+        return (other.completedAt ?? DateTime(0))
+            .compareTo(completedAt ?? DateTime(0));
+      case TicketSortKey.titleAZ:
+        return title.toLowerCase().compareTo(other.title.toLowerCase());
+    }
+  }
+
   factory Ticket.fromJson(Map<String, dynamic> json) {
     final tech = json['technician'] is Map
         ? Map<String, dynamic>.from(json['technician'] as Map)
+        : null;
+    final job = json['job'] is Map
+        ? Map<String, dynamic>.from(json['job'] as Map)
         : null;
 
     return Ticket(
@@ -79,7 +130,8 @@ class Ticket {
       status: _parseString(json['status'], openStatus),
       technicianName: tech?['name']?.toString() ??
           json['technician_name']?.toString(),
-      jobNumber: json['job_number']?.toString(),
+      jobNumber: json['job_number']?.toString() ??
+          job?['job_number']?.toString(),
       completedAt: _parseDate(json['completed_at'] ?? json['closed_at']),
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),

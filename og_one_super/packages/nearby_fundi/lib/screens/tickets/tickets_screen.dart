@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pdf/pdf.dart';
@@ -8,6 +9,7 @@ import 'package:printing/printing.dart';
 import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
+import '../../models/ticket.dart';
 import '../../providers/job_provider.dart';
 import '../../widgets/status_ticker.dart';
 
@@ -27,12 +29,51 @@ class TicketsScreen extends StatefulWidget {
 }
 
 class _TicketsScreenState extends State<TicketsScreen> {
+  // ── Kept constants ─────────────────────────────────────
+  static const List<int> _limits = [25, 50, 100, 200];
+  static const List<String?> _statuses = <String?>[
+    null,          // All
+    'pending',
+    'on-progress',
+    'completed',
+  ];
+
+  final _searchCtrl = TextEditingController();
+
+  String _query = '';
+  TicketSortKey _sort = TicketSortKey.newest;
+  int _limit = 50;
+  String? _statusFilter;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<JobProvider>().loadJobs();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Client-side pipeline: status → search → sort → limit.
+  List<Job> _visible(List<Job> all) {
+    Iterable<Job> list = all.where((j) => j.ticket != null);
+
+    if (_statusFilter != null) {
+      list = list.where((j) => j.ticket!.status == _statusFilter);
+    }
+    if (_query.trim().isNotEmpty) {
+      list = list.where((j) => j.ticket!.matchesQuery(_query));
+    }
+
+    final sorted = list.toList()
+      ..sort((a, b) => a.ticket!.compareBy(_sort, b.ticket!));
+
+    return sorted.length > _limit ? sorted.sublist(0, _limit) : sorted;
   }
 
   Future<void> _printOrDownloadPdf(Job job, AppLocalizations l10n) async {
@@ -84,13 +125,12 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     '${l10n.fundiLabel}: ${t.technicianName ?? job.technicianName}'),
                 pw.SizedBox(height: 5),
                 pw.Text('Job Number: ${job.jobNumber}'),
-                pw.SizedBox(height: 5),
-                pw.Text('${l10n.createdOn}: ${_formatDateTime(t.createdAt)}'),
                 if (t.isCompleted) ...[
                   pw.SizedBox(height: 5),
                   pw.Text(
                       '${l10n.completedOn}: ${_formatDateTime(t.completedAt)}'),
                 ],
+                // created_at intentionally omitted from the PDF.
               ],
             ),
           );
@@ -110,7 +150,9 @@ class _TicketsScreenState extends State<TicketsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final hPad = MediaQuery.of(context).size.width > 600 ? 28.0 : 16.0;
-    final items = provider.jobsWithTicket;
+
+    final all = provider.jobsWithTicket;
+    final items = _visible(all);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -125,6 +167,56 @@ class _TicketsScreenState extends State<TicketsScreen> {
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // ── Sort ────────────────────────────────────
+          PopupMenuButton<TicketSortKey>(
+            icon: const Icon(Icons.sort_rounded, color: Colors.white),
+            tooltip: 'Sort',
+            onSelected: (v) => setState(() => _sort = v),
+            itemBuilder: (_) => TicketSortKey.values
+                .map((k) => PopupMenuItem(
+              value: k,
+              child: Row(
+                children: [
+                  Icon(
+                    k == _sort
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 18,
+                    color:
+                    k == _sort ? AppTheme.primary : theme.hintColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(k.label),
+                ],
+              ),
+            ))
+                .toList(),
+          ),
+          // ── Limit ───────────────────────────────────
+          PopupMenuButton<int>(
+            icon: const Icon(Icons.tune_rounded, color: Colors.white),
+            tooltip: 'Limit',
+            onSelected: (v) => setState(() => _limit = v),
+            itemBuilder: (_) => _limits
+                .map((n) => PopupMenuItem(
+              value: n,
+              child: Row(
+                children: [
+                  Icon(
+                    n == _limit
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 18,
+                    color:
+                    n == _limit ? AppTheme.primary : theme.hintColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Text('Show $n'),
+                ],
+              ),
+            ))
+                .toList(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: provider.loadJobs,
@@ -132,43 +224,143 @@ class _TicketsScreenState extends State<TicketsScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: provider.loadJobs,
-        color: AppTheme.primary,
-        child: provider.isLoading && provider.jobs.isEmpty
-            ? const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary))
-            : items.isEmpty
-            ? ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            const SizedBox(height: 120),
-            Icon(Icons.confirmation_number_outlined,
-                size: 72, color: theme.hintColor.withOpacity(0.35)),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(l10n.noTicketsYet,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.hintColor,
-                      fontWeight: FontWeight.w600)),
+      body: Column(
+        children: [
+          // ── Search field ────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 0),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search tickets…',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    setState(() => _query = '');
+                  },
+                ),
+                filled: true,
+                fillColor: theme.colorScheme.surface,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
-            const SizedBox(height: 6),
-            Center(
-              child: Text(l10n.noTicketsHint,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.hintColor)),
+          ),
+
+          // ── Status chips ────────────────────────────
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 0),
+              children: _statuses.map((s) {
+                final selected = _statusFilter == s;
+                final label =
+                s == null ? 'All' : Job.statusLabelFor(s);
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(label),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _statusFilter = s),
+                    selectedColor: AppTheme.primary.withOpacity(0.15),
+                    labelStyle: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected
+                          ? AppTheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-          ],
-        )
-            : ListView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 28),
-          itemCount: items.length,
-          itemBuilder: (_, i) =>
-              _ticketCard(items[i], l10n, theme),
-        ),
+          ),
+
+          // ── List ────────────────────────────────────
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: provider.loadJobs,
+              color: AppTheme.primary,
+              child: provider.isLoading && provider.jobs.isEmpty
+                  ? const Center(
+                  child:
+                  CircularProgressIndicator(color: AppTheme.primary))
+                  : items.isEmpty
+                  ? _emptyState(l10n, theme)
+                  : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 28),
+                itemCount: items.length + 1,
+                itemBuilder: (_, i) {
+                  if (i == items.length) {
+                    return Padding(
+                      padding:
+                      const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Center(
+                        child: Text(
+                          'Showing ${items.length} of ${all.length} tickets',
+                          style:
+                          theme.textTheme.bodySmall?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return _ticketCard(items[i], l10n, theme);
+                },
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _emptyState(AppLocalizations l10n, ThemeData theme) {
+    final searching = _query.isNotEmpty || _statusFilter != null;
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        const SizedBox(height: 100),
+        Icon(
+          searching
+              ? Icons.search_off_rounded
+              : Icons.confirmation_number_outlined,
+          size: 72,
+          color: theme.hintColor.withOpacity(0.35),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            searching ? 'No matching tickets' : l10n.noTicketsYet,
+            style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.hintColor, fontWeight: FontWeight.w600),
+          ),
+        ),
+        if (!searching) ...[
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              l10n.noTicketsHint,
+              textAlign: TextAlign.center,
+              style:
+              theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -302,20 +494,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(Icons.schedule_rounded,
-                  size: 14,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-              const SizedBox(width: 5),
-              Text('${l10n.createdOn} ${_formatDateTime(t.createdAt)}',
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-            ],
-          ),
+          // ── created_at row intentionally removed ──────
           if (t.isCompleted) ...[
             const SizedBox(height: 6),
             Row(
