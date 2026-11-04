@@ -216,6 +216,93 @@ class AppLocalizationsSw extends AppLocalizations {
   String get retry => 'Jaribu Tena';
 
   @override
+  String get customers => 'Wateja';
+
+  @override
+  String get searchCustomers => 'Tafuta wateja';
+
+  @override
+  String get noCustomersYet => 'Bado hakuna wateja';
+
+  @override
+  String get customersWillAppear => 'Wateja wataonekana hapa watakapokutumia ujumbe';
+
+  @override
+  String get deleteChat => 'Futa mazungumzo';
+
+  @override
+  String get deleteChatConfirmation => 'Ujumbe na faili zote zitaondolewa kwa wote wawili.';
+
+  @override
+  String get chatDeleted => 'Mazungumzo yamefutwa';
+
+  @override
+  String get failedToDeleteChat => 'Imeshindwa kufuta mazungumzo';
+
+  @override
+  String get archiveChat => 'Weka kwenye kumbukumbu';
+
+  @override
+  String get unarchiveChat => 'Ondoa kwenye kumbukumbu';
+
+  @override
+  String get pinChat => 'Bandika mazungumzo';
+
+  @override
+  String get unpinChat => 'Ondoa mazungumzo';
+
+  @override
+  String get chatArchived => 'Mazungumzo yamehifadhiwa';
+
+  @override
+  String get chatUnarchived => 'Mazungumzo yamerejeshwa';
+
+  @override
+  String get copy => 'Nakili';
+
+  @override
+  String get deleteMessage => 'Futa Ujumbe';
+
+  @override
+  String get reply => 'Jibu';
+
+  @override
+  String get forward => 'Tuma kwa mwingine';
+
+  @override
+  String get star => 'Weka nyota';
+
+  @override
+  String get unstar => 'Ondoa nyota';
+
+  @override
+  String get pin => 'Bandika';
+
+  @override
+  String get unpin => 'Ondoa';
+
+  @override
+  String get info => 'Maelezo';
+
+  @override
+  String get select => 'Chagua';
+
+  @override
+  String get savedToGallery => 'Imehifadhiwa kwenye picha';
+
+  @override
+  String get noAppToOpen => 'Hakuna programu inayoweza kufungua faili hii.';
+
+  @override
+  String get photo => '📷 Picha';
+
+  @override
+  String get videoFile => '🎥 Video';
+
+  @override
+  String get attachment => '📎 Kiambatisho';
+
+  @override
   String get online => 'Mtandaoni';
 
   @override
@@ -423,9 +510,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get typeAMessage => 'Andika ujumbe...';
 
   @override
-  String get copy => 'Nakili';
-
-  @override
   String get typing => 'Anaandika...';
 
   @override
@@ -499,9 +583,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get deleteFile => 'Futa Faili';
-
-  @override
-  String get deleteMessage => 'Futa Ujumbe';
 
   @override
   String get deleteConversation => 'Futa Mazungumzo';

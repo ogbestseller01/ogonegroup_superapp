@@ -509,6 +509,180 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @customers.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers'**
+  String get customers;
+
+  /// No description provided for @searchCustomers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search customers'**
+  String get searchCustomers;
+
+  /// No description provided for @noCustomersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No customers yet'**
+  String get noCustomersYet;
+
+  /// No description provided for @customersWillAppear.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers will appear here when they message you'**
+  String get customersWillAppear;
+
+  /// No description provided for @deleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat'**
+  String get deleteChat;
+
+  /// No description provided for @deleteChatConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'All messages and files will be removed for both of you.'**
+  String get deleteChatConfirmation;
+
+  /// No description provided for @chatDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat deleted'**
+  String get chatDeleted;
+
+  /// No description provided for @failedToDeleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the chat'**
+  String get failedToDeleteChat;
+
+  /// No description provided for @archiveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive chat'**
+  String get archiveChat;
+
+  /// No description provided for @unarchiveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive chat'**
+  String get unarchiveChat;
+
+  /// No description provided for @pinChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin chat'**
+  String get pinChat;
+
+  /// No description provided for @unpinChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin chat'**
+  String get unpinChat;
+
+  /// No description provided for @chatArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat archived'**
+  String get chatArchived;
+
+  /// No description provided for @chatUnarchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat unarchived'**
+  String get chatUnarchived;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Message'**
+  String get deleteMessage;
+
+  /// No description provided for @reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get reply;
+
+  /// No description provided for @forward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get forward;
+
+  /// No description provided for @star.
+  ///
+  /// In en, this message translates to:
+  /// **'Star'**
+  String get star;
+
+  /// No description provided for @unstar.
+  ///
+  /// In en, this message translates to:
+  /// **'Unstar'**
+  String get unstar;
+
+  /// No description provided for @pin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get pin;
+
+  /// No description provided for @unpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get unpin;
+
+  /// No description provided for @info.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get info;
+
+  /// No description provided for @select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
+  /// No description provided for @savedToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your gallery'**
+  String get savedToGallery;
+
+  /// No description provided for @noAppToOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'No app installed that can open this file type.'**
+  String get noAppToOpen;
+
+  /// No description provided for @photo.
+  ///
+  /// In en, this message translates to:
+  /// **'📷 Photo'**
+  String get photo;
+
+  /// No description provided for @videoFile.
+  ///
+  /// In en, this message translates to:
+  /// **'🎥 Video'**
+  String get videoFile;
+
+  /// No description provided for @attachment.
+  ///
+  /// In en, this message translates to:
+  /// **'📎 Attachment'**
+  String get attachment;
+
   /// No description provided for @online.
   ///
   /// In en, this message translates to:
@@ -923,12 +1097,6 @@ abstract class AppLocalizations {
   /// **'Type a message...'**
   String get typeAMessage;
 
-  /// No description provided for @copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy'**
-  String get copy;
-
   /// No description provided for @typing.
   ///
   /// In en, this message translates to:
@@ -1078,12 +1246,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete File'**
   String get deleteFile;
-
-  /// No description provided for @deleteMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Message'**
-  String get deleteMessage;
 
   /// No description provided for @deleteConversation.
   ///

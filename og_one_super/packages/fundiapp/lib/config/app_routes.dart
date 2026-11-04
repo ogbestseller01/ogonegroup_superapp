@@ -28,11 +28,11 @@ class AppRoutes {
   static const String registerServices = '/register-services';
   static const String registerLocation = '/register-location';
 
-  // ===== TICKETS & JOBS (Added) =====
+  // ===== TICKETS & JOBS =====
   static const String tickets       = '/tickets';
   static const String jobs          = '/jobs';
 
-  // ===== EARNINGS & REPORTS (Added) =====
+  // ===== EARNINGS & REPORTS =====
   static const String earnings      = '/earnings';
   static const String reports       = '/reports';
 
@@ -60,7 +60,6 @@ class AppRoutes {
   static const String invoiceDetails      = '/invoice-details';
   static const String paymentMethods      = '/payment-methods';
 
-
   // ===== PAYMENTS =====
   static const String payment = '/payment';
 
@@ -82,7 +81,6 @@ class AppRoutes {
   static String getOtpRoute(String email) => '/otp?email=$email';
   static String getResetRoute(String email) => '/reset-password?email=$email';
 
-  /// Maps the last completed step to the next screen.
   static String registrationRouteForStep(int step) {
     if (step < 1) return registerStep1;
     if (step < 2) return registerStep2;
@@ -115,7 +113,6 @@ class AppRoutes {
     settings: 'Settings',
     notifications: 'Notifications',
 
-    // Added to routeNames map as well
     tickets: 'Tickets',
     jobs: 'Jobs',
     earnings: 'Earnings',

@@ -216,6 +216,93 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get customers => 'Customers';
+
+  @override
+  String get searchCustomers => 'Search customers';
+
+  @override
+  String get noCustomersYet => 'No customers yet';
+
+  @override
+  String get customersWillAppear => 'Customers will appear here when they message you';
+
+  @override
+  String get deleteChat => 'Delete chat';
+
+  @override
+  String get deleteChatConfirmation => 'All messages and files will be removed for both of you.';
+
+  @override
+  String get chatDeleted => 'Chat deleted';
+
+  @override
+  String get failedToDeleteChat => 'Could not delete the chat';
+
+  @override
+  String get archiveChat => 'Archive chat';
+
+  @override
+  String get unarchiveChat => 'Unarchive chat';
+
+  @override
+  String get pinChat => 'Pin chat';
+
+  @override
+  String get unpinChat => 'Unpin chat';
+
+  @override
+  String get chatArchived => 'Chat archived';
+
+  @override
+  String get chatUnarchived => 'Chat unarchived';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get deleteMessage => 'Delete Message';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String get forward => 'Forward';
+
+  @override
+  String get star => 'Star';
+
+  @override
+  String get unstar => 'Unstar';
+
+  @override
+  String get pin => 'Pin';
+
+  @override
+  String get unpin => 'Unpin';
+
+  @override
+  String get info => 'Info';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get savedToGallery => 'Saved to your gallery';
+
+  @override
+  String get noAppToOpen => 'No app installed that can open this file type.';
+
+  @override
+  String get photo => '📷 Photo';
+
+  @override
+  String get videoFile => '🎥 Video';
+
+  @override
+  String get attachment => '📎 Attachment';
+
+  @override
   String get online => 'Online';
 
   @override
@@ -423,9 +510,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get typeAMessage => 'Type a message...';
 
   @override
-  String get copy => 'Copy';
-
-  @override
   String get typing => 'Typing...';
 
   @override
@@ -499,9 +583,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteFile => 'Delete File';
-
-  @override
-  String get deleteMessage => 'Delete Message';
 
   @override
   String get deleteConversation => 'Delete Conversation';

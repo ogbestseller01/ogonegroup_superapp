@@ -40,6 +40,16 @@ class ChatUser {
     'last_seen': lastSeen,
   };
 
+  ChatUser copyWith({String? avatar, bool? isOnline, String? lastSeen}) => ChatUser(
+    id: id,
+    name: name,
+    email: email,
+    phone: phone,
+    avatar: avatar ?? this.avatar,
+    isOnline: isOnline ?? this.isOnline,
+    lastSeen: lastSeen ?? this.lastSeen,
+  );
+
   static int _toInt(dynamic v) {
     if (v is int) return v;
     if (v is num) return v.toInt();

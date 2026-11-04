@@ -11,7 +11,11 @@ class ChatConversation {
   final int unreadCount;
   final String? lastMessageAt;
   final bool isActive;
-  final String? userRole; // 'customer' | 'fundi'
+  final String? userRole;
+  final bool isPinned;
+  final bool isArchived;
+  final bool hasNewPost;
+  final int? technicianId;
 
   const ChatConversation({
     required this.id,
@@ -23,88 +27,82 @@ class ChatConversation {
     this.lastMessageAt,
     this.isActive = true,
     this.userRole,
+    this.isPinned = false,
+    this.isArchived = false,
+    this.hasNewPost = false,
+    this.technicianId,
   });
 
+  // ── FIXED: Restored the missing fromJson factory ──
   factory ChatConversation.fromJson(Map<String, dynamic> json) {
-    ChatUser otherParty;
-    if (json['other_party'] != null) {
-      otherParty = ChatUser.fromJson(
-        Map<String, dynamic>.from(json['other_party']),
-      );
-    } else {
-      otherParty = const ChatUser(id: 0, name: 'Unknown', email: '');
-    }
+    final other = json['other_party'] is Map
+        ? ChatUser.fromJson(Map<String, dynamic>.from(json['other_party'] as Map))
+        : const ChatUser(id: 0, name: 'Unknown', email: '');
 
-    ChatMessage? lastMessage;
-    if (json['last_message'] != null) {
-      lastMessage = ChatMessage.fromJson(
-        Map<String, dynamic>.from(json['last_message']),
-      );
-    }
+    final rawLast = json['last_message'] ?? json['last_message_formatted'];
 
     return ChatConversation(
       id: _toInt(json['id']),
       customerId: _toInt(json['customer_id']),
       fundiId: _toInt(json['fundi_id']),
-      otherParty: otherParty,
-      lastMessage: lastMessage,
+      otherParty: other,
+      lastMessage: rawLast is Map
+          ? ChatMessage.fromJson(Map<String, dynamic>.from(rawLast))
+          : null,
       unreadCount: _toInt(json['unread_count'] ?? json['unread_messages_count']),
       lastMessageAt: json['last_message_at']?.toString(),
       isActive: json['is_active'] != false,
       userRole: json['user_role']?.toString(),
+      isPinned: json['is_pinned'] == true,
+      isArchived: json['is_archived'] == true,
+      hasNewPost: json['has_new_post'] == true,
+      technicianId: json['technician_id'] == null
+          ? (other.id != 0 ? other.id : null)
+          : int.tryParse(json['technician_id'].toString()),
     );
   }
 
-  String getLastMessageDisplay() {
-    return lastMessage?.getDisplayMessage() ?? 'No messages yet';
-  }
+  bool get isRead => unreadCount == 0 && lastMessage?.isRead == true;
+
+  String getLastMessageDisplay() =>
+      lastMessage?.getDisplayMessage() ?? 'No messages yet';
 
   String getFormattedLastMessageTime() {
     if (lastMessageAt == null) return '';
-    try {
-      final dateTime = DateTime.parse(lastMessageAt!).toLocal();
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-
-      if (difference.inDays > 7) {
-        return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-      } else if (difference.inDays > 0) {
-        return '${difference.inDays}d';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}h';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m';
-      }
-      return 'Just now';
-    } catch (_) {
-      return '';
-    }
+    final d = DateTime.tryParse(lastMessageAt!)?.toLocal();
+    if (d == null) return '';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final days = today.difference(DateTime(d.year, d.month, d.day)).inDays;
+    String two(int n) => n.toString().padLeft(2, '0');
+    if (days == 0) return '${two(d.hour)}:${two(d.minute)}';
+    if (days == 1) return 'Yesterday';
+    if (days < 7) return const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
+    return '${two(d.day)}/${two(d.month)}/${d.year % 100}';
   }
 
-  /// This is the method that was missing
   ChatConversation copyWith({
-    int? id,
-    int? customerId,
-    int? fundiId,
-    ChatUser? otherParty,
-    ChatMessage? lastMessage,
     int? unreadCount,
+    bool? isPinned,
+    bool? isArchived,
+    bool? hasNewPost,
+    ChatMessage? lastMessage,
     String? lastMessageAt,
-    bool? isActive,
-    String? userRole,
-  }) {
-    return ChatConversation(
-      id: id ?? this.id,
-      customerId: customerId ?? this.customerId,
-      fundiId: fundiId ?? this.fundiId,
-      otherParty: otherParty ?? this.otherParty,
-      lastMessage: lastMessage ?? this.lastMessage,
-      unreadCount: unreadCount ?? this.unreadCount,
-      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
-      isActive: isActive ?? this.isActive,
-      userRole: userRole ?? this.userRole,
-    );
-  }
+  }) => ChatConversation(
+    id: id,
+    customerId: customerId,
+    fundiId: fundiId,
+    otherParty: otherParty,
+    lastMessage: lastMessage ?? this.lastMessage,
+    unreadCount: unreadCount ?? this.unreadCount,
+    lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+    isActive: isActive,
+    userRole: userRole,
+    isPinned: isPinned ?? this.isPinned,
+    isArchived: isArchived ?? this.isArchived,
+    hasNewPost: hasNewPost ?? this.hasNewPost,
+    technicianId: technicianId,
+  );
 
   static int _toInt(dynamic v) {
     if (v is int) return v;

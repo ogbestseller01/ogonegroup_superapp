@@ -21,9 +21,9 @@ import '../../widgets/notification_bell_icon.dart';
 import '../../widgets/work_status_widgets.dart';
 import '../../l10n/app_localizations.dart';
 
+import '../chat/chat_list_screen.dart';
 import 'fundi_posts_screen.dart';
 import 'fundi_requests_screen.dart';
-import '../chat/chat_list_screen.dart';
 import '../jobs/job_detail_screen.dart';
 import '../tickets/ticket_detail_screen.dart';
 import 'profile/fundi_profile_screen.dart';
@@ -36,10 +36,11 @@ class FundiHomeScreen extends StatefulWidget {
   const FundiHomeScreen({super.key});
 
   @override
-  State<FundiHomeScreen> createState() => _FundiHomeScreenState();
+  State<FundiHomeScreen> createState() => FundiHomeScreenState(); // <-- Public state
 }
 
-class _FundiHomeScreenState extends State<FundiHomeScreen>
+// Note: We removed the underscore (_) so other screens can find it.
+class FundiHomeScreenState extends State<FundiHomeScreen>
     with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -54,12 +55,12 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
 
     WidgetsBinding.instance.addObserver(this);
 
-    _screens = const [
-      _HomeDashboardContent(),
-      FundiPostsScreen(),
-      FundiRequestsScreen(),
-      ChatListScreen(),
-      FundiProfileScreen(),
+    _screens = [
+      const _HomeDashboardContent(),
+      const FundiPostsScreen(),
+      const FundiRequestsScreen(),
+      const FundiChatListScreen(), // <-- Updated to new Chat list
+      const FundiProfileScreen(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -134,7 +135,8 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
     );
   }
 
-  void _navigateToTab(int index) {
+  // <-- Made public so other tabs can call it
+  void navigateToTab(int index) {
     if (!mounted) return;
     setState(() => _currentIndex = index);
   }
@@ -274,11 +276,11 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                                     notification['type']?.toString() ?? '';
 
                                 if (type == 'chat_message') {
-                                  _navigateToTab(3);
+                                  navigateToTab(3);
                                 } else if (type == 'new_request' ||
                                     type == 'request_accepted' ||
                                     type == 'request_rejected') {
-                                  _navigateToTab(2);
+                                  navigateToTab(2);
                                 } else if (type.contains('ticket')) {
                                   Navigator.pushNamed(
                                     context,
@@ -287,7 +289,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
                                 } else if (type.contains('job')) {
                                   Navigator.pushNamed(context, AppRoutes.jobs);
                                 } else {
-                                  _navigateToTab(0);
+                                  navigateToTab(0);
                                 }
                               },
                             );
@@ -408,7 +410,7 @@ class _FundiHomeScreenState extends State<FundiHomeScreen>
         ),
         bottomNavigationBar: _FloatingNavBar(
           currentIndex: _currentIndex,
-          onTap: _navigateToTab,
+          onTap: navigateToTab, // <-- Updated
           homeLabel: l10n.home,
           blogLabel: l10n.blog,
           requestsLabel: l10n.requests,
@@ -1050,8 +1052,8 @@ class _HomeDashboardContent extends StatelessWidget {
     // Helper to navigate to Requests tab
     void goToRequests() {
       final homeState =
-      context.findAncestorStateOfType<_FundiHomeScreenState>();
-      homeState?._navigateToTab(2);
+      context.findAncestorStateOfType<FundiHomeScreenState>();
+      homeState?.navigateToTab(2); // <-- Updated
     }
 
     return RefreshIndicator(
@@ -1500,8 +1502,8 @@ class _RequestTile extends StatelessWidget {
         child: InkWell(
           onTap: () {
             final homeState =
-            context.findAncestorStateOfType<_FundiHomeScreenState>();
-            homeState?._navigateToTab(2);
+            context.findAncestorStateOfType<FundiHomeScreenState>();
+            homeState?.navigateToTab(2); // <-- Updated
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(

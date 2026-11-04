@@ -69,6 +69,9 @@ class ApiService {
     ));
   }
 
+  // Used by chat_service.dart to construct full media URLs
+  String get baseUrl => _dio.options.baseUrl;
+
   // ============================================================
   // SECTION 1: AUTHENTICATION
   // ============================================================
@@ -633,73 +636,130 @@ class ApiService {
   // SECTION 12: CHAT & MESSAGING (V14 – CLEANED)
   // ============================================================
 
+  Future<ApiResponse> getConversations() async {
+    return _get('/v14/chat/conversations');
+  }
+
   Future<ApiResponse> getOrCreateConversation({
     required int customerId,
     required int fundiId,
-  }) =>
-      _post('/v14/chat/conversation', data: {
-        'customer_id': customerId,
-        'fundi_id': fundiId,
-      });
+  }) async {
+    return _post('/v14/chat/conversation', data: {
+      'customer_id': customerId,
+      'fundi_id': fundiId,
+    });
+  }
 
-  Future<ApiResponse> getConversations() => _get('/v14/chat/conversations');
-
-  /// Supports both initial load and pagination.
-  /// - afterId  → only newer messages (used by polling)
-  /// - beforeId → older page (scroll up)
   Future<ApiResponse> getMessages({
     required int conversationId,
-    int limit = 40,
-    int? afterId,
+    int limit = 30,
     int? beforeId,
-  }) =>
-      _get('/v14/chat/conversations/$conversationId/messages', query: {
-        'limit': limit,
-        if (afterId != null) 'after_id': afterId,
-        if (beforeId != null) 'before_id': beforeId,
-      });
+    int? afterId,
+    int? untilId,
+    String? since,
+  }) async {
+    final q = <String, dynamic>{'limit': '$limit'};
+    if (beforeId != null) q['before_id'] = '$beforeId';
+    if (afterId != null) q['after_id'] = '$afterId';
+    if (untilId != null) q['until_id'] = '$untilId';
+    if (since != null) q['since'] = since;
+    return _get('/v14/chat/conversations/$conversationId/messages', query: q);
+  }
 
-  /// Send text and/or file.
-  /// Backend decides message_type from the uploaded file.
   Future<ApiResponse> sendMessage({
     required int conversationId,
     String? content,
     String? filePath,
-    void Function(int sent, int total)? onSendProgress,
+    int? replyToId,
+    void Function(int, int)? onSendProgress,
   }) async {
-    if (filePath != null && filePath.isNotEmpty) {
-      final file = File(filePath);
-      if (await file.exists()) {
-        final formData = FormData.fromMap({
-          'conversation_id': conversationId,
-          if (content != null && content.trim().isNotEmpty) 'content': content.trim(),
-          'file': await MultipartFile.fromFile(file.path),
-        });
-
-        return _post(
-          '/v14/chat/send',
-          data: formData,
-          onSendProgress: onSendProgress,
-        );
-      }
+    final form = <String, dynamic>{'conversation_id': '$conversationId'};
+    if (content != null && content.isNotEmpty) form['content'] = content;
+    if (replyToId != null) form['reply_to_id'] = '$replyToId';
+    if (filePath != null) {
+      form['file'] = await MultipartFile.fromFile(
+        filePath,
+        filename: filePath.split(Platform.pathSeparator).last,
+      );
     }
+    return _postMultipart('/v14/chat/send', form, onSendProgress: onSendProgress);
+  }
 
-    return _post('/v14/chat/send', data: {
-      'conversation_id': conversationId,
-      'content': content?.trim() ?? '',
+  Future<ApiResponse> markConversationAsRead(int conversationId) async {
+    return _post('/v14/chat/conversations/$conversationId/read');
+  }
+
+  Future<ApiResponse> deleteConversation(int conversationId) async {
+    return _delete('/v14/chat/conversations/$conversationId');
+  }
+
+  Future<ApiResponse> setConversationState(
+      int id, {
+        bool? pinned,
+        bool? archived,
+      }) async {
+    final body = <String, dynamic>{};
+    if (pinned != null) body['pinned'] = pinned;
+    if (archived != null) body['archived'] = archived;
+    return _post('/v14/chat/conversations/$id/state', data: body);
+  }
+
+  Future<ApiResponse> deleteMessages(List<int> ids, {required String scope}) async {
+    return _post('/v14/chat/messages/delete', data: {
+      'message_ids': ids,
+      'scope': scope,
     });
   }
 
-  Future<ApiResponse> markConversationAsRead(int conversationId) =>
-      _post('/v14/chat/conversations/$conversationId/read');
+  Future<ApiResponse> sendTyping(int conversationId) async {
+    return _post('/v14/chat/typing', data: {'conversation_id': '$conversationId'});
+  }
 
-  Future<ApiResponse> deleteMessage(int messageId) =>
-      _delete('/v14/chat/messages/$messageId');
+  Future<ApiResponse> react(int messageId, String? emoji) async {
+    return _post('/v14/chat/messages/$messageId/react', data: {'reaction': emoji ?? ''});
+  }
+
+  Future<ApiResponse> toggleStar(int messageId) async {
+    return _post('/v14/chat/messages/$messageId/star');
+  }
+
+  Future<ApiResponse> togglePin(int messageId) async {
+    return _post('/v14/chat/messages/$messageId/pin');
+  }
+
+  Future<ApiResponse> forward({
+    required List<int> messageIds,
+    required List<int> conversationIds,
+  }) async {
+    return _post('/v14/chat/forward', data: {
+      'message_ids': messageIds,
+      'conversation_ids': conversationIds,
+    });
+  }
+
+  Future<ApiResponse> fetchStarred(int conversationId) async {
+    return _get('/v14/chat/conversations/$conversationId/starred');
+  }
+
+  Future<ApiResponse> fetchMedia(int conversationId, String tab, {int? beforeId}) async {
+    final q = <String, dynamic>{'tab': tab, 'limit': '40'};
+    if (beforeId != null) q['before_id'] = '$beforeId';
+    return _get('/v14/chat/conversations/$conversationId/media', query: q);
+  }
+
+  Future<ApiResponse> fetchMessageInfo(int messageId) async {
+    return _get('/v14/chat/messages/$messageId/info');
+  }
+
+  Future<ApiResponse> fetchChatUpdates() async {
+    return _get('/v14/chat/updates');
+  }
+
+  Future<ApiResponse> markStatusSeen(int technicianId) async {
+    return _post('/v14/chat/status/$technicianId/seen');
+  }
 
   Future<ApiResponse> getUnreadCount() => _get('/v14/chat/unread');
-
-  Future<ApiResponse> deleteConversation(int conversationId) =>
-      _delete('/v14/chat/conversations/$conversationId');
 
   // ============================================================
   // SECTION 13: NOTIFICATIONS
@@ -870,6 +930,26 @@ class ApiService {
       final res = await _dio.post(
         path,
         data: data,
+        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        onSendProgress: onSendProgress,
+      );
+      return ApiResponse.fromJson(res.data);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse> _postMultipart(
+      String path,
+      Map<String, dynamic> fields, {
+        Map<String, String>? headers,
+        void Function(int, int)? onSendProgress,
+      }) async {
+    try {
+      final formData = FormData.fromMap(fields);
+      final res = await _dio.post(
+        path,
+        data: formData,
         options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
         onSendProgress: onSendProgress,
       );

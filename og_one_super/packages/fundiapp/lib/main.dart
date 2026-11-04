@@ -1,7 +1,4 @@
-// ============================================================
-//  FundiApp SDK — root entry point.
-// ============================================================
-
+// lib/main.dart
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
@@ -11,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fundiapp_sdk/payments/chanel/mock_channel.dart';
+import 'package:fundiapp_sdk/screens/chat/chat_list_screen.dart';
 import 'package:provider/provider.dart';
 
 // ── Local: core ──────────────────────────────────────────────
@@ -59,8 +57,12 @@ import 'screens/auth/register_flow/register_step3_screen.dart';
 import 'screens/auth/register_flow/register_step4_screen.dart';
 import 'screens/auth/register_flow/register_step5_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
-import 'screens/chat/chat_list_screen.dart';
-import 'screens/chat/chat_screen.dart';
+
+// ── CHAT SCREENS (New Fundi-only structure) ──────────────────
+import 'screens/chat/fundi_chat_screen.dart';
+import 'screens/chat/fundi_media_docs_screen.dart';
+import 'screens/chat/fundi_starred_messages_screen.dart';
+
 import 'screens/fundi/fundi_home_screen.dart';
 import 'screens/fundi/fundi_portfolio_screen.dart';
 import 'screens/fundi/fundi_posts_screen.dart';
@@ -113,7 +115,6 @@ Future<void> main() async {
   try {
     await AppSecurityMiddleware.initialize();
   } catch (error) {
-    // Terminate app immediately if critical compromise check fails
     try {
       SystemChannels.platform.invokeMethod('SystemNavigator.pop');
     } catch (_) {}
@@ -350,13 +351,22 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
     case AppRoutes.settings:
       return route(const FundiSettingsScreen());
 
-  // ── Tickets & Jobs (NEW) ──────────────────────────────
+  // ── Tickets & Jobs ────────────────────────────────────
     case AppRoutes.tickets:
       return route(const TicketsScreen());
     case AppRoutes.jobs:
       return route(const JobsScreen());
 
-  // ── Payment (NEW) ─────────────────────────────────────
+  // ── Chat Routes (New Fundi Structure) ─────────────────
+    case AppRoutes.chatList:
+      return route(const FundiChatListScreen());
+    case AppRoutes.chat:
+      if (args is ChatConversation) {
+        return route(FundiChatScreen(conversation: args));
+      }
+      return route(const FundiChatListScreen()); // fallback
+
+  // ── Payment ───────────────────────────────────────────
     case AppRoutes.payment:
       if (args is Map<String, dynamic>) {
         return route(PaymentScreen(
@@ -366,7 +376,6 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
         ));
       }
       return route(const SplashScreen()); // fallback if no args
-
 
   // ── Static pages ──────────────────────────────────────
     case AppRoutes.about:

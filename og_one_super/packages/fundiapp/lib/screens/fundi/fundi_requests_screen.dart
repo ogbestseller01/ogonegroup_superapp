@@ -10,7 +10,7 @@ import '../../providers/job_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../chat/chat_screen.dart';
+import '../chat/fundi_chat_screen.dart'; // <-- Updated to use FundiChatScreen
 import '../../config/app_theme.dart';
 import 'fundi_home_screen.dart'; // for FundiHomeScreenState
 
@@ -210,7 +210,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatScreen(conversation: conversation),
+            builder: (context) => FundiChatScreen(conversation: conversation), // <-- Updated to FundiChatScreen
           ),
         );
       }

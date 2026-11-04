@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
+import '../models/chat_update.dart';
 import '../models/chat_user.dart';
 import '../services/chat_service.dart';
 
@@ -20,21 +21,23 @@ class ChatProvider extends ChangeNotifier {
   bool isLoadingMessages = false;
   String? _error;
 
+  ChatProvider() {
+    _service.conversations.addListener(_safeNotify);
+    _service.messages.addListener(_safeNotify);
+    _service.pins.addListener(_safeNotify);
+    _service.totalUnread.addListener(_safeNotify);
+  }
+
   List<ChatConversation> get conversations => _service.conversations.value;
   List<ChatMessage> get messages => _service.messages.value;
-  List<ChatMessage> get currentMessages => messages; // alias
+  List<ChatMessage> get pins => _service.pins.value;
   int get totalUnread => _service.totalUnread.value;
   bool get hasMoreOlder => _service.hasMoreOlder;
   ChatUser? get currentUser => _service.currentUser;
   Map<String, String> get authHeaders => _service.authHeaders;
+  ValueListenable<bool> get peerTyping => _service.peerTyping;
   ValueListenable<double?> get uploadProgress => _service.uploadProgress;
   String? get error => _error ?? _service.listError;
-
-  ChatProvider() {
-    _service.conversations.addListener(_safeNotify);
-    _service.messages.addListener(_safeNotify);
-    _service.totalUnread.addListener(_safeNotify);
-  }
 
   void _safeNotify() {
     if (_disposed) return;
@@ -81,21 +84,32 @@ class ChatProvider extends ChangeNotifier {
   Future<ChatConversation> createConversation({
     required int customerId,
     required int fundiId,
-  }) =>
-      _service.createConversation(customerId: customerId, fundiId: fundiId);
+  }) => _service.createConversation(customerId: customerId, fundiId: fundiId);
 
-  /// Alias for createConversation (used by FundiRequestsScreen)
+  // ── THIS WAS MISSING ──
   Future<ChatConversation> getOrCreateConversation({
     required int customerId,
     required int fundiId,
-  }) =>
-      createConversation(customerId: customerId, fundiId: fundiId);
+  }) => _service.createConversation(customerId: customerId, fundiId: fundiId);
 
   Future<void> markConversationAsRead(int conversationId) =>
       _service.markConversationAsRead(conversationId);
 
-  Future<bool> deleteConversation(int conversationId) =>
-      _service.deleteConversation(conversationId);
+  List<ChatConversation> get activeChats =>
+      conversations.where((c) => !c.isArchived).toList();
+  List<ChatConversation> get archivedChats =>
+      conversations.where((c) => c.isArchived).toList();
+  int get unreadChats => activeChats.where((c) => c.unreadCount > 0).length;
+  bool get hasNewUpdates => conversations.any((c) => c.hasNewPost);
+
+  Future<void> setConversationState(int id, {bool? pinned, bool? archived}) =>
+      _service.setConversationState(id, pinned: pinned, archived: archived);
+
+  Future<bool> deleteConversation(int id) => _service.deleteConversation(id);
+
+  Future<List<ChatUpdate>> fetchUpdates() => _service.fetchUpdates();
+  Future<void> markStatusSeen(int technicianId) =>
+      _service.markStatusSeen(technicianId);
 
   Future<void> openConversation(int id) async {
     isLoadingMessages = true;
@@ -109,30 +123,51 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void closeConversation() => _service.closeConversation();
-
   Future<void> loadOlder() => _service.loadOlder();
+  Future<bool> loadUntil(int messageId) => _service.loadUntil(messageId);
 
-  Future<ChatMessage> sendMessage({
+  Future<(List<ChatMessage>, bool)> fetchMedia(
+      int conversationId,
+      String tab, {
+        int? beforeId,
+      }) => _service.fetchMedia(conversationId, tab, beforeId: beforeId);
+
+  void send({
     required int conversationId,
     String? content,
     File? file,
-  }) =>
-      _service.sendMessage(
-        conversationId: conversationId,
-        content: content,
-        file: file,
-      );
+    ReplyRef? replyTo,
+  }) => _service.send(
+    conversationId: conversationId,
+    content: content,
+    file: file,
+    replyTo: replyTo,
+  );
 
-  Future<void> deleteMessage(int messageId) => _service.deleteMessage(messageId);
+  void retry(int tempId) => _service.retry(tempId);
+  void discardPending(int tempId) => _service.discardPending(tempId);
+  Future<void> sendTyping(int conversationId) => _service.sendTyping(conversationId);
 
-  Future<File> fetchForViewing(ChatMessage message) =>
-      _service.fetchForViewing(message);
+  Future<List<int>> deleteMessages(List<int> ids, {required bool forEveryone}) =>
+      _service.deleteMessages(ids, forEveryone: forEveryone);
+
+  Future<File> fetchForViewing(ChatMessage message) => _service.fetchForViewing(message);
+
+  Future<void> react(int messageId, String? emoji) => _service.react(messageId, emoji);
+  Future<bool> toggleStar(int messageId) => _service.toggleStar(messageId);
+  Future<bool> togglePin(int messageId) => _service.togglePin(messageId);
+  Future<void> forward({required List<int> messageIds, required List<int> conversationIds}) =>
+      _service.forward(messageIds: messageIds, conversationIds: conversationIds);
+  Future<MessageInfo> fetchInfo(int messageId) => _service.fetchInfo(messageId);
+  Future<List<ChatMessage>> fetchStarred(int conversationId) =>
+      _service.fetchStarred(conversationId);
 
   @override
   void dispose() {
     _disposed = true;
     _service.conversations.removeListener(_safeNotify);
     _service.messages.removeListener(_safeNotify);
+    _service.pins.removeListener(_safeNotify);
     _service.totalUnread.removeListener(_safeNotify);
     _service.dispose();
     super.dispose();

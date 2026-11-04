@@ -13,7 +13,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/chat_conversation.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
-import '../../widgets/message_bubble.dart';
+import 'widgets/fundi_message_bubble.dart'; // Use the new bubble
 
 const int _mb = 1024 * 1024;
 const int _maxImageBytes = 5 * _mb;
@@ -31,10 +31,9 @@ const Set<String> _videoExtensions = {
   'mp4', 'mov', 'm4v', '3gp', 'webm', 'mkv'
 };
 
-Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
 Color _cardBg(bool isDark) => isDark ? AppTheme.darkSurface : Colors.white;
 Color _cardBorder(bool isDark) =>
-    isDark ? AppTheme.darkBorder : AppTheme.borderLight.withOpacity(0.30);
+    isDark ? AppTheme.darkBorder : AppTheme.borderLight.withValues(alpha: 0.30);
 Color _ink(bool isDark) => isDark ? Colors.white : AppTheme.primary;
 Color _muted(bool isDark) =>
     isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
@@ -55,7 +54,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   late final ChatProvider _chat;
 
-  bool _sending = false;
   bool _firstLoadDone = false;
   ChatMessage? _replyingTo;
 
@@ -109,40 +107,26 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // ── Send ───────────────────────────────────────────────────────────────
-  Future<void> _sendText() async {
+  void _sendText() {
     final rawText = _textController.text.trim();
-    if (rawText.isEmpty || _sending) return;
+    if (rawText.isEmpty) return;
 
     String finalPayload = rawText;
     if (_replyingTo != null) {
       final myId = _chat.currentUser?.id;
       final isMine = _replyingTo!.senderId == myId;
       final senderName = isMine ? 'You' : widget.conversation.otherParty.name;
-      final quoteText = _replyingTo!.content ?? (_replyingTo!.isImage ? '📷 Photo' : '📁 File');
+      final quoteText = _replyingTo!.content ??
+          (_replyingTo!.isImage ? '📷 Photo' : '📁 File');
       finalPayload = '↩ $senderName: $quoteText\n$rawText';
     }
 
     _textController.clear();
-    final previousReply = _replyingTo;
-    setState(() {
-      _sending = true;
-      _replyingTo = null;
-    });
+    setState(() => _replyingTo = null);
 
-    try {
-      await _chat.sendMessage(conversationId: _conversationId, content: finalPayload);
-      _scrollToBottom();
-    } catch (e) {
-      _textController.text = rawText;
-      setState(() => _replyingTo = previousReply);
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        _snack('${l10n.failedToSend}: $e', error: true);
-      }
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    // New optimistic send method
+    _chat.send(conversationId: _conversationId, content: finalPayload);
+    _scrollToBottom();
   }
 
   int _limitFor(String ext) {
@@ -152,8 +136,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _sendFile(File file) async {
-    if (_sending) return;
-
     final ext = p.extension(file.path).replaceFirst('.', '').toLowerCase();
     if (_blockedExtensions.contains(ext)) {
       _snack('This file type is not allowed.', error: true);
@@ -170,19 +152,9 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    setState(() => _sending = true);
-
-    try {
-      await _chat.sendMessage(conversationId: _conversationId, file: file);
-      _scrollToBottom();
-    } catch (e) {
-      if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        _snack('${l10n.failedToSend}: $e', error: true);
-      }
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
+    // New optimistic send method
+    _chat.send(conversationId: _conversationId, file: file);
+    _scrollToBottom();
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
@@ -222,12 +194,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showAttachSheet() {
-    if (_sending) return;
-
     Widget option(IconData icon, Color color, String label, VoidCallback onTap) {
       return ListTile(
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.12),
+          backgroundColor: color.withValues(alpha: 0.12),
           child: Icon(icon, color: color),
         ),
         title: Text(label),
@@ -261,7 +231,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ── Message actions ────────────────────────────────────────────────────
   void _showMessageOptions(ChatMessage message, bool isMine) {
     final l10n = AppLocalizations.of(context)!;
     final hasText = (message.content ?? '').trim().isNotEmpty;
@@ -328,7 +297,8 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
-                await _chat.deleteMessage(message.id);
+                // New bulk delete method
+                await _chat.deleteMessages([message.id], forEveryone: true);
                 _snack(l10n.messageDeleted);
               } catch (e) {
                 _snack('$e', error: true);
@@ -341,7 +311,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ── UI ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -478,12 +447,17 @@ class _ChatScreenState extends State<ChatScreen> {
               final message = messages[messages.length - 1 - index];
               final isMine = message.senderId == myId;
 
-              return MessageBubble(
+              // Using the new FundiMessageBubble
+              return FundiMessageBubble(
                 key: ValueKey(message.id),
                 message: message,
-                isCurrentUser: isMine,
-                onLongPress: () => _showMessageOptions(message, isMine),
+                isMine: isMine,
+                myId: myId,
+                peerName: widget.conversation.otherParty.name,
+                highlighted: false,
                 authHeaders: provider.authHeaders,
+                onTap: () {},
+                onLongPress: () => _showMessageOptions(message, isMine),
               );
             },
           ),
@@ -523,7 +497,8 @@ class _ChatScreenState extends State<ChatScreen> {
     final myId = _chat.currentUser?.id;
     final isMine = _replyingTo!.senderId == myId;
     final senderName = isMine ? 'You' : widget.conversation.otherParty.name;
-    final text = _replyingTo!.content ?? (_replyingTo!.isImage ? '📷 Photo' : '📁 File');
+    final text = _replyingTo!.content ??
+        (_replyingTo!.isImage ? '📷 Photo' : '📁 File');
 
     return Container(
       color: isDark ? const Color(0xFF1F2C34) : const Color(0xFFF0F2F5),
@@ -596,11 +571,9 @@ class _ChatScreenState extends State<ChatScreen> {
               icon: Icon(
                 Icons.add_circle_outline_rounded,
                 size: 28,
-                color: _sending
-                    ? Theme.of(context).hintColor
-                    : (isDark ? Colors.white70 : AppTheme.primary),
+                color: isDark ? Colors.white70 : AppTheme.primary,
               ),
-              onPressed: _sending ? null : _showAttachSheet,
+              onPressed: _showAttachSheet,
             ),
             Expanded(
               child: Container(
@@ -638,28 +611,18 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(width: 6),
             Material(
-              color: hasText && !_sending
+              color: hasText
                   ? const Color(0xFF25D366)
                   : (isDark ? const Color(0xFF2A3942) : Colors.grey.shade400),
               shape: const CircleBorder(),
               child: InkWell(
-                onTap: hasText && !_sending ? _sendText : null,
+                onTap: hasText ? _sendText : null,
                 customBorder: const CircleBorder(),
-                child: SizedBox(
+                child: const SizedBox(
                   width: 46,
                   height: 46,
                   child: Center(
-                    child: _sending
-                        ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                        : const Icon(
+                    child: Icon(
                       Icons.send_rounded,
                       color: Colors.white,
                       size: 22,

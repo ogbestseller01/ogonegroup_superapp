@@ -5,8 +5,15 @@ import 'package:flutter/widgets.dart';
 class Assets {
   Assets._();
 
-  static const $AssetsIconsGen icons = $AssetsIconsGen();
-  static const $AssetsImagesGen images = $AssetsImagesGen();
+  static const $AssetsAssetsGen assets = $AssetsAssetsGen();
+  static const $AssetsLibGen lib = $AssetsLibGen();
+}
+
+class $AssetsAssetsGen {
+  const $AssetsAssetsGen();
+
+  final $AssetsIconsGen icons = const $AssetsIconsGen();
+  final $AssetsImagesGen images = const $AssetsImagesGen();
 }
 
 class $AssetsIconsGen {
@@ -40,6 +47,44 @@ class $AssetsImagesGen {
   final AssetGenImage nearbyfundiLogov1 =
       const AssetGenImage('assets/images/nearbyfundi-logov1.png');
   final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');
+}
+
+class $AssetsLibGen {
+  const $AssetsLibGen();
+
+  final $AssetsScreensGen screens = const $AssetsScreensGen();
+}
+
+class $AssetsScreensGen {
+  const $AssetsScreensGen();
+
+  final $AssetsFundiGen fundi = const $AssetsFundiGen();
+}
+
+class $AssetsFundiGen {
+  const $AssetsFundiGen();
+
+  final $AssetsProfileGen profile = const $AssetsProfileGen();
+  final String fundiHomeScreenJava = 'lib/screens/fundi/FundiHomeScreen.java';
+  final String fundiHomeScreenDart = 'lib/screens/fundi/fundi_home_screen.dart';
+  final String fundiPortfolioScreen =
+      'lib/screens/fundi/fundi_portfolio_screen.dart';
+  final String fundiPostsScreen = 'lib/screens/fundi/fundi_posts_screen.dart';
+  final String fundiRequestsScreen =
+      'lib/screens/fundi/fundi_requests_screen.dart';
+}
+
+class $AssetsProfileGen {
+  const $AssetsProfileGen();
+
+  final String editProfileScreen =
+      'lib/screens/fundi/profile/edit_profile_screen.dart';
+  final String fundiProfileScreen =
+      'lib/screens/fundi/profile/fundi_profile_screen.dart';
+  final String fundiSettingsScreen =
+      'lib/screens/fundi/profile/fundi_settings_screen.dart';
+  final String pickMapLocationScreen =
+      'lib/screens/fundi/profile/pick_map_location_screen.dart';
 }
 
 class AssetGenImage {
