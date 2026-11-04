@@ -62,6 +62,26 @@
   "suggestionAllCategories": "Jaribu kuchagua 'Kategoria Zote'",
   "suggestionAllServices": "Jaribu kuchagua 'Huduma Zote'",
 
+
+    "today": "Leo",
+    "yesterday": "Jana",
+    "deleteMessageForEveryone": "Futa kwa kila mtu",
+    "deleteMessageForMe": "Futa kwangu",
+    "removedForBoth": "Imeondolewa kwa wote wawili",
+    "removedOnPhone": "Imeondolewa kwenye simu hii pekee",
+    "deleted": "Imefutwa",
+    "forwarded": "Imetumwa mbele",
+    "copied": "Imenakiliwa",
+    "typingEllipsis": "anaandika…",
+    "pinnedMessage": "Ujumbe uliobandikwa",
+    "pinnedCount": "Umebandika {count} kati ya {total}",
+    "@pinnedCount": {
+      "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
+    },
+    "msgDeleted": "Ujumbe huu umefutwa",
+    "tapToRetry": "Gusa kujaribu tena",
+    "notSent": "Hautumwa"
+
   "kmAway": "km mbali",
   "viewProfile": "Angalia Profaili",
   "directions": "Njia",

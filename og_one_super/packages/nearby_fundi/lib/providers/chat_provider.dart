@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 
 import '../models/chat_conversation.dart';
 import '../models/chat_message.dart';
+import '../models/chat_update.dart';
 import '../models/chat_user.dart';
 import '../services/chat_service.dart';
 
@@ -20,6 +21,13 @@ class ChatProvider extends ChangeNotifier {
   bool isLoading = false;
   bool isLoadingMessages = false;
   String? _error;
+
+  ChatProvider() {
+    _service.conversations.addListener(_safeNotify);
+    _service.messages.addListener(_safeNotify);
+    _service.pins.addListener(_safeNotify);
+    _service.totalUnread.addListener(_safeNotify);
+  }
 
   // ── Getters ────────────────────────────────────────────
   List<ChatConversation> get conversations => _service.conversations.value;
@@ -35,13 +43,6 @@ class ChatProvider extends ChangeNotifier {
   Map<String, String> get authHeaders => _service.authHeaders;
   ValueListenable<bool> get peerTyping => _service.peerTyping;
   String? get error => _error ?? _service.listError;
-
-  ChatProvider() {
-    _service.conversations.addListener(_safeNotify);
-    _service.messages.addListener(_safeNotify);
-    _service.pins.addListener(_safeNotify);
-    _service.totalUnread.addListener(_safeNotify);
-  }
 
   /// Never notifies while the widget tree is building or after dispose.
   void _safeNotify() {
@@ -104,6 +105,34 @@ class ChatProvider extends ChangeNotifier {
   Future<void> markConversationAsRead(int conversationId) =>
       _service.markConversationAsRead(conversationId);
 
+  // ── Tabs / filters ─────────────────────────────────────
+  List<ChatConversation> get activeChats =>
+      conversations.where((c) => !c.isArchived).toList();
+
+  List<ChatConversation> get archivedChats =>
+      conversations.where((c) => c.isArchived).toList();
+
+  int get unreadChats =>
+      activeChats.where((c) => c.unreadCount > 0).length;
+
+  bool get hasNewUpdates => conversations.any((c) => c.hasNewPost);
+
+  Future<void> setConversationState(
+      int id, {
+        bool? pinned,
+        bool? archived,
+      }) =>
+      _service.setConversationState(id, pinned: pinned, archived: archived);
+
+  Future<bool> deleteConversation(int id) =>
+      _service.deleteConversation(id);
+
+  // ── Updates / status ───────────────────────────────────
+  Future<void> markStatusSeen(int technicianId) =>
+      _service.markStatusSeen(technicianId);
+
+  Future<List<ChatUpdate>> fetchUpdates() => _service.fetchUpdates();
+
   // ── Open chat ──────────────────────────────────────────
   Future<void> openConversation(int id) async {
     isLoadingMessages = true;
@@ -122,6 +151,14 @@ class ChatProvider extends ChangeNotifier {
 
   /// Loads history up to [messageId] so the screen can jump to it.
   Future<bool> loadUntil(int messageId) => _service.loadUntil(messageId);
+
+  // ── Media ──────────────────────────────────────────────
+  Future<(List<ChatMessage>, bool)> fetchMedia(
+      int conversationId,
+      String tab, {
+        int? beforeId,
+      }) =>
+      _service.fetchMedia(conversationId, tab, beforeId: beforeId);
 
   // ── Send / retry / delete / view ───────────────────────
   /// Optimistic: returns immediately, the bubble shows its own sending state.
@@ -143,7 +180,15 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendTyping(int conversationId) =>
       _service.sendTyping(conversationId);
 
-  Future<void> deleteMessage(int messageId) => _service.deleteMessage(messageId);
+  Future<void> deleteMessage(int messageId) =>
+      _service.deleteMessage(messageId);
+
+  /// Returns the ids really deleted. [forEveryone] = false => "delete for me".
+  Future<List<int>> deleteMessages(
+      List<int> ids, {
+        required bool forEveryone,
+      }) =>
+      _service.deleteMessages(ids, forEveryone: forEveryone);
 
   Future<File> fetchForViewing(ChatMessage message) =>
       _service.fetchForViewing(message);

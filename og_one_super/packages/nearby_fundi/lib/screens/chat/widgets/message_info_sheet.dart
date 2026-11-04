@@ -33,13 +33,36 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
     _future = context.read<ChatProvider>().fetchInfo(widget.message.id);
   }
 
+  /// Helper to format the date (replaces the missing chatDateTimeLabel)
+  String _formatDate(DateTime t) {
+    final now = DateTime.now();
+    final local = t.toLocal();
+
+    // Format time like "14:30"
+    final timeStr = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+
+    // Same day
+    if (local.year == now.year && local.month == now.month && local.day == now.day) {
+      return timeStr;
+    }
+
+    // Yesterday
+    final yesterday = now.subtract(const Duration(days: 1));
+    if (local.year == yesterday.year && local.month == yesterday.month && local.day == yesterday.day) {
+      return 'Yesterday $timeStr';
+    }
+
+    // Different day
+    return '${local.day}/${local.month}/${local.year} $timeStr';
+  }
+
   Widget _row(IconData icon, Color color, String label, DateTime? t) {
     return ListTile(
       dense: true,
       leading: Icon(icon, color: color, size: 22),
       title: Text(label),
       trailing: Text(
-        t == null ? '—' : chatDateTimeLabel(t),
+        t == null ? '—' : _formatDate(t),
         style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
       ),
     );
@@ -68,7 +91,8 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.08),
+                  // Fixed deprecation warning
+                  color: AppTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(m.getDisplayMessage(), maxLines: 4, overflow: TextOverflow.ellipsis),
@@ -113,7 +137,8 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
                             dense: true,
                             leading: CircleAvatar(
                               radius: 18,
-                              backgroundColor: AppTheme.primary.withOpacity(0.12),
+                              // Fixed deprecation warning
+                              backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
                               child: Text(r.name.isNotEmpty ? r.name[0].toUpperCase() : '?'),
                             ),
                             title: Text(r.userId == me ? 'You' : r.name),

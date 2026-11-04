@@ -51,10 +51,13 @@ Rect? _shareOrigin(BuildContext context) {
   return box.localToGlobal(Offset.zero) & box.size;
 }
 
-Future<void> _shareLocal(BuildContext context, File f, ChatFile? meta) {
-  return Share.shareXFiles(
-    [XFile(f.path, name: meta?.name, mimeType: meta?.openMime)],
-    sharePositionOrigin: _shareOrigin(context),
+Future<void> _shareLocal(BuildContext context, File f, MessageFile? meta) {
+  // Fixed: Using SharePlus instead of deprecated Share
+  return SharePlus.instance.share(
+    ShareParams(
+      files: [XFile(f.path, name: meta?.name, mimeType: meta?.openMime)],
+      sharePositionOrigin: _shareOrigin(context),
+    ),
   );
 }
 
@@ -127,8 +130,6 @@ Future<void> saveChatFile(BuildContext context, ChatMessage message) async {
       _toast(messenger, 'Saved to your gallery');
       return;
     } on MissingPluginException {
-      // The native part of `gal` is not in this build yet (needs a full rebuild).
-      // Do not crash: fall back to the share sheet, which also has "Save Image".
       _toast(messenger,
           'Gallery plugin not installed in this build. Opening share sheet instead.');
     } on GalException {
@@ -147,7 +148,6 @@ Future<void> saveChatFile(BuildContext context, ChatMessage message) async {
     _toast(messenger, '$e', error: true);
   }
 }
-
 
 Future<void> shareChatFile(BuildContext context, ChatMessage message) async {
   final file = message.file;
@@ -200,7 +200,7 @@ class _ChatImageViewerState extends State<ChatImageViewer> {
     final headers = context.read<ChatProvider>().authHeaders;
 
     final net = CachedNetworkImage(
-      imageUrl: f.url ?? '',
+      imageUrl: f.url,
       httpHeaders: headers,
       cacheKey: 'chat_${widget.message.id}',
       fit: BoxFit.contain,

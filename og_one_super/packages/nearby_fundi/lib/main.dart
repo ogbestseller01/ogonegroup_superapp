@@ -40,6 +40,7 @@ import 'screens/chat/chat_list_screen.dart';
 import 'screens/chat/chat_screen.dart';
 
 import 'screens/home/home_screen.dart';
+import 'screens/home/blogs_screen.dart'; // <-- ADDED
 import 'screens/home/post_detail_screen.dart';
 
 import 'screens/jobs/job_detail_screen.dart';
@@ -63,7 +64,7 @@ import 'screens/technicians/technician_detail_screen.dart';
 import 'screens/tickets/tickets_screen.dart';
 
 import 'services/api_service.dart';
-import 'services/app_security_middleware.dart'; // <-- Comprehensive Security Middleware
+import 'services/app_security_middleware.dart';
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
@@ -105,9 +106,6 @@ Future<void> main() async {
     return true;
   };
 
-  // ==========================================================
-  // 🛡️ COMPREHENSIVE APP SECURITY MIDDLEWARE ENFORCEMENT
-  // ==========================================================
   try {
     await AppSecurityMiddleware.initialize();
   } catch (error, stack) {
@@ -115,7 +113,6 @@ Future<void> main() async {
     SystemChannels.platform.invokeMethod('SystemNavigator.pop');
     return;
   }
-  // ==========================================================
 
   try {
     if (Firebase.apps.isEmpty) {
@@ -128,7 +125,6 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   try {
-    // Keeps sensitive screens hidden from system task switchers / screenshots
     await SecurityService.enableSecureScreen();
   } catch (error, stack) {
     _logError('Secure screen', error, stack);
@@ -241,6 +237,9 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
       return route(ResetPasswordScreen(email: _stringArg(args)));
     case AppRoutes.home:
       return route(const HomeScreen());
+    case AppRoutes.blogs: // <-- ADDED CASE
+      final techId = _intArg(args);
+      return route(BlogsScreen(technicianId: techId > 0 ? techId : null));
     case AppRoutes.technicianDetail:
       return route(TechnicianDetailScreen(technicianId: _intArg(args)));
     case AppRoutes.postDetail:

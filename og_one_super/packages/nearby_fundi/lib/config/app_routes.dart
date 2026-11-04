@@ -1,3 +1,4 @@
+// lib/config/app_routes.dart
 class AppRoutes {
   AppRoutes._();
 
@@ -12,10 +13,11 @@ class AppRoutes {
 
   // Main
   static const String home             = '/home';
+  static const String blogs            = '/blogs'; // <-- Added for the feed
   static const String technicianDetail = '/technician-detail';
   static const String postDetail       = '/post-detail';
   static const String myRequests       = '/my-requests';
-  static const String portfolio        = '/portfolio'; // <-- Added here
+  static const String portfolio        = '/portfolio';
 
   // Jobs & tickets
   static const String jobs      = '/jobs';

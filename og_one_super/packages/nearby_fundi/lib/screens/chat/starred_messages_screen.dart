@@ -1,5 +1,6 @@
 // lib/screens/chat/starred_messages_screen.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
@@ -52,6 +53,18 @@ class _StarredMessagesScreenState extends State<StarredMessagesScreen> {
     }
   }
 
+  String _formatDay(DateTime t) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(t.year, t.month, t.day);
+    final diff = today.difference(date).inDays;
+
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    if (diff < 7) return DateFormat('EEEE').format(t);
+    return DateFormat('MMMM d, yyyy').format(t);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -68,7 +81,7 @@ class _StarredMessagesScreenState extends State<StarredMessagesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.star_border_rounded, size: 56, color: theme.hintColor.withOpacity(0.5)),
+            Icon(Icons.star_border_rounded, size: 56, color: theme.hintColor.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text('No starred messages', style: TextStyle(color: theme.hintColor)),
           ],
@@ -89,7 +102,7 @@ class _StarredMessagesScreenState extends State<StarredMessagesScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(m.time == null ? '' : chatDayLabel(m.time!),
+                Text(m.time == null ? '' : _formatDay(m.time!),
                     style: TextStyle(fontSize: 12, color: theme.hintColor)),
                 Text(m.timeLabel, style: TextStyle(fontSize: 12, color: theme.hintColor)),
               ],

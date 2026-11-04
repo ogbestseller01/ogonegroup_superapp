@@ -1,7 +1,4 @@
 // FILE: lib/screens/home/blogs_screen.dart
-// Posts feed: each post is media only (images + optional video) by a fundi,
-// with likes and comments. Videos play inline (iOS + Android safe).
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +16,10 @@ const double _maxCardWidth = 640;
 const double _loadMoreThreshold = 400;
 
 class BlogsScreen extends StatefulWidget {
-  const BlogsScreen({super.key});
+  /// If provided, only shows posts from this technician.
+  final int? technicianId;
+
+  const BlogsScreen({super.key, this.technicianId});
 
   @override
   State<BlogsScreen> createState() => _BlogsScreenState();
@@ -35,7 +35,11 @@ class _BlogsScreenState extends State<BlogsScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<PostProvider>().fetchPosts(refresh: true);
+      if (mounted) {
+        // Apply technician filter if provided (e.g. from chat avatar tap)
+        // This also automatically triggers a fetch.
+        context.read<PostProvider>().setTechnicianFilter(widget.technicianId);
+      }
     });
   }
 
@@ -219,8 +223,15 @@ class _BlogsScreenState extends State<BlogsScreen> {
       centerTitle: true,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-        onPressed: () =>
-            Navigator.pushReplacementNamed(context, AppRoutes.home),
+        onPressed: () {
+          // If we arrived from a specific technician filter, pop back to where we came from.
+          // Otherwise, route to home.
+          if (widget.technicianId != null) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
+          }
+        },
       ),
       title: Text(
         l10n.blog,
@@ -417,7 +428,6 @@ class _BlogsScreenState extends State<BlogsScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            // The name filter only covers posts loaded so far
             if (provider.hasMore) ...[
               const SizedBox(height: 12),
               TextButton(

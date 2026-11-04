@@ -58,10 +58,12 @@ class MessageBubble extends StatelessWidget {
     final bubble = isMine
         ? AppTheme.primary
         : (dark ? scheme.surfaceContainerHigh : Colors.white);
+
     final c = _C(
       bubble,
       isMine ? Colors.white : scheme.onSurface,
-      isMine ? Colors.white70 : scheme.onSurface.withOpacity(0.55),
+      // Fixed: withOpacity -> withValues
+      isMine ? Colors.white70 : scheme.onSurface.withValues(alpha: 0.55),
       isMine ? Colors.white : AppTheme.primary,
       dark,
     );
@@ -81,8 +83,9 @@ class MessageBubble extends StatelessWidget {
     );
     if (reply != null) inner = IntrinsicWidth(child: inner);
 
+    // Fixed: withOpacity -> withValues
     final shown = highlighted
-        ? Color.alphaBlend(Colors.amber.withOpacity(0.4), bubble)
+        ? Color.alphaBlend(Colors.amber.withValues(alpha: 0.4), bubble)
         : bubble;
 
     final hasReactions = message.reactions.isNotEmpty;
@@ -122,7 +125,8 @@ class MessageBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.07),
+                      // Fixed: withOpacity -> withValues
+                      color: Colors.black.withValues(alpha: 0.07),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
                     ),
@@ -186,11 +190,14 @@ class MessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: mine
-                ? AppTheme.primary.withOpacity(0.6)
-                : Colors.grey.withOpacity(0.25),
+            // Fixed: withOpacity -> withValues
+                ? AppTheme.primary.withValues(alpha: 0.6)
+            // Fixed: withOpacity -> withValues
+                : Colors.grey.withValues(alpha: 0.25),
           ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 3),
+            // Fixed: withOpacity -> withValues
+            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3),
           ],
         ),
         child: Row(
@@ -320,7 +327,10 @@ class MessageBubble extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: 5, top: _isMedia ? 3 : 0, left: _isMedia ? 3 : 0, right: _isMedia ? 3 : 0),
       child: Material(
-        color: isMine ? Colors.black.withOpacity(0.18) : AppTheme.primary.withOpacity(0.08),
+        // Fixed: withOpacity -> withValues
+        color: isMine
+            ? Colors.black.withValues(alpha: 0.18)
+            : AppTheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -353,7 +363,8 @@ class MessageBubble extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: c.text.withOpacity(0.8),
+                            // Fixed: withOpacity -> withValues
+                            color: c.text.withValues(alpha: 0.8),
                             fontSize: 12.5,
                           ),
                         ),
@@ -389,10 +400,13 @@ class MessageBubble extends StatelessWidget {
 
   Widget _image(_C c) {
     final f = message.file;
-    if (f == null) return SizedBox(width: 230, height: 120, child: _placeholder(c, Icons.broken_image));
+    if (f == null) {
+      return SizedBox(
+          width: 230, height: 120, child: _placeholder(c, Icons.broken_image));
+    }
 
     final net = CachedNetworkImage(
-      imageUrl: f.url ?? '',
+      imageUrl: f.url,
       httpHeaders: authHeaders,
       cacheKey: 'chat_${message.id}',
       memCacheWidth: 700,
@@ -407,7 +421,9 @@ class MessageBubble extends StatelessWidget {
     final local = f.localPath;
     final Widget img = local != null
         ? Image.file(File(local),
-        fit: BoxFit.cover, cacheWidth: 700, errorBuilder: (_, __, ___) => net)
+        fit: BoxFit.cover,
+        cacheWidth: 700,
+        errorBuilder: (_, __, ___) => net)
         : net;
 
     return ClipRRect(
@@ -506,7 +522,7 @@ class MessageBubble extends StatelessWidget {
     final f = message.file;
     final (icon, color) = _fileStyle(f?.kind ?? ChatFileKind.other);
     final info = [
-      if ((f?.ext ?? '').isNotEmpty) f!.ext.toUpperCase(),
+      if ((f?.ext ?? '').isNotEmpty) f!.ext!.toUpperCase(),
       if ((f?.formattedSize ?? '').isNotEmpty) f!.formattedSize,
     ].join(' · ');
 
@@ -518,7 +534,10 @@ class MessageBubble extends StatelessWidget {
           width: 250,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isMine ? Colors.black.withOpacity(0.14) : color.withOpacity(0.08),
+            // Fixed: withOpacity -> withValues
+            color: isMine
+                ? Colors.black.withValues(alpha: 0.14)
+                : color.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -568,7 +587,8 @@ class MessageBubble extends StatelessWidget {
                 IconButton(
                   tooltip: 'Save / share',
                   visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.download_rounded, color: c.text.withOpacity(0.8)),
+                  // Fixed: withOpacity -> withValues
+                  icon: Icon(Icons.download_rounded, color: c.text.withValues(alpha: 0.8)),
                   onPressed: onSave,
                 ),
             ],

@@ -132,6 +132,27 @@
   "or": "OR",
   "continueWithGoogle": "Continue with Google",
 
+
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "deleteMessageForEveryone": "Delete for everyone",
+  "deleteMessageForMe": "Delete for me",
+  "removedForBoth": "Removed for both of you",
+  "removedOnPhone": "Only removed on this phone",
+  "deleted": "Deleted",
+  "forwarded": "Forwarded",
+  "copied": "Copied",
+  "typingEllipsis": "typing…",
+  "pinnedMessage": "Pinned message",
+  "pinnedCount": "Pinned {count} of {total}",
+  "@pinnedCount": {
+    "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "msgDeleted": "This message was deleted",
+  "tapToRetry": "Tap to retry",
+  "notSent": "Not sent"
+
+
   "editProfile": "Edit Profile",
   "editProfileTitle": "Edit Profile",
   "updateInfo": "Update Your Info",
