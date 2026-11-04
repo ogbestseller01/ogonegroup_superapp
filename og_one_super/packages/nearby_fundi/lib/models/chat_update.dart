@@ -1,4 +1,4 @@
-// lib/models/chat_update.dart  (NEW) — one row of the "Updates" tab
+// lib/models/chat_update.dart (NEW) — one row of the "Updates" tab
 class ChatUpdate {
   final int technicianId;
   final int userId;
