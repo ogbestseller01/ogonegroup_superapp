@@ -74,6 +74,14 @@
     <key>NSUserTrackingUsageDescription</key>
     <string>OG ONE GROUP uses tracking to improve relevant content and services for you.</string>
 
+    <!-- ============================================================
+         BACKGROUND MODES (FCM push delivery while app is backgrounded)
+         ============================================================ -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+    </array>
+
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>

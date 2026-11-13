@@ -1,25 +1,39 @@
-// screens/home/nearby_map_screen.dart
+// lib/screens/home/nearby_map_screen.dart
+//
+// Full-screen nearby map with ranked technicians, road routes and
+// horizontal card list.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../providers/technician_provider.dart';
-import '../../models/technician.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../config/tanzania_map.dart';
-import '../../utils/image_utils.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/technician.dart';
+import '../../providers/technician_provider.dart';
 import '../../services/route_service.dart';
+import '../../utils/image_utils.dart';
 import '../../widgets/route_polylines.dart';
+
+// ================================================================
+// CONSTANTS / HELPERS
+// ================================================================
 
 const Color _gold = Color(0xFFF2B93B);
 
-/// Text/icon color that stays readable in both light and dark mode.
+// IMPORTANT: use your real package name (not com.example.*)
+const String _userAgentPackageName = 'com.yourcompany.nearbyfundi';
+
 Color _ink(ThemeData theme) =>
     theme.brightness == Brightness.dark ? Colors.white : AppTheme.primary;
+
+// ================================================================
+// SCREEN
+// ================================================================
 
 class NearbyMapScreen extends StatefulWidget {
   const NearbyMapScreen({super.key});
@@ -31,30 +45,27 @@ class NearbyMapScreen extends StatefulWidget {
 class _NearbyMapScreenState extends State<NearbyMapScreen>
     with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
+  final ScrollController _bottomScrollController = ScrollController();
+
   static const double _minZoom = TanzaniaMap.minZoom;
   static const double _maxZoom = TanzaniaMap.maxZoom;
   static const int _routeBatchSize = 4;
   static const int _maxRouteTargets = 12;
   static const double _cardGap = 12;
-
-  /// Server never searches beyond this (matches backend HARD_MAX_RADIUS).
   static const int _fallbackRadiusKm = 15;
 
   final Map<int, TechnicianRouteData> _routesData = {};
   bool _isFetchingRoutes = false;
   int? _selectedTechId;
-
-  // lets a refresh cancel routes still loading
   int _routeRequestId = 0;
 
-  late AnimationController _pulseController;
-  final ScrollController _bottomScrollController = ScrollController();
+  late final AnimationController _pulseController;
 
-  // Latest values from build(), used to scroll the card list to a fundi.
+  // Used to scroll the card list to a selected technician
   List<Technician> _lastSorted = [];
   double _lastCardWidth = 260;
 
-  // Cache for sorted technicians to avoid re-sorting on every build
+  // Cache to avoid re-sorting on every build
   List<Technician> _cachedSortedTechs = [];
   List<Technician> _cachedSourceTechs = [];
 
@@ -67,28 +78,30 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _fetchRoutesForTechnicians();
+      if (mounted) _fetchRoutesForTechnicians();
     });
   }
 
   @override
   void dispose() {
-    _routeRequestId++; // stop any route loading
+    _routeRequestId++; // cancel any in-flight route loading
     _pulseController.dispose();
     _bottomScrollController.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
-  // ── Routes ──────────────────────────────────────────────────────────────
+  // ==============================================================
+  // ROUTES
+  // ==============================================================
+
   Future<void> _fetchRoutesForTechnicians() async {
     final techProvider = context.read<TechnicianProvider>();
     if (!techProvider.hasSearchOrigin) return;
 
     final origin = LatLng(techProvider.searchLat!, techProvider.searchLng!);
 
-    // Best ranked first: the top picks get their road line first.
+    // Best ranked first so top picks get their road line first
     final techPoints = techProvider.technicians
         .where((t) => t.latitude != null && t.longitude != null)
         .toList()
@@ -158,7 +171,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
   void _fitAllMarkers(LatLng? searchPoint, List<Technician> techPoints) {
     final List<LatLng> allPoints = [];
     if (searchPoint != null) allPoints.add(searchPoint);
-    allPoints.addAll(techPoints.map((t) => LatLng(t.latitude!, t.longitude!)));
+    allPoints.addAll(
+        techPoints.map((t) => LatLng(t.latitude!, t.longitude!)));
 
     if (allPoints.isEmpty) return;
     if (allPoints.length == 1) {
@@ -175,7 +189,6 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     );
   }
 
-  /// Slides the bottom card list so the chosen fundi's card is visible.
   void _scrollCardIntoView(int techId) {
     if (!_bottomScrollController.hasClients) return;
     final index = _lastSorted.indexWhere((t) => t.id == techId);
@@ -224,7 +237,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       );
     } else {
       url = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=${destination.latitude},${destination.longitude}',
+        'https://www.google.com/maps/search/?api=1'
+            '&query=${destination.latitude},${destination.longitude}',
       );
     }
 
@@ -245,7 +259,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     }
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────
+  // ==============================================================
+  // BUILD
+  // ==============================================================
+
   @override
   Widget build(BuildContext context) {
     final techProvider = context.watch<TechnicianProvider>();
@@ -260,13 +277,12 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         .where((t) => t.latitude != null && t.longitude != null)
         .toList();
 
-    // Cache sorting: only re-sort when the technician list identity changes.
+    // Cache sorting: only re-sort when the list identity changes
     if (!identical(techPoints, _cachedSourceTechs)) {
       _cachedSourceTechs = techPoints;
       _cachedSortedTechs = [...techPoints]..sort(Technician.byRank);
     }
     final sortedTechs = _cachedSortedTechs;
-
     _lastSorted = sortedTechs;
 
     final LatLng center;
@@ -292,9 +308,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 17),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
         ),
         elevation: 0,
         backgroundColor: AppTheme.primary,
@@ -302,8 +319,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         leading: IconButton(
-          icon:
-          const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -316,7 +333,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       ),
       body: techProvider.isLoading
           ? const Center(
-          child: CircularProgressIndicator(color: AppTheme.primary))
+        child: CircularProgressIndicator(color: AppTheme.primary),
+      )
           : techPoints.isEmpty
           ? _buildEmptyState(context, theme)
           : _buildMap(
@@ -351,8 +369,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             Text(
               'Try another location or a different service',
               textAlign: TextAlign.center,
-              style:
-              theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.hintColor),
             ),
           ],
         ),
@@ -373,7 +391,6 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     final ink = _ink(theme);
     final safeBottom = mq.padding.bottom;
 
-    // Responsive card width, remembered so the list can scroll to a card.
     final cardWidth = (mq.size.width * 0.78).clamp(250.0, 320.0);
     _lastCardWidth = cardWidth;
 
@@ -381,13 +398,12 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     final cardsBottom = 26.0 + safeBottom;
     final controlsBottom = cardsHeight + cardsBottom + 14;
 
-    // Radius the server really used (it can widen automatically, max 100 km)
     final radiusKm =
         (techProvider.searchRadiusKm ?? _fallbackRadiusKm) * 1000.0;
 
     return Stack(
       children: [
-        // ── Map (isolated in a RepaintBoundary) ──────────────────────
+        // MAP
         RepaintBoundary(
           child: FlutterMap(
             mapController: _mapController,
@@ -405,8 +421,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.nearbyfundi',
+                urlTemplate:
+                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: _userAgentPackageName,
+                maxZoom: 19,
               ),
 
               if (searchPoint != null)
@@ -417,13 +435,13 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                       radius: radiusKm,
                       useRadiusInMeter: true,
                       color: AppTheme.primary.withValues(alpha: 0.04),
-                      borderColor: AppTheme.primary.withValues(alpha: 0.2),
+                      borderColor:
+                      AppTheme.primary.withValues(alpha: 0.2),
                       borderStrokeWidth: 1.5,
                     ),
                   ],
                 ),
 
-              // road lines from the picked point to each technician
               if (searchPoint != null)
                 PolylineLayer(
                   polylines: buildRoutePolylines(
@@ -444,7 +462,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                     _buildOriginPulse(searchPoint),
                     _buildOriginMarker(searchPoint),
                   ],
-                  // Drawn worst-to-best so the top picks sit on top.
+                  // Drawn worst-to-best so top picks sit on top
                   ...sortedTechs.reversed.map(
                         (tech) => _buildTechnicianMarker(
                       tech,
@@ -461,7 +479,9 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   TextSourceAttribution(
                     '© OpenStreetMap contributors',
                     onTap: () => launchUrl(
-                        Uri.parse('https://www.openstreetmap.org/copyright')),
+                      Uri.parse(
+                          'https://www.openstreetmap.org/copyright'),
+                    ),
                   ),
                 ],
               ),
@@ -469,14 +489,15 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           ),
         ),
 
-        // ── Top bar ───────────────────────────────────────────────────
+        // TOP INFO BAR
         Positioned(
           top: 12,
           left: 16,
           right: 16,
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
@@ -507,8 +528,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                     const SizedBox(
                       width: 14,
                       height: 14,
-                      child:
-                      CircularProgressIndicator(strokeWidth: 2, color: _gold),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _gold,
+                      ),
                     ),
                   ],
                 ],
@@ -517,7 +540,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           ),
         ),
 
-        // ── Map controls ──────────────────────────────────────────────
+        // MAP CONTROLS
         Positioned(
           right: 14,
           bottom: controlsBottom,
@@ -545,7 +568,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           ),
         ),
 
-        // ── HORIZONTAL LIST (best ranked first) ───────────────────────
+        // HORIZONTAL CARD LIST
         Positioned(
           left: 0,
           right: 0,
@@ -558,9 +581,9 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 itemCount: sortedTechs.length,
-                // Keep a few cards cached off-screen for smoother scrolling.
                 cacheExtent: 400,
-                separatorBuilder: (_, __) => const SizedBox(width: _cardGap),
+                separatorBuilder: (_, __) =>
+                const SizedBox(width: _cardGap),
                 itemBuilder: (context, index) {
                   final tech = sortedTechs[index];
                   final isSelected = _selectedTechId == tech.id;
@@ -582,7 +605,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     );
   }
 
-  // ── Origin ──────────────────────────────────────────────────────────────
+  // ==============================================================
+  // ORIGIN MARKERS
+  // ==============================================================
+
   Marker _buildOriginPulse(LatLng point) {
     return Marker(
       point: point,
@@ -628,7 +654,9 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             size: 40,
             shadows: [
               Shadow(
-                  color: Colors.black.withValues(alpha: 0.3), blurRadius: 6),
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 6,
+              ),
             ],
           ),
           Container(
@@ -640,9 +668,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             child: const Text(
               'You',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800),
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -650,7 +679,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     );
   }
 
-  // ── Map Marker ──────────────────────────────────────────────────────────
+  // ==============================================================
+  // TECHNICIAN MARKER
+  // ==============================================================
+
   Marker _buildTechnicianMarker(
       Technician tech,
       LatLng? searchPoint, {
@@ -696,7 +728,6 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   child: Image.network(
                     ImageUtils.getFullImageUrl(tech.profilePhoto!),
                     fit: BoxFit.cover,
-                    // Limit decode size to reduce memory usage.
                     cacheWidth: 96,
                     cacheHeight: 96,
                     errorBuilder: (_, __, ___) => const Icon(
@@ -711,7 +742,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
               ),
               const SizedBox(height: 5),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isSelected ? _gold : AppTheme.primary,
                   borderRadius: BorderRadius.circular(10),
@@ -739,7 +771,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     );
   }
 
-  // ── HORIZONTAL CARD ─────────────────────────────────────────────────────
+  // ==============================================================
+  // HORIZONTAL CARD
+  // ==============================================================
+
   Widget _buildHorizontalCard(
       Technician tech,
       int position,
@@ -777,7 +812,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         ),
         child: Row(
           children: [
-            // Avatar with rank badge
+            // Avatar + rank badge
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -813,8 +848,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   left: -4,
                   top: -4,
                   child: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 1.5),
                     decoration: BoxDecoration(
                       color: isTop ? _gold : AppTheme.primary,
                       borderRadius: BorderRadius.circular(8),
@@ -913,7 +948,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
 
             const SizedBox(width: 6),
 
-            // Actions: profile + directions
+            // Actions
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -954,7 +989,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                       onTap: () => _openDirectionsInGoogleMaps(
                         context,
                         origin: searchPoint,
-                        destination: LatLng(tech.latitude!, tech.longitude!),
+                        destination:
+                        LatLng(tech.latitude!, tech.longitude!),
                       ),
                       child: const SizedBox(
                         width: 38,
@@ -1004,6 +1040,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     );
   }
 }
+
+// ================================================================
+// MAP CONTROL BUTTON
+// ================================================================
 
 class _MapControlButton extends StatelessWidget {
   final IconData icon;

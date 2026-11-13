@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_routes.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
 import '../../providers/settings_provider.dart';
@@ -93,56 +92,7 @@ class LanguageSheet extends StatelessWidget {
                   settings.setLocale(Locale(o.code));
                 },
               ),
-            const SizedBox(height: 4),
-            Material(
-              color: isDark
-                  ? AppTheme.darkSurfaceLight
-                  : AppTheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(18),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: () {
-                  // Grab the navigator first, then close the sheet and open
-                  // settings, so no context is used after the pop.
-                  final nav = Navigator.of(context);
-                  nav.pop();
-                  nav.pushNamed(AppRoutes.settings);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(13),
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.12)
-                              : Colors.white,
-                        ),
-                        child: Icon(Icons.settings_rounded,
-                            color: textColor, size: 21),
-                      ),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Text(
-                          t.settings,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded, color: textColor),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            // The Settings menu block has been removed from here.
           ],
         ),
       ),
@@ -169,18 +119,18 @@ class _FlagBadge extends StatelessWidget {
     final textColor = isDark ? Colors.white : AppTheme.primary;
 
     Widget fallback() => Container(
-          color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
-          alignment: Alignment.center,
-          child: Text(
-            option.badge,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-              color: textColor,
-            ),
-          ),
-        );
+      color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.white,
+      alignment: Alignment.center,
+      child: Text(
+        option.badge,
+        style: TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.4,
+          color: textColor,
+        ),
+      ),
+    );
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),

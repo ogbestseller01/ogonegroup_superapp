@@ -1,11 +1,16 @@
 plugins {
     id("com.android.application")
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.example.og_one_super"
-    compileSdk = 37
+
+    // API 36 = Android 16 (latest stable as of 2025).
+    // API 37 does not exist yet — building against it will fail.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -17,7 +22,7 @@ android {
     defaultConfig {
         applicationId = "com.example.og_one_super"
         minSdk = flutter.minSdkVersion
-        targetSdk = 37
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
@@ -25,8 +30,10 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
+            // TODO: Replace with a real release keystore before publishing.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

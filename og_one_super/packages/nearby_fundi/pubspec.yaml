@@ -66,7 +66,7 @@ dependencies:
   youtube_player_flutter: ^9.1.1
   url_launcher: ^6.3.0
   cryptography: ^2.7.0
-  flutter_secure_storage: ^10.0.0    # ← 从 9.2.2 升级到 10.0.0
+  flutter_secure_storage: ^10.0.0
 
   # ---- Firebase & Notifications ----
   firebase_core: ^4.10.0

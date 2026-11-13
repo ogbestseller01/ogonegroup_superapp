@@ -49,10 +49,12 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <!-- ============================================================
-         NOTIFICATIONS
+         NOTIFICATIONS (FCM)
          ============================================================ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- ============================================================
          OEM APP BADGES
@@ -111,9 +113,29 @@
         <!-- ========================================================
              FCM CONFIGURATION
              ======================================================== -->
+
+        <!-- Flutter embedding (keep) -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Default notification channel for system_update pushes.
+             MUST match 'channel_id' sent from the Laravel FcmService
+             (fundi_channel). Without this, Android 8+ silently drops
+             notifications that arrive from the backend. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="fundi_channel" />
+
+        <!-- Default icon shown in the tray (uses your launcher icon). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <!-- Accent color for the notification (optional, Android 8+). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@android:color/white" />
 
     </application>
 

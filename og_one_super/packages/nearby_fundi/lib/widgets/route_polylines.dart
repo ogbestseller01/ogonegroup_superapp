@@ -1,4 +1,8 @@
 // lib/widgets/route_polylines.dart
+//
+// Builds the road lines from the search origin to technicians.
+// Selected technician is drawn last so it sits on top.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
@@ -39,7 +43,7 @@ Polyline _lineFor(
     Color lineColor,
     Color selectedColor,
     ) {
-  // Road servers unreachable: thin faded line, clearly not a road route.
+  // Fallback (no real road geometry): thin faded line
   if (!route.isRoad) {
     return Polyline(
       points: route.points,

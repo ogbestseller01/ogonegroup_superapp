@@ -6,22 +6,31 @@ import '../../../config/app_theme.dart';
 import '../core/app_launcher.dart';
 import '../core/dash_theme.dart';
 import '../../../widgets/dash_header.dart';
-import '../../../widgets/language_sheet.dart';
 
-/// Account: only the two menus the super app needs.
-/// Everything else (theme, notifications, help, about...) already lives
-/// in the Settings screen.
+// Static pages moved from Settings to Account
+import '../../settings/staticpages/about_screen.dart';
+import '../../settings/staticpages/contact_screen.dart';
+import '../../settings/staticpages/faq_screen.dart';
+import '../../settings/staticpages/feedback_screen.dart';
+import '../../settings/staticpages/privacy_screen.dart';
+import '../../settings/staticpages/terms_screen.dart';
+import '../../system_updates/system_updates_list_screen.dart';
+
+/// Account tab: Settings, System Updates, and all Static Pages.
 class AccountTab extends StatelessWidget {
   final VoidCallback onMenu;
 
   const AccountTab({super.key, required this.onMenu});
+
+  void _go(BuildContext context, Widget page) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final t = context.t;
     final layout = DashGrid.of(context);
-    final lang = Localizations.localeOf(context).languageCode.toUpperCase();
 
     return CustomScrollView(
       physics:
@@ -40,18 +49,77 @@ class AccountTab extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(layout.hPad, 20, layout.hPad, 28),
           sliver: SliverList.list(
             children: [
+              // ========== MAIN MENU ==========
               _Group(isDark: isDark, tiles: [
-                _Tile(
-                  icon: Icons.language_rounded,
-                  title: t.language,
-                  trailingText: lang,
-                  onTap: () => showLanguageSheet(context),
-                ),
                 _Tile(
                   icon: Icons.settings_rounded,
                   title: t.settings,
                   onTap: () =>
                       Navigator.of(context).pushNamed(AppRoutes.settings),
+                ),
+                _Tile(
+                  icon: Icons.campaign_rounded,
+                  title: t.systemUpdates,
+                  onTap: () => _go(context, const SystemUpdatesListScreen()),
+                ),
+              ]),
+
+              const SizedBox(height: 20),
+
+              // ========== PRIVACY & DATA ==========
+              _Group(isDark: isDark, tiles: [
+                _Tile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: t.privacyPolicy,
+                  onTap: () => _go(context, const PrivacyScreen()),
+                ),
+              ]),
+
+              const SizedBox(height: 20),
+
+              // ========== HELP & FEEDBACK ==========
+              _Group(isDark: isDark, tiles: [
+                _Tile(
+                  icon: Icons.help_outline_rounded,
+                  title: t.helpCenter,
+                  onTap: () => _go(context, const FaqScreen()),
+                ),
+                _Tile(
+                  icon: Icons.contact_support_rounded,
+                  title: t.contactUs,
+                  onTap: () => _go(context, const ContactScreen()),
+                ),
+                _Tile(
+                  icon: Icons.feedback_outlined,
+                  title: t.sendFeedback,
+                  onTap: () => _go(context, const FeedbackScreen()),
+                ),
+              ]),
+
+              const SizedBox(height: 20),
+
+              // ========== ABOUT & SUPPORT ==========
+              _Group(isDark: isDark, tiles: [
+                _Tile(
+                  icon: Icons.info_outline_rounded,
+                  title: t.about,
+                  onTap: () => _go(context, const AboutScreen()),
+                ),
+                _Tile(
+                  icon: Icons.description_outlined,
+                  title: t.termsConditions,
+                  onTap: () => _go(context, const TermsScreen()),
+                ),
+                _Tile(
+                  icon: Icons.star_outline_rounded,
+                  title: t.rateApp,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Rate App feature coming soon!'),
+                      ),
+                    );
+                  },
                 ),
               ]),
             ],

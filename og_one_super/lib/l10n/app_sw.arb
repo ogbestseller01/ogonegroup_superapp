@@ -19,6 +19,26 @@
     "placeholders": { "name": { "type": "String" } }
   },
 
+    "systemUpdatesTitle": "Taarifa za Mfumo",
+    "systemUpdatesEmpty": "Hakuna taarifa bado",
+    "systemUpdatesEmptySub": "Umeshafika mwisho. Taarifa mpya zitaonekana hapa.",
+    "systemUpdatesMarkAllRead": "Weka zote kama zimesomwa",
+    "systemUpdatesDismiss": "Ondoa",
+    "systemUpdatesMore": "+{count} zaidi",
+    "@systemUpdatesMore": {
+      "placeholders": {
+        "count": { "type": "int" }
+      }
+    },
+    "systemUpdatesSeeAll": "Tazama zote",
+    "systemUpdatesPublishedOn": "Imetangazwa {date}",
+    "@systemUpdatesPublishedOn": {
+      "placeholders": {
+        "date": { "type": "String" }
+      }
+    },
+    "systemUpdatesPullToRefresh": "Vuta kusasisha",
+
   "nearbyFundi": "NearbyFundi",
   "fundiApp": "Fundi App",
   "msosi": "Msosi Chap Chap",

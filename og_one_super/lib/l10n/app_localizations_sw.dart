@@ -30,6 +30,38 @@ class AppLocalizationsSw extends AppLocalizations {
   String get swahili => 'Kiswahili';
 
   @override
+  String get systemUpdatesTitle => 'Taarifa za Mfumo';
+
+  @override
+  String get systemUpdatesEmpty => 'Hakuna taarifa bado';
+
+  @override
+  String get systemUpdatesEmptySub =>
+      'Umeshafika mwisho. Taarifa mpya zitaonekana hapa.';
+
+  @override
+  String get systemUpdatesMarkAllRead => 'Weka zote kama zimesomwa';
+
+  @override
+  String get systemUpdatesDismiss => 'Ondoa';
+
+  @override
+  String systemUpdatesMore(int count) {
+    return '+$count zaidi';
+  }
+
+  @override
+  String get systemUpdatesSeeAll => 'Tazama zote';
+
+  @override
+  String systemUpdatesPublishedOn(String date) {
+    return 'Imetangazwa $date';
+  }
+
+  @override
+  String get systemUpdatesPullToRefresh => 'Vuta kusasisha';
+
+  @override
   String get chooseService => 'Chagua huduma unayotaka kuendelea';
 
   @override

@@ -650,15 +650,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
-                  _ModernDrawerItem(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    label: l10n.chat,
-                    ink: _ink(theme),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _openChat();
-                    },
-                  ),
+                  // 👇 Chat menu item removed from drawer.
+                  // Chat is still accessible from the top AppBar.
                   _ModernDrawerItem(
                     icon: Icons.confirmation_number_outlined,
                     label: l10n.tickets,
@@ -832,7 +825,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       actions: [
-        // ── Chat icon with badge ──
+        // ── Chat icon with badge (Kept exactly as requested) ──
         Consumer<ChatProvider>(
           builder: (context, chat, _) {
             final unread = chat.totalUnread;

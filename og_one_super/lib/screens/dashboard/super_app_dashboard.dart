@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_strings.dart';
 import '../../providers/banner_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/system_update_provider.dart';
 import '../../services/mini_app_service.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'core/app_usage_provider.dart';
@@ -28,6 +29,8 @@ class SuperAppDashboard extends StatelessWidget {
         // BannerProvider is also available from main; this ensures it exists
         // even if main is not updated yet.
         ChangeNotifierProvider(create: (_) => BannerProvider()..fetchBanners()),
+        // System updates shown as a dismissible card at the top of Home.
+        ChangeNotifierProvider(create: (_) => SystemUpdateProvider()..load()),
       ],
       child: const _DashboardShell(),
     );
@@ -63,8 +66,8 @@ class _DashboardShellState extends State<_DashboardShell> {
     try {
       await Future.wait([
         MiniAppService.instance.refresh(),
-        // banners are already fetched in SuperAppDashboard create,
-        // but we can refresh again safely if needed
+        // banners and system updates are already fetched in
+        // SuperAppDashboard create, but we can refresh again safely if needed
         Future<void>.delayed(const Duration(milliseconds: 600)),
       ]);
     } catch (_) {}

@@ -5,13 +5,12 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/service_provider.dart';
 import '../providers/request_provider.dart';
-import '../providers/technician_provider.dart';
 import '../models/technician.dart';
 import '../models/service.dart';
 import '../config/app_theme.dart';
 import '../services/location_service.dart';
 import '../utils/auth_guard.dart';
-import '../utils/contact_validator.dart'; // IMPORT THE VALIDATOR
+import '../utils/contact_validator.dart';
 
 class RequestDialog extends StatefulWidget {
   final Technician technician;
@@ -41,7 +40,7 @@ class _RequestDialogState extends State<RequestDialog> {
   String _locale = 'en';
   bool _localeReady = false;
 
-  // Job location (searched place, or GPS)
+  // Job location (GPS only)
   double? _lat;
   double? _lng;
   String? _locationLabel;
@@ -54,18 +53,6 @@ class _RequestDialogState extends State<RequestDialog> {
     // Only one service? Pre-select it.
     final services = widget.technician.serviceObjects;
     if (services.length == 1) _selectedServiceId = services.first.id;
-
-    // Use the place the customer searched from as the job location.
-    try {
-      final tp = context.read<TechnicianProvider>();
-      if (tp.hasSearchOrigin) {
-        _lat = tp.searchLat;
-        _lng = tp.searchLng;
-        _locationLabel = tp.searchPlace ?? 'Searched location';
-      }
-    } catch (_) {
-      // provider not in tree (wrong navigator) – location stays empty
-    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _loadData();

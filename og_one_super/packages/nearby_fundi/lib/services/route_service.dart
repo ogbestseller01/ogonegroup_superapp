@@ -111,6 +111,27 @@ class RouteService {
     return _straight(origin, destination, fallbackKm);
   }
 
+  /// Convenience wrapper for a single route.
+  ///
+  /// Reuses [fetch] (and therefore the same LRU cache), so a route fetched
+  /// here is instantly available to NearbyScreen / NearbyMapScreen and
+  /// vice-versa with zero extra network calls.
+  ///
+  /// Returns `null` only if [isCancelled] is true when it completes. In every
+  /// other case — including road-server outages — it returns a
+  /// [TechnicianRouteData] (with `isRoad: false` for the straight-line
+  /// fallback), matching the contract of [fetch].
+  Future<TechnicianRouteData?> fetchOne({
+    required LatLng origin,
+    required LatLng destination,
+    double fallbackKm = 0,
+    bool Function()? isCancelled,
+  }) async {
+    final route = await fetch(origin, destination, fallbackKm: fallbackKm);
+    if (isCancelled?.call() ?? false) return null;
+    return route;
+  }
+
   Future<TechnicianRouteData?> _fromServer(
       String server,
       LatLng origin,

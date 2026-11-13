@@ -4,14 +4,15 @@ allprojects {
         mavenCentral()
     }
 
-    subprojects {
-        afterEvaluate {
-            extensions.findByName("android")?.let { android ->
-                val ext = android as com.android.build.gradle.BaseExtension
-                ext.compileSdkVersion(37)
-            }
-        }
-    }
+    // ⚠️ DO NOT force compileSdkVersion(37) on every subproject — it will
+    // break plugins that haven't been updated for API 37 (which doesn't
+    // exist yet). Let each plugin use its own compileSdk.
+}
+
+// Declare the Google services plugin once (no `apply` here).
+// The `app` module applies it via `id("com.google.gms.google-services")`.
+plugins {
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 val newBuildDir: Directory =

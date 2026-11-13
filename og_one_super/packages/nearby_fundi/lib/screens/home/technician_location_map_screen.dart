@@ -1,24 +1,27 @@
-// FILE: lib/screens/home/technician_location_map_screen.dart
-// Single technician location + route map
-// Clean, modern, consistent with NearbyScreen design language
+// lib/screens/home/technician_location_map_screen.dart
+//
+// Single technician location + driving route map.
+// Design language matches NearbyScreen.
 
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../providers/technician_provider.dart';
-import '../../models/technician.dart';
+
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/technician.dart';
+import '../../providers/technician_provider.dart';
 import '../../utils/image_utils.dart';
 import '../../widgets/safe_network_image.dart';
-import '../../l10n/app_localizations.dart';
 
 // ================================================================
-// UI HELPERS (match NearbyScreen)
+// UI HELPERS
 // ================================================================
 
 const Color _gold = Color(0xFFF2B93B);
@@ -54,8 +57,12 @@ class _TechnicianLocationMapScreenState
     extends State<TechnicianLocationMapScreen> {
   final MapController _mapController = MapController();
 
+  // IMPORTANT: use your real package name (not com.example.*)
+  static const String _userAgentPackageName = 'com.yourcompany.nearbyfundi';
+
   static const double _minZoom = 4;
   static const double _maxZoom = 18;
+  static const double _initialZoom = 14.0;
 
   List<LatLng> _routePoints = [];
   bool _isLoadingRoute = false;
@@ -63,8 +70,6 @@ class _TechnicianLocationMapScreenState
   double? _osrmDurationMin;
 
   bool _mapReady = false;
-
-  // A fit requested before the map was ready is applied in onMapReady
   bool _pendingFit = false;
   LatLng? _fitOrigin;
   LatLng? _fitDestination;
@@ -75,8 +80,7 @@ class _TechnicianLocationMapScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _fetchOsrmRoute();
+      if (mounted) _fetchOsrmRoute();
     });
   }
 
@@ -98,8 +102,7 @@ class _TechnicianLocationMapScreenState
     final destination = _fitDestination;
     if (_pendingFit && origin != null && destination != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _fitRouteBounds(origin, destination);
+        if (mounted) _fitRouteBounds(origin, destination);
       });
     }
   }
@@ -143,7 +146,7 @@ class _TechnicianLocationMapScreenState
 
         if (routes is List && routes.isNotEmpty) {
           final route = routes.first as Map;
-          final coordinates = (route['geometry']['coordinates'] as List);
+          final coordinates = route['geometry']['coordinates'] as List;
 
           points = coordinates
               .map<LatLng>((c) => LatLng(
@@ -157,13 +160,13 @@ class _TechnicianLocationMapScreenState
         }
       }
     } catch (e) {
-      debugPrint('Error fetching OSRM route: $e');
+      debugPrint('OSRM route error: $e');
     }
 
     if (!mounted) return;
 
     setState(() {
-      // Straight line when the routing service is unreachable
+      // Fallback to straight line when routing fails
       _routePoints = (points != null && points.isNotEmpty)
           ? points
           : [origin, destination];
@@ -191,7 +194,7 @@ class _TechnicianLocationMapScreenState
     _mapController.fitCamera(
       CameraFit.bounds(
         bounds: LatLngBounds.fromPoints(points),
-        // Extra room at the bottom for the technician card
+        // Extra bottom padding for the technician card
         padding: const EdgeInsets.fromLTRB(50, 90, 50, 270),
         maxZoom: 16,
       ),
@@ -211,7 +214,8 @@ class _TechnicianLocationMapScreenState
   void _zoomBy(double delta) {
     if (!_mapReady) return;
     final camera = _mapController.camera;
-    final newZoom = (camera.zoom + delta).clamp(_minZoom, _maxZoom).toDouble();
+    final newZoom =
+    (camera.zoom + delta).clamp(_minZoom, _maxZoom).toDouble();
     _mapController.move(camera.center, newZoom);
   }
 
@@ -345,7 +349,6 @@ class _TechnicianLocationMapScreenState
     final displayKm = _osrmDistanceKm ??
         (technician.distanceKm > 0 ? technician.distanceKm : fallbackKm);
 
-    const initialZoom = 14.0;
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmall = screenWidth < 400;
 
@@ -389,7 +392,7 @@ class _TechnicianLocationMapScreenState
               mapController: _mapController,
               options: MapOptions(
                 initialCenter: destination,
-                initialZoom: initialZoom,
+                initialZoom: _initialZoom,
                 minZoom: _minZoom,
                 maxZoom: _maxZoom,
                 onMapReady: _onMapReady,
@@ -398,7 +401,8 @@ class _TechnicianLocationMapScreenState
                 TileLayer(
                   urlTemplate:
                   'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.nearbyfundi',
+                  userAgentPackageName: _userAgentPackageName,
+                  maxZoom: 19,
                 ),
                 if (hasOrigin && _routePoints.isNotEmpty)
                   PolylineLayer(
@@ -524,7 +528,7 @@ class _TechnicianLocationMapScreenState
                 _MapControlButton(
                   icon: Icons.my_location_rounded,
                   tooltip: 'Recenter',
-                  onPressed: () => _recenter(destination, initialZoom),
+                  onPressed: () => _recenter(destination, _initialZoom),
                   highlighted: true,
                 ),
               ],
@@ -569,8 +573,11 @@ class _TechnicianLocationMapScreenState
                             shape: BoxShape.circle,
                             color: _gold,
                           ),
-                          child: _buildAvatar(technician,
-                              size: 46, iconSize: 23),
+                          child: _buildAvatar(
+                            technician,
+                            size: 46,
+                            iconSize: 23,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -582,8 +589,8 @@ class _TechnicianLocationMapScreenState
                                   Flexible(
                                     child: Text(
                                       technician.name,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
+                                      style:
+                                      theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w800,
                                         fontSize: isSmall ? 14.5 : 15.5,
                                         color: _ink(context),
@@ -612,8 +619,8 @@ class _TechnicianLocationMapScreenState
                                     Flexible(
                                       child: Text(
                                         technician.area!,
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(
+                                        style:
+                                        theme.textTheme.bodySmall?.copyWith(
                                           color: theme.hintColor,
                                           fontSize: 12,
                                         ),
@@ -668,14 +675,14 @@ class _TechnicianLocationMapScreenState
                             icon: const Icon(Icons.person_rounded, size: 17),
                             label: Text(
                               l10n.viewProfile,
-                              style:
-                              TextStyle(fontSize: isSmall ? 12.5 : 13.5),
+                              style: TextStyle(
+                                  fontSize: isSmall ? 12.5 : 13.5),
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppTheme.primary,
                               side: BorderSide(
-                                  color:
-                                  AppTheme.primary.withValues(alpha: 0.35)),
+                                  color: AppTheme.primary
+                                      .withValues(alpha: 0.35)),
                               padding: EdgeInsets.symmetric(
                                   vertical: isSmall ? 11 : 12),
                               shape: RoundedRectangleBorder(
@@ -700,8 +707,8 @@ class _TechnicianLocationMapScreenState
                             label: Text(
                               hasOrigin ? l10n.directions : 'Maps',
                               overflow: TextOverflow.ellipsis,
-                              style:
-                              TextStyle(fontSize: isSmall ? 12.5 : 13.5),
+                              style: TextStyle(
+                                  fontSize: isSmall ? 12.5 : 13.5),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primary,
@@ -797,7 +804,8 @@ class _TechnicianLocationMapScreenState
       child: GestureDetector(
         onTap: () {
           final l10n = AppLocalizations.of(context)!;
-          _showTechnicianDetailSheet(context, origin, point, l10n, displayKm);
+          _showTechnicianDetailSheet(
+              context, origin, point, l10n, displayKm);
         },
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -896,7 +904,8 @@ class _TechnicianLocationMapScreenState
                       ),
                       const SizedBox(width: 3),
                       Icon(Icons.access_time_rounded,
-                          size: isSmall ? 9 : 10.5, color: AppTheme.primary),
+                          size: isSmall ? 9 : 10.5,
+                          color: AppTheme.primary),
                       const SizedBox(width: 1),
                       Text(
                         '~${_osrmDurationMin!.toStringAsFixed(0)}m',
@@ -1111,8 +1120,8 @@ class _TechnicianLocationMapScreenState
                                   Flexible(
                                     child: Text(
                                       technician.area!,
-                                      style:
-                                      theme.textTheme.bodyMedium?.copyWith(
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
                                         fontSize: isSmall ? 13 : 14,
                                         color: theme.hintColor,
                                       ),
@@ -1153,7 +1162,7 @@ class _TechnicianLocationMapScreenState
 
                 const SizedBox(height: 16),
 
-                // Stats row
+                // Stats
                 Row(
                   children: [
                     if (technician.rating > 0) ...[

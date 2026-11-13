@@ -114,7 +114,7 @@ class _JobsScreenState extends State<JobsScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                '${l10n.contact} ${job.technicianName}', // localized "Contact"
+                '${l10n.contact} ${job.technicianName}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -129,7 +129,7 @@ class _JobsScreenState extends State<JobsScreen> {
           children: [
             if (!hasPhone && !hasEmail)
               Text(
-                l10n.noContactDetails, // Added new key
+                l10n.noContactDetails,
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
@@ -209,7 +209,7 @@ class _JobsScreenState extends State<JobsScreen> {
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('$label ${l10n.copy}'), // localized "copied"
+                  content: Text('$label ${l10n.copy}'),
                   duration: const Duration(seconds: 1),
                 ),
               );
@@ -328,9 +328,9 @@ class _JobsScreenState extends State<JobsScreen> {
               const SizedBox(width: 8),
               _chip(Job.pendingStatus, l10n.statusPending),
               const SizedBox(width: 8),
-              _chip(Job.onProgressStatus, l10n.statusInProgress), // New key
+              _chip(Job.onProgressStatus, l10n.statusInProgress),
               const SizedBox(width: 8),
-              _chip(Job.completedStatus, l10n.statusCompleted), // New key
+              _chip(Job.completedStatus, l10n.statusCompleted),
             ],
           ),
         ),
@@ -364,7 +364,7 @@ class _JobsScreenState extends State<JobsScreen> {
                 icon: Icons.check_circle_outline_rounded,
                 iconColor: Colors.green.shade700,
                 value: inProgressCount,
-                label: l10n.statusInProgress, // Replaced hardcoded 'In Progress'
+                label: l10n.statusInProgress,
                 theme: theme,
               ),
             ),
@@ -381,7 +381,7 @@ class _JobsScreenState extends State<JobsScreen> {
           const SizedBox(height: 12),
           Center(
             child: Text(
-              l10n.noJobsMatchFilter, // New key
+              l10n.noJobsMatchFilter,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w600,
@@ -424,7 +424,7 @@ class _JobsScreenState extends State<JobsScreen> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: l10n.filterByFundiOrService, // Using existing key
+          hintText: l10n.filterByFundiOrService,
           hintStyle: TextStyle(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
             fontSize: 14,
@@ -737,7 +737,7 @@ class _JobsScreenState extends State<JobsScreen> {
                         onPressed: () => _rate(job),
                         icon: const Icon(Icons.star_rounded, size: 18),
                         label: Text(
-                          l10n.rateThisJob, // Added new key
+                          l10n.rateThisJob,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -801,16 +801,18 @@ class _JobsScreenState extends State<JobsScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _showContactDialog(job, l10n),
+                    // 👇 Faded and disabled as requested
+                    onPressed: null,
                     icon: const Icon(Icons.contact_phone_rounded, size: 18),
                     label: Text(
-                      l10n.contactFundi, // Added new key
+                      l10n.contactFundi,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primary,
+                      // Faded colors for the disabled state
+                      disabledForegroundColor: AppTheme.primary.withValues(alpha: 0.4),
                       side: BorderSide(
-                          color: AppTheme.primary.withValues(alpha: 0.4)),
+                          color: AppTheme.primary.withValues(alpha: 0.15)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),

@@ -1,46 +1,46 @@
-// FILE: lib/screens/home/nearby_screen.dart
+// lib/screens/home/nearby_screen.dart
+//
 // Nearby Fundi - clean, borderless UI (login-guarded actions + road routes)
 // Search is strictly "nearby": 15 km first, widening up to 100 km max.
 // Results are ranked by the server (rating, jobs, requests, reviews,
 // post likes/comments, proximity).
 //
-// Performance notes:
-// - One shared search pipeline (map picker, typed place, suggestion, retry)
-// - Suggestion coordinates are reused (no second server-side geocode)
-// - Reused HTTP client + small LRU cache for place suggestions
-// - Ranked list, markers and polylines are cached and rebuilt only when
-//   their inputs change (typing in the search box no longer rebuilds them)
-// - Route results are applied in throttled batches (not one setState each)
-// - Map is fitted as soon as results arrive (before routes finish)
-// - Pulse animation only runs while a search origin is on the map
-// - Avatars are decoded at display size (cacheWidth) and a failed image URL
-//   (404) is requested only once (SafeNetworkImage)
-// - RepaintBoundary isolation (map, markers, carousel, search panel)
+// Map lifecycle (fixes "MapCamera is no longer within the cameraConstraint
+// after an option change"):
+// - MapOptions is built EXACTLY ONCE (first frame). Later origin changes go
+//   through _mapController.move(), never through a rebuilt MapOptions.
+// - Every move / fit / zoom is routed through _applyCamera(), which clamps
+//   the camera to TanzaniaMap before touching the controller.
+// - fitCamera() is only called with minZoom >= TanzaniaMap.minZoom and bounds
+//   pre-clamped to Tanzania, so its result is always in-constraint.
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../models/service.dart';
-import '../../models/technician.dart';
-import '../../providers/technician_provider.dart';
-import '../../providers/service_provider.dart';
-import '../../providers/settings_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
+import '../../config/tanzania_map.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/image_utils.dart';
-import '../../utils/auth_guard.dart';
+import '../../models/service.dart';
+import '../../models/technician.dart';
+import '../../providers/service_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../providers/technician_provider.dart';
 import '../../services/route_service.dart';
+import '../../utils/auth_guard.dart';
+import '../../utils/image_utils.dart';
 import '../../widgets/route_polylines.dart';
 import '../../widgets/safe_network_image.dart';
-import 'nearby_map_screen.dart';
 import 'map_location_picker_screen.dart';
+import 'nearby_map_screen.dart';
 
 // ================================================================
 // RESPONSIVE CONSTANTS
@@ -102,15 +102,16 @@ class ResponsiveConstants {
 // ================================================================
 
 class NearbyConstants {
-  // Geographic centre of Tanzania (near Dodoma)
-  static const LatLng defaultMapCenter = LatLng(-6.3690, 34.8888);
+  // IMPORTANT: use your real package name (not com.example.*)
+  static const String userAgentPackageName = 'com.yourcompany.nearbyfundi';
+
+  static const LatLng defaultMapCenter = TanzaniaMap.center;
 
   static const int maxHistoryEntries = 10;
   static const int recommendedCount = 2;
   static const int maxRouteTargets = 10;
   static const int routeFetchBatchSize = 4;
 
-  // Matches the backend: never more than 100 km
   static const int defaultRadiusKm = 15;
   static const int maxRadiusKm = 100;
   static const List<int> expandSteps = [15, 25, 50, 75, 100];
@@ -149,14 +150,13 @@ class NearbyStrings {
       'Search failed. Please check your connection and try again.';
 }
 
-// Messages shown in the "create account" modal
 const String _kSearchLoginMessage =
     'Sign in or create an account to search for fundis near you.';
 const String _kFilterLoginMessage =
     'Sign in or create an account to filter fundis by service.';
 
 // ================================================================
-// UI HELPERS (visual only)
+// UI HELPERS
 // ================================================================
 
 const Color _gold = Color(0xFFF2B93B);
@@ -174,10 +174,8 @@ Color _softFill(BuildContext context) => _isDark(context)
     ? Colors.white.withValues(alpha: 0.08)
     : const Color(0xFFF1F5F9);
 
-/// Gold text colour that stays readable in both themes.
 Color _goldText(BuildContext context) => _isDark(context) ? _gold : _goldInk;
 
-/// Lightens dark brand colours when the app is in dark mode.
 Color _tone(BuildContext context, Color color) {
   if (!_isDark(context)) return color;
   if (color == AppTheme.primary) return Colors.white;
@@ -189,7 +187,6 @@ Color _tone(BuildContext context, Color color) {
 // SMALL VALUE TYPES
 // ================================================================
 
-/// A place with known coordinates (from suggestions or the map picker).
 class _Place {
   final String name;
   final String full;
@@ -218,17 +215,25 @@ class NearbyScreen extends StatefulWidget {
 class _NearbyScreenState extends State<NearbyScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _serviceSearchController = TextEditingController();
+  final TextEditingController _serviceSearchController =
+  TextEditingController();
   final FocusNode _locationFocus = FocusNode();
   final ScrollController _serviceChipScrollController = ScrollController();
   final ScrollController _categoryChipScrollController = ScrollController();
   final ScrollController _carouselController = ScrollController();
   final MapController _mapController = MapController();
 
-  // One client for all place-suggestion requests (keep-alive connection)
   final http.Client _http = http.Client();
 
   late final AnimationController _pulseController;
+
+  // Stable interaction options — never recreate.
+  static const InteractionOptions _interactionOptions = InteractionOptions(
+    flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+  );
+
+  // MapOptions is built EXACTLY ONCE at mount.
+  MapOptions? _mapOptions;
 
   bool _mapReady = false;
   bool _isHeaderVisible = true;
@@ -245,17 +250,14 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   int _searchRadiusKm = NearbyConstants.defaultRadiusKm;
 
-  // Routes
   final Map<int, TechnicianRouteData> _routesData = {};
   int _routeRequestId = 0;
   int _routesVersion = 0;
   Timer? _routeFlushTimer;
 
-  // Search
   int _searchRequestId = 0;
-  _Place? _pickedPlace; // coordinates for the text currently in the field
+  _Place? _pickedPlace;
 
-  // History + suggestions
   SharedPreferences? _prefs;
   List<String> _searchHistory = [];
   List<_Place> _placeSuggestions = [];
@@ -267,20 +269,17 @@ class _NearbyScreenState extends State<NearbyScreen>
   Timer? _suggestionDebounce;
   int _suggestionRequestId = 0;
 
-  // Derived data cache (rebuilt only when technicians change)
   List<Technician> _rankedTechs = const [];
   Set<int> _recommendedIds = const {};
   Object? _techListRef;
   int _techHash = 0;
   int _techVersion = 0;
 
-  // Map layer caches
   List<Marker> _markerCache = const [];
   Object? _markerKey;
   List<Polyline> _polylineCache = const [];
   Object? _polylineKey;
 
-  // Carousel scrolling
   double _carouselCardWidth = 264;
   static const double _carouselGap = 10;
 
@@ -325,23 +324,72 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   // ==============================================================
-  // SAFE MAP CONTROL
+  // SAFE CAMERA APPLICATION
   // ==============================================================
 
-  void _moveMap(LatLng center, double zoom) {
+  LatLng _clampCenter(LatLng c) {
+    final b = TanzaniaMap.bounds;
+    return LatLng(
+      c.latitude.clamp(b.south, b.north),
+      c.longitude.clamp(b.west, b.east),
+    );
+  }
+
+  double _clampZoom(double z) =>
+      z.clamp(TanzaniaMap.minZoom, TanzaniaMap.maxZoom);
+
+  void _applyCamera(LatLng center, double zoom) {
     if (!_mapReady || !mounted) return;
-    _mapController.move(center, zoom);
+    _mapController.move(_clampCenter(center), _clampZoom(zoom));
   }
 
   void _zoomBy(double amount) {
     if (!_mapReady || !mounted) return;
-    final camera = _mapController.camera;
-    final zoom = (camera.zoom + amount).clamp(4.0, 18.0);
-    _mapController.move(camera.center, zoom);
+    final cam = _mapController.camera;
+    _applyCamera(cam.center, cam.zoom + amount);
+  }
+
+  void _fitBoundsSafely(LatLngBounds bounds, EdgeInsets padding) {
+    if (!_mapReady || !mounted) return;
+
+    final b = TanzaniaMap.bounds;
+    final sw = LatLng(
+      bounds.south.clamp(b.south, b.north),
+      bounds.west.clamp(b.west, b.east),
+    );
+    final ne = LatLng(
+      bounds.north.clamp(b.south, b.north),
+      bounds.east.clamp(b.west, b.east),
+    );
+
+    if (sw.latitude >= ne.latitude || sw.longitude >= ne.longitude) {
+      _applyCamera(TanzaniaMap.center, TanzaniaMap.defaultZoom);
+      return;
+    }
+
+    try {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: LatLngBounds(sw, ne),
+          padding: padding,
+          maxZoom: 16,
+          minZoom: TanzaniaMap.minZoom,
+        ),
+      );
+      final cam = _mapController.camera;
+      if (!TanzaniaMap.containsLatLng(cam.center) ||
+          cam.zoom < TanzaniaMap.minZoom ||
+          cam.zoom > TanzaniaMap.maxZoom) {
+        _applyCamera(TanzaniaMap.center, TanzaniaMap.defaultZoom);
+      }
+    } catch (e) {
+      debugPrint('fitCamera failed: $e');
+      _applyCamera(TanzaniaMap.center, TanzaniaMap.defaultZoom);
+    }
   }
 
   // ==============================================================
-  // PULSE (only runs while something pulses on the map)
+  // PULSE
   // ==============================================================
 
   void _syncPulse(bool needed) {
@@ -407,7 +455,6 @@ class _NearbyScreenState extends State<NearbyScreen>
   void _onLocationQueryChanged(String value) {
     final query = value.trim();
 
-    // Typing over a picked place invalidates its saved coordinates
     if (_pickedPlace != null && _pickedPlace!.name != query) {
       _pickedPlace = null;
     }
@@ -415,7 +462,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     _suggestionDebounce?.cancel();
 
     if (query.length < 2) {
-      _suggestionRequestId++; // drop any in-flight response
+      _suggestionRequestId++;
       setState(() {
         _placeSuggestions = [];
         _showSuggestions = _searchHistory.isNotEmpty;
@@ -424,7 +471,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       return;
     }
 
-    // Refreshes the clear (x) button
     setState(() {});
 
     _suggestionDebounce = Timer(
@@ -486,6 +532,7 @@ class _NearbyScreenState extends State<NearbyScreen>
           final lat = double.tryParse(value['lat']?.toString() ?? '');
           final lng = double.tryParse(value['lon']?.toString() ?? '');
           if (lat == null || lng == null) continue;
+          if (!TanzaniaMap.containsLatLng(LatLng(lat, lng))) continue;
 
           final display = value['display_name']?.toString() ?? '';
           places.add(_Place(
@@ -533,7 +580,9 @@ class _NearbyScreenState extends State<NearbyScreen>
     final lat = (result['lat'] as num?)?.toDouble();
     final lng = (result['lng'] as num?)?.toDouble();
 
-    if (lat == null || lng == null) {
+    if (lat == null ||
+        lng == null ||
+        !TanzaniaMap.containsLatLng(LatLng(lat, lng))) {
       _showErrorSnackBar('Invalid location selected. Please try again.');
       return;
     }
@@ -548,9 +597,6 @@ class _NearbyScreenState extends State<NearbyScreen>
   // SEARCH
   // ==============================================================
 
-  /// Search from whatever is in the location field. Uses saved
-  /// coordinates (suggestion / map picker) when they match the text,
-  /// otherwise lets the server geocode the place name.
   Future<void> _performSearch() async {
     if (!AuthGuard.ensure(context, message: _kSearchLoginMessage)) return;
 
@@ -569,13 +615,12 @@ class _NearbyScreenState extends State<NearbyScreen>
     await _runSearch(place: place, lat: picked?.lat, lng: picked?.lng);
   }
 
-  /// Single search pipeline shared by every entry point.
   Future<void> _runSearch({
     required String place,
     double? lat,
     double? lng,
   }) async {
-    if (_isSearching) return; // one search at a time
+    if (_isSearching) return;
 
     final requestId = ++_searchRequestId;
     _suggestionDebounce?.cancel();
@@ -589,7 +634,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       _resetRoutes();
     });
 
-    unawaited(_saveToHistory(place)); // not needed to start the search
+    unawaited(_saveToHistory(place));
 
     final techProvider = context.read<TechnicianProvider>();
     techProvider.clearTechnicians();
@@ -611,7 +656,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       return;
     }
 
-    // Show results immediately; routes fill in afterwards.
     _collapsePanelIfResults();
     _updateMapBounds();
     await _fetchRoutesForTechnicians();
@@ -650,7 +694,7 @@ class _NearbyScreenState extends State<NearbyScreen>
           );
         } catch (e) {
           debugPrint('Coordinate search failed: $e');
-          await byPlace(); // fallback
+          await byPlace();
         }
       } else {
         await byPlace();
@@ -715,7 +759,6 @@ class _NearbyScreenState extends State<NearbyScreen>
     _isFetchingRoutes = false;
   }
 
-  /// Stores a route and schedules ONE rebuild for a burst of routes.
   void _onRouteLoaded(int id, TechnicianRouteData route) {
     _routesData[id] = route;
     _routesVersion++;
@@ -735,7 +778,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final targets = _rankedValid(techProvider.technicians)
         .take(NearbyConstants.maxRouteTargets)
-        .where((t) => !_routesData.containsKey(t.id)) // skip cached routes
+        .where((t) => !_routesData.containsKey(t.id))
         .map((t) => RouteTarget(
       id: t.id,
       point: LatLng(t.latitude!, t.longitude!),
@@ -777,7 +820,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     _serviceSearchController.clear();
     _suggestionDebounce?.cancel();
     _suggestionRequestId++;
-    _searchRequestId++; // ignore any search still in flight
+    _searchRequestId++;
     _pickedPlace = null;
 
     setState(() {
@@ -795,7 +838,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     context.read<TechnicianProvider>().clearTechnicians();
     _locationFocus.unfocus();
-    _moveMap(NearbyConstants.defaultMapCenter, 5.5);
+    _applyCamera(TanzaniaMap.center, TanzaniaMap.defaultZoom);
   }
 
   // ==============================================================
@@ -809,33 +852,32 @@ class _NearbyScreenState extends State<NearbyScreen>
     if (!techProvider.hasSearchOrigin) return;
 
     final origin = LatLng(techProvider.searchLat!, techProvider.searchLng!);
+    final safeOrigin =
+    TanzaniaMap.containsLatLng(origin) ? origin : TanzaniaMap.center;
 
     final techPoints = techProvider.technicians
-        .where((t) => t.latitude != null && t.longitude != null)
+        .where((t) =>
+    t.latitude != null &&
+        t.longitude != null &&
+        TanzaniaMap.containsLatLng(LatLng(t.latitude!, t.longitude!)))
         .map((t) => LatLng(t.latitude!, t.longitude!))
         .toList();
 
     if (techPoints.isEmpty) {
-      _mapController.move(origin, 13);
+      _applyCamera(safeOrigin, 13);
       return;
     }
 
-    final bounds = LatLngBounds.fromPoints([origin, ...techPoints]);
+    final bounds = LatLngBounds.fromPoints([safeOrigin, ...techPoints]);
 
-    // Keep the markers clear of the search panel (top) and the carousel
-    // (bottom) without eating too much of a small screen.
     final height = MediaQuery.sizeOf(context).height;
     final topPadding =
     _isHeaderVisible ? (height * 0.34).clamp(120.0, 260.0) : 110.0;
     final bottomPadding = (height * 0.24).clamp(140.0, 200.0);
 
-    _mapController.fitCamera(
-      CameraFit.bounds(
-        bounds: bounds,
-        padding: EdgeInsets.fromLTRB(60, topPadding, 60, bottomPadding),
-        maxZoom: 16,
-        minZoom: 4,
-      ),
+    _fitBoundsSafely(
+      bounds,
+      EdgeInsets.fromLTRB(60, topPadding, 60, bottomPadding),
     );
   }
 
@@ -868,14 +910,13 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   List<ServiceCategory> _getCategoriesForSelectedService(
-      ServiceProvider provider,
-      ) {
+      ServiceProvider provider) {
     if (_selectedServiceId == null) return [];
     return provider.getCategoriesForService(_selectedServiceId!);
   }
 
   // ==============================================================
-  // RANKING (cached)
+  // RANKING
   // ==============================================================
 
   List<Technician> _rankedValid(List<Technician> technicians) {
@@ -885,7 +926,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       ..sort(Technician.byRank);
   }
 
-  /// Re-sorts only when the technician list really changed.
   void _syncDerived(List<Technician> technicians) {
     final hash = Object.hashAll(technicians.map((t) => Object.hash(
       t.id,
@@ -916,11 +956,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   // AVATAR
   // ==============================================================
 
-  Widget _buildAvatar(
-      Technician tech, {
-        double? size,
-        double? iconSize,
-      }) {
+  Widget _buildAvatar(Technician tech, {double? size, double? iconSize}) {
     final contextSize = size ?? ResponsiveConstants.getAvatarSize(context);
     final contextIconSize = iconSize ?? contextSize * 0.5;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -948,7 +984,6 @@ class _NearbyScreenState extends State<NearbyScreen>
         ],
       ),
       child: ClipOval(
-        // A missing file (404) is requested once, then the icon is shown
         child: SafeNetworkImage(
           url: tech.profilePhoto == null
               ? null
@@ -961,8 +996,6 @@ class _NearbyScreenState extends State<NearbyScreen>
     );
   }
 
-  /// Avatar with a gold ring when recommended (ring avatar is [size],
-  /// plain avatar is slightly larger so both occupy the same space).
   Widget _buildTileAvatar(Technician tech, bool recommended, double size) {
     if (!recommended) {
       return _buildAvatar(tech, size: size + 4, iconSize: size * 0.5);
@@ -983,10 +1016,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       child: Icon(Icons.verified_rounded, color: _verifiedBlue, size: size),
     );
   }
-
-  // ==============================================================
-  // RECOMMENDED PULSE
-  // ==============================================================
 
   Widget _buildRecommendationPulse(Technician tech, double size) {
     return AnimatedBuilder(
@@ -1017,7 +1046,6 @@ class _NearbyScreenState extends State<NearbyScreen>
           ],
         );
       },
-      // Static part is built once, not on every animation tick
       child: Container(
         padding: const EdgeInsets.all(2.5),
         decoration: const BoxDecoration(
@@ -1028,10 +1056,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       ),
     );
   }
-
-  // ==============================================================
-  // SMALL INFO CHIP
-  // ==============================================================
 
   Widget _infoChip(IconData icon, String text, Color color) {
     final tone = _tone(context, color);
@@ -1224,7 +1248,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
         onTap: () {
-          // Take the navigator first: the sheet's context is gone after pop
           final navigator = Navigator.of(context);
           setState(() => _selectedTechnicianId = tech.id);
           navigator.pop();
@@ -1374,7 +1397,7 @@ class _NearbyScreenState extends State<NearbyScreen>
           });
 
           if (tech.latitude != null && tech.longitude != null) {
-            _moveMap(LatLng(tech.latitude!, tech.longitude!), 15);
+            _applyCamera(LatLng(tech.latitude!, tech.longitude!), 15);
           }
 
           _showTechnicianModal(context, tech, origin, recommended);
@@ -1525,7 +1548,6 @@ class _NearbyScreenState extends State<NearbyScreen>
     final services = _getFilteredServices(serviceProvider.localizedServices);
     final categories = _getCategoriesForSelectedService(serviceProvider);
 
-    // Sorted list / recommended ids are recomputed only on real changes
     _syncDerived(techProvider.technicians);
     final sortedByRank = _rankedTechs;
     final recommendedIds = _recommendedIds;
@@ -1546,7 +1568,7 @@ class _NearbyScreenState extends State<NearbyScreen>
         techProvider.hasSearchOrigin && sortedByRank.isNotEmpty;
     final carouselOrigin = showCarousel
         ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
-        : NearbyConstants.defaultMapCenter;
+        : TanzaniaMap.center;
 
     final fontScale = clampedScaler.scale(1.0);
     final carouselHeight = (116.0 * fontScale).clamp(116.0, 142.0);
@@ -1561,14 +1583,12 @@ class _NearbyScreenState extends State<NearbyScreen>
         backgroundColor: theme.scaffoldBackgroundColor,
         body: Stack(
           children: [
-            // MAP
             Positioned.fill(
               child: RepaintBoundary(
                 child: _buildMapView(theme, techProvider, recommendedIds),
               ),
             ),
 
-            // FLOATING SEARCH CARD
             Positioned(
               top: 0,
               left: 0,
@@ -1601,7 +1621,6 @@ class _NearbyScreenState extends State<NearbyScreen>
               ),
             ),
 
-            // ZOOM CONTROLS
             Positioned(
               right: 12,
               bottom: controlsBottom,
@@ -1629,7 +1648,6 @@ class _NearbyScreenState extends State<NearbyScreen>
               ),
             ),
 
-            // LIST + FULL MAP BUTTONS
             if (hasTechnicians)
               Positioned(
                 left: 12,
@@ -1664,7 +1682,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ),
               ),
 
-            // FUNDI CAROUSEL
             if (showCarousel)
               Positioned(
                 left: 0,
@@ -1691,7 +1708,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ),
               ),
 
-            // ROUTE LOADING
             if (_isFetchingRoutes)
               Positioned(
                 bottom: showCarousel ? carouselHeight + 78 : 80,
@@ -1765,7 +1781,6 @@ class _NearbyScreenState extends State<NearbyScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADING + HIDE
               Row(
                 children: [
                   Container(
@@ -1800,7 +1815,6 @@ class _NearbyScreenState extends State<NearbyScreen>
               ),
               const SizedBox(height: 12),
 
-              // LOCATION SEARCH
               Row(
                 children: [
                   Expanded(
@@ -1877,7 +1891,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _gold,
                         foregroundColor: AppTheme.primary,
-                        disabledBackgroundColor: _gold.withValues(alpha: 0.55),
+                        disabledBackgroundColor:
+                        _gold.withValues(alpha: 0.55),
                         elevation: 0,
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(50, 50),
@@ -1900,14 +1915,12 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ],
               ),
 
-              // SUGGESTIONS
               if (_showSuggestions)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 200),
                   child: _buildSuggestions(context, theme),
                 ),
 
-              // RESULT SUMMARY
               if (_searchedArea.isNotEmpty &&
                   techProvider.technicians.isNotEmpty)
                 Padding(
@@ -1982,7 +1995,6 @@ class _NearbyScreenState extends State<NearbyScreen>
 
               const SizedBox(height: 10),
 
-              // SERVICE FILTER
               SizedBox(
                 height: 42,
                 child: TextField(
@@ -2017,7 +2029,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                     filled: true,
                     fillColor: _softFill(context),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 10),
                     border: _borderless(14),
                     enabledBorder: _borderless(14),
                     focusedBorder: _borderless(14),
@@ -2028,7 +2041,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ),
               ),
 
-              // SERVICE CHIPS
               if (services.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
@@ -2067,7 +2079,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                   ),
                 ),
 
-              // CATEGORY CHIPS
               if (categories.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -2094,7 +2105,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                   ),
                 ),
 
-              // CLEAR FILTERS
               if (hasFilters)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -2221,7 +2231,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                 style: const TextStyle(fontSize: 11.5),
               ),
               onTap: () {
-                // Keep coordinates so the search skips server geocoding
                 _locationController.text = suggestion.name;
                 _pickedPlace = suggestion;
                 setState(() => _showSuggestions = false);
@@ -2249,7 +2258,10 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final origin = hasOrigin
         ? LatLng(techProvider.searchLat!, techProvider.searchLng!)
-        : NearbyConstants.defaultMapCenter;
+        : TanzaniaMap.center;
+
+    final safeOrigin =
+    TanzaniaMap.containsLatLng(origin) ? origin : TanzaniaMap.center;
 
     final technicians = hasOrigin ? _rankedTechs : const <Technician>[];
 
@@ -2269,7 +2281,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       );
     }
 
-    // ---- Route polylines (cached) ----
     final polylineKey = Object.hash(
       hasOrigin,
       _techVersion,
@@ -2289,7 +2300,6 @@ class _NearbyScreenState extends State<NearbyScreen>
       );
     }
 
-    // ---- Technician markers (cached) ----
     final markerWidth = ResponsiveConstants.getMarkerWidth(context);
     final markerHeight = ResponsiveConstants.getMarkerHeight(context);
     final avatarSize = ResponsiveConstants.getAvatarSize(context);
@@ -2302,15 +2312,15 @@ class _NearbyScreenState extends State<NearbyScreen>
       markerWidth,
       markerHeight,
       avatarSize,
-      origin.latitude,
-      origin.longitude,
+      safeOrigin.latitude,
+      safeOrigin.longitude,
     );
     if (markerKey != _markerKey) {
       _markerKey = markerKey;
       _markerCache = _buildTechnicianMarkers(
         technicians: technicians,
         recommendedIds: recommendedIds,
-        origin: origin,
+        origin: safeOrigin,
         markerWidth: markerWidth,
         markerHeight: markerHeight,
         avatarSize: avatarSize,
@@ -2318,7 +2328,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     }
 
     final originPulse = Marker(
-      point: origin,
+      point: safeOrigin,
       width: 90,
       height: 90,
       child: IgnorePointer(
@@ -2346,7 +2356,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     );
 
     final originMarker = Marker(
-      point: origin,
+      point: safeOrigin,
       width: 60,
       height: 60,
       alignment: Alignment.bottomCenter,
@@ -2387,31 +2397,43 @@ class _NearbyScreenState extends State<NearbyScreen>
       ),
     );
 
+    // Build MapOptions ONCE.
+    _mapOptions ??= MapOptions(
+      initialCenter: safeOrigin,
+      initialZoom: hasOrigin
+          ? (isDesktop ? 14 : (isTablet ? 13.5 : 13))
+          : TanzaniaMap.defaultZoom,
+      minZoom: TanzaniaMap.minZoom,
+      maxZoom: TanzaniaMap.maxZoom,
+      cameraConstraint: TanzaniaMap.constraint,
+      onMapReady: () {
+        _mapReady = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _updateMapBounds();
+        });
+      },
+      onTap: (_, __) {
+        if (_selectedTechnicianId != null) {
+          setState(() => _selectedTechnicianId = null);
+        }
+        if (_showSuggestions) {
+          setState(() => _showSuggestions = false);
+          _locationFocus.unfocus();
+        }
+      },
+      interactionOptions: _interactionOptions,
+    );
+
     final map = FlutterMap(
       mapController: _mapController,
-      options: MapOptions(
-        initialCenter: origin,
-        initialZoom:
-        hasOrigin ? (isDesktop ? 14 : (isTablet ? 13.5 : 13)) : 5.5,
-        minZoom: 4,
-        maxZoom: 18,
-        onMapReady: () => _mapReady = true,
-        onTap: (_, __) {
-          if (_selectedTechnicianId != null) {
-            setState(() => _selectedTechnicianId = null);
-          }
-          if (_showSuggestions) {
-            setState(() => _showSuggestions = false);
-            _locationFocus.unfocus();
-          }
-        },
-      ),
+      options: _mapOptions!,
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.nearbyfundi',
+          userAgentPackageName: NearbyConstants.userAgentPackageName,
+          maxZoom: 19,
         ),
-        // (search-radius circle intentionally removed)
         PolylineLayer(polylines: _polylineCache),
         MarkerLayer(
           markers: [
@@ -2451,7 +2473,6 @@ class _NearbyScreenState extends State<NearbyScreen>
     required double markerHeight,
     required double avatarSize,
   }) {
-    // Best-ranked drawn last so it sits on top
     return technicians.reversed.map((tech) {
       final route = _routesData[tech.id];
       final distance = route?.distanceKm ?? tech.distanceKm;
@@ -2633,8 +2654,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(0, 48),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -2836,7 +2857,6 @@ class _NearbyScreenState extends State<NearbyScreen>
                 ),
                 const SizedBox(height: 16),
 
-                // HEADER
                 Row(
                   children: [
                     Container(
@@ -2931,7 +2951,6 @@ class _NearbyScreenState extends State<NearbyScreen>
 
                 const SizedBox(height: 16),
 
-                // STATS
                 _statRow(mainStats),
                 if (proofStats.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -2966,7 +2985,6 @@ class _NearbyScreenState extends State<NearbyScreen>
 
                 const SizedBox(height: 20),
 
-                // BUTTONS
                 Row(
                   children: [
                     Expanded(
@@ -3128,7 +3146,8 @@ class _NearbyScreenState extends State<NearbyScreen>
                   style: TextStyle(
                     color: foreground,
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight:
+                    isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ],
@@ -3141,7 +3160,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 }
 
 // ================================================================
-// SOFT ICON BUTTON (close / hide)
+// SOFT ICON BUTTON
 // ================================================================
 
 class _SoftIconButton extends StatelessWidget {
@@ -3246,8 +3265,7 @@ class _PillButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color:
-        filled ? AppTheme.primary : Theme.of(context).colorScheme.surface,
+        color: filled ? AppTheme.primary : Theme.of(context).colorScheme.surface,
         elevation: 4,
         shadowColor: Colors.black.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(24),

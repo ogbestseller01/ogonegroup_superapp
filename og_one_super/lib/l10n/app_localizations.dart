@@ -140,6 +140,60 @@ abstract class AppLocalizations {
   /// **'Swahili'**
   String get swahili;
 
+  /// Title for the System Updates list screen and card sheet
+  ///
+  /// In en, this message translates to:
+  /// **'System Updates'**
+  String get systemUpdatesTitle;
+
+  /// Empty state message when there are no visible system updates
+  ///
+  /// In en, this message translates to:
+  /// **'No updates yet'**
+  String get systemUpdatesEmpty;
+
+  /// Subtitle shown under the empty state icon on the System Updates screen
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up. New updates will appear here.'**
+  String get systemUpdatesEmptySub;
+
+  /// Tooltip/label for the action that marks every visible update as viewed
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get systemUpdatesMarkAllRead;
+
+  /// Tooltip for the X button that removes a system update card
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get systemUpdatesDismiss;
+
+  /// Label shown on the system update card when more updates are stacked behind the top one
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String systemUpdatesMore(int count);
+
+  /// Action label to open the full list of system updates
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get systemUpdatesSeeAll;
+
+  /// Label showing when a system update was published
+  ///
+  /// In en, this message translates to:
+  /// **'Published {date}'**
+  String systemUpdatesPublishedOn(String date);
+
+  /// Hint shown in the refresh indicator tooltip on the System Updates screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pull to refresh'**
+  String get systemUpdatesPullToRefresh;
+
   /// No description provided for @chooseService.
   ///
   /// In en, this message translates to:

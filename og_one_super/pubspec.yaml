@@ -24,6 +24,9 @@ dependencies:
   url_launcher: ^6.3.0
 
   firebase_core: ^4.15.0
+  firebase_messaging: ^16.3.0
+  flutter_local_notifications: ^23.0.2
+  timeago: ^3.7.1
 
   # QR codes: draw a QR for each mini app, and scan one from the dashboard.
   # mobile_scanner 7.x uses Apple Vision on iOS (no ML Kit, works on arm64 simulators).

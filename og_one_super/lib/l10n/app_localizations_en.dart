@@ -30,6 +30,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get swahili => 'Swahili';
 
   @override
+  String get systemUpdatesTitle => 'System Updates';
+
+  @override
+  String get systemUpdatesEmpty => 'No updates yet';
+
+  @override
+  String get systemUpdatesEmptySub =>
+      'You\'re all caught up. New updates will appear here.';
+
+  @override
+  String get systemUpdatesMarkAllRead => 'Mark all as read';
+
+  @override
+  String get systemUpdatesDismiss => 'Dismiss';
+
+  @override
+  String systemUpdatesMore(int count) {
+    return '+$count more';
+  }
+
+  @override
+  String get systemUpdatesSeeAll => 'See all';
+
+  @override
+  String systemUpdatesPublishedOn(String date) {
+    return 'Published $date';
+  }
+
+  @override
+  String get systemUpdatesPullToRefresh => 'Pull to refresh';
+
+  @override
   String get chooseService => 'Choose the service you want and continue';
 
   @override

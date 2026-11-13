@@ -9,6 +9,57 @@
   "english": "English",
   "swahili": "Swahili",
 
+    "systemUpdatesTitle": "System Updates",
+    "@systemUpdatesTitle": {
+      "description": "Title for the System Updates list screen and card sheet"
+    },
+
+    "systemUpdatesEmpty": "No updates yet",
+    "@systemUpdatesEmpty": {
+      "description": "Empty state message when there are no visible system updates"
+    },
+
+    "systemUpdatesEmptySub": "You're all caught up. New updates will appear here.",
+    "@systemUpdatesEmptySub": {
+      "description": "Subtitle shown under the empty state icon on the System Updates screen"
+    },
+
+    "systemUpdatesMarkAllRead": "Mark all as read",
+    "@systemUpdatesMarkAllRead": {
+      "description": "Tooltip/label for the action that marks every visible update as viewed"
+    },
+
+    "systemUpdatesDismiss": "Dismiss",
+    "@systemUpdatesDismiss": {
+      "description": "Tooltip for the X button that removes a system update card"
+    },
+
+    "systemUpdatesMore": "+{count} more",
+    "@systemUpdatesMore": {
+      "description": "Label shown on the system update card when more updates are stacked behind the top one",
+      "placeholders": {
+        "count": { "type": "int" }
+      }
+    },
+
+    "systemUpdatesSeeAll": "See all",
+    "@systemUpdatesSeeAll": {
+      "description": "Action label to open the full list of system updates"
+    },
+
+    "systemUpdatesPublishedOn": "Published {date}",
+    "@systemUpdatesPublishedOn": {
+      "description": "Label showing when a system update was published",
+      "placeholders": {
+        "date": { "type": "String" }
+      }
+    },
+
+    "systemUpdatesPullToRefresh": "Pull to refresh",
+    "@systemUpdatesPullToRefresh": {
+      "description": "Hint shown in the refresh indicator tooltip on the System Updates screen"
+    },
+
   "chooseService": "Choose the service you want and continue",
   "services": "Services",
   "continueText": "Continue",

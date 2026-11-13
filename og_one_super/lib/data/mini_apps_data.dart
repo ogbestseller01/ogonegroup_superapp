@@ -84,16 +84,6 @@ const List<MiniApp> miniApps = [
     isComingSoon: true,
     imageAsset: 'assets/images/apps/duma_app.png',
   ),
-  MiniApp(
-    id: 10,
-    slug: 'nimepoteza',
-    name: 'Nimepoteza App',
-    subtitle: 'Report & find lost items',
-    icon: 'find_in_page',
-    color: '#F5C30E',
-    isComingSoon: true,
-    imageAsset: 'assets/images/apps/nimepoteza.png',
-  ),
 
   // ── Lower priority (only appears in Apps tab) ──
   MiniApp(
