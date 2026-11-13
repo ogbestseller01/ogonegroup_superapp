@@ -2985,70 +2985,34 @@ class _NearbyScreenState extends State<NearbyScreen>
 
                 const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(sheetContext);
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.technicianDetail,
-                              arguments: tech.id,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            NearbyStrings.viewProfile,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15.5,
-                            ),
-                          ),
-                        ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.technicianDetail,
+                        arguments: tech.id,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    if (tech.latitude != null && tech.longitude != null) ...[
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        height: 52,
-                        width: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _openDirectionsInGoogleMaps(
-                              context,
-                              origin: origin,
-                              destination:
-                              LatLng(tech.latitude!, tech.longitude!),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _gold,
-                            foregroundColor: AppTheme.primary,
-                            elevation: 0,
-                            minimumSize: const Size(56, 52),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: const Tooltip(
-                            message: NearbyStrings.directions,
-                            child: Icon(Icons.directions_rounded, size: 26),
-                          ),
-                        ),
+                    child: const Text(
+                      NearbyStrings.viewProfile,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
               ],
             ),
