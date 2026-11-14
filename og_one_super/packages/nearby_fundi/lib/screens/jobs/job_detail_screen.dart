@@ -7,8 +7,6 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 import '../../providers/job_provider.dart';
-// TODO(payments): re-add this import when the Pay button is enabled again.
-// import '../payments/payment_channel_modal.dart';
 import 'confirm_completion_modal.dart';
 import 'confirm_completion_prompt_modal.dart';
 import 'job_review_sheet.dart';
@@ -48,11 +46,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       final provider = context.read<JobProvider>();
 
       if (provider.getJobById(widget.jobId) == null) {
-        // Not cached (e.g. opened from a notification): load the list.
         await provider.ensureJob(widget.jobId);
       } else {
-        // Cached from the list: show it now, refresh this job in the background
-        // so the review / status are never stale.
         provider.refreshJob(widget.jobId);
       }
 
@@ -113,8 +108,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final done = await ConfirmCompletionModal.show(context, job.id);
     if (done == true && mounted) {
       _snack(l10n.jobCompletedSuccess);
-
-      // Job is completed → invite the customer to rate it.
       final updated = context.read<JobProvider>().getJobById(job.id);
       if (updated != null && updated.canReview) {
         await _openReview(updated);
@@ -122,8 +115,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
-  /// Opens the review sheet, then re-fetches this job so the screen shows
-  /// the submitted review instead of the "Rate this job" prompt.
   Future<void> _openReview(Job job) async {
     final submitted = await showJobReviewSheet(context, job);
     if (submitted == true && mounted) {
@@ -183,7 +174,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           preferredSize: Size.fromHeight(4),
           child: LinearProgressIndicator(
             backgroundColor: Colors.white24,
-            color: Colors.amberAccent,
+            color: AppTheme.secondary,
           ),
         )
             : null,
@@ -195,7 +186,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
-            // ── Summary ──────────────────────────────────────────────
             _card(
               theme: theme,
               child: Column(
@@ -247,7 +237,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ),
 
-            // ── Description ──────────────────────────────────────────
             const SizedBox(height: 14),
             _card(
               theme: theme,
@@ -275,7 +264,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ),
 
-            // ── Ticket ───────────────────────────────────────────────
             if (ticket != null) ...[
               const SizedBox(height: 14),
               _card(
@@ -326,7 +314,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ],
 
-            // ── Review (only for completed jobs) ─────────────────────
             if (job.isCompleted) ...[
               const SizedBox(height: 14),
               _card(
@@ -362,23 +349,56 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
             const SizedBox(height: 20),
 
-            // ── Actions: in progress ─────────────────────────────────
             if (job.isOnProgress) ...[
-              // Pay button is faded + disabled for now (payments come later).
-              // TODO(payments): enable with
-              //   onPressed: () => PaymentChannelModal.show(context, job),
-              // and switch the style back to _btnStyle(AppTheme.primary).
-              ElevatedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.payment_rounded),
-                label: Text(l10n.payForJob),
-                style: _btnStyle(AppTheme.primary).copyWith(
-                  backgroundColor: WidgetStatePropertyAll(
-                    AppTheme.primary.withValues(alpha: 0.30),
+              // ── Coming Soon Pay Button ──
+              Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.payment_rounded),
+                      label: Text(l10n.payForJob),
+                      style: _btnStyle(AppTheme.primary).copyWith(
+                        backgroundColor: WidgetStatePropertyAll(
+                          AppTheme.primary.withValues(alpha: 0.30),
+                        ),
+                        foregroundColor:
+                        const WidgetStatePropertyAll(Colors.white70),
+                        iconColor: const WidgetStatePropertyAll(Colors.white70),
+                      ),
+                    ),
                   ),
-                  foregroundColor: const WidgetStatePropertyAll(Colors.white70),
-                  iconColor: const WidgetStatePropertyAll(Colors.white70),
-                ),
+                  // 👇 Exactly on top of the text
+                  Positioned(
+                    top: 8, // Adjust this to center perfectly on the text
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.secondary,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Coming Soon',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               ElevatedButton.icon(
@@ -398,18 +418,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               const SizedBox(height: 10),
             ],
 
-            // ── Action: completed, not reviewed yet ──────────────────
             if (job.canReview) ...[
               ElevatedButton.icon(
                 onPressed: () => _openReview(job),
                 icon: const Icon(Icons.star_rounded),
                 label: const Text('Rate this job'),
-                style: _btnStyle(Colors.amber.shade700),
+                style: _btnStyle(AppTheme.secondary).copyWith(
+                  foregroundColor: const WidgetStatePropertyAll(AppTheme.primary),
+                ),
               ),
               const SizedBox(height: 10),
             ],
 
-            // ── Chat ─────────────────────────────────────────────────
             if (job.technicianUserId != 0)
               ElevatedButton.icon(
                 onPressed: () {
@@ -417,7 +437,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       arguments: job.technicianUserId);
                 },
                 icon: const Icon(Icons.chat_bubble_outline_rounded),
-                label: Text(l10n.chat),
+                label: Text(
+                  // 👇 Updated text as requested
+                  '${l10n.chat} to get contact',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 style: _btnStyle(AppTheme.accent),
               ),
           ],

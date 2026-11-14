@@ -13,6 +13,12 @@
 //   the camera to TanzaniaMap before touching the controller.
 // - fitCamera() is only called with minZoom >= TanzaniaMap.minZoom and bounds
 //   pre-clamped to Tanzania, so its result is always in-constraint.
+//
+// UI cleanup notes (logic untouched):
+// - Suggestion list: ListTiles now sit on a real Material (fixes the
+//   "ListTile background color or ink splashes may be invisible" assertion).
+// - Filter chips: background is painted by Material (not a child
+//   AnimatedContainer) so their ink splash is visible.
 
 import 'dart:async';
 import 'dart:convert';
@@ -2136,6 +2142,10 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
   // SUGGESTIONS
   // ==============================================================
+  //
+  // The tinted background lives on a Material (not a colored
+  // Container/DecoratedBox) so the ListTiles' own background and ink
+  // splashes are painted on it and stay visible.
 
   Widget _buildSuggestions(BuildContext context, ThemeData theme) {
     final ink = _ink(context);
@@ -2143,102 +2153,102 @@ class _NearbyScreenState extends State<NearbyScreen>
         _placeSuggestions.isEmpty &&
         !_isLoadingSuggestions;
 
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Material(
         color: _softFill(context),
         borderRadius: BorderRadius.circular(18),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: ListView(
-        shrinkWrap: true,
-        padding: EdgeInsets.zero,
-        children: [
-          if (showHistoryHeader)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 6, 0),
-              child: Row(
-                children: [
-                  Text(
-                    NearbyStrings.recentSearches,
-                    style: TextStyle(
-                      color: theme.hintColor,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
+        clipBehavior: Clip.antiAlias,
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.zero,
+          children: [
+            if (showHistoryHeader)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 6, 6, 0),
+                child: Row(
+                  children: [
+                    Text(
+                      NearbyStrings.recentSearches,
+                      style: TextStyle(
+                        color: theme.hintColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _clearHistory,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      minimumSize: const Size(0, 28),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _clearHistory,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        minimumSize: const Size(0, 28),
+                      ),
+                      child: Text(
+                        NearbyStrings.clear,
+                        style: TextStyle(color: ink, fontSize: 12),
+                      ),
                     ),
-                    child: Text(
-                      NearbyStrings.clear,
-                      style: TextStyle(color: ink, fontSize: 12),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          if (showHistoryHeader)
-            ..._searchHistory.map(
-                  (place) => ListTile(
+            if (showHistoryHeader)
+              ..._searchHistory.map(
+                    (place) => ListTile(
+                  dense: true,
+                  leading: Icon(Icons.history_rounded,
+                      color: theme.hintColor, size: 18),
+                  title: Text(
+                    place,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  onTap: () {
+                    _locationController.text = place;
+                    _pickedPlace = null;
+                    setState(() => _showSuggestions = false);
+                    _performSearch();
+                  },
+                ),
+              ),
+            if (_isLoadingSuggestions)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
+            ..._placeSuggestions.map((suggestion) {
+              return ListTile(
                 dense: true,
-                leading: Icon(Icons.history_rounded,
-                    color: theme.hintColor, size: 18),
+                leading: const Icon(Icons.location_on_outlined,
+                    color: AppTheme.error, size: 18),
                 title: Text(
-                  place,
+                  suggestion.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 14),
                 ),
+                subtitle: Text(
+                  suggestion.full,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11.5),
+                ),
                 onTap: () {
-                  _locationController.text = place;
-                  _pickedPlace = null;
+                  _locationController.text = suggestion.name;
+                  _pickedPlace = suggestion;
                   setState(() => _showSuggestions = false);
                   _performSearch();
                 },
-              ),
-            ),
-          if (_isLoadingSuggestions)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-          ..._placeSuggestions.map((suggestion) {
-            return ListTile(
-              dense: true,
-              leading: const Icon(Icons.location_on_outlined,
-                  color: AppTheme.error, size: 18),
-              title: Text(
-                suggestion.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                suggestion.full,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11.5),
-              ),
-              onTap: () {
-                _locationController.text = suggestion.name;
-                _pickedPlace = suggestion;
-                setState(() => _showSuggestions = false);
-                _performSearch();
-              },
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -3055,6 +3065,10 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
   // CHIP
   // ==============================================================
+  //
+  // The chip background is painted by the Material itself (it animates
+  // color changes), so the InkWell splash is drawn above it and stays
+  // visible instead of being covered by a child decoration.
 
   Widget _buildChip({
     required String label,
@@ -3081,23 +3095,20 @@ class _NearbyScreenState extends State<NearbyScreen>
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: Colors.transparent,
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        animationDuration: const Duration(milliseconds: 160),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
           onTap: () {
             if (!AuthGuard.ensure(context, message: _kFilterLoginMessage)) {
               return;
             }
             onTap();
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
+          child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(20),
-            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

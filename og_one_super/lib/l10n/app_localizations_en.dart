@@ -30,36 +30,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get swahili => 'Swahili';
 
   @override
-  String get systemUpdatesTitle => 'System Updates';
+  String get appUpdatesTitle => 'App Updates';
 
   @override
-  String get systemUpdatesEmpty => 'No updates yet';
+  String get appUpdatesEmpty => 'No updates yet';
 
   @override
-  String get systemUpdatesEmptySub =>
+  String get appUpdatesEmptySub =>
       'You\'re all caught up. New updates will appear here.';
 
   @override
-  String get systemUpdatesMarkAllRead => 'Mark all as read';
+  String get appUpdatesMarkAllRead => 'Mark all as read';
 
   @override
-  String get systemUpdatesDismiss => 'Dismiss';
+  String get appUpdatesDismiss => 'Dismiss';
 
   @override
-  String systemUpdatesMore(int count) {
+  String appUpdatesMore(int count) {
     return '+$count more';
   }
 
   @override
-  String get systemUpdatesSeeAll => 'See all';
+  String get appUpdatesSeeAll => 'See all';
 
   @override
-  String systemUpdatesPublishedOn(String date) {
+  String appUpdatesPublishedOn(String date) {
     return 'Published $date';
   }
 
   @override
-  String get systemUpdatesPullToRefresh => 'Pull to refresh';
+  String get appUpdatesPullToRefresh => 'Pull to refresh';
 
   @override
   String get chooseService => 'Choose the service you want and continue';
@@ -224,10 +224,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promotionsDesc => 'Receive special offers and discounts';
 
   @override
-  String get systemUpdates => 'System Updates';
+  String get appUpdates => 'App Updates';
 
   @override
-  String get systemUpdatesDesc => 'Important app updates and announcements';
+  String get appUpdatesDesc => 'Important app updates and announcements';
 
   @override
   String get privacyData => 'Privacy & Data';

@@ -16,7 +16,7 @@ import '../../settings/staticpages/privacy_screen.dart';
 import '../../settings/staticpages/terms_screen.dart';
 import '../../system_updates/system_updates_list_screen.dart';
 
-/// Account tab: Settings, System Updates, and all Static Pages.
+/// Account tab: Settings, App Updates, and all Static Pages.
 class AccountTab extends StatelessWidget {
   final VoidCallback onMenu;
 
@@ -58,8 +58,8 @@ class AccountTab extends StatelessWidget {
                       Navigator.of(context).pushNamed(AppRoutes.settings),
                 ),
                 _Tile(
-                  icon: Icons.campaign_rounded,
-                  title: t.systemUpdates,
+                  icon: Icons.system_update_rounded,
+                  title: t.appUpdates,
                   onTap: () => _go(context, const SystemUpdatesListScreen()),
                 ),
               ]),
@@ -173,16 +173,12 @@ class _Group extends StatelessWidget {
 class _Tile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
-  final String? trailingText;
   final VoidCallback onTap;
 
   const _Tile({
     required this.icon,
     required this.title,
     required this.onTap,
-    this.subtitle,
-    this.trailingText,
   });
 
   @override
@@ -208,46 +204,17 @@ class _Tile extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: dashInk(isDark),
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        color: dashMuted(isDark),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (trailingText != null) ...[
-              Text(
-                trailingText!,
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                  color: dashMuted(isDark),
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: dashInk(isDark),
                 ),
               ),
-              const SizedBox(width: 4),
-            ],
+            ),
             Icon(Icons.chevron_right_rounded, color: dashMuted(isDark)),
           ],
         ),

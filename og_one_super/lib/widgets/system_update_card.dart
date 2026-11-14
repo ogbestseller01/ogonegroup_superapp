@@ -137,8 +137,8 @@ class _Stack extends StatelessWidget {
                       color: AppTheme.primary.withOpacity(isDark ? 0.9 : 1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.notifications_rounded,
-                        color: Colors.white, size: 22),
+                    child: const Icon(Icons.system_update_rounded,
+                        color: Colors.white, size: 22), // <-- New App Update Icon
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -183,7 +183,7 @@ class _Stack extends StatelessWidget {
                             if (extra > 0) ...[
                               const SizedBox(width: 8),
                               Text(
-                                t.systemUpdatesMore(extra),
+                                t.appUpdatesMore(extra),
                                 style: const TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
@@ -196,7 +196,7 @@ class _Stack extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: t.systemUpdatesDismiss,
+                    tooltip: t.appUpdatesDismiss,
                     visualDensity: VisualDensity.compact,
                     icon: Icon(Icons.close_rounded,
                         size: 20, color: onSurface.withOpacity(0.55)),

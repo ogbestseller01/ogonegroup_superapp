@@ -30,36 +30,36 @@ class AppLocalizationsSw extends AppLocalizations {
   String get swahili => 'Kiswahili';
 
   @override
-  String get systemUpdatesTitle => 'Taarifa za Mfumo';
+  String get appUpdatesTitle => 'Taarifa za Programu';
 
   @override
-  String get systemUpdatesEmpty => 'Hakuna taarifa bado';
+  String get appUpdatesEmpty => 'Hakuna taarifa bado';
 
   @override
-  String get systemUpdatesEmptySub =>
+  String get appUpdatesEmptySub =>
       'Umeshafika mwisho. Taarifa mpya zitaonekana hapa.';
 
   @override
-  String get systemUpdatesMarkAllRead => 'Weka zote kama zimesomwa';
+  String get appUpdatesMarkAllRead => 'Weka zote kama zimesomwa';
 
   @override
-  String get systemUpdatesDismiss => 'Ondoa';
+  String get appUpdatesDismiss => 'Ondoa';
 
   @override
-  String systemUpdatesMore(int count) {
+  String appUpdatesMore(int count) {
     return '+$count zaidi';
   }
 
   @override
-  String get systemUpdatesSeeAll => 'Tazama zote';
+  String get appUpdatesSeeAll => 'Tazama zote';
 
   @override
-  String systemUpdatesPublishedOn(String date) {
+  String appUpdatesPublishedOn(String date) {
     return 'Imetangazwa $date';
   }
 
   @override
-  String get systemUpdatesPullToRefresh => 'Vuta kusasisha';
+  String get appUpdatesPullToRefresh => 'Vuta kusasisha';
 
   @override
   String get chooseService => 'Chagua huduma unayotaka kuendelea';
@@ -225,10 +225,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get promotionsDesc => 'Pokea ofa maalum na punguzo';
 
   @override
-  String get systemUpdates => 'Masasisho ya Mfumo';
+  String get appUpdates => 'Taarifa za Programu';
 
   @override
-  String get systemUpdatesDesc => 'Masasisho muhimu ya programu na matangazo';
+  String get appUpdatesDesc => 'Masasisho muhimu ya programu na matangazo';
 
   @override
   String get privacyData => 'Faragha na Data';

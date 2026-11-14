@@ -140,59 +140,59 @@ abstract class AppLocalizations {
   /// **'Swahili'**
   String get swahili;
 
-  /// Title for the System Updates list screen and card sheet
+  /// Title for the App Updates list screen and card sheet
   ///
   /// In en, this message translates to:
-  /// **'System Updates'**
-  String get systemUpdatesTitle;
+  /// **'App Updates'**
+  String get appUpdatesTitle;
 
-  /// Empty state message when there are no visible system updates
+  /// Empty state message when there are no visible app updates
   ///
   /// In en, this message translates to:
   /// **'No updates yet'**
-  String get systemUpdatesEmpty;
+  String get appUpdatesEmpty;
 
-  /// Subtitle shown under the empty state icon on the System Updates screen
+  /// Subtitle shown under the empty state icon on the App Updates screen
   ///
   /// In en, this message translates to:
   /// **'You\'re all caught up. New updates will appear here.'**
-  String get systemUpdatesEmptySub;
+  String get appUpdatesEmptySub;
 
   /// Tooltip/label for the action that marks every visible update as viewed
   ///
   /// In en, this message translates to:
   /// **'Mark all as read'**
-  String get systemUpdatesMarkAllRead;
+  String get appUpdatesMarkAllRead;
 
-  /// Tooltip for the X button that removes a system update card
+  /// Tooltip for the X button that removes an app update card
   ///
   /// In en, this message translates to:
   /// **'Dismiss'**
-  String get systemUpdatesDismiss;
+  String get appUpdatesDismiss;
 
-  /// Label shown on the system update card when more updates are stacked behind the top one
+  /// Label shown on the app update card when more updates are stacked behind the top one
   ///
   /// In en, this message translates to:
   /// **'+{count} more'**
-  String systemUpdatesMore(int count);
+  String appUpdatesMore(int count);
 
-  /// Action label to open the full list of system updates
+  /// Action label to open the full list of app updates
   ///
   /// In en, this message translates to:
   /// **'See all'**
-  String get systemUpdatesSeeAll;
+  String get appUpdatesSeeAll;
 
-  /// Label showing when a system update was published
+  /// Label showing when an app update was published
   ///
   /// In en, this message translates to:
   /// **'Published {date}'**
-  String systemUpdatesPublishedOn(String date);
+  String appUpdatesPublishedOn(String date);
 
-  /// Hint shown in the refresh indicator tooltip on the System Updates screen
+  /// Hint shown in the refresh indicator tooltip on the App Updates screen
   ///
   /// In en, this message translates to:
   /// **'Pull to refresh'**
-  String get systemUpdatesPullToRefresh;
+  String get appUpdatesPullToRefresh;
 
   /// No description provided for @chooseService.
   ///
@@ -284,13 +284,13 @@ abstract class AppLocalizations {
   /// **'Nimepoteza App'**
   String get nimepoteza;
 
-  /// Service title for the Safari Poa mini app
+  /// No description provided for @safariPoa.
   ///
   /// In en, this message translates to:
   /// **'Safari Poa'**
   String get safariPoa;
 
-  /// Service title for the Duma mini app
+  /// No description provided for @duma.
   ///
   /// In en, this message translates to:
   /// **'Duma App'**
@@ -512,17 +512,17 @@ abstract class AppLocalizations {
   /// **'Receive special offers and discounts'**
   String get promotionsDesc;
 
-  /// No description provided for @systemUpdates.
+  /// No description provided for @appUpdates.
   ///
   /// In en, this message translates to:
-  /// **'System Updates'**
-  String get systemUpdates;
+  /// **'App Updates'**
+  String get appUpdates;
 
-  /// No description provided for @systemUpdatesDesc.
+  /// No description provided for @appUpdatesDesc.
   ///
   /// In en, this message translates to:
   /// **'Important app updates and announcements'**
-  String get systemUpdatesDesc;
+  String get appUpdatesDesc;
 
   /// No description provided for @privacyData.
   ///

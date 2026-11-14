@@ -6,7 +6,7 @@ import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/page_skeletons.dart';
-import '../../widgets/language_sheet.dart'; // Import for the language sheet
+import '../../widgets/language_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

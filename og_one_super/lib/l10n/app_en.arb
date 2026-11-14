@@ -9,56 +9,56 @@
   "english": "English",
   "swahili": "Swahili",
 
-    "systemUpdatesTitle": "System Updates",
-    "@systemUpdatesTitle": {
-      "description": "Title for the System Updates list screen and card sheet"
-    },
+  "appUpdatesTitle": "App Updates",
+  "@appUpdatesTitle": {
+    "description": "Title for the App Updates list screen and card sheet"
+  },
 
-    "systemUpdatesEmpty": "No updates yet",
-    "@systemUpdatesEmpty": {
-      "description": "Empty state message when there are no visible system updates"
-    },
+  "appUpdatesEmpty": "No updates yet",
+  "@appUpdatesEmpty": {
+    "description": "Empty state message when there are no visible app updates"
+  },
 
-    "systemUpdatesEmptySub": "You're all caught up. New updates will appear here.",
-    "@systemUpdatesEmptySub": {
-      "description": "Subtitle shown under the empty state icon on the System Updates screen"
-    },
+  "appUpdatesEmptySub": "You're all caught up. New updates will appear here.",
+  "@appUpdatesEmptySub": {
+    "description": "Subtitle shown under the empty state icon on the App Updates screen"
+  },
 
-    "systemUpdatesMarkAllRead": "Mark all as read",
-    "@systemUpdatesMarkAllRead": {
-      "description": "Tooltip/label for the action that marks every visible update as viewed"
-    },
+  "appUpdatesMarkAllRead": "Mark all as read",
+  "@appUpdatesMarkAllRead": {
+    "description": "Tooltip/label for the action that marks every visible update as viewed"
+  },
 
-    "systemUpdatesDismiss": "Dismiss",
-    "@systemUpdatesDismiss": {
-      "description": "Tooltip for the X button that removes a system update card"
-    },
+  "appUpdatesDismiss": "Dismiss",
+  "@appUpdatesDismiss": {
+    "description": "Tooltip for the X button that removes an app update card"
+  },
 
-    "systemUpdatesMore": "+{count} more",
-    "@systemUpdatesMore": {
-      "description": "Label shown on the system update card when more updates are stacked behind the top one",
-      "placeholders": {
-        "count": { "type": "int" }
-      }
-    },
+  "appUpdatesMore": "+{count} more",
+  "@appUpdatesMore": {
+    "description": "Label shown on the app update card when more updates are stacked behind the top one",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
-    "systemUpdatesSeeAll": "See all",
-    "@systemUpdatesSeeAll": {
-      "description": "Action label to open the full list of system updates"
-    },
+  "appUpdatesSeeAll": "See all",
+  "@appUpdatesSeeAll": {
+    "description": "Action label to open the full list of app updates"
+  },
 
-    "systemUpdatesPublishedOn": "Published {date}",
-    "@systemUpdatesPublishedOn": {
-      "description": "Label showing when a system update was published",
-      "placeholders": {
-        "date": { "type": "String" }
-      }
-    },
+  "appUpdatesPublishedOn": "Published {date}",
+  "@appUpdatesPublishedOn": {
+    "description": "Label showing when an app update was published",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
 
-    "systemUpdatesPullToRefresh": "Pull to refresh",
-    "@systemUpdatesPullToRefresh": {
-      "description": "Hint shown in the refresh indicator tooltip on the System Updates screen"
-    },
+  "appUpdatesPullToRefresh": "Pull to refresh",
+  "@appUpdatesPullToRefresh": {
+    "description": "Hint shown in the refresh indicator tooltip on the App Updates screen"
+  },
 
   "chooseService": "Choose the service you want and continue",
   "services": "Services",
@@ -80,9 +80,7 @@
   "checkspace": "CheckSpace App",
   "nimepoteza": "Nimepoteza App",
   "safariPoa": "Safari Poa",
-  "@safariPoa": { "description": "Service title for the Safari Poa mini app" },
   "duma": "Duma App",
-  "@duma": { "description": "Service title for the Duma mini app" },
   "comingSoon": "Coming Soon",
 
   "appearance": "Appearance",
@@ -125,8 +123,9 @@
   "orderUpdatesDesc": "Get notified about your orders and bookings",
   "promotions": "Promotions & Offers",
   "promotionsDesc": "Receive special offers and discounts",
-  "systemUpdates": "System Updates",
-  "systemUpdatesDesc": "Important app updates and announcements",
+
+  "appUpdates": "App Updates",
+  "appUpdatesDesc": "Important app updates and announcements",
 
   "privacyData": "Privacy & Data",
   "privacyPolicy": "Privacy Policy",
@@ -180,66 +179,64 @@
   "partnerships": "Partnerships",
   "welcomePartnerships": "Welcome for partnerships",
 
-    "featured": "Featured App's",
-    "partnerApps": "Partner's Apps",
-    "partnerAppsHint": "Partner apps will appear here",
-    "home": "Home",
-    "scan": "Scan",
+  "featured": "Featured App's",
+  "partnerApps": "Partner's Apps",
+  "partnerAppsHint": "Partner apps will appear here",
+  "home": "Home",
+  "scan": "Scan",
 
-    "aiAgent": "AI Agent",
-    "back": "Back",
-    "torch": "Torch",
-    "switchCamera": "Switch camera",
-    "scannerHint": "Point the camera at an app QR code",
-    "scannerNotOurCode": "This QR code is not an OG ONE GROUP app code.",
-    "scannerExpired": "This QR code has expired.",
-    "scannerInvalid": "This QR code is not valid.",
-    "scannerOffline": "Could not check the code. Check your internet.",
-    "cameraPermissionTitle": "Camera permission needed",
-    "cameraPermissionBody": "Allow camera access in your phone Settings, then try again.",
-    "cameraUnavailableTitle": "Camera not available",
-    "cameraUnavailableBody": "The camera could not be started. Please try again.",
+  "aiAgent": "AI Agent",
+  "back": "Back",
+  "torch": "Torch",
+  "switchCamera": "Switch camera",
+  "scannerHint": "Point the camera at an app QR code",
+  "scannerNotOurCode": "This QR code is not an OG ONE GROUP app code.",
+  "scannerExpired": "This QR code has expired.",
+  "scannerInvalid": "This QR code is not valid.",
+  "scannerOffline": "Could not check the code. Check your internet.",
+  "cameraPermissionTitle": "Camera permission needed",
+  "cameraPermissionBody": "Allow camera access in your phone Settings, then try again.",
+  "cameraUnavailableTitle": "Camera not available",
+  "cameraUnavailableBody": "The camera could not be started. Please try again.",
 
-      "onboardingWelcomeTitle": "Welcome to OG ONEGROUP",
-      "onboardingWelcomeBody": "One super app, many mini apps. Everything you need in daily life, together in one place.",
-      "onboardingTrustedHelpTitle": "Trusted help, near you",
-      "onboardingTrustedHelpBody": "NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.",
-      "onboardingFoodTitle": "Food and deliveries, chap chap",
-      "onboardingFoodBody": "Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.",
-      "onboardingEverydayTitle": "Everyday life, made easy",
-      "onboardingEverydayBody": "Laundry, car wash, moving, event rides and lost-and-found, each handled by its own mini app.",
-      "onboardingAllInOneTitle": "All in one place",
-      "onboardingAllInOneBody": "Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.",
-      "skip": "Skip",
-      "next": "Next",
-      "getStarted": "Get started",
+  "onboardingWelcomeTitle": "Welcome to OG ONEGROUP",
+  "onboardingWelcomeBody": "One super app, many mini apps. Everything you need in daily life, together in one place.",
+  "onboardingTrustedHelpTitle": "Trusted help, near you",
+  "onboardingTrustedHelpBody": "NearbyFundi and Fundi App connect you with verified technicians and skilled fundis. Book in just a few taps.",
+  "onboardingFoodTitle": "Food and deliveries, chap chap",
+  "onboardingFoodBody": "Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.",
+  "onboardingEverydayTitle": "Everyday life, made easy",
+  "onboardingEverydayBody": "Laundry, car wash, moving, event rides and lost-and-found, each handled by its own mini app.",
+  "onboardingAllInOneTitle": "All in one place",
+  "onboardingAllInOneBody": "Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.",
+  "skip": "Skip",
+  "next": "Next",
+  "getStarted": "Get started",
 
-       "dalaliOnline": "Dalali Online",
+  "dalaliOnline": "Dalali Online",
 
-         "navApps": "Apps",
-         "navAccount": "Account",
-         "appsSubtitle": "Every service in one place",
-         "accountSubtitle": "Language and app settings",
-         "recentApps": "Recent",
-         "favoriteApps": "Favorites",
-         "seeAll": "See all",
-         "filterAll": "All",
-         "favoritesHint": "Long-press any app to add it to your favorites.",
-         "addedFavorite": "Added to favorites",
-         "removedFavorite": "Removed from favorites",
-         "noAppsHere": "No apps here yet",
-         "categoryFood": "Food",
-         "categoryCleaning": "Cleaning",
-         "categoryDelivery": "Delivery",
-         "categoryPartners": "Partners",
+  "navApps": "Apps",
+  "navAccount": "Account",
+  "appsSubtitle": "Every service in one place",
+  "accountSubtitle": "Language and app settings",
+  "recentApps": "Recent",
+  "favoriteApps": "Favorites",
+  "seeAll": "See all",
+  "filterAll": "All",
+  "favoritesHint": "Long-press any app to add it to your favorites.",
+  "addedFavorite": "Added to favorites",
+  "removedFavorite": "Removed from favorites",
+  "noAppsHere": "No apps here yet",
+  "categoryFood": "Food",
+  "categoryCleaning": "Cleaning",
+  "categoryDelivery": "Delivery",
+  "categoryPartners": "Partners",
 
-
-
-             "navActivity": "Activity",
-             "activitySubtitle": "Bookings and orders from all apps",
-             "filterActive": "Active",
-             "filterDone": "Completed",
-             "activityEmptyTitle": "No activity yet",
-             "activityEmptySub": "Your bookings, orders and requests from every app will show up here.",
-             "browseApps": "Browse apps"
+  "navActivity": "Activity",
+  "activitySubtitle": "Bookings and orders from all apps",
+  "filterActive": "Active",
+  "filterDone": "Completed",
+  "activityEmptyTitle": "No activity yet",
+  "activityEmptySub": "Your bookings, orders and requests from every app will show up here.",
+  "browseApps": "Browse apps"
 }

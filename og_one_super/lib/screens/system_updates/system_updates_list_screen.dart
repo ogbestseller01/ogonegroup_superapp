@@ -8,7 +8,7 @@ import '../../models/system_update.dart';
 import '../../providers/system_update_provider.dart';
 import '../../widgets/system_update_sheet.dart';
 
-/// Full list of ALL system updates — public endpoint (any date).
+/// Full list of ALL app updates — public endpoint (any date).
 class SystemUpdatesListScreen extends StatefulWidget {
   const SystemUpdatesListScreen({super.key});
 
@@ -43,7 +43,7 @@ class _SystemUpdatesListScreenState extends State<SystemUpdatesListScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          t.systemUpdatesTitle,
+          t.appUpdatesTitle,
           style: TextStyle(color: onSurface, fontWeight: FontWeight.w800),
         ),
         iconTheme: IconThemeData(color: onSurface),
@@ -116,7 +116,7 @@ class _SystemUpdatesListScreenState extends State<SystemUpdatesListScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          t.systemUpdatesEmpty,
+                          t.appUpdatesEmpty,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 17,
@@ -126,7 +126,7 @@ class _SystemUpdatesListScreenState extends State<SystemUpdatesListScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          t.systemUpdatesEmptySub,
+                          t.appUpdatesEmptySub,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13.5,
@@ -207,7 +207,7 @@ class _UpdateTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.notifications_rounded,
+                  Icons.system_update_rounded, // <-- New App Update Icon
                   color: Colors.white,
                   size: 20,
                 ),

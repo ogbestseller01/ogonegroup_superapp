@@ -19,25 +19,25 @@
     "placeholders": { "name": { "type": "String" } }
   },
 
-    "systemUpdatesTitle": "Taarifa za Mfumo",
-    "systemUpdatesEmpty": "Hakuna taarifa bado",
-    "systemUpdatesEmptySub": "Umeshafika mwisho. Taarifa mpya zitaonekana hapa.",
-    "systemUpdatesMarkAllRead": "Weka zote kama zimesomwa",
-    "systemUpdatesDismiss": "Ondoa",
-    "systemUpdatesMore": "+{count} zaidi",
-    "@systemUpdatesMore": {
-      "placeholders": {
-        "count": { "type": "int" }
-      }
-    },
-    "systemUpdatesSeeAll": "Tazama zote",
-    "systemUpdatesPublishedOn": "Imetangazwa {date}",
-    "@systemUpdatesPublishedOn": {
-      "placeholders": {
-        "date": { "type": "String" }
-      }
-    },
-    "systemUpdatesPullToRefresh": "Vuta kusasisha",
+  "appUpdatesTitle": "Taarifa za Programu",
+  "appUpdatesEmpty": "Hakuna taarifa bado",
+  "appUpdatesEmptySub": "Umeshafika mwisho. Taarifa mpya zitaonekana hapa.",
+  "appUpdatesMarkAllRead": "Weka zote kama zimesomwa",
+  "appUpdatesDismiss": "Ondoa",
+  "appUpdatesMore": "+{count} zaidi",
+  "@appUpdatesMore": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "appUpdatesSeeAll": "Tazama zote",
+  "appUpdatesPublishedOn": "Imetangazwa {date}",
+  "@appUpdatesPublishedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "appUpdatesPullToRefresh": "Vuta kusasisha",
 
   "nearbyFundi": "NearbyFundi",
   "fundiApp": "Fundi App",
@@ -92,8 +92,9 @@
   "orderUpdatesDesc": "Pata arifa kuhusu oda na uhifadhi wako",
   "promotions": "Matangazo na Ofersi",
   "promotionsDesc": "Pokea ofa maalum na punguzo",
-  "systemUpdates": "Masasisho ya Mfumo",
-  "systemUpdatesDesc": "Masasisho muhimu ya programu na matangazo",
+
+  "appUpdates": "Taarifa za Programu",
+  "appUpdatesDesc": "Masasisho muhimu ya programu na matangazo",
 
   "privacyData": "Faragha na Data",
   "privacyPolicy": "Sera ya Faragha",
@@ -147,67 +148,64 @@
   "partnerships": "Ushirikiano",
   "welcomePartnerships": "Karibu kwa ushirikiano",
 
-    "featured": "Programu Zilizoangaziwa",
-    "partnerApps": "Programu za Washirika",
-    "partnerAppsHint": "Programu za washirika zitaonekana hapa",
-    "home": "Nyumbani",
-    "scan": "Skani",
+  "featured": "Programu Zilizoangaziwa",
+  "partnerApps": "Programu za Washirika",
+  "partnerAppsHint": "Programu za washirika zitaonekana hapa",
+  "home": "Nyumbani",
+  "scan": "Skani",
 
-    "aiAgent": "AI Agent",
-    "back": "Rudi",
-    "torch": "Tochi",
-    "switchCamera": "Badili kamera",
-    "scannerHint": "Elekeza kamera kwenye QR ya app",
-    "scannerNotOurCode": "QR hii si ya OG ONE GROUP.",
-    "scannerExpired": "QR hii imeisha muda.",
-    "scannerInvalid": "QR hii haifai.",
-    "scannerOffline": "Imeshindwa kuthibitisha QR. Angalia intaneti.",
-    "cameraPermissionTitle": "Ruhusa ya kamera inahitajika",
-    "cameraPermissionBody": "Washa ruhusa ya kamera kwenye Mipangilio ya simu, kisha jaribu tena.",
-    "cameraUnavailableTitle": "Kamera haipatikani",
-    "cameraUnavailableBody": "Imeshindwa kuwasha kamera. Jaribu tena.",
+  "aiAgent": "AI Agent",
+  "back": "Rudi",
+  "torch": "Tochi",
+  "switchCamera": "Badili kamera",
+  "scannerHint": "Elekeza kamera kwenye QR ya app",
+  "scannerNotOurCode": "QR hii si ya OG ONE GROUP.",
+  "scannerExpired": "QR hii imeisha muda.",
+  "scannerInvalid": "QR hii haifai.",
+  "scannerOffline": "Imeshindwa kuthibitisha QR. Angalia intaneti.",
+  "cameraPermissionTitle": "Ruhusa ya kamera inahitajika",
+  "cameraPermissionBody": "Washa ruhusa ya kamera kwenye Mipangilio ya simu, kisha jaribu tena.",
+  "cameraUnavailableTitle": "Kamera haipatikani",
+  "cameraUnavailableBody": "Imeshindwa kuwasha kamera. Jaribu tena.",
 
-      "onboardingWelcomeTitle": "Karibu OG ONEGROUP",
-      "onboardingWelcomeBody": "Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.",
-      "onboardingTrustedHelpTitle": "Msaada unaoaminika, karibu nawe",
-      "onboardingTrustedHelpBody": "NearbyFundi na Fundi App zinakuunganisha na mafundi waliothibitishwa. Weka oda kwa kubonyeza mara chache tu.",
-      "onboardingFoodTitle": "Chakula na usafirishaji, chap chap",
-      "onboardingFoodBody": "Agiza msosi mtamu kupitia Msosi Chap Chap na upokee vitu vyako haraka kupitia Duma App.",
-      "onboardingEverydayTitle": "Maisha ya kila siku, rahisi",
-      "onboardingEverydayBody": "Ufuaji nguo, kuosha gari, kuhama, usafiri wa matukio na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.",
-      "onboardingAllInOneTitle": "Vyote mahali pamoja",
-      "onboardingAllInOneBody": "Fungua programu ndogo yoyote kutoka skrini ya mwanzo. Nyingine zinakuja hivi karibuni, pamoja na AI Agent wa kukusaidia.",
-      "skip": "Ruka",
-      "next": "Endelea",
-      "getStarted": "Anza",
+  "onboardingWelcomeTitle": "Karibu OG ONEGROUP",
+  "onboardingWelcomeBody": "Programu moja kuu, programu ndogo nyingi. Kila unachohitaji kila siku, mahali pamoja.",
+  "onboardingTrustedHelpTitle": "Msaada unaoaminika, karibu nawe",
+  "onboardingTrustedHelpBody": "NearbyFundi na Fundi App zinakuunganisha na mafundi waliothibitishwa. Weka oda kwa kubonyeza mara chache tu.",
+  "onboardingFoodTitle": "Chakula na usafirishaji, chap chap",
+  "onboardingFoodBody": "Agiza msosi mtamu kupitia Msosi Chap Chap na upokee vitu vyako haraka kupitia Duma App.",
+  "onboardingEverydayTitle": "Maisha ya kila siku, rahisi",
+  "onboardingEverydayBody": "Ufuaji nguo, kuosha gari, kuhama, usafiri wa matukio na kutafuta vitu vilivyopotea, kila kimoja kina programu yake ndogo.",
+  "onboardingAllInOneTitle": "Vyote mahali pamoja",
+  "onboardingAllInOneBody": "Fungua programu ndogo yoyote kutoka skrini ya mwanzo. Nyingine zinakuja hivi karibuni, pamoja na AI Agent wa kukusaidia.",
+  "skip": "Ruka",
+  "next": "Endelea",
+  "getStarted": "Anza",
 
-      "dalaliOnline": "Dalali Online",
+  "dalaliOnline": "Dalali Online",
 
-        "navApps": "Programu",
-        "navAccount": "Akaunti",
-        "appsSubtitle": "Huduma zote mahali pamoja",
-        "accountSubtitle": "Lugha na mipangilio ya programu",
-        "recentApps": "Hivi karibuni",
-        "favoriteApps": "Vipendwa",
-        "seeAll": "Tazama zote",
-        "filterAll": "Zote",
-        "favoritesHint": "Bonyeza kwa muda programu yoyote ili kuiweka kwenye vipendwa.",
-        "addedFavorite": "Imeongezwa kwenye vipendwa",
-        "removedFavorite": "Imeondolewa kwenye vipendwa",
-        "noAppsHere": "Hakuna programu bado",
-        "categoryFood": "Chakula",
-        "categoryCleaning": "Usafi",
-        "categoryDelivery": "Usafirishaji",
-        "categoryPartners": "Washirika",
+  "navApps": "Programu",
+  "navAccount": "Akaunti",
+  "appsSubtitle": "Huduma zote mahali pamoja",
+  "accountSubtitle": "Lugha na mipangilio ya programu",
+  "recentApps": "Hivi karibuni",
+  "favoriteApps": "Vipendwa",
+  "seeAll": "Tazama zote",
+  "filterAll": "Zote",
+  "favoritesHint": "Bonyeza kwa muda programu yoyote ili kuiweka kwenye vipendwa.",
+  "addedFavorite": "Imeongezwa kwenye vipendwa",
+  "removedFavorite": "Imeondolewa kwenye vipendwa",
+  "noAppsHere": "Hakuna programu bado",
+  "categoryFood": "Chakula",
+  "categoryCleaning": "Usafi",
+  "categoryDelivery": "Usafirishaji",
+  "categoryPartners": "Washirika",
 
-
-
-            "navActivity": "Shughuli",
-            "activitySubtitle": "Oda na huduma kutoka programu zote",
-            "filterActive": "Zinazoendelea",
-            "filterDone": "Zilizokamilika",
-            "activityEmptyTitle": "Hakuna shughuli bado",
-            "activityEmptySub": "Oda, huduma na maombi yako kutoka programu zote yataonekana hapa.",
-            "browseApps": "Tazama programu"
-
+  "navActivity": "Shughuli",
+  "activitySubtitle": "Oda na huduma kutoka programu zote",
+  "filterActive": "Zinazoendelea",
+  "filterDone": "Zilizokamilika",
+  "activityEmptyTitle": "Hakuna shughuli bado",
+  "activityEmptySub": "Oda, huduma na maombi yako kutoka programu zote yataonekana hapa.",
+  "browseApps": "Tazama programu"
 }

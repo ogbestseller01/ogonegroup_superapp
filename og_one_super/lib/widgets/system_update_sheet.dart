@@ -16,7 +16,7 @@ String formatSystemUpdateDate(DateTime? d) {
   return '${l.day} ${m[l.month - 1]} ${l.year} · ${two(l.hour)}:${two(l.minute)}';
 }
 
-/// Full-text view of a system update. Use from card tap, list tap, or push tap.
+/// Full-text view of an app update. Use from card tap, list tap, or push tap.
 Future<void> showSystemUpdateSheet(BuildContext context, SystemUpdate u) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final onSurface = Theme.of(context).colorScheme.onSurface;
@@ -29,9 +29,7 @@ Future<void> showSystemUpdateSheet(BuildContext context, SystemUpdate u) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    // 👇 Use the sheet's own context here
     builder: (sheetContext) => SafeArea(
-      // 👇 Forces the content down below the notch/Dynamic Island
       top: true,
       bottom: true,
       child: Padding(
@@ -43,12 +41,12 @@ Future<void> showSystemUpdateSheet(BuildContext context, SystemUpdate u) {
             // ── Header Row ──
             Row(
               children: [
-                const Icon(Icons.notifications_rounded,
+                const Icon(Icons.system_update_rounded,
                     color: AppTheme.primary, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    t.systemUpdatesPublishedOn(
+                    t.appUpdatesPublishedOn(
                       formatSystemUpdateDate(u.publishedAt),
                     ),
                     style: TextStyle(
@@ -57,7 +55,6 @@ Future<void> showSystemUpdateSheet(BuildContext context, SystemUpdate u) {
                     ),
                   ),
                 ),
-                // 👇 Fixed Cancel Button
                 IconButton(
                   tooltip: t.close,
                   onPressed: () {
@@ -71,8 +68,8 @@ Future<void> showSystemUpdateSheet(BuildContext context, SystemUpdate u) {
                     color: onSurface.withOpacity(0.55),
                   ),
                   visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero, // Removes extra tap dead-zone
-                  constraints: const BoxConstraints(), // Forces tight tap target
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),

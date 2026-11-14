@@ -94,132 +94,6 @@ class _JobsScreenState extends State<JobsScreen> {
     return true;
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // Contact Fundi dialog
-  // ─────────────────────────────────────────────────────────────
-  void _showContactDialog(Job job, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    final phone = job.technicianPhone;
-    final email = job.technicianEmail;
-    final hasPhone = phone != null && phone.isNotEmpty;
-    final hasEmail = email != null && email.isNotEmpty;
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            const Icon(Icons.contact_phone_rounded, color: AppTheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '${l10n.contact} ${job.technicianName}',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!hasPhone && !hasEmail)
-              Text(
-                l10n.noContactDetails,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
-                ),
-              ),
-            if (hasPhone)
-              _contactRow(
-                icon: Icons.phone_rounded,
-                label: l10n.phone,
-                value: phone,
-                theme: theme,
-                l10n: l10n,
-              ),
-            if (hasPhone && hasEmail) const SizedBox(height: 12),
-            if (hasEmail)
-              _contactRow(
-                icon: Icons.email_rounded,
-                label: l10n.email,
-                value: email,
-                theme: theme,
-                l10n: l10n,
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.closeAction),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _contactRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required ThemeData theme,
-    required AppLocalizations l10n,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppTheme.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                SelectableText(
-                  value,
-                  style: const TextStyle(
-                      fontSize: 14.5, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            tooltip: l10n.copy,
-            icon: const Icon(Icons.copy_rounded, size: 18),
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: value));
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label ${l10n.copy}'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<JobProvider>();
@@ -315,11 +189,8 @@ class _JobsScreenState extends State<JobsScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 28),
       children: [
-        // ── Search bar ────────────────────────────────────────
         _searchBar(theme, l10n),
         const SizedBox(height: 14),
-
-        // ── Status chips ──────────────────────────────────────
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -335,8 +206,6 @@ class _JobsScreenState extends State<JobsScreen> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // ── Stats cards ───────────────────────────────────────
         Row(
           children: [
             Expanded(
@@ -352,7 +221,7 @@ class _JobsScreenState extends State<JobsScreen> {
             Expanded(
               child: _statCard(
                 icon: Icons.hourglass_empty_rounded,
-                iconColor: Colors.blueGrey.shade600,
+                iconColor: AppTheme.accent,
                 value: pendingCount,
                 label: l10n.statusPending,
                 theme: theme,
@@ -362,7 +231,7 @@ class _JobsScreenState extends State<JobsScreen> {
             Expanded(
               child: _statCard(
                 icon: Icons.check_circle_outline_rounded,
-                iconColor: Colors.green.shade700,
+                iconColor: AppTheme.success,
                 value: inProgressCount,
                 label: l10n.statusInProgress,
                 theme: theme,
@@ -372,7 +241,6 @@ class _JobsScreenState extends State<JobsScreen> {
         ),
         const SizedBox(height: 22),
 
-        // ── Empty filter state ────────────────────────────────
         if (filtered.isEmpty) ...[
           const SizedBox(height: 40),
           Icon(Icons.filter_alt_off_rounded,
@@ -391,7 +259,6 @@ class _JobsScreenState extends State<JobsScreen> {
           const SizedBox(height: 20),
         ],
 
-        // ── Lists ─────────────────────────────────────────────
         if (active.isNotEmpty) ...[
           _sectionTitle(l10n.activeJobs, active.length, theme),
           const SizedBox(height: 10),
@@ -407,7 +274,6 @@ class _JobsScreenState extends State<JobsScreen> {
     );
   }
 
-  // ── Search bar ────────────────────────────────────────────
   Widget _searchBar(ThemeData theme, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
@@ -454,7 +320,6 @@ class _JobsScreenState extends State<JobsScreen> {
     );
   }
 
-  // ── Status chip ───────────────────────────────────────────
   Widget _chip(String? key, String label) {
     final selected = _statusFilter == key;
     return GestureDetector(
@@ -483,7 +348,6 @@ class _JobsScreenState extends State<JobsScreen> {
     );
   }
 
-  // ── Stat card ─────────────────────────────────────────────
   Widget _statCard({
     required IconData icon,
     required Color iconColor,
@@ -741,8 +605,8 @@ class _JobsScreenState extends State<JobsScreen> {
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.amber.shade800,
-                          side: BorderSide(color: Colors.amber.shade700),
+                          foregroundColor: AppTheme.secondary,
+                          side: const BorderSide(color: AppTheme.secondary),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -778,10 +642,12 @@ class _JobsScreenState extends State<JobsScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () => _openChat(job),
                           icon: const Icon(Icons.chat_bubble_outline_rounded,
-                              size: 18),
+                              size: 16),
                           label: Text(
-                            l10n.chat,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            '${l10n.chat} to get contact',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
@@ -798,25 +664,61 @@ class _JobsScreenState extends State<JobsScreen> {
                 ),
 
                 const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    // 👇 Faded and disabled as requested
-                    onPressed: null,
-                    icon: const Icon(Icons.contact_phone_rounded, size: 18),
-                    label: Text(
-                      l10n.contactFundi,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      // Faded colors for the disabled state
-                      disabledForegroundColor: AppTheme.primary.withValues(alpha: 0.4),
-                      side: BorderSide(
-                          color: AppTheme.primary.withValues(alpha: 0.15)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
+                // ── Coming Soon Contact Fundi Button ──
+                // Wrapped in IgnorePointer so taps don't trigger anything
+                IgnorePointer(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.contact_phone_rounded, size: 18),
+                          label: Text(
+                            l10n.contactFundi,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            disabledForegroundColor:
+                            AppTheme.primary.withValues(alpha: 0.4),
+                            side: BorderSide(
+                                color: AppTheme.primary.withValues(alpha: 0.15)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      // 👇 Exactly on top of the text
+                      Positioned(
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondary,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'Coming Soon',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

@@ -41,15 +41,11 @@ class AppTile extends StatelessWidget {
     final hasImage = app.imageAsset != null;
     final iconColor = color.computeLuminance() > 0.4 ? kNavy : Colors.white;
 
-    // Faded Opacity for Coming Soon Apps
-    final opacity = soon ? 0.45 : 1.0;
-
-    // Dimmed text color for Coming Soon Apps
-    final textColor = soon
-        ? dashMuted(isDark).withValues(alpha: 0.6)
-        : dashInk(isDark);
+    // 🚨 Text color for Coming Soon is completely TRANSPARENT
+    final textColor = soon ? Colors.transparent : dashInk(isDark);
 
     return Pressable(
+      // Accessibility label remains even if the text is hidden
       label: soon ? '$title, $soonLabel' : title,
       onTap: onTap,
       // Prevent favoriting a coming soon app
@@ -58,56 +54,53 @@ class AppTile extends StatelessWidget {
         padding: const EdgeInsets.only(top: 6),
         child: Column(
           children: [
+            // ── THE ICON (Fully Visible) ──
             SizedBox(
               width: size,
               height: size,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  // The App Icon (Faded if Soon)
-                  Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      width: size,
-                      height: size,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(size * 0.28),
-                        gradient: hasImage
-                            ? null
-                            : LinearGradient(
-                          colors: [
-                            dashShade(color, 0.09),
-                            dashShade(color, -0.07),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withValues(alpha: isDark ? 0.25 : 0.2),
-                            blurRadius: 10,
-                            spreadRadius: -2,
-                            offset: const Offset(0, 4),
-                          ),
+                  Container(
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(size * 0.28),
+                      gradient: hasImage
+                          ? null
+                          : LinearGradient(
+                        colors: [
+                          dashShade(color, 0.09),
+                          dashShade(color, -0.07),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: hasImage
-                          ? Padding(
-                        padding: EdgeInsets.all(size * 0.04),
-                        child: Image.asset(
-                          app.imageAsset!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(dashIconFor(app.icon),
-                                  size: size * 0.5, color: iconColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: isDark ? 0.25 : 0.2),
+                          blurRadius: 10,
+                          spreadRadius: -2,
+                          offset: const Offset(0, 4),
                         ),
-                      )
-                          : Icon(dashIconFor(app.icon),
-                          size: size * 0.5, color: iconColor),
+                      ],
                     ),
+                    child: hasImage
+                        ? Padding(
+                      padding: EdgeInsets.all(size * 0.04),
+                      child: Image.asset(
+                        app.imageAsset!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(dashIconFor(app.icon),
+                                size: size * 0.5, color: iconColor),
+                      ),
+                    )
+                        : Icon(dashIconFor(app.icon),
+                        size: size * 0.5, color: iconColor),
                   ),
 
-                  // The "Soon" Badge (Not faded)
+                  // The "Soon" Badge (Fully Visible)
                   if (soon)
                     Positioned(
                       top: -5,
@@ -142,7 +135,7 @@ class AppTile extends StatelessWidget {
                       ),
                     ),
 
-                  // The Favorite Star Badge (Not faded)
+                  // The Favorite Star Badge (Fully Visible)
                   if (isFavorite && !soon)
                     Positioned(
                       top: -5,
@@ -165,20 +158,17 @@ class AppTile extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // The App Label (Faded if Soon)
+            // ── THE LABEL (Invisible for "Soon") ──
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
-                child: Opacity(
-                  opacity: opacity,
-                  child: FitLabel(
-                    text: title,
-                    style: TextStyle(
-                      fontWeight: soon ? FontWeight.w500 : FontWeight.w700,
-                      fontSize: kLabelFont,
-                      height: kLabelLineHeight,
-                      color: textColor,
-                    ),
+                child: FitLabel(
+                  text: title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: kLabelFont,
+                    height: kLabelLineHeight,
+                    color: textColor, // Transparent color
                   ),
                 ),
               ),
