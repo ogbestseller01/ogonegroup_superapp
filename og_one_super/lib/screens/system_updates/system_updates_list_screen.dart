@@ -8,12 +8,27 @@ import '../../models/system_update.dart';
 import '../../providers/system_update_provider.dart';
 import '../../widgets/system_update_sheet.dart';
 
-/// Full list of ALL system updates from the backend (regardless of dismissal).
-class SystemUpdatesListScreen extends StatelessWidget {
+/// Full list of ALL system updates — public endpoint (any date).
+class SystemUpdatesListScreen extends StatefulWidget {
   const SystemUpdatesListScreen({super.key});
 
   static Route<void> route() =>
       MaterialPageRoute(builder: (_) => const SystemUpdatesListScreen());
+
+  @override
+  State<SystemUpdatesListScreen> createState() =>
+      _SystemUpdatesListScreenState();
+}
+
+class _SystemUpdatesListScreenState extends State<SystemUpdatesListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<SystemUpdateProvider>().loadAll();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,24 +44,20 @@ class SystemUpdatesListScreen extends StatelessWidget {
         elevation: 0,
         title: Text(
           t.systemUpdatesTitle,
-          style: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.w800,
-          ),
+          style: TextStyle(color: onSurface, fontWeight: FontWeight.w800),
         ),
         iconTheme: IconThemeData(color: onSurface),
       ),
       body: Consumer<SystemUpdateProvider>(
         builder: (context, p, _) {
-          // 👇 CHANGED from p.visible to p.all
           final items = p.all;
 
-          // 1. Loading state
+          // 1. Loading
           if (p.loading && items.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // 2. Error state (e.g. 401 Unauthorized, 500 Server Error)
+          // 2. Error
           if (p.error != null && items.isEmpty) {
             return Center(
               child: Padding(
@@ -54,7 +65,8 @@ class SystemUpdatesListScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                    const Icon(Icons.error_outline_rounded,
+                        size: 48, color: Colors.redAccent),
                     const SizedBox(height: 16),
                     Text(
                       p.error!,
@@ -63,67 +75,77 @@ class SystemUpdatesListScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
-                      onPressed: () => p.load(),
+                      onPressed: () => p.loadAll(),
                       child: const Text('Retry'),
-                    )
+                    ),
                   ],
                 ),
               ),
             );
           }
 
-          // 3. Empty state (all caught up)
+          // 3. Empty
           if (items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withOpacity(0.04)
-                            : Colors.black.withOpacity(0.03),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.inbox_rounded,
-                        size: 56,
-                        color: onSurface.withOpacity(0.35),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      t.systemUpdatesEmpty,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      t.systemUpdatesEmptySub,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        height: 1.4,
-                        color: onSurface.withOpacity(0.55),
-                      ),
-                    ),
-                  ],
+            return RefreshIndicator(
+              color: AppTheme.primary,
+              onRefresh: () => p.loadAll(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.04)
+                                : Colors.black.withOpacity(0.03),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.inbox_rounded,
+                            size: 56,
+                            color: onSurface.withOpacity(0.35),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          t.systemUpdatesEmpty,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          t.systemUpdatesEmptySub,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.4,
+                            color: onSurface.withOpacity(0.55),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           }
 
-          // 4. Data state
+          // 4. Data
           return RefreshIndicator(
             color: AppTheme.primary,
-            onRefresh: p.load,
+            onRefresh: () => p.loadAll(),
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               physics: const AlwaysScrollableScrollPhysics(
@@ -131,10 +153,8 @@ class SystemUpdatesListScreen extends StatelessWidget {
               ),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _UpdateTile(
-                update: items[i],
-                isDark: isDark,
-              ),
+              itemBuilder: (context, i) =>
+                  _UpdateTile(update: items[i], isDark: isDark),
             ),
           );
         },

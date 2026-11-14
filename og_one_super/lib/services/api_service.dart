@@ -107,25 +107,28 @@ class ApiService {
   // ============================================================
   // SYSTEM UPDATES
   // ============================================================
-  Future<ApiResponse> getSystemUpdates({int? limit}) => _get(
-    '/v26/system-updates',
-    query: limit != null ? {'limit': limit} : null,
-  );
 
-  Future<ApiResponse> getSystemUpdate(int id) =>
-      _get('/v26/system-updates/$id');
-
-  Future<ApiResponse> markSystemUpdateViewed(int id) =>
-      _post('/v26/system-updates/$id/view');
-
-  Future<ApiResponse> dismissSystemUpdate(int id) =>
-      _post('/v26/system-updates/$id/dismiss');
+  /// PUBLIC — ALL published, non-closed updates (any date), newest first.
+  /// Route: GET /api/system-updates/all
+  ///
+  /// Pass `limit` for a flat array; omit it for a paginated payload.
+  Future<ApiResponse> getAllSystemUpdates({
+    int? limit,
+    int? page,
+    int? perPage,
+  }) =>
+      _get(
+        '/system-updates/all',
+        query: {
+          if (limit != null) 'limit': limit,
+          if (page != null) 'page': page,
+          if (perPage != null) 'per_page': perPage,
+        },
+      );
 
   // ============================================================
   // DEVICE TOKEN (FCM push registration)
   // ============================================================
-  /// POST /v1/device-token – saves this device's FCM token for the user.
-  /// Requires a valid auth token.
   Future<ApiResponse> registerDeviceToken({
     required String token,
     required String platform,

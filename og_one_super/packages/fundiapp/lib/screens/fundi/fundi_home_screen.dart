@@ -711,10 +711,10 @@ class _FundiDrawer extends StatelessWidget {
                     },
                   ),
 
-                  // ── Subscription (coming soon) ──
+                  // ── Subscriptions (coming soon) ──
                   _DrawerItem(
                     icon: Icons.workspace_premium_rounded,
-                    label: l10n.subscription,
+                    label: l10n.subscriptions,
                     trailing: _comingSoonBadge(context),
                     onTap: () {
                       Navigator.pop(context);

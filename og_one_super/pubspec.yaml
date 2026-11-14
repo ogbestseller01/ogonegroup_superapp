@@ -25,11 +25,10 @@ dependencies:
 
   firebase_core: ^4.15.0
   firebase_messaging: ^16.3.0
-  flutter_local_notifications: ^23.0.2
+  flutter_local_notifications: ^19.4.1 # Aligned with override to prevent version clash
   timeago: ^3.7.1
 
   # QR codes: draw a QR for each mini app, and scan one from the dashboard.
-  # mobile_scanner 7.x uses Apple Vision on iOS (no ML Kit, works on arm64 simulators).
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.2
 
@@ -58,10 +57,6 @@ flutter:
   assets:
     - assets/images/
     - assets/images/apps/
-    - google_fonts/
-
-  config:
-    enable-swift-package-manager: false
 
 dependency_overrides:
   # Force a compatible version of `js` so pusher_channels_flutter and flutter_secure_storage can coexist

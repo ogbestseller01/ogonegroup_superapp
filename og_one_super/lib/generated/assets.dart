@@ -5,14 +5,7 @@ import 'package:flutter/widgets.dart';
 class Assets {
   Assets._();
 
-  static const $AssetsAssetsGen assets = $AssetsAssetsGen();
-  static const $AssetsGoogleFontsGen googleFonts = $AssetsGoogleFontsGen();
-}
-
-class $AssetsAssetsGen {
-  const $AssetsAssetsGen();
-
-  final $AssetsImagesGen images = const $AssetsImagesGen();
+  static const $AssetsImagesGen images = $AssetsImagesGen();
 }
 
 class $AssetsImagesGen {
@@ -58,30 +51,6 @@ class $AssetsAppsGen {
       const AssetGenImage('assets/images/apps/osha_papo_hapo.png');
   final AssetGenImage safaripoa =
       const AssetGenImage('assets/images/apps/safaripoa.png');
-}
-
-class $AssetsGoogleFontsGen {
-  const $AssetsGoogleFontsGen();
-
-  final String a007MWT29102026 = 'google_fonts/007MWT29102026.pdf';
-  final String nunitoBlack = 'google_fonts/Nunito-Black.ttf';
-  final String nunitoBlackItalic = 'google_fonts/Nunito-BlackItalic.ttf';
-  final String nunitoBold = 'google_fonts/Nunito-Bold.ttf';
-  final String nunitoBoldItalic = 'google_fonts/Nunito-BoldItalic.ttf';
-  final String nunitoExtraBold = 'google_fonts/Nunito-ExtraBold.ttf';
-  final String nunitoExtraBoldItalic =
-      'google_fonts/Nunito-ExtraBoldItalic.ttf';
-  final String nunitoExtraLight = 'google_fonts/Nunito-ExtraLight.ttf';
-  final String nunitoExtraLightItalic =
-      'google_fonts/Nunito-ExtraLightItalic.ttf';
-  final String nunitoItalic = 'google_fonts/Nunito-Italic.ttf';
-  final String nunitoLight = 'google_fonts/Nunito-Light.ttf';
-  final String nunitoLightItalic = 'google_fonts/Nunito-LightItalic.ttf';
-  final String nunitoMedium = 'google_fonts/Nunito-Medium.ttf';
-  final String nunitoMediumItalic = 'google_fonts/Nunito-MediumItalic.ttf';
-  final String nunitoRegular = 'google_fonts/Nunito-Regular.ttf';
-  final String nunitoSemiBold = 'google_fonts/Nunito-SemiBold.ttf';
-  final String nunitoSemiBoldItalic = 'google_fonts/Nunito-SemiBoldItalic.ttf';
 }
 
 class AssetGenImage {

@@ -6,10 +6,9 @@ plugins {
 }
 
 android {
+    // This is your internal namespace (keep as is)
     namespace = "com.example.og_one_super"
 
-    // API 36 = Android 16 (latest stable as of 2025).
-    // API 37 does not exist yet — building against it will fail.
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -20,6 +19,7 @@ android {
     }
 
     defaultConfig {
+        // This MUST match an app registered in your google-services.json
         applicationId = "com.example.og_one_super"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
@@ -30,7 +30,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Replace with a real release keystore before publishing.
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false

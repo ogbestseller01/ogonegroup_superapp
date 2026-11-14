@@ -17,7 +17,7 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/banner_provider.dart';
 import 'providers/settings_provider.dart';
-import 'providers/system_update_provider.dart'; // 👈 ADDED
+import 'providers/system_update_provider.dart';
 import 'screens/dashboard/super_app_dashboard.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/splash_screen.dart';
@@ -27,6 +27,7 @@ import 'services/internet_checker.dart';
 import 'services/security_service.dart';
 import 'services/system_update_push.dart';
 import 'widgets/app_gates.dart';
+import 'widgets/developer_mode_gate.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -65,14 +66,8 @@ Future<void> _bootstrap() async {
 
   await _safeInit('SecurityService', () => SecurityService.instance.init());
 
-  // 2) Firebase
-  await _safeInit('Firebase', () async {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-  });
+  // 2) Firebase (single default app, safe against duplicate-app)
+  await _safeInit('Firebase', _initFirebase);
 
   // 3) FCM background handler (MUST be before runApp)
   await _safeInit('FCM background', () async {
@@ -103,12 +98,26 @@ Future<void> _bootstrap() async {
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => BannerProvider()..fetchBanners()),
-        // 👇 ADDED: Global provider so Settings/Updates screens can access it
+        // Global provider so Settings/Updates screens can access it
         ChangeNotifierProvider(create: (_) => SystemUpdateProvider()..load()),
       ],
       child: const OgOneSuperApp(),
     ),
   );
+}
+
+Future<void> _initFirebase() async {
+  if (Firebase.apps.isNotEmpty) return;
+  try {
+    // Explicitly use the options we defined in firebase_options.dart
+    // This works for both Android and iOS and avoids native file mismatches.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    // Native side or a mini app already created [DEFAULT]; that's fine.
+    if (e.code != 'duplicate-app') rethrow;
+  }
 }
 
 Future<void> _createAndroidChannel() async {
@@ -170,7 +179,9 @@ class OgOneSuperApp extends StatelessWidget {
           child: SecurityGate(
             enforce: _kEnforceSecurityGate,
             checker: _checker,
-            child: child ?? const SizedBox.shrink(),
+            child: DeveloperModeGate(
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

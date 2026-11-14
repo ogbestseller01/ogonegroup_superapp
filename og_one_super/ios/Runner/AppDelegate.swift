@@ -1,6 +1,6 @@
 import Flutter
 import UIKit
-// `import Darwin` is not required — Foundation re-exports it.
+import UserNotifications // Added for Push Notifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -9,6 +9,12 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+
+    // ── Push Notification Setup ───────────────────────────────
+    // Set the delegate so foreground notifications show up
+    UNUserNotificationCenter.current().delegate = self
+    // ─────────────────────────────────────────────────────────
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -26,7 +32,7 @@ import UIKit
       case "isDeveloperMode":
         result(self?.isDebuggerAttached() ?? false)
       case "isJailbroken":
-        result(self?.isJailbroken() ?? false)   // ← added, see below
+        result(self?.isJailbroken() ?? false)
       default:
         result(FlutterMethodNotImplemented)
       }

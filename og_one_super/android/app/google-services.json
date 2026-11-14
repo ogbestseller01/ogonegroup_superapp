@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "92116320070",
+    "project_id": "og-superapp",
+    "storage_bucket": "og-superapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92116320070:android:2e13c51a4b65fb5d746f47",
+        "android_client_info": {
+          "package_name": "com.example.og_one_super"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXju2lF-9vzal6zBINGQdSCxvTzWPEFXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92116320070:android:748c7d1ad6edef80746f47",
+        "android_client_info": {
+          "package_name": "com.ogonegroup.ogsuperapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXju2lF-9vzal6zBINGQdSCxvTzWPEFXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

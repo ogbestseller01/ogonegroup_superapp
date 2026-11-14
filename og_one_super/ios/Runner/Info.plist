@@ -82,6 +82,12 @@
         <string>remote-notification</string>
     </array>
 
+    <!-- ============================================================
+         FIREBASE / PUSH NOTIFICATION SETTINGS
+         ============================================================ -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
+
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>

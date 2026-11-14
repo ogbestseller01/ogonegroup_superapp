@@ -1,8 +1,4 @@
 // lib/models/system_update.dart
-//
-// Public-facing shape of a system update returned by:
-//   GET /v26/system-updates
-//   GET /v26/system-updates/{id}
 
 class SystemUpdate {
   final int id;
@@ -32,8 +28,7 @@ class SystemUpdate {
   };
 
   @override
-  bool operator ==(Object other) =>
-      other is SystemUpdate && other.id == id;
+  bool operator ==(Object other) => other is SystemUpdate && other.id == id;
 
   @override
   int get hashCode => id.hashCode;

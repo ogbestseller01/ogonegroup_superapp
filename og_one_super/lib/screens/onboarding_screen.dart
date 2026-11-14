@@ -15,11 +15,12 @@ import '../../config/app_theme.dart';
 // ══════════════════════════════════════════════════════════════
 const Color _navy = Color(0xFF1A2B4A);
 const Color _gold = Color(0xFFFFB300);
+const Color _goldLight = Color(0xFFFFD54F);
 const String _logoAsset = 'assets/images/homeimg.png';
 const String _sliderAsset = 'assets/images/sliderimg.png';
 
 const _goldGradient = LinearGradient(
-  colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
+  colors: [_goldLight, _gold],
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
 );
@@ -68,7 +69,6 @@ const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1),
 const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png');
 const _hama = _AppTile('hama', 'local_shipping', Color(0xFF6A3FB5), imageAsset: 'assets/images/apps/hama_chap_chap.png');
 const _dalali = _AppTile('dalali', 'home_work', Color(0xFF0E8F6E), imageAsset: 'assets/images/apps/dalali_online.png');
-const _nimepoteza = _AppTile('nimepoteza', 'find_in_page', Color(0xFFE6B422), imageAsset: 'assets/images/apps/nimepoteza.png');
 
 enum StepType { welcome, trustedHelp, food, everyday, allInOne }
 
@@ -110,8 +110,7 @@ const _steps = <_Step>[
   _Step(type: StepType.food, tiles: [_msosi, _duma]),
   _Step(
     type: StepType.everyday,
-    // Dalali Online sits right before Nimepoteza.
-    tiles: [_laundry, _osha, _hama, _safariPoa, _dalali, _nimepoteza],
+    tiles: [_laundry, _osha, _hama, _safariPoa, _dalali],
     columns: 3,
   ),
   _Step(
@@ -126,10 +125,8 @@ const _steps = <_Step>[
       _safariPoa,
       _duma,
       _dalali,
-      _nimepoteza,
     ],
-    // 10 apps: 4 columns = 3 rows, so the card stays compact.
-    columns: 4,
+    columns: 3,
   ),
 ];
 
@@ -157,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.initState();
     _blobCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 9),
+      duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
   }
 
@@ -168,16 +165,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.dispose();
   }
 
-  /// Marks onboarding as done (so it never shows again) and opens dashboard.
   Future<void> _finish() async {
     if (_finishing) return;
     _finishing = true;
 
     try {
       await AppPrefs.setOnboardingDone();
-    } catch (_) {
-      // Even if saving fails, still let the user into the app.
-    }
+    } catch (_) {}
 
     if (!mounted) return;
     Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
@@ -190,8 +184,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       return;
     }
     _ctrl.nextPage(
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutExpo,
     );
   }
 
@@ -199,8 +193,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     HapticFeedback.selectionClick();
     _ctrl.animateToPage(
       i,
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutExpo,
     );
   }
 
@@ -223,7 +217,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         backgroundColor: bg,
         body: Stack(
           children: [
-            // Soft gradient base
+            // ── Gradient base ──
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -236,37 +230,47 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               ),
             ),
 
-            // Soft animated blobs
+            // ── Animated ambient blobs ──
             AnimatedBuilder(
               animation: _blobCtrl,
               builder: (_, __) {
                 final v = _blobCtrl.value;
+                final eased = Curves.easeInOut.transform(v);
                 return Stack(
                   children: [
                     Positioned(
-                      right: -95 + 25 * v,
-                      bottom: -140 + 35 * (1 - v),
+                      right: -110 + 30 * eased,
+                      bottom: -150 + 40 * (1 - eased),
                       child: _Blob(
-                        size: 310 + 35 * v,
-                        color: _gold.withValues(alpha: isDark ? 0.07 : 0.13),
+                        size: 340 + 40 * eased,
+                        color: _gold.withValues(alpha: isDark ? 0.08 : 0.14),
                       ),
                     ),
                     Positioned(
-                      left: -75 - 18 * v,
-                      top: -95 + 28 * v,
+                      left: -90 - 20 * eased,
+                      top: -110 + 32 * eased,
                       child: _Blob(
-                        size: 250 + 25 * (1 - v),
+                        size: 270 + 30 * (1 - eased),
                         color: AppTheme.primary
-                            .withValues(alpha: isDark ? 0.11 : 0.055),
+                            .withValues(alpha: isDark ? 0.12 : 0.06),
                       ),
                     ),
                     Positioned(
-                      left: screenW * 0.38,
-                      top: size.height * 0.20,
+                      left: screenW * 0.35,
+                      top: size.height * 0.18,
                       child: _Blob(
-                        size: 110 + 18 * v,
+                        size: 130 + 20 * eased,
                         color: const Color(0xFF6A3FB5)
-                            .withValues(alpha: isDark ? 0.07 : 0.045),
+                            .withValues(alpha: isDark ? 0.08 : 0.05),
+                      ),
+                    ),
+                    Positioned(
+                      right: screenW * 0.1,
+                      top: size.height * 0.55,
+                      child: _Blob(
+                        size: 80 + 15 * eased,
+                        color: const Color(0xFF00A86B)
+                            .withValues(alpha: isDark ? 0.06 : 0.04),
                       ),
                     ),
                   ],
@@ -274,18 +278,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               },
             ),
 
-            // Background illustration
+            // ── Background illustration ──
             Positioned.fill(
               child: IgnorePointer(
                 child: Opacity(
-                  opacity: isDark ? 0.58 : 0.52,
+                  opacity: isDark ? 0.55 : 0.48,
                   child: OverflowBox(
-                    maxWidth: screenW * 2.15,
+                    maxWidth: screenW * 2.2,
                     maxHeight: double.infinity,
                     alignment: const Alignment(0, 0.08),
                     child: Image.asset(
                       _sliderAsset,
-                      width: screenW * 2.15,
+                      width: screenW * 2.2,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                     ),
@@ -329,7 +333,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           isDark: isDark,
                           onTap: _goTo,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
                         _PrimaryButton(
                           label: _last ? t.getStarted : t.next,
                           icon: _last
@@ -351,7 +355,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 }
 
 // ══════════════════════════════════════════════════════════════
-// Top bar — logo left + title left
+// Top bar
 // ══════════════════════════════════════════════════════════════
 class _TopBar extends StatelessWidget {
   final String title;
@@ -373,13 +377,13 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 10, 0),
+      padding: const EdgeInsets.fromLTRB(20, 10, 10, 0),
       child: SizedBox(
         height: 48,
         child: Row(
           children: [
-            const _MiniLogo(size: 36),
-            const SizedBox(width: 10),
+            const _MiniLogo(size: 38),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 title,
@@ -390,22 +394,31 @@ class _TopBar extends StatelessWidget {
                   color: onBg,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
             AnimatedOpacity(
               opacity: showSkip ? 1 : 0,
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 220),
               child: IgnorePointer(
                 ignoring: !showSkip,
                 child: TextButton(
                   onPressed: onSkip,
+                  style: TextButton.styleFrom(
+                    foregroundColor: muted,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                   child: Text(
                     skipLabel,
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 14,
+                    style: const TextStyle(
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -465,13 +478,13 @@ class _StepPage extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: onBg,
-                            fontSize: 26,
+                            fontSize: 27,
                             fontWeight: FontWeight.w800,
-                            height: 1.18,
-                            letterSpacing: -0.5,
+                            height: 1.16,
+                            letterSpacing: -0.6,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         Text(
                           step.getBody(t),
                           textAlign: TextAlign.center,
@@ -479,7 +492,7 @@ class _StepPage extends StatelessWidget {
                             color: muted,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            height: 1.55,
+                            height: 1.58,
                           ),
                         ),
                       ],
@@ -513,13 +526,13 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 620),
+      duration: const Duration(milliseconds: 680),
       curve: Curves.easeOutCubic,
       builder: (_, v, child) => Opacity(
         opacity: v,
         child: Transform.translate(
-          offset: Offset(0, 16 * (1 - v)),
-          child: Transform.scale(scale: 0.94 + 0.06 * v, child: child),
+          offset: Offset(0, 20 * (1 - v)),
+          child: Transform.scale(scale: 0.92 + 0.08 * v, child: child),
         ),
       ),
       child: step.tiles.isEmpty
@@ -546,7 +559,6 @@ class _WelcomeVisual extends StatelessWidget {
     _hama,
     _fundiApp,
     _dalali,
-    _nimepoteza,
   ];
 
   @override
@@ -561,8 +573,8 @@ class _WelcomeVisual extends StatelessWidget {
         children: [
           // Soft gold glow
           Container(
-            width: size * 0.82,
-            height: size * 0.82,
+            width: size * 0.84,
+            height: size * 0.84,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -573,28 +585,45 @@ class _WelcomeVisual extends StatelessWidget {
               ),
             ),
           ),
-          // Orbit icons (10 now, slightly smaller so they never touch)
+          // Subtle orbit ring
+          Container(
+            width: size * 0.74,
+            height: size * 0.74,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _gold.withValues(alpha: isDark ? 0.10 : 0.14),
+                width: 1.2,
+              ),
+            ),
+          ),
+          // Orbit icons
           for (var i = 0; i < _preview.length; i++)
             _OrbitIcon(
               tile: _preview[i],
               index: i,
               total: _preview.length,
               radius: size * 0.37,
-              iconSize: size * 0.11,
+              iconSize: size * 0.105,
               isDark: isDark,
             ),
           // Center gold badge
           Container(
-            width: size * 0.28,
-            height: size * 0.28,
+            width: size * 0.29,
+            height: size * 0.29,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: _goldGradient,
               boxShadow: [
                 BoxShadow(
-                  color: _gold.withValues(alpha: 0.48),
-                  blurRadius: 20,
-                  offset: const Offset(0, 7),
+                  color: _gold.withValues(alpha: 0.50),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: _goldLight.withValues(alpha: 0.30),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
@@ -603,9 +632,9 @@ class _WelcomeVisual extends StatelessWidget {
                 'OG',
                 style: TextStyle(
                   color: _navy,
-                  fontSize: 19,
+                  fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.4,
+                  letterSpacing: 1.6,
                 ),
               ),
             ),
@@ -655,9 +684,9 @@ class _OrbitIcon extends StatelessWidget {
               : null,
           boxShadow: [
             BoxShadow(
-              color: tile.color.withValues(alpha: isDark ? 0.36 : 0.28),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: tile.color.withValues(alpha: isDark ? 0.38 : 0.30),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -670,7 +699,8 @@ class _OrbitIcon extends StatelessWidget {
             errorBuilder: (_, __, ___) => Icon(
               _iconFor(tile.iconName),
               size: iconSize * 0.82,
-              color: tile.color.computeLuminance() > 0.4 ? _navy : Colors.white,
+              color:
+              tile.color.computeLuminance() > 0.4 ? _navy : Colors.white,
             ),
           ),
         )
@@ -710,7 +740,7 @@ class _TilesHero extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.06)
-            : Colors.white.withValues(alpha: 0.75),
+            : Colors.white.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark
@@ -719,9 +749,9 @@ class _TilesHero extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.06),
-            blurRadius: 22,
-            offset: const Offset(0, 9),
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.07),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -735,8 +765,6 @@ class _TilesHero extends StatelessWidget {
           final tile =
           math.min(byWidth, byHeight).clamp(38.0, 74.0).toDouble();
 
-          // FittedBox only scales the grid down when a small screen cannot
-          // fit every row, so the tiles never spill out of the card.
           return FittedBox(
             fit: BoxFit.scaleDown,
             child: SizedBox(
@@ -802,10 +830,10 @@ class _TileView extends StatelessWidget {
                 : null,
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: isDark ? 0.32 : 0.26),
-                blurRadius: 13,
+                color: color.withValues(alpha: isDark ? 0.34 : 0.28),
+                blurRadius: 14,
                 spreadRadius: -2,
-                offset: const Offset(0, 5),
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -882,7 +910,7 @@ class _MiniLogo extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 3),
           ),
         ],
@@ -923,19 +951,24 @@ class _Dots extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
         final on = i == index;
+        final passed = i < index;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => onTap(i),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 280),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
-              width: on ? 26 : 7,
+              width: on ? 28 : (passed ? 10 : 7),
               height: 7,
               decoration: BoxDecoration(
                 gradient: on ? _goldGradient : null,
-                color: on ? null : idle,
+                color: on
+                    ? null
+                    : (passed
+                    ? _gold.withValues(alpha: 0.35)
+                    : idle),
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -966,16 +999,21 @@ class _PrimaryButton extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: Container(
-        height: 56,
+        height: 58,
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: _goldGradient,
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color: _gold.withValues(alpha: 0.42),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
+              color: _gold.withValues(alpha: 0.44),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: _goldLight.withValues(alpha: 0.24),
+              blurRadius: 6,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
@@ -986,6 +1024,8 @@ class _PrimaryButton extends StatelessWidget {
           child: InkWell(
             borderRadius: radius,
             onTap: onTap,
+            splashColor: Colors.white.withValues(alpha: 0.20),
+            highlightColor: Colors.white.withValues(alpha: 0.08),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -993,12 +1033,13 @@ class _PrimaryButton extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: _navy,
-                    fontSize: 16,
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(icon, size: 20, color: _navy),
+                Icon(icon, size: 21, color: _navy),
               ],
             ),
           ),
