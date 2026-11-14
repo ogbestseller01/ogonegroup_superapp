@@ -1,36 +1,111 @@
 // lib/services/system_update_push.dart
-import 'package:firebase_messaging/firebase_messaging.dart';
+//
+// Firebase-free system-update poller.
+//
+// Public API (unchanged from the old FCM version):
+//
+//   final stop = await SystemUpdatePush.listen((id, tapped) async { ... });
+//
+// Behaviour:
+//   • Polls the backend for the latest active system update.
+//   • Fires the callback once per new update id.
+//   • `tapped` is always false — no OS-level push is observed without Firebase.
+//   • Optionally calls `provider.refresh()` so the UI reacts immediately.
+
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
-typedef SystemUpdateCallback = void Function(int updateId, bool tapped);
+import '../providers/system_update_provider.dart';
+import 'api_service.dart';
+
+typedef SystemUpdateCallback = Future<void> Function(int id, bool tapped);
 
 class SystemUpdatePush {
-  static Future<VoidCallback> listen(SystemUpdateCallback onUpdate) async {
-    void handle(RemoteMessage m, bool tapped) {
-      if (m.data['type'] != 'system_update') return;
-      final id = int.tryParse('${m.data['update_id']}');
-      if (id != null) onUpdate(id, tapped);
+  SystemUpdatePush._();
+
+  static const Duration _pollInterval = Duration(seconds: 45);
+  static const Duration _firstPollDelay = Duration(seconds: 2);
+
+  /// Start listening. Returns a `stop()` function you must call in dispose.
+  static Future<Future<void> Function()> listen(
+      SystemUpdateCallback onUpdate, {
+        SystemUpdateProvider? provider,
+        bool skipInitial = true,
+      }) async {
+    int? lastDeliveredId;
+    Timer? timer;
+    bool stopped = false;
+
+    Future<Map<String, dynamic>?> fetchLatest() async {
+      final res = await ApiService.instance.getActiveSystemUpdates();
+      if (!res.success) return null;
+
+      final payload = res.data;
+      dynamic first;
+
+      if (payload is List && payload.isNotEmpty) {
+        first = payload.first;
+      } else if (payload is Map && payload['data'] is List) {
+        final list = payload['data'] as List;
+        if (list.isEmpty) return null;
+        first = list.first;
+      } else {
+        return null;
+      }
+
+      if (first is! Map) return null;
+      return Map<String, dynamic>.from(first);
     }
 
-    final initial = await FirebaseMessaging.instance.getInitialMessage();
-    if (initial != null) handle(initial, true);
+    if (skipInitial) {
+      try {
+        final seed = await fetchLatest();
+        lastDeliveredId = int.tryParse('${seed?['id']}');
+      } catch (e, st) {
+        debugPrint('SystemUpdatePush.seed error: $e\n$st');
+      }
+    }
 
-    final opened =
-    FirebaseMessaging.onMessageOpenedApp.listen((m) => handle(m, true));
-    final fg =
-    FirebaseMessaging.onMessage.listen((m) => handle(m, false));
+    Future<void> poll() async {
+      if (stopped) return;
 
-    return () {
-      opened.cancel();
-      fg.cancel();
+      try {
+        final update = await fetchLatest();
+        if (update == null) return;
+
+        final id = int.tryParse('${update['id']}');
+        if (id == null) return;
+        if (lastDeliveredId != null && id <= lastDeliveredId!) return;
+
+        lastDeliveredId = id;
+
+        if (provider != null) {
+          try {
+            await provider.refresh();
+          } catch (e, st) {
+            debugPrint('SystemUpdatePush.provider.refresh error: $e\n$st');
+          }
+        }
+
+        await onUpdate(id, false);
+      } catch (e, st) {
+        debugPrint('SystemUpdatePush.poll error: $e\n$st');
+      }
+    }
+
+    unawaited(Future.delayed(_firstPollDelay, poll));
+    timer = Timer.periodic(_pollInterval, (_) => unawaited(poll()));
+
+    return () async {
+      stopped = true;
+      timer?.cancel();
+      timer = null;
     };
   }
-}
 
-/// MUST be top-level + registered in main() before runApp().
-@pragma('vm:entry-point')
-Future<void> systemUpdateBackgroundHandler(RemoteMessage m) async {
-  if (m.data['type'] == 'system_update') {
-    debugPrint('[FCM/background] system_update ${m.data['update_id']}');
+  /// Call from a notification-tap handler if you add local notifications later.
+  static Future<void> handleTap(int id) async {
+    // No-op until local notifications are wired up.
   }
 }

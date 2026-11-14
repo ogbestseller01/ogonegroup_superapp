@@ -6,8 +6,8 @@ plugins {
 }
 
 android {
-    // This is your internal namespace (keep as is)
-    namespace = "com.example.og_one_super"
+    // Must match the package_name in google-services.json
+    namespace = "com.example.og_one_superapp"
 
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
@@ -19,8 +19,8 @@ android {
     }
 
     defaultConfig {
-        // This MUST match an app registered in your google-services.json
-        applicationId = "com.example.og_one_super"
+        // Must match the package_name in google-services.json
+        applicationId = "com.example.og_one_superapp"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

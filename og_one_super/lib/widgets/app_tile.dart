@@ -41,10 +41,19 @@ class AppTile extends StatelessWidget {
     final hasImage = app.imageAsset != null;
     final iconColor = color.computeLuminance() > 0.4 ? kNavy : Colors.white;
 
+    // Faded Opacity for Coming Soon Apps
+    final opacity = soon ? 0.45 : 1.0;
+
+    // Dimmed text color for Coming Soon Apps
+    final textColor = soon
+        ? dashMuted(isDark).withValues(alpha: 0.6)
+        : dashInk(isDark);
+
     return Pressable(
       label: soon ? '$title, $soonLabel' : title,
       onTap: onTap,
-      onLongPress: onLongPress,
+      // Prevent favoriting a coming soon app
+      onLongPress: soon ? null : onLongPress,
       child: Padding(
         padding: const EdgeInsets.only(top: 6),
         child: Column(
@@ -55,44 +64,50 @@ class AppTile extends StatelessWidget {
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Container(
-                    width: size,
-                    height: size,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(size * 0.28),
-                      gradient: hasImage
-                          ? null
-                          : LinearGradient(
-                              colors: [
-                                dashShade(color, 0.09),
-                                dashShade(color, -0.07),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: isDark ? 0.25 : 0.2),
-                          blurRadius: 10,
-                          spreadRadius: -2,
-                          offset: const Offset(0, 4),
+                  // The App Icon (Faded if Soon)
+                  Opacity(
+                    opacity: opacity,
+                    child: Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(size * 0.28),
+                        gradient: hasImage
+                            ? null
+                            : LinearGradient(
+                          colors: [
+                            dashShade(color, 0.09),
+                            dashShade(color, -0.07),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: isDark ? 0.25 : 0.2),
+                            blurRadius: 10,
+                            spreadRadius: -2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: hasImage
+                          ? Padding(
+                        padding: EdgeInsets.all(size * 0.04),
+                        child: Image.asset(
+                          app.imageAsset!,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Icon(dashIconFor(app.icon),
+                                  size: size * 0.5, color: iconColor),
+                        ),
+                      )
+                          : Icon(dashIconFor(app.icon),
+                          size: size * 0.5, color: iconColor),
                     ),
-                    child: hasImage
-                        ? Padding(
-                            padding: EdgeInsets.all(size * 0.04),
-                            child: Image.asset(
-                              app.imageAsset!,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(dashIconFor(app.icon),
-                                      size: size * 0.5, color: iconColor),
-                            ),
-                          )
-                        : Icon(dashIconFor(app.icon),
-                            size: size * 0.5, color: iconColor),
                   ),
+
+                  // The "Soon" Badge (Not faded)
                   if (soon)
                     Positioned(
                       top: -5,
@@ -104,7 +119,7 @@ class AppTile extends StatelessWidget {
                           color: AppTheme.secondary,
                           borderRadius: BorderRadius.circular(8),
                           border:
-                              Border.all(color: dashPageBg(isDark), width: 1.6),
+                          Border.all(color: dashPageBg(isDark), width: 1.6),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.1),
@@ -126,7 +141,9 @@ class AppTile extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (isFavorite)
+
+                  // The Favorite Star Badge (Not faded)
+                  if (isFavorite && !soon)
                     Positioned(
                       top: -5,
                       left: -6,
@@ -137,7 +154,7 @@ class AppTile extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: kGoldGradient,
                           border:
-                              Border.all(color: dashPageBg(isDark), width: 1.6),
+                          Border.all(color: dashPageBg(isDark), width: 1.6),
                         ),
                         child: const Icon(Icons.star_rounded,
                             size: 11, color: kNavy),
@@ -147,16 +164,21 @@ class AppTile extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+
+            // The App Label (Faded if Soon)
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
-                child: FitLabel(
-                  text: title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: kLabelFont,
-                    height: kLabelLineHeight,
-                    color: dashInk(isDark),
+                child: Opacity(
+                  opacity: opacity,
+                  child: FitLabel(
+                    text: title,
+                    style: TextStyle(
+                      fontWeight: soon ? FontWeight.w500 : FontWeight.w700,
+                      fontSize: kLabelFont,
+                      height: kLabelLineHeight,
+                      color: textColor,
+                    ),
                   ),
                 ),
               ),
@@ -200,7 +222,7 @@ class SliverAppGrid extends StatelessWidget {
           crossAxisSpacing: DashGrid.colSpacing,
         ),
         delegate: SliverChildBuilderDelegate(
-          (context, i) {
+              (context, i) {
             final app = apps[i];
             return Reveal(
               key: ValueKey(app.slug),

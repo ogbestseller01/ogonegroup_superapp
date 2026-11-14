@@ -1,129 +1,79 @@
 // lib/services/fcm_token_service.dart
-import 'dart:async';
-import 'dart:io' show Platform;
+//
+// Optional: only needed if you re-enable Firebase in the super app.
+// Registers the device token anonymously via /v1/device-token.
+// No auth required — works at boot, before login.
 
-import 'package:firebase_core/firebase_core.dart' show FirebaseException;
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service.dart';
 
 class FcmTokenService {
-  static bool _registered = false;
+  FcmTokenService._();
 
-  /// Registers this device for FCM push. Safe to call multiple times.
-  /// Call after Firebase.initializeApp() and after login (if auth is used).
-  static Future<void> register({bool force = false}) async {
-    if (_registered && !force) return;
+  static const String _app = 'og_one_super';
+  static const String _kDeviceId = 'device_id';
+  static StreamSubscription<String>? _refreshSub;
 
+  static Future<void> register() async {
     try {
-      final messaging = FirebaseMessaging.instance;
-
-      // 1) Ask permission (no-op on Android <13, required on iOS).
-      final settings = await messaging.requestPermission(
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
-        provisional: false,
       );
       if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('[FCM] permission denied by user');
+        debugPrint('FcmTokenService: permission denied.');
         return;
       }
 
-      // 2) iOS only: wait for APNs token without throwing.
-      //    getAPNSToken() can throw FirebaseException(apns-token-not-set)
-      //    until iOS registers with APNs (takes 1–5 s after launch).
-      if (!kIsWeb && Platform.isIOS) {
-        final apnsReady = await _waitForApnsToken(messaging);
-        if (!apnsReady) {
-          debugPrint(
-            '[FCM] APNs token never arrived. '
-                'Likely causes: (a) running on iOS Simulator, '
-                '(b) missing aps-environment entitlement, '
-                '(c) missing Push Notifications capability in Xcode.',
-          );
-          return;
-        }
-      }
-
-      // 3) Fetch FCM token.
-      String? token;
-      try {
-        token = await messaging.getToken();
-      } on FirebaseException catch (e) {
-        debugPrint('[FCM] getToken failed: ${e.code} — ${e.message}');
-        return;
-      }
-
+      final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) {
-        debugPrint('[FCM] FCM token unavailable');
+        debugPrint('FcmTokenService: no token yet.');
         return;
       }
 
-      // 4) Upload to backend.
-      final res = await ApiService.instance.registerDeviceToken(
-        token: token,
-        platform: _platform(),
-      );
-      _registered = res.success;
-      debugPrint(
-        res.success
-            ? '[FCM] token registered: ${token.substring(0, 12)}…'
-            : '[FCM] token upload failed: ${res.message}',
-      );
+      await _send(token);
 
-      // 5) Handle token rotation.
-      messaging.onTokenRefresh.listen((newToken) async {
-        if (newToken.isEmpty) return;
-        await ApiService.instance.registerDeviceToken(
-          token: newToken,
-          platform: _platform(),
-        );
-      });
+      await _refreshSub?.cancel();
+      _refreshSub = FirebaseMessaging.instance.onTokenRefresh.listen(
+            (newToken) => _send(newToken),
+        onError: (e) => debugPrint('FcmTokenService.onTokenRefresh error: $e'),
+      );
     } catch (e, st) {
-      debugPrint('[FCM] register failed: $e\n$st');
+      debugPrint('FcmTokenService.register error: $e\n$st');
     }
   }
 
-  /// Polls `getAPNSToken()` up to 10 seconds.
-  /// Returns true when the token is available.
-  static Future<bool> _waitForApnsToken(
-      FirebaseMessaging messaging,
-      ) async {
-    for (var i = 0; i < 20; i++) {
-      try {
-        final apns = await messaging.getAPNSToken();
-        if (apns != null && apns.isNotEmpty) {
-          debugPrint('[FCM] APNs token ready: ${apns.substring(0, 12)}…');
-          return true;
-        }
-      } on FirebaseException catch (e) {
-        // apns-token-not-set is EXPECTED on the first calls.
-        if (i == 0) {
-          debugPrint('[FCM] waiting for APNs token (${e.code})…');
-        }
-      } catch (e) {
-        if (i == 0) {
-          debugPrint('[FCM] getAPNSToken error: $e');
-        }
-      }
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-    return false;
+  static Future<void> _send(String token) async {
+    final platform =
+    defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+    final deviceId = await _deviceId();
+
+    final res = await ApiService.instance.registerDeviceToken(
+      token: token,
+      platform: platform,
+      app: _app,
+      deviceId: deviceId,
+    );
+    debugPrint(
+      'FcmTokenService → app=$_app platform=$platform '
+          'device=$deviceId result=${res.success} ${res.message}',
+    );
   }
 
-  static String _platform() {
-    if (kIsWeb) return 'web';
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.android:
-        return 'android';
-      case TargetPlatform.iOS:
-        return 'ios';
-      case TargetPlatform.macOS:
-        return 'macos';
-      default:
-        return 'unknown';
+  static Future<String> _deviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString(_kDeviceId);
+    if (id == null || id.isEmpty) {
+      id = '${DateTime.now().microsecondsSinceEpoch}-'
+          '${(1000 + (DateTime.now().millisecondsSinceEpoch % 9000))}';
+      await prefs.setString(_kDeviceId, id);
     }
+    return id;
   }
 }

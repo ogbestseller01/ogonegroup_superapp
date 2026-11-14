@@ -1,5 +1,4 @@
 // lib/providers/system_update_provider.dart
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,46 +10,46 @@ class SystemUpdateProvider extends ChangeNotifier {
 
   final List<SystemUpdate> _all = [];
   final Set<int> _dismissed = {};
-  final Set<int> _viewedThisSession = {};
 
   bool _loading = false;
   String? _error;
+  bool _disposed = false;
 
   bool get loading => _loading;
   String? get error => _error;
-  int get unreadCount => visible.length;
 
-  /// ALL updates fetched from the backend (regardless of dismissal).
   List<SystemUpdate> get all => List.unmodifiable(_all);
 
-  /// Updates the user has NOT dismissed (newest first).
   List<SystemUpdate> get visible =>
       _all.where((u) => !_dismissed.contains(u.id)).toList();
 
-  /// Latest visible update, or null.
   SystemUpdate? get top => visible.isEmpty ? null : visible.first;
 
+  int get unreadCount => visible.length;
+
   // -----------------------------------------------------------------
-  // HOME CARD — today's latest only
+  // HOME CARD — latest active update (published today)
   // -----------------------------------------------------------------
   Future<void> load() async {
     _loading = true;
     _error = null;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await _restoreDismissed();
 
-      // Since you removed the specific "today" route, we just fetch
-      // all updates and the card will naturally show the newest one.
-      final res = await ApiService.instance.getAllSystemUpdates(limit: 10);
+      final res = await ApiService.instance.getActiveSystemUpdates();
 
-      if (res.success && res.data is List) {
+      if (res.success) {
+        final raw = _extractList(res.data);
         _all
           ..clear()
-          ..addAll((res.data as List)
-              .whereType<Map>()
-              .map((e) => SystemUpdate.fromJson(Map<String, dynamic>.from(e))));
+          ..addAll(raw.map(
+                  (e) => SystemUpdate.fromJson(Map<String, dynamic>.from(e))));
+      } else if (res.statusCode == 404) {
+        // /v26/system-updates missing on backend — fall back to /all.
+        await loadAll();
+        return;
       } else {
         _error = res.message;
       }
@@ -58,17 +57,17 @@ class SystemUpdateProvider extends ChangeNotifier {
       _error = e.toString();
     } finally {
       _loading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
   // -----------------------------------------------------------------
-  // LIST SCREEN — ALL published updates (any date)
+  // LIST SCREEN — all published updates (any date)
   // -----------------------------------------------------------------
   Future<void> loadAll({int limit = 200}) async {
     _loading = true;
     _error = null;
-    notifyListeners();
+    _safeNotify();
 
     try {
       await _restoreDismissed();
@@ -76,16 +75,7 @@ class SystemUpdateProvider extends ChangeNotifier {
       final res = await ApiService.instance.getAllSystemUpdates(limit: limit);
 
       if (res.success) {
-        final List<Map> raw;
-        if (res.data is List) {
-          raw = (res.data as List).whereType<Map>().toList();
-        } else if (res.data is Map && res.data['data'] is List) {
-          // Fallback: paginated shape { data: [...] }
-          raw = (res.data['data'] as List).whereType<Map>().toList();
-        } else {
-          raw = const [];
-        }
-
+        final raw = _extractList(res.data);
         _all
           ..clear()
           ..addAll(raw.map(
@@ -97,39 +87,74 @@ class SystemUpdateProvider extends ChangeNotifier {
       _error = e.toString();
     } finally {
       _loading = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
-  // -----------------------------------------------------------------
-  // LOCAL ACTIONS (No backend route needed)
-  // -----------------------------------------------------------------
+  /// Called by SystemUpdatePush when a new update is detected.
+  Future<void> refresh() => load();
+
   Future<void> dismiss(int id) async {
     _dismissed.add(id);
-    notifyListeners();
+    _safeNotify();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
-        _kDismissed, _dismissed.map((e) => '$e').toList());
+      _kDismissed,
+      _dismissed.map((e) => '$e').toList(),
+    );
+
+    try {
+      await ApiService.instance.dismissSystemUpdate(id);
+    } catch (_) {}
   }
 
-  void markViewed(int id) {
-    _viewedThisSession.add(id);
+  Future<void> markViewed(int id) async {
+    try {
+      await ApiService.instance.markSystemUpdateViewed(id);
+    } catch (_) {}
   }
 
-  Future<SystemUpdate?> findById(int id) async {
+  SystemUpdate? findById(int id) {
     for (final u in _all) {
       if (u.id == id) return u;
     }
-    return null; // No backend fetch since the route doesn't exist
+    return null;
+  }
+
+  // -----------------------------------------------------------------
+  // internals
+  // -----------------------------------------------------------------
+
+  List<Map> _extractList(dynamic payload) {
+    if (payload is List) {
+      return payload.whereType<Map>().toList();
+    }
+    if (payload is Map && payload['data'] is List) {
+      return (payload['data'] as List).whereType<Map>().toList();
+    }
+    return const [];
   }
 
   Future<void> _restoreDismissed() async {
     final prefs = await SharedPreferences.getInstance();
     _dismissed
       ..clear()
-      ..addAll((prefs.getStringList(_kDismissed) ?? [])
-          .map(int.tryParse)
-          .whereType<int>());
+      ..addAll(
+        (prefs.getStringList(_kDismissed) ?? [])
+            .map(int.tryParse)
+            .whereType<int>(),
+      );
+  }
+
+  void _safeNotify() {
+    if (_disposed) return;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

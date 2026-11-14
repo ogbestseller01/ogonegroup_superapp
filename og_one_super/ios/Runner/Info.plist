@@ -12,7 +12,7 @@
     <string>$(DEVELOPMENT_LANGUAGE)</string>
 
     <key>CFBundleDisplayName</key>
-    <string>OG ONE GROUP</string>
+    <string>Og One-Group</string>
 
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
@@ -74,17 +74,13 @@
     <key>NSUserTrackingUsageDescription</key>
     <string>OG ONE GROUP uses tracking to improve relevant content and services for you.</string>
 
-    <!-- ============================================================
-         BACKGROUND MODES (FCM push delivery while app is backgrounded)
-         ============================================================ -->
+    <!-- FCM background delivery -->
     <key>UIBackgroundModes</key>
     <array>
         <string>remote-notification</string>
     </array>
 
-    <!-- ============================================================
-         FIREBASE / PUSH NOTIFICATION SETTINGS
-         ============================================================ -->
+    <!-- Firebase -->
     <key>FirebaseAppDelegateProxyEnabled</key>
     <true/>
 
@@ -113,7 +109,6 @@
         <string>http</string>
     </array>
 
-    <!-- ONLY KEEP THIS IF SceneDelegate.swift EXISTS IN ios/Runner/ -->
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
@@ -146,19 +141,16 @@
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
 
+    <!-- Portrait-only, matches main.dart SystemChrome -->
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
         <string>UIInterfaceOrientationPortraitUpsideDown</string>
-        <string>UIInterfaceOrientationLandscapeLeft</string>
-        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 
 </dict>

@@ -13,19 +13,22 @@ class ApiResponse {
   final String message;
   final dynamic data;
   final Map<String, dynamic>? errors;
+  final int? statusCode;
 
   const ApiResponse({
     required this.success,
     required this.message,
     this.data,
     this.errors,
+    this.statusCode,
   });
 
-  factory ApiResponse.fromJson(dynamic json) {
+  factory ApiResponse.fromJson(dynamic json, {int? statusCode}) {
     if (json is! Map) {
-      return const ApiResponse(
+      return ApiResponse(
         success: false,
         message: 'Unexpected response from server.',
+        statusCode: statusCode,
       );
     }
     final map = Map<String, dynamic>.from(json);
@@ -36,6 +39,7 @@ class ApiResponse {
       errors: map['errors'] is Map
           ? Map<String, dynamic>.from(map['errors'] as Map)
           : null,
+      statusCode: statusCode,
     );
   }
 }
@@ -108,6 +112,12 @@ class ApiService {
   // SYSTEM UPDATES
   // ============================================================
 
+  /// PUBLIC — latest active update (home card).
+  /// Route: GET /api/v26/system-updates
+  /// Returns { data: [ {id,title,description,published_at} ] } — empty if none.
+  Future<ApiResponse> getActiveSystemUpdates() =>
+      _get('/v26/system-updates');
+
   /// PUBLIC — ALL published, non-closed updates (any date), newest first.
   /// Route: GET /api/system-updates/all
   ///
@@ -126,17 +136,59 @@ class ApiService {
         },
       );
 
+  /// USER — mark an update viewed (auth optional).
+  /// Route: POST /api/v26/system-updates/{id}/view
+  Future<ApiResponse> markSystemUpdateViewed(int id) =>
+      _post('/v26/system-updates/$id/view');
+
+  /// USER — dismiss an update (auth optional).
+  /// Route: POST /api/v26/system-updates/{id}/dismiss
+  Future<ApiResponse> dismissSystemUpdate(int id) =>
+      _post('/v26/system-updates/$id/dismiss');
+
   // ============================================================
-  // DEVICE TOKEN (FCM push registration)
+  // DEVICE TOKEN (super app + mini apps)
   // ============================================================
+
+  /// PUBLIC — register this device's FCM token.
+  /// Route: POST /api/v1/device-token
   Future<ApiResponse> registerDeviceToken({
     required String token,
     required String platform,
+    String app = 'og_one_super',
+    String? deviceId,
   }) =>
       _post('/v1/device-token', data: {
         'fcm_device_token': token,
         'platform': platform,
+        'app': app,
+        if (deviceId != null) 'device_id': deviceId,
       });
+
+  /// PUBLIC — unregister this device's FCM token (e.g. on logout).
+  /// Route: DELETE /api/v1/device-token
+  Future<ApiResponse> unregisterDeviceToken({
+    required String token,
+    required String platform,
+    String app = 'og_one_super',
+  }) async {
+    try {
+      final res = await _dio.delete('/v1/device-token', data: {
+        'fcm_device_token': token,
+        'platform': platform,
+        'app': app,
+      });
+      return ApiResponse.fromJson(res.data, statusCode: res.statusCode);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  /// AUTH — link this device_id to the currently logged-in user.
+  /// Route: POST /api/v1/auth/device-token/link
+  /// Called by mini apps right after login.
+  Future<ApiResponse> linkDeviceToUser({required String deviceId}) =>
+      _post('/v1/auth/device-token/link', data: {'device_id': deviceId});
 
   // ============================================================
   // PRIVATE HELPERS
@@ -144,7 +196,7 @@ class ApiService {
   Future<ApiResponse> _get(String path, {Map<String, dynamic>? query}) async {
     try {
       final res = await _dio.get(path, queryParameters: query);
-      return ApiResponse.fromJson(res.data);
+      return ApiResponse.fromJson(res.data, statusCode: res.statusCode);
     } catch (e) {
       return _handleError(e);
     }
@@ -153,7 +205,7 @@ class ApiService {
   Future<ApiResponse> _post(String path, {dynamic data}) async {
     try {
       final res = await _dio.post(path, data: data);
-      return ApiResponse.fromJson(res.data);
+      return ApiResponse.fromJson(res.data, statusCode: res.statusCode);
     } catch (e) {
       return _handleError(e);
     }
@@ -161,22 +213,30 @@ class ApiService {
 
   ApiResponse _handleError(dynamic error) {
     if (error is DioException) {
+      final code = error.response?.statusCode;
       final data = error.response?.data;
-      if (error.response?.statusCode == 422 && data is Map) {
+      if (code == 422 && data is Map) {
         return ApiResponse(
           success: false,
           message: (data['message'] ?? 'Validation failed').toString(),
           errors: data['errors'] is Map
               ? Map<String, dynamic>.from(data['errors'] as Map)
               : null,
+          statusCode: code,
         );
       }
       if (data is Map) {
         return ApiResponse(
           success: false,
           message: (data['message'] ?? 'Something went wrong').toString(),
+          statusCode: code,
         );
       }
+      return ApiResponse(
+        success: false,
+        message: 'Network error. Please check your connection.',
+        statusCode: code,
+      );
     }
     return const ApiResponse(
       success: false,

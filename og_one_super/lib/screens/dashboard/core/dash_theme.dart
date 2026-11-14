@@ -36,7 +36,6 @@ const _icons = <String, IconData>{
   'local_laundry_service': Icons.local_laundry_service_rounded,
   'local_car_wash': Icons.local_car_wash_rounded,
   'local_shipping': Icons.local_shipping_rounded,
-  'find_in_page': Icons.find_in_page_rounded,
   'pets': Icons.pets_rounded,
   'delivery_dining': Icons.delivery_dining_rounded,
   'directions_car': Icons.directions_car_rounded,

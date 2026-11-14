@@ -53,19 +53,22 @@ class HomeTabState extends State<HomeTab> {
     _listenForUpdatePushes();
   }
 
-  /// Foreground push  → refresh the card.
-  /// Tapped push      → refresh, then open that update.
+  /// Foreground poll → refresh the card.
+  /// Tapped (never true without Firebase) → refresh, then open that update.
   Future<void> _listenForUpdatePushes() async {
-    final stop = await SystemUpdatePush.listen((id, tapped) async {
-      if (!mounted) return;
-      final provider = context.read<SystemUpdateProvider>();
-      await provider.load();
-      if (!tapped || !mounted) return;
-      final update = await provider.findById(id);
-      if (update != null && mounted) {
-        await showSystemUpdateSheet(context, update);
-      }
-    });
+    final stop = await SystemUpdatePush.listen(
+          (id, tapped) async {
+        if (!mounted) return;
+        final provider = context.read<SystemUpdateProvider>();
+        await provider.refresh();
+        if (!tapped || !mounted) return;
+        final update = await provider.findById(id);
+        if (update != null && mounted) {
+          await showSystemUpdateSheet(context, update);
+        }
+      },
+      provider: context.read<SystemUpdateProvider>(),
+    );
 
     if (mounted) {
       _stopPush = stop;

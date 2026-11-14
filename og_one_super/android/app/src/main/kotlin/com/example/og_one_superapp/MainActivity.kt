@@ -1,4 +1,4 @@
-package com.example.og_one_super
+package com.example.og_one_superapp
 
 import android.content.Intent
 import android.os.Build
