@@ -1,5 +1,5 @@
 // src/config.js
-const baseURLApi = "http://192.168.100.144:8000/api";
+const baseURLApi = "https://nearbyfundibackend.ogonegroup.co.tz/api";
 const redirectUrl = typeof window !== "undefined"
     ? window.location.origin
     : "https://yourdomain.com";
