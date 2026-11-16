@@ -2,7 +2,7 @@
 const baseURLApi = "https://nearbyfundibackend.ogonegroup.co.tz/api";
 const redirectUrl = typeof window !== "undefined"
     ? window.location.origin
-    : "https://yourdomain.com";
+    : "https://nearbyfundibackend.ogonegroup.co.tz";
 
 const appConfig = {
   baseURLApi,
