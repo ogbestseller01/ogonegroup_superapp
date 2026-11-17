@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\TechnicianController;
 use App\Http\Controllers\Api\SearchNearbyFundiController;
 use App\Http\Controllers\Api\ServiceController;
@@ -76,9 +77,11 @@ Route::prefix('v1')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('register-fundi', [AuthController::class, 'registerFundi']);
-        Route::post('google', [AuthController::class, 'googleLogin']);
-        Route::get('google/redirect', [AuthController::class, 'redirectToGoogle']);
-        Route::match(['get', 'post'], 'google/callback', [AuthController::class, 'handleGoogleCallback']);
+
+        // Social sign-in (mobile ID-token flow)
+        Route::post('google', [SocialAuthController::class, 'google'])->middleware('throttle:20,1');
+        Route::post('apple', [SocialAuthController::class, 'apple'])->middleware('throttle:20,1');
+
         Route::post('login', [AuthController::class, 'login']);
         Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
         Route::post('resend-otp', [AuthController::class, 'resendOtp']);

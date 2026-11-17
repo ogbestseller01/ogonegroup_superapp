@@ -31,8 +31,11 @@ class User extends Authenticatable
         'subscription_expires_at',
         'current_subscription_id',
         'fcm_device_token',
+        'locked_until',
     ];
 
+    // google_id / apple_id are deliberately NOT mass-assignable:
+    // SocialAuthController sets them with forceFill() after verifying the token.
     protected $hidden = [
         'password',
         'remember_token',
@@ -42,6 +45,7 @@ class User extends Authenticatable
         'email_verified_at'       => 'datetime',
         'phone_verified_at'       => 'datetime',
         'last_login_at'           => 'datetime',
+        'locked_until'            => 'datetime',
         'is_active'               => 'boolean',
         'subscription_expires_at' => 'datetime',
     ];
@@ -135,7 +139,7 @@ class User extends Authenticatable
             return $tokens[0];
         }
 
-        // Legacy fallback: only safe because we nulled the column above
+        // Legacy fallback: single-token column
         return $this->fcm_device_token ?: null;
     }
 

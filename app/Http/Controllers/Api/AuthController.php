@@ -15,11 +15,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
-use Google_Client;
 use Spatie\Permission\Models\Role;
-use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends BaseApiController
 {
@@ -389,154 +386,7 @@ class AuthController extends BaseApiController
         ], 'Login successful.');
     }
 
-    // ──────────────────────────────────────────────
-    // GOOGLE LOGIN
-    // ──────────────────────────────────────────────
-
-    public function googleLogin(Request $request)
-    {
-        $this->ensureNotRateLimited('google-login:' . $request->ip(), 10, 60);
-
-        $request->validate([
-            'id_token'  => 'required|string',
-            'fcm_token' => 'nullable|string|min:10',
-        ]);
-
-        try {
-            $client  = new Google_Client(['client_id' => config('services.google.client_id')]);
-            $payload = $client->verifyIdToken($request->id_token);
-
-            if (!$payload || empty($payload['email'])) {
-                return $this->unauthorized('Invalid Google token.');
-            }
-
-            $email    = $payload['email'];
-            $name     = $payload['name'] ?? 'Google User';
-            $googleId = $payload['sub'];
-
-            $user = User::where('email', $email)->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'name'              => $name,
-                    'email'             => $email,
-                    'google_id'         => $googleId,
-                    'password'          => Hash::make(Str::random(32)),
-                    'email_verified_at' => now(),
-                    'status'            => 'active',
-                    'is_active'         => true,
-                ]);
-                $user->assignRole('CUSTOMER');
-                $this->logAudit('register_google', 'auth', $user->id, "Customer registered via Google: {$email}");
-            } else {
-                if (empty($user->google_id)) {
-                    $user->update(['google_id' => $googleId]);
-                }
-
-                if (!$user->email_verified_at) {
-                    $user->update(['email_verified_at' => now()]);
-                }
-
-                if ($user->status !== 'active' || !$user->is_active) {
-                    if ($user->hasRole('FUNDI')) {
-                        return $this->forbidden('Your technician account requires admin approval.');
-                    }
-                    $user->update(['status' => 'active', 'is_active' => true]);
-                }
-            }
-
-            $token = $user->createToken('auth_token')->plainTextToken;
-            $this->createSession($user, $request, $token);
-
-            if ($request->filled('fcm_token')) {
-                $this->storeFcmToken($user, $request->fcm_token);
-            }
-
-            $this->logAudit('login_google', 'auth', $user->id, "User logged in via Google: {$email}");
-
-            return $this->successResponse([
-                'user'  => $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']),
-                'roles' => $user->getRoleNames(),
-                'token' => $token,
-            ], 'Google login successful.');
-        } catch (\Throwable $e) {
-            Log::error('Google ID token authentication failed', ['error' => $e->getMessage()]);
-            return $this->serverError('Google authentication failed.');
-        }
-    }
-
-    public function redirectToGoogle()
-    {
-        return response()->json([
-            'url' => Socialite::driver('google')->stateless()->redirect()->getTargetUrl(),
-        ]);
-    }
-
-    public function handleGoogleCallback(Request $request)
-    {
-        try {
-            $code = $request->input('code');
-            if (!$code) {
-                return $this->errorResponse('No authorization code provided.', 422);
-            }
-
-            $response = Socialite::driver('google')->getAccessTokenResponse($code);
-            $token    = $response['access_token'] ?? null;
-
-            if (!$token) {
-                return $this->errorResponse('Failed to retrieve access token from Google.', 401);
-            }
-
-            $googleUser = Socialite::driver('google')->userFromToken($token);
-
-            $user = User::where('email', $googleUser->getEmail())->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'name'              => $googleUser->getName(),
-                    'email'             => $googleUser->getEmail(),
-                    'google_id'         => $googleUser->getId(),
-                    'password'          => Hash::make(Str::random(32)),
-                    'email_verified_at' => now(),
-                    'status'            => 'active',
-                    'is_active'         => true,
-                ]);
-                $user->assignRole('CUSTOMER');
-                $this->logAudit('register_google', 'auth', $user->id, 'Customer registered via Google callback');
-            } else {
-                if (empty($user->google_id)) {
-                    $user->update(['google_id' => $googleUser->getId()]);
-                }
-                if (!$user->email_verified_at) {
-                    $user->update(['email_verified_at' => now()]);
-                }
-                if ($user->hasRole('FUNDI') && ($user->status !== 'active' || !$user->is_active)) {
-                    return $this->forbidden('Your technician account requires admin approval.');
-                }
-                if ($user->status !== 'active') {
-                    $user->update(['status' => 'active', 'is_active' => true]);
-                }
-            }
-
-            $sanctumToken = $user->createToken('auth_token')->plainTextToken;
-            $this->createSession($user, $request, $sanctumToken);
-
-            if ($request->filled('fcm_token')) {
-                $this->storeFcmToken($user, $request->fcm_token);
-            }
-
-            $this->logAudit('login_google', 'auth', $user->id, 'User logged in via Google callback');
-
-            return $this->successResponse([
-                'user'  => $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']),
-                'roles' => $user->getRoleNames(),
-                'token' => $sanctumToken,
-            ], 'Google login successful.');
-        } catch (\Throwable $e) {
-            Log::error('Google callback failed', ['error' => $e->getMessage()]);
-            return $this->errorResponse('Google authentication failed.', 500);
-        }
-    }
+    // Google / Apple sign-in live in SocialAuthController.
 
     // ──────────────────────────────────────────────
     // LOGOUT & SESSIONS
