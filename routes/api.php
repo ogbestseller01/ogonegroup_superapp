@@ -17,7 +17,6 @@ use App\Http\Controllers\Api\LikeController;
 use App\Http\Controllers\Api\AboutController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\TermsController;
-use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\AuditTrailController;
@@ -290,13 +289,6 @@ Route::prefix('v6')->group(function () {
         Route::put('faqs/{id}', [FaqController::class, 'update']);
         Route::delete('faqs/{id}', [FaqController::class, 'destroy']);
     });
-});
-
-// =============================================
-// V7 – ADMIN DASHBOARD
-// =============================================
-Route::prefix('v7')->middleware(['auth:sanctum', 'active.session'])->group(function () {
-    Route::get('dashboard/stats', [AdminDashboardController::class, 'stats']);
 });
 
 // =============================================
