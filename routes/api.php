@@ -79,8 +79,11 @@ Route::prefix('v1')->group(function () {
         Route::post('register-fundi', [AuthController::class, 'registerFundi']);
 
         // Social sign-in (mobile ID-token flow)
+        // Rate limiting lives HERE only. Do not add a second manual RateLimiter
+        // call inside the controller — it sits outside try/catch and would turn
+        // a fake-token 401 into a 500 if the cache backend is unhealthy.
         Route::post('google', [SocialAuthController::class, 'google'])->middleware('throttle:20,1');
-        Route::post('apple', [SocialAuthController::class, 'apple'])->middleware('throttle:20,1');
+        Route::post('apple',  [SocialAuthController::class, 'apple'])->middleware('throttle:20,1');
 
         Route::post('login', [AuthController::class, 'login']);
         Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
@@ -90,8 +93,8 @@ Route::prefix('v1')->group(function () {
 
         // Web OTP Login
         Route::post('web-otp/request', [WebOtpLoginController::class, 'requestOtp']);
-        Route::post('web-otp/verify', [WebOtpLoginController::class, 'verifyOtp']);
-        Route::post('web-otp/resend', [WebOtpLoginController::class, 'resendOtp']);
+        Route::post('web-otp/verify',  [WebOtpLoginController::class, 'verifyOtp']);
+        Route::post('web-otp/resend',  [WebOtpLoginController::class, 'resendOtp']);
 
         // Authenticated auth routes
         Route::middleware('auth:sanctum')->group(function () {

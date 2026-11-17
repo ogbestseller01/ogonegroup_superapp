@@ -26,9 +26,9 @@ class SocialAuthController extends BaseApiController
      * Body: { id_token: string, fcm_token?: string }
      *
      * Rate limiting lives on the route (`->middleware('throttle:20,1')`).
-     * We do NOT touch RateLimiter directly here — that call was outside the
-     * try/catch and any cache backend hiccup would surface as a 500 before
-     * we could return the expected 401.
+     * We do NOT touch RateLimiter directly here — a manual call outside the
+     * try/catch would surface a cache-backend hiccup as a 500 before we
+     * could return the expected 401 for an invalid token.
      */
     public function google(Request $request, SocialTokenVerifier $verifier): JsonResponse
     {
@@ -240,9 +240,6 @@ class SocialAuthController extends BaseApiController
      * must never turn a legitimate auth failure into an uncaught 500. This is
      * the single most common reason a "fake token" test produces 500 instead
      * of the expected 401.
-     *
-     * If you want to share this across controllers, move it to
-     * BaseApiController (or a LoggingSafe trait) and delete this copy.
      */
     protected function safeLog(string $level, string $message, array $context = []): void
     {
