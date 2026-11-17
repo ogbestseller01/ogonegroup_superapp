@@ -1,11 +1,11 @@
+// lib/providers/notification_provider.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-// ✅ Replaced app_badge_plus with flutter_app_badger_plus
-import 'package:flutter_app_badger_plus/flutter_app_badger_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_app_badger_plus/flutter_app_badger_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../app_navigator.dart';
@@ -14,19 +14,38 @@ import '../services/api_service.dart';
 import '../services/fcm_event_bus.dart';
 
 class NotificationProvider extends ChangeNotifier {
+  NotificationProvider({ApiService? api}) : _apiService = api ?? ApiService() {
+    _init();
+  }
+
+  final ApiService _apiService;
   final FlutterLocalNotificationsPlugin _localNotifications =
   FlutterLocalNotificationsPlugin();
-  final ApiService _apiService = ApiService();
 
-  // ignore: spell_checker
+  static const String _chatType = 'chat_message';
+
+  /// How often the server unread count is polled while the app is
+  /// in the foreground. 15s is a good balance for a REST bell badge.
+  static const Duration _pollInterval = Duration(seconds: 15);
+
+  /// Primary native badge channel (matches MainActivity.kt package com.fundapp).
   static const MethodChannel _badgeChannel =
+  MethodChannel('com.fundapp/badge');
+
+  /// Fallback for older native builds still using the old applicationId.
+  static const MethodChannel _legacyBadgeChannel =
   MethodChannel('com.nearbyfundi/badge');
 
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = false;
+  bool _fetching = false;
+  bool _polling = false;
+  bool _disposed = false;
   bool _isInitialized = false;
   String? _error;
   StreamSubscription? _fcmSub;
+  Timer? _pollTimer;
+  Timer? _reloadTimer;
   bool _pulseBadge = false;
   int _unreadCount = 0;
 
@@ -41,6 +60,7 @@ class NotificationProvider extends ChangeNotifier {
   int get unreadCount => _unreadCount;
   bool get hasUnread => unreadCount > 0;
   bool get hasNotifications => _notifications.isNotEmpty;
+  bool get isPolling => _pollTimer?.isActive ?? false;
 
   int get localUnreadCount => _notifications.where((n) => !_isRead(n)).length;
 
@@ -57,12 +77,16 @@ class NotificationProvider extends ChangeNotifier {
     if (value is String) {
       return value == '1' || value.toLowerCase() == 'true';
     }
-    return false;
+    return n['read_at'] != null;
   }
 
-  /// NOTE: returns TRUE when the notification is UNREAD (kept as-is so
-  /// existing UI code that calls it does not change behaviour).
+  /// NOTE: returns TRUE when the notification is UNREAD (kept for
+  /// backwards-compatibility with existing UI code).
   bool isRead(Map<String, dynamic> notification) => !_isRead(notification);
+
+  /// TRUE when the notification has been read.
+  bool isNotificationRead(Map notification) =>
+      _isRead(Map<String, dynamic>.from(notification));
 
   String? _validText(dynamic value) {
     final text = (value?.toString() ?? '').trim();
@@ -94,13 +118,13 @@ class NotificationProvider extends ChangeNotifier {
     return [];
   }
 
-  // ============================================================
-  // CONSTRUCTOR + INIT
-  // ============================================================
-
-  NotificationProvider() {
-    _init();
+  void _notify() {
+    if (!_disposed) notifyListeners();
   }
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   Future<void> _init() async {
     try {
@@ -112,19 +136,22 @@ class NotificationProvider extends ChangeNotifier {
       );
       const settings = InitializationSettings(android: android, iOS: ios);
 
-      // flutter_local_notifications 19.x: POSITIONAL settings argument
       await _localNotifications.initialize(
         settings,
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
 
       await _createNotificationChannel();
+      await _requestNotificationPermission();
 
       _isInitialized = true;
       await loadNotifications();
-      await refreshUnreadCount();
 
       _fcmSub = FcmEventBus.instance.stream.listen(_onFcmEvent);
+
+      // Kick off the periodic auto-check immediately.
+      startPolling();
+
       debugPrint('✅ NotificationProvider initialized');
     } catch (e) {
       debugPrint('❌ Notification init error: $e');
@@ -149,6 +176,94 @@ class NotificationProvider extends ChangeNotifier {
         ?.createNotificationChannel(channel);
   }
 
+  /// Android 13+ requires runtime POST_NOTIFICATIONS permission.
+  Future<void> _requestNotificationPermission() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (e) {
+      debugPrint('⚠️ Notification permission request failed: $e');
+    }
+  }
+
+  // ============================================================
+  // APP LIFECYCLE HOOKS
+  // Call these from a WidgetsBindingObserver in your root widget.
+  // ============================================================
+
+  /// Resume the auto-check and immediately sync when the app returns
+  /// to the foreground.
+  void onAppResumed() {
+    if (_disposed) return;
+    startPolling();
+    loadNotifications(silent: true);
+    refreshUnreadCount();
+  }
+
+  /// Stop the auto-check while the app is backgrounded. FCM will still
+  /// deliver system notifications in the background.
+  void onAppPaused() {
+    stopPolling();
+  }
+
+  // ============================================================
+  // AUTO CHECK
+  // ============================================================
+
+  /// Safe to call repeatedly; only one timer ever runs.
+  void startPolling() {
+    if (_disposed || isPolling) return;
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
+    debugPrint('⏱️ Notification polling started');
+  }
+
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    debugPrint('⏸️ Notification polling stopped');
+  }
+
+  Future<void> _poll() async {
+    if (_polling || _fetching || _disposed) return;
+    _polling = true;
+    try {
+      final count = await _fetchUnreadCount();
+      debugPrint('🔄 poll → server=$count local=$_unreadCount');
+      if (count == null) return;
+
+      if (count != _unreadCount) {
+        if (count > _unreadCount) _pulseBadge = true;
+        await loadNotifications(silent: true);
+      }
+    } finally {
+      _polling = false;
+    }
+  }
+
+  Future<int?> _fetchUnreadCount() async {
+    try {
+      final response = await _apiService.getUnreadNotificationCount(
+        excludeType: _chatType,
+      );
+
+      if (response.sessionExpired) {
+        stopPolling();
+        return null;
+      }
+      if (!response.success || response.data == null) return null;
+
+      final dynamic raw =
+      response.data is Map ? response.data['count'] : response.data;
+      return raw is int ? raw : int.tryParse(raw.toString());
+    } catch (e) {
+      debugPrint('❌ Error fetching unread count: $e');
+      return null;
+    }
+  }
+
   // ============================================================
   // FCM EVENT HANDLER
   // ============================================================
@@ -156,7 +271,7 @@ class NotificationProvider extends ChangeNotifier {
   void _onFcmEvent(Map<String, dynamic> event) {
     final type = event['type']?.toString() ?? 'general';
 
-    if (type == 'chat_message') {
+    if (type == _chatType) {
       refreshUnreadCount();
       return;
     }
@@ -172,6 +287,13 @@ class NotificationProvider extends ChangeNotifier {
       return;
     }
 
+    final payload = jsonEncode({
+      'type': type,
+      'conversation_id': event['conversation_id'],
+      'data': event['data'],
+    });
+
+    // In-app list entry (also refreshes badge via _applyUnreadCount).
     addLocalNotification({
       'id': 'local_${DateTime.now().millisecondsSinceEpoch}',
       'title': title,
@@ -181,10 +303,17 @@ class NotificationProvider extends ChangeNotifier {
       'created_at': event['received_at'] ?? DateTime.now().toIso8601String(),
     });
 
+    // Foreground tray notification (system won't show one automatically).
+    showLocalNotification(title: title, body: body, payload: payload);
+
     _pulseBadge = true;
-    notifyListeners();
-    _updateAppBadge();
-    Future.delayed(const Duration(seconds: 2), loadNotifications);
+    _notify();
+
+    _reloadTimer?.cancel();
+    _reloadTimer = Timer(
+      const Duration(seconds: 2),
+          () => loadNotifications(silent: true),
+    );
   }
 
   void consumePulse() {
@@ -198,33 +327,43 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> _updateAppBadge() async {
     try {
       if (Platform.isIOS) {
-        // ✅ Updated to use FlutterAppBadger
         final supported = await FlutterAppBadger.isAppBadgeSupported();
-        if (!supported) {
-          debugPrint('ℹ️ iOS badge not supported on this device');
-          return;
-        }
+        if (!supported) return;
 
         if (_unreadCount > 0) {
           await FlutterAppBadger.updateBadgeCount(_unreadCount);
         } else {
           await FlutterAppBadger.removeBadge();
         }
-        debugPrint('🔴 iOS badge set to $_unreadCount');
       } else if (Platform.isAndroid) {
-        if (_unreadCount > 0) {
-          await _badgeChannel.invokeMethod(
-            'setBadgeCount',
-            {'count': _unreadCount},
-          );
-        } else {
-          await _badgeChannel.invokeMethod('removeBadge');
+        final method = _unreadCount > 0 ? 'setBadgeCount' : 'removeBadge';
+        final args =
+        _unreadCount > 0 ? <String, dynamic>{'count': _unreadCount} : null;
+
+        try {
+          await _badgeChannel.invokeMethod(method, args);
+        } on MissingPluginException {
+          // Older native builds only register the legacy channel.
+          await _legacyBadgeChannel.invokeMethod(method, args);
         }
-        debugPrint('🤖 Android badge count persisted: $_unreadCount');
       }
+    } on MissingPluginException {
+      // Native handler not registered at all — the launcher badge on Android
+      // is driven by posted notifications anyway.
     } catch (e) {
       debugPrint('❌ Failed to update app badge: $e');
     }
+  }
+
+  Future<void> _applyUnreadCount(int count) async {
+    final next = count < 0 ? 0 : count;
+    if (next == _unreadCount) {
+      _notify();
+      return;
+    }
+    _unreadCount = next;
+    await _updateAppBadge();
+    _notify();
   }
 
   // ============================================================
@@ -293,13 +432,10 @@ class NotificationProvider extends ChangeNotifier {
   }) async {
     if (!_isInitialized) return;
 
-    // Correctly parse JSON payload to check for chat_message
     if (payload != null) {
       try {
         final data = jsonDecode(payload);
-        if (data is Map && data['type'] == 'chat_message') {
-          return;
-        }
+        if (data is Map && data['type'] == _chatType) return;
       } catch (_) {
         // Ignore invalid JSON
       }
@@ -337,15 +473,11 @@ class NotificationProvider extends ChangeNotifier {
         presentSound: true,
       );
 
-      // flutter_local_notifications 19.x: POSITIONAL id, title, body, details
       await _localNotifications.show(
         DateTime.now().millisecondsSinceEpoch.remainder(2147483647),
         safeTitle,
         safeBody,
-        const NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
-        ),
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
         payload: payload,
       );
     } catch (e) {
@@ -357,37 +489,33 @@ class NotificationProvider extends ChangeNotifier {
   // LOAD / REFRESH
   // ============================================================
 
-  Future<void> loadNotifications() async {
-    if (_isLoading) return;
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+  Future<void> loadNotifications({bool silent = false}) async {
+    if (_disposed || _fetching) return;
+    _fetching = true;
+
+    if (!silent) {
+      _isLoading = true;
+      _error = null;
+      _notify();
+    }
 
     try {
       final response = await _apiService.getNotifications(
-        excludeType: 'chat_message',
+        excludeType: _chatType,
       );
+
+      if (response.sessionExpired) {
+        stopPolling();
+        return;
+      }
 
       if (response.success && response.data != null) {
         final items = _extractList(response.data);
         _notifications = items.map((item) {
           final n = Map<String, dynamic>.from(item);
 
-          final rawTitle = (n['title']?.toString() ?? '').trim();
-          final rawBody = (n['body']?.toString() ?? '').trim();
-
-          if (rawTitle.isEmpty ||
-              rawBody.isEmpty ||
-              double.tryParse(rawTitle) != null ||
-              double.tryParse(rawBody) != null) {
-            debugPrint(
-              '⚠️ Notification #${n['id']} has invalid title/body '
-                  '(title: "$rawTitle", body: "$rawBody")',
-            );
-          }
-
-          n['title'] = rawTitle;
-          n['body'] = rawBody;
+          n['title'] = (n['title']?.toString() ?? '').trim();
+          n['body'] = (n['body']?.toString() ?? '').trim();
 
           if (n['data'] is String) {
             try {
@@ -396,9 +524,8 @@ class NotificationProvider extends ChangeNotifier {
           }
           return n;
         }).toList();
-      } else {
-        // `response.message` is non-nullable in ApiResponse, so a `??`
-        // fallback here triggered the "left operand can't be null" warning.
+        _error = null;
+      } else if (!silent) {
         final msg = response.message;
         _error = msg.isNotEmpty ? msg : 'Failed to load notifications';
         _notifications = [];
@@ -406,41 +533,25 @@ class NotificationProvider extends ChangeNotifier {
 
       await refreshUnreadCount();
     } catch (e) {
-      _error = 'Error loading notifications: $e';
-      _notifications = [];
+      if (!silent) {
+        _error = 'Error loading notifications: $e';
+        _notifications = [];
+      }
       debugPrint('❌ Load notifications error: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _fetching = false;
+      if (!_disposed) {
+        _isLoading = false;
+        _notify();
+      }
     }
   }
 
   Future<void> refresh() async => loadNotifications();
 
   Future<void> refreshUnreadCount() async {
-    try {
-      final response = await _apiService.getUnreadNotificationCount(
-        excludeType: 'chat_message',
-      );
-
-      if (response.success && response.data != null) {
-        final dynamic count =
-        response.data is Map ? response.data['count'] : response.data;
-        if (count is int) {
-          _unreadCount = count;
-        } else {
-          _unreadCount = int.tryParse(count.toString()) ?? localUnreadCount;
-        }
-      } else {
-        _unreadCount = localUnreadCount;
-      }
-    } catch (e) {
-      debugPrint('❌ Error refreshing unread count: $e');
-      _unreadCount = localUnreadCount;
-    }
-
-    await _updateAppBadge();
-    notifyListeners();
+    final count = await _fetchUnreadCount();
+    await _applyUnreadCount(count ?? localUnreadCount);
   }
 
   // ============================================================
@@ -472,7 +583,7 @@ class NotificationProvider extends ChangeNotifier {
   Future<bool> markAllAsRead() async {
     try {
       final response = await _apiService.markAllNotificationsAsRead(
-        excludeType: 'chat_message',
+        excludeType: _chatType,
       );
       if (response.success) {
         final readAt = DateTime.now().toIso8601String();
@@ -480,9 +591,7 @@ class NotificationProvider extends ChangeNotifier {
           n['is_read'] = true;
           n['read_at'] = readAt;
         }
-        _unreadCount = 0;
-        await _updateAppBadge();
-        notifyListeners();
+        await _applyUnreadCount(0);
         return true;
       }
       return false;
@@ -495,13 +604,11 @@ class NotificationProvider extends ChangeNotifier {
   Future<bool> clearAll() async {
     try {
       final response = await _apiService.clearNotifications(
-        excludeType: 'chat_message',
+        excludeType: _chatType,
       );
       if (response.success) {
         _notifications.clear();
-        _unreadCount = 0;
-        await _updateAppBadge();
-        notifyListeners();
+        await _applyUnreadCount(0);
         return true;
       }
       return false;
@@ -533,7 +640,7 @@ class NotificationProvider extends ChangeNotifier {
   // ============================================================
 
   void addLocalNotification(Map<String, dynamic> notification) {
-    if (notification['type']?.toString() == 'chat_message') return;
+    if (notification['type']?.toString() == _chatType) return;
 
     final title = _validText(notification['title']);
     final body = _validText(notification['body']);
@@ -553,9 +660,7 @@ class NotificationProvider extends ChangeNotifier {
     if (_notifications.any((n) => _idToString(n['id']) == id)) return;
 
     _notifications.insert(0, notification);
-    _unreadCount++;
-    _updateAppBadge();
-    notifyListeners();
+    _applyUnreadCount(_unreadCount + 1);
   }
 
   // ============================================================
@@ -564,18 +669,29 @@ class NotificationProvider extends ChangeNotifier {
 
   void clearError() {
     _error = null;
-    notifyListeners();
+    _notify();
   }
 
-  String getFormattedTime(String? timestamp) {
+  /// Relative time, English or Swahili (`locale` = 'sw').
+  String getFormattedTime(String? timestamp, {String locale = 'en'}) {
     if (timestamp == null) return '';
+    final sw = locale == 'sw';
     try {
-      final parsed = DateTime.parse(timestamp);
+      var parsed = DateTime.parse(timestamp);
+      if (parsed.isUtc) parsed = parsed.toLocal();
       final diff = DateTime.now().difference(parsed);
-      if (diff.inDays > 0) return '${diff.inDays}d ago';
-      if (diff.inHours > 0) return '${diff.inHours}h ago';
-      if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
-      return 'Just now';
+      if (diff.inDays > 0) {
+        return sw ? 'Siku ${diff.inDays} zilizopita' : '${diff.inDays}d ago';
+      }
+      if (diff.inHours > 0) {
+        return sw ? 'Saa ${diff.inHours} zilizopita' : '${diff.inHours}h ago';
+      }
+      if (diff.inMinutes > 0) {
+        return sw
+            ? 'Dakika ${diff.inMinutes} zilizopita'
+            : '${diff.inMinutes}m ago';
+      }
+      return sw ? 'Sasa hivi' : 'Just now';
     } catch (_) {
       return '';
     }
@@ -622,6 +738,9 @@ class NotificationProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _pollTimer?.cancel();
+    _reloadTimer?.cancel();
     _fcmSub?.cancel();
     _localNotifications.cancelAll();
     super.dispose();

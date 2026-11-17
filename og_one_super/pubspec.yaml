@@ -4,7 +4,6 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  # withValues() (used across the UI) needs Dart 3.6+ / Flutter 3.27+
   sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
@@ -17,7 +16,7 @@ dependencies:
   provider: ^6.1.1
   shared_preferences: ^2.2.2
 
-  # HTTP client for the static pages API (About, Terms, Privacy, FAQs, Contact)
+  # HTTP client for the static pages API
   dio: ^5.7.0
 
   # Open email, website, phone dialer and WhatsApp from the Contact screen
@@ -25,10 +24,10 @@ dependencies:
 
   firebase_core: ^4.15.0
   firebase_messaging: ^16.3.0
-  flutter_local_notifications: ^19.4.1 # Aligned with override to prevent version clash
+  flutter_local_notifications: ^19.4.1
   timeago: ^3.7.1
 
-  # QR codes: draw a QR for each mini app, and scan one from the dashboard.
+  # QR codes
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.2
 
@@ -57,12 +56,12 @@ flutter:
   assets:
     - assets/images/
     - assets/images/apps/
+    - google_fonts/          # <-- REQUIRED for google_fonts local fallback
 
 dependency_overrides:
-  # Force a compatible version of `js` so pusher_channels_flutter and flutter_secure_storage can coexist
   js: ^0.7.1
 
-  # ===== Fix iOS arm64 simulator (Xcode / Apple Silicon) =====
+  # ===== Fix iOS arm64 simulator =====
   google_mlkit_face_detection: ^0.15.1
   google_mlkit_commons: ^0.13.0
 

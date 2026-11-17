@@ -28,6 +28,18 @@ import '../jobs/job_detail_screen.dart';
 import '../tickets/ticket_detail_screen.dart';
 import 'profile/fundi_profile_screen.dart';
 
+/// Color used for text/icons that must be readable in light and dark mode.
+Color _ink(bool isDark) => isDark ? Colors.white : AppTheme.primary;
+
+/// Relative time ("5m ago" / "Dakika 5 zilizopita").
+String _relativeTime(BuildContext context, dynamic value) {
+  if (value == null) return '';
+  return context.read<NotificationProvider>().getFormattedTime(
+    value.toString(),
+    locale: Localizations.localeOf(context).languageCode,
+  );
+}
+
 // ================================================================
 // FUNDI HOME SCREEN
 // ================================================================
@@ -39,7 +51,7 @@ class FundiHomeScreen extends StatefulWidget {
   State<FundiHomeScreen> createState() => FundiHomeScreenState(); // <-- Public state
 }
 
-// Note: We removed the underscore (_) so other screens can find it.
+// Note: no underscore, so other screens can find it.
 class FundiHomeScreenState extends State<FundiHomeScreen>
     with WidgetsBindingObserver {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -47,11 +59,16 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
   int _currentIndex = 0;
   bool _isRefreshing = false;
 
+  late final NotificationProvider _notif;
+  late final ChatProvider _chat;
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
+
+    _notif = context.read<NotificationProvider>();
+    _chat = context.read<ChatProvider>();
 
     WidgetsBinding.instance.addObserver(this);
 
@@ -59,45 +76,77 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
       const _HomeDashboardContent(),
       const FundiPostsScreen(),
       const FundiRequestsScreen(),
-      const FundiChatListScreen(), // <-- Updated to new Chat list
+      const FundiChatListScreen(),
       const FundiProfileScreen(),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeData();
+      if (mounted) _initializeData();
     });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _stopPolling();
     super.dispose();
   }
 
+  /// Pause the auto-checks in the background, resume on return.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       _loadAll();
+      _startPolling();
+    } else if (state == AppLifecycleState.paused) {
+      _stopPolling();
     }
+  }
+
+  // ==============================================================
+  // AUTO CHECK (notifications every 15s, chat every 3s)
+  // ==============================================================
+
+  void _startPolling() {
+    _notif.startPolling();
+    _chat.startPolling();
+  }
+
+  void _stopPolling() {
+    _notif.stopPolling();
+    _chat.stopPolling();
   }
 
   // ==============================================================
   // DATA
   // ==============================================================
 
+  /// Each load is isolated: one failing request never blocks the others.
+  Future<void> _safe(Future<dynamic> Function() load) async {
+    try {
+      await load();
+    } catch (e) {
+      debugPrint('Home load error: $e');
+    }
+  }
+
   Future<void> _loadAll() async {
+    if (!mounted) return;
     await Future.wait([
-      context.read<TechnicianProvider>().fetchMyProfile(),
-      context.read<RequestProvider>().loadMyRequests(),
-      context.read<NotificationProvider>().loadNotifications(),
-      context.read<JobProvider>().loadJobs(),
-      context.read<TicketProvider>().loadTickets(),
+      _safe(() => context.read<TechnicianProvider>().fetchMyProfile()),
+      _safe(() => context.read<RequestProvider>().loadMyRequests()),
+      _safe(() => _notif.loadNotifications(silent: true)),
+      _safe(() => context.read<JobProvider>().loadJobs()),
+      _safe(() => context.read<TicketProvider>().loadTickets()),
+      _safe(() => _chat.refreshConversations(silent: true)),
     ]);
   }
 
   void _initializeData() {
-    _loadAll();
     _initializeChat();
+    _loadAll();
+    _startPolling();
   }
 
   Future<void> _manualRefresh() async {
@@ -116,14 +165,13 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
 
   void _initializeChat() {
     final auth = context.read<AuthProvider>();
-    final chat = context.read<ChatProvider>();
 
     final user = auth.user;
     final token = auth.token;
 
     if (user == null || token == null) return;
 
-    chat.initialize(
+    _chat.initialize(
       token: token,
       currentUser: ChatUser(
         id: user.id,
@@ -135,9 +183,10 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
     );
   }
 
-  // <-- Made public so other tabs can call it
+  // <-- Public so other tabs can call it
   void navigateToTab(int index) {
     if (!mounted) return;
+    if (_currentIndex == index) return;
     setState(() => _currentIndex = index);
   }
 
@@ -149,24 +198,22 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
   // NOTIFICATIONS
   // ==============================================================
 
-  void _showNotifications(BuildContext context) {
-    final provider = context.read<NotificationProvider>();
+  void _showNotifications() {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
     final isDark = theme.brightness == Brightness.dark;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
+      constraints: const BoxConstraints(maxWidth: 640),
+      builder: (sheetCtx) {
         return DraggableScrollableSheet(
           initialChildSize: 0.82,
           minChildSize: 0.5,
           maxChildSize: 0.95,
           expand: false,
-          builder: (context, scrollController) {
+          builder: (_, scrollController) {
             return Container(
               decoration: BoxDecoration(
                 color: isDark ? AppTheme.darkSurface : Colors.white,
@@ -174,137 +221,37 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
                   top: Radius.circular(30),
                 ),
               ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: theme.dividerColor,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.notifications,
-                            style: TextStyle(
-                              inherit: true,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : AppTheme.primary,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            provider.markAllAsRead();
-                            Navigator.pop(ctx);
-                          },
-                          child: Text(
-                            l10n.markAllAsRead,
-                            style: const TextStyle(
-                              inherit: true,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: Consumer<NotificationProvider>(
-                      builder: (context, notificationProvider, _) {
-                        if (notificationProvider.isLoading) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppTheme.primary,
-                            ),
-                          );
-                        }
-
-                        if (notificationProvider.notifications.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.notifications_off_outlined,
-                                  size: 55,
-                                  color: theme.hintColor,
-                                ),
-                                const SizedBox(height: 14),
-                                Text(
-                                  l10n.noNotificationsYet,
-                                  style: TextStyle(
-                                    inherit: true,
-                                    color: theme.hintColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          itemCount: notificationProvider.notifications.length,
-                          separatorBuilder: (_, __) =>
-                          const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final notification =
-                            notificationProvider.notifications[index];
-
-                            return _NotificationTile(
-                              notification: notification,
-                              onTap: () {
-                                notificationProvider.markAsRead(
-                                  notification['id'],
-                                );
-
-                                Navigator.pop(ctx);
-
-                                final type =
-                                    notification['type']?.toString() ?? '';
-
-                                if (type == 'chat_message') {
-                                  navigateToTab(3);
-                                } else if (type == 'new_request' ||
-                                    type == 'request_accepted' ||
-                                    type == 'request_rejected') {
-                                  navigateToTab(2);
-                                } else if (type.contains('ticket')) {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.tickets,
-                                  );
-                                } else if (type.contains('job')) {
-                                  Navigator.pushNamed(context, AppRoutes.jobs);
-                                } else {
-                                  navigateToTab(0);
-                                }
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
+              child: _NotificationsSheet(
+                controller: scrollController,
+                onSelect: (notification) {
+                  _notif.markAsRead(notification['id']);
+                  Navigator.of(sheetCtx).pop();
+                  if (mounted) _handleNotificationTap(notification);
+                },
               ),
             );
           },
         );
       },
     );
+  }
+
+  void _handleNotificationTap(Map<String, dynamic> notification) {
+    final type = notification['type']?.toString() ?? '';
+
+    if (type == 'chat_message') {
+      navigateToTab(3);
+    } else if (type == 'new_request' ||
+        type == 'request_accepted' ||
+        type == 'request_rejected') {
+      navigateToTab(2);
+    } else if (type.contains('ticket')) {
+      Navigator.pushNamed(context, AppRoutes.tickets);
+    } else if (type.contains('job')) {
+      Navigator.pushNamed(context, AppRoutes.jobs);
+    } else {
+      navigateToTab(0);
+    }
   }
 
   // ==============================================================
@@ -321,6 +268,10 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
     );
 
     if (confirm == true) {
+      _stopPolling();
+      _chat.disconnect(); // clears chat data for the next user
+
+      if (!context.mounted) return;
       await context.read<AuthProvider>().logout();
 
       if (context.mounted) {
@@ -353,22 +304,40 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
           automaticallyImplyLeading: false,
           centerTitle: false,
           titleSpacing: 0,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+          ),
           leading: IconButton(
             icon: const Icon(Icons.menu_rounded, color: Colors.white),
             onPressed: _openDrawer,
             tooltip: 'Menu',
           ),
-          title: Text(
-            l10n.fundiDashboard,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              inherit: true,
-              color: Colors.white,
-              fontSize: compact ? 18 : 21,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
+          title: Row(
+            children: [
+              Container(
+                width: 4,
+                height: compact ? 18 : 22,
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  l10n.fundiDashboard,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    inherit: true,
+                    color: Colors.white,
+                    fontSize: compact ? 18 : 21,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+              ),
+            ],
           ),
           elevation: 0,
           scrolledUnderElevation: 0,
@@ -389,7 +358,8 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
               )
                   : const Icon(Icons.refresh_rounded, color: Colors.white),
             ),
-            NotificationBellIcon(onTap: () => _showNotifications(context)),
+            // Bell updates by itself (auto-check every 15 seconds)
+            NotificationBellIcon(onTap: _showNotifications),
             const SizedBox(width: 8),
           ],
         ),
@@ -408,16 +378,223 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
             );
           },
         ),
-        bottomNavigationBar: _FloatingNavBar(
-          currentIndex: _currentIndex,
-          onTap: navigateToTab, // <-- Updated
-          homeLabel: l10n.home,
-          blogLabel: l10n.blog,
-          requestsLabel: l10n.requests,
-          chatLabel: l10n.chat,
-          profileLabel: l10n.profile,
+        bottomNavigationBar: Consumer2<ChatProvider, RequestProvider>(
+          builder: (context, chat, requests, _) => _FloatingNavBar(
+            currentIndex: _currentIndex,
+            onTap: navigateToTab,
+            homeLabel: l10n.home,
+            blogLabel: l10n.blog,
+            requestsLabel: l10n.requests,
+            chatLabel: l10n.chat,
+            profileLabel: l10n.profile,
+            requestsBadge: requests.pendingCount,
+            chatBadge: chat.totalUnread,
+          ),
         ),
       ),
+    );
+  }
+}
+
+// ================================================================
+// NOTIFICATIONS SHEET
+// ================================================================
+
+class _NotificationsSheet extends StatelessWidget {
+  final ScrollController controller;
+  final ValueChanged<Map<String, dynamic>> onSelect;
+
+  const _NotificationsSheet({
+    required this.controller,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          width: 44,
+          height: 4,
+          decoration: BoxDecoration(
+            color: theme.dividerColor,
+            borderRadius: BorderRadius.circular(5),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Header ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Consumer<NotificationProvider>(
+            builder: (context, provider, _) {
+              final unread = provider.unreadCount;
+              return Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppTheme.secondary.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.notifications_active_rounded,
+                      color: isDark ? AppTheme.secondary : AppTheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            l10n.notifications,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              inherit: true,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: _ink(isDark),
+                            ),
+                          ),
+                        ),
+                        if (unread > 0) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.secondary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              unread > 99 ? '99+' : '$unread',
+                              style: const TextStyle(
+                                inherit: true,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (unread > 0)
+                    TextButton.icon(
+                      onPressed: provider.markAllAsRead,
+                      icon: const Icon(Icons.done_all_rounded, size: 18),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _ink(isDark),
+                        backgroundColor:
+                        AppTheme.primary.withValues(alpha: 0.08),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      label: Text(
+                        l10n.markAllAsRead,
+                        style: const TextStyle(
+                          inherit: true,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // ── List ──
+        Expanded(
+          child: Consumer<NotificationProvider>(
+            builder: (context, provider, _) {
+              if (provider.isLoading && provider.notifications.isEmpty) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary),
+                );
+              }
+
+              if (provider.notifications.isEmpty) {
+                return RefreshIndicator(
+                  color: AppTheme.primary,
+                  onRefresh: () => provider.loadNotifications(silent: true),
+                  child: ListView(
+                    controller: controller,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: 300,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppTheme.secondary
+                                      .withValues(alpha: 0.14),
+                                ),
+                                child: Icon(
+                                  Icons.notifications_off_outlined,
+                                  size: 40,
+                                  color: theme.hintColor,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Text(
+                                l10n.noNotificationsYet,
+                                style: TextStyle(
+                                  inherit: true,
+                                  color: theme.hintColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                color: AppTheme.primary,
+                onRefresh: () => provider.loadNotifications(silent: true),
+                child: ListView.separated(
+                  controller: controller,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: provider.notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final notification = provider.notifications[index];
+                    return _NotificationTile(
+                      notification: notification,
+                      onTap: () => onSelect(notification),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -438,7 +615,7 @@ class _FundiDrawer extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
@@ -452,15 +629,15 @@ class _FundiDrawer extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      AppTheme.secondary.withOpacity(0.25),
-                      AppTheme.primary.withOpacity(0.15),
+                      AppTheme.secondary.withValues(alpha: 0.25),
+                      AppTheme.primary.withValues(alpha: 0.15),
                     ],
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.workspace_premium_rounded,
                   size: 36,
-                  color: AppTheme.primary,
+                  color: _ink(isDark),
                 ),
               ),
               const SizedBox(height: 18),
@@ -470,7 +647,7 @@ class _FundiDrawer extends StatelessWidget {
                   inherit: true,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppTheme.primary,
+                  color: _ink(isDark),
                 ),
               ),
               const SizedBox(height: 8),
@@ -539,19 +716,20 @@ class _FundiDrawer extends StatelessWidget {
 
   Widget _comingSoonBadge(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.secondary.withOpacity(0.15),
+        color: AppTheme.secondary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         l10n.comingSoon,
-        style: const TextStyle(
+        style: TextStyle(
           inherit: true,
           fontSize: 10.5,
           fontWeight: FontWeight.w800,
-          color: AppTheme.primary,
+          color: isDark ? AppTheme.secondary : AppTheme.primary,
         ),
       ),
     );
@@ -574,6 +752,9 @@ class _FundiDrawer extends StatelessWidget {
 
     return Drawer(
       backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
+      ),
       child: SafeArea(
         child: Column(
           children: [
@@ -586,6 +767,9 @@ class _FundiDrawer extends StatelessWidget {
                   colors: [AppTheme.primary, AppTheme.primaryLight],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(28),
                 ),
               ),
               child: Column(
@@ -603,7 +787,7 @@ class _FundiDrawer extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.secondary.withOpacity(0.35),
+                              color: AppTheme.secondary.withValues(alpha: 0.35),
                               blurRadius: 12,
                               spreadRadius: 1,
                             ),
@@ -633,7 +817,7 @@ class _FundiDrawer extends StatelessWidget {
                         ),
                         tooltip: 'Close',
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.15),
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
                           padding: const EdgeInsets.all(8),
                         ),
                       ),
@@ -658,7 +842,7 @@ class _FundiDrawer extends StatelessWidget {
                       user.phone!,
                       style: TextStyle(
                         inherit: true,
-                        color: Colors.white.withOpacity(0.82),
+                        color: Colors.white.withValues(alpha: 0.82),
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -699,8 +883,6 @@ class _FundiDrawer extends StatelessWidget {
                       Navigator.pushNamed(context, AppRoutes.jobs);
                     },
                   ),
-
-                  // ── My Balance (replaces Payments) ──
                   _DrawerItem(
                     icon: Icons.account_balance_wallet_rounded,
                     label: l10n.myBalance,
@@ -710,8 +892,6 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-
-                  // ── Subscriptions (coming soon) ──
                   _DrawerItem(
                     icon: Icons.workspace_premium_rounded,
                     label: l10n.subscriptions,
@@ -721,7 +901,6 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-                  // ── Earnings (coming soon) ──
                   _DrawerItem(
                     icon: Icons.trending_up_rounded,
                     label: l10n.earnings,
@@ -731,7 +910,6 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-                  // ── Reports (coming soon) ──
                   _DrawerItem(
                     icon: Icons.bar_chart_rounded,
                     label: l10n.reports,
@@ -741,7 +919,6 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-                  // ── Downloads (coming soon) ──
                   _DrawerItem(
                     icon: Icons.file_download_rounded,
                     label: l10n.downloads,
@@ -767,7 +944,7 @@ class _FundiDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
               child: Material(
-                color: AppTheme.error.withOpacity(0.09),
+                color: AppTheme.error.withValues(alpha: 0.09),
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   onTap: () {
@@ -786,7 +963,7 @@ class _FundiDrawer extends StatelessWidget {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppTheme.error.withOpacity(0.14),
+                            color: AppTheme.error.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(13),
                           ),
                           child: const Icon(
@@ -838,7 +1015,7 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark ? Colors.white : AppTheme.primary;
+    final color = _ink(isDark);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -856,7 +1033,7 @@ class _DrawerItem extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.09),
+                    color: color.withValues(alpha: 0.09),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(icon, color: color, size: 22),
@@ -865,6 +1042,8 @@ class _DrawerItem extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       inherit: true,
                       fontWeight: FontWeight.w600,
@@ -884,7 +1063,7 @@ class _DrawerItem extends StatelessWidget {
 }
 
 // ================================================================
-// FLOATING BOTTOM NAV
+// FLOATING BOTTOM NAV (with live badges)
 // ================================================================
 
 class _FloatingNavBar extends StatelessWidget {
@@ -895,6 +1074,8 @@ class _FloatingNavBar extends StatelessWidget {
   final String requestsLabel;
   final String chatLabel;
   final String profileLabel;
+  final int requestsBadge;
+  final int chatBadge;
 
   const _FloatingNavBar({
     required this.currentIndex,
@@ -904,6 +1085,8 @@ class _FloatingNavBar extends StatelessWidget {
     required this.requestsLabel,
     required this.chatLabel,
     required this.profileLabel,
+    this.requestsBadge = 0,
+    this.chatBadge = 0,
   });
 
   @override
@@ -915,46 +1098,58 @@ class _FloatingNavBar extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         child: Container(
           height: 68,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
             color: isDark ? AppTheme.darkSurface : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: isDark
+                  ? AppTheme.darkBorder
+                  : AppTheme.borderLight.withValues(alpha: 0.35),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.35 : 0.10),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _NavItem(
-                icon: Icons.home_rounded,
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home_rounded,
                 label: homeLabel,
                 selected: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
                 icon: Icons.photo_library_outlined,
+                selectedIcon: Icons.photo_library_rounded,
                 label: blogLabel,
                 selected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: Icons.inbox_outlined,
+                selectedIcon: Icons.inbox_rounded,
                 label: requestsLabel,
                 selected: currentIndex == 2,
+                badge: requestsBadge,
                 onTap: () => onTap(2),
               ),
               _NavItem(
                 icon: Icons.chat_bubble_outline_rounded,
+                selectedIcon: Icons.chat_bubble_rounded,
                 label: chatLabel,
                 selected: currentIndex == 3,
+                badge: chatBadge,
                 onTap: () => onTap(3),
               ),
               _NavItem(
                 icon: Icons.person_outline_rounded,
+                selectedIcon: Icons.person_rounded,
                 label: profileLabel,
                 selected: currentIndex == 4,
                 onTap: () => onTap(4),
@@ -969,15 +1164,19 @@ class _FloatingNavBar extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   final IconData icon;
+  final IconData selectedIcon;
   final String label;
   final bool selected;
+  final int badge;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
+    required this.selectedIcon,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.badge = 0,
   });
 
   @override
@@ -987,16 +1186,41 @@ class _NavItem extends StatelessWidget {
         ? (isDark ? AppTheme.secondary : AppTheme.primary)
         : (isDark ? AppTheme.darkTextSecondary : AppTheme.greyText);
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: 64,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected
+                    ? (isDark
+                    ? AppTheme.secondary.withValues(alpha: 0.16)
+                    : AppTheme.primary.withValues(alpha: 0.09))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Badge(
+                isLabelVisible: badge > 0,
+                backgroundColor: AppTheme.error,
+                label: Text(
+                  badge > 99 ? '99+' : '$badge',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                child: Icon(selected ? selectedIcon : icon,
+                    size: 24, color: color),
+              ),
+            ),
+            const SizedBox(height: 3),
             Text(
               label,
               maxLines: 1,
@@ -1033,6 +1257,7 @@ class _HomeDashboardContent extends StatelessWidget {
     final jobProvider = context.watch<JobProvider>();
     final ticketProvider = context.watch<TicketProvider>();
     final requestProvider = context.watch<RequestProvider>();
+    final unreadChats = context.watch<ChatProvider>().totalUnread;
 
     final user = auth.user;
     final name = user?.name ?? 'Fundi';
@@ -1040,7 +1265,6 @@ class _HomeDashboardContent extends StatelessWidget {
 
     final totalJobs = jobProvider.jobs.length;
     final totalTickets = ticketProvider.tickets.length;
-    final pendingRequests = requestProvider.pendingCount;
 
     // Request stats
     final totalRequests = requestProvider.totalCount;
@@ -1049,23 +1273,25 @@ class _HomeDashboardContent extends StatelessWidget {
 
     final greeting = _greeting(l10n);
 
-    // Helper to navigate to Requests tab
-    void goToRequests() {
-      final homeState =
-      context.findAncestorStateOfType<FundiHomeScreenState>();
-      homeState?.navigateToTab(2); // <-- Updated
-    }
+    FundiHomeScreenState? homeState() =>
+        context.findAncestorStateOfType<FundiHomeScreenState>();
+
+    void goToRequests() => homeState()?.navigateToTab(2);
+    void goToChat() => homeState()?.navigateToTab(3);
 
     return RefreshIndicator(
+      color: AppTheme.primary,
       onRefresh: () async {
         await Future.wait([
           context.read<JobProvider>().loadJobs(),
           context.read<TicketProvider>().loadTickets(),
           context.read<RequestProvider>().loadMyRequests(),
-          context.read<NotificationProvider>().loadNotifications(),
+          context.read<NotificationProvider>().loadNotifications(silent: true),
+          context.read<ChatProvider>().refreshConversations(silent: true),
         ]);
       },
       child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(
           isTablet ? 24 : 16,
           16,
@@ -1078,9 +1304,11 @@ class _HomeDashboardContent extends StatelessWidget {
             name: name,
             initial: initial,
             greeting: greeting,
-            pendingText: pendingRequests > 0
-                ? l10n.pendingCount(pendingRequests)
-                : null,
+            pendingText:
+            pendingCount > 0 ? l10n.pendingCount(pendingCount) : null,
+            unreadChats: unreadChats,
+            onChatTap: goToChat,
+            onPendingTap: goToRequests,
             isTablet: isTablet,
           ),
 
@@ -1100,7 +1328,7 @@ class _HomeDashboardContent extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // ── Quick actions (Jobs & Tickets) ──────────────────
+          // ── Quick actions ───────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -1138,7 +1366,7 @@ class _HomeDashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          if (requestProvider.isLoading)
+          if (requestProvider.isLoading && requestProvider.requests.isEmpty)
             const _InlineLoader()
           else if (requestProvider.requests.isEmpty)
             _EmptyBox(
@@ -1168,7 +1396,7 @@ class _HomeDashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          if (jobProvider.isLoading)
+          if (jobProvider.isLoading && jobProvider.jobs.isEmpty)
             const _InlineLoader()
           else if (jobProvider.jobs.isEmpty)
             _EmptyBox(
@@ -1193,7 +1421,7 @@ class _HomeDashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          if (ticketProvider.isLoading)
+          if (ticketProvider.isLoading && ticketProvider.tickets.isEmpty)
             const _InlineLoader()
           else if (ticketProvider.tickets.isEmpty)
             _EmptyBox(
@@ -1258,8 +1486,9 @@ class _RequestStatsRow extends StatelessWidget {
             icon: Icons.list_alt_rounded,
             value: total,
             label: totalLabel,
-            iconBg:
-            isDark ? AppTheme.primary.withOpacity(0.25) : AppTheme.navy50,
+            iconBg: isDark
+                ? AppTheme.primary.withValues(alpha: 0.25)
+                : AppTheme.navy50,
             iconColor: isDark ? AppTheme.secondary : AppTheme.primary,
             isDark: isDark,
             onTap: onTap,
@@ -1271,7 +1500,7 @@ class _RequestStatsRow extends StatelessWidget {
             icon: Icons.more_horiz_rounded,
             value: pending,
             label: pendingLabel,
-            iconBg: AppTheme.warning.withOpacity(isDark ? 0.22 : 0.15),
+            iconBg: AppTheme.warning.withValues(alpha: isDark ? 0.22 : 0.15),
             iconColor: AppTheme.warning,
             isDark: isDark,
             onTap: onTap,
@@ -1283,7 +1512,7 @@ class _RequestStatsRow extends StatelessWidget {
             icon: Icons.check_circle_outline_rounded,
             value: completed,
             label: completedLabel,
-            iconBg: AppTheme.success.withOpacity(isDark ? 0.22 : 0.14),
+            iconBg: AppTheme.success.withValues(alpha: isDark ? 0.22 : 0.14),
             iconColor: AppTheme.success,
             isDark: isDark,
             onTap: onTap,
@@ -1316,7 +1545,7 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final textColor = isDark ? Colors.white : AppTheme.primary;
+    final textColor = _ink(isDark);
     final muted = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     return Material(
@@ -1332,11 +1561,11 @@ class _StatCard extends StatelessWidget {
             border: Border.all(
               color: isDark
                   ? AppTheme.darkBorder
-                  : AppTheme.borderLight.withOpacity(0.35),
+                  : AppTheme.borderLight.withValues(alpha: 0.35),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.22 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -1393,7 +1622,7 @@ class _StatCard extends StatelessWidget {
 // ================================================================
 
 class _NotificationTile extends StatelessWidget {
-  final Map notification;
+  final Map<String, dynamic> notification;
   final VoidCallback onTap;
 
   const _NotificationTile({
@@ -1401,67 +1630,145 @@ class _NotificationTile extends StatelessWidget {
     required this.onTap,
   });
 
+  Color _typeColor(String type, bool isDark) {
+    switch (type) {
+      case 'request_accepted':
+      case 'request_completed':
+        return AppTheme.success;
+      case 'request_rejected':
+      case 'request_cancelled':
+        return AppTheme.error;
+      case 'new_request':
+        return AppTheme.warning;
+      default:
+        return isDark ? AppTheme.secondary : AppTheme.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isRead =
-        notification['is_read'] == true || notification['read_at'] != null;
+    final provider = context.read<NotificationProvider>();
+
+    final isRead = provider.isNotificationRead(notification);
+    final type = notification['type']?.toString() ?? '';
+    final color = _typeColor(type, isDark);
+    final time = _relativeTime(context, notification['created_at']);
+    final body = notification['body']?.toString() ?? '';
 
     return Material(
       color: isRead
           ? (isDark ? AppTheme.darkSurface : Colors.white)
           : (isDark
-          ? AppTheme.primary.withOpacity(0.12)
-          : AppTheme.primary.withOpacity(0.06)),
-      borderRadius: BorderRadius.circular(18),
+          ? AppTheme.secondary.withValues(alpha: 0.08)
+          : AppTheme.secondary.withValues(alpha: 0.10)),
+      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
           padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isRead
+                  ? (isDark
+                  ? AppTheme.darkBorder
+                  : AppTheme.borderLight.withValues(alpha: 0.35))
+                  : AppTheme.secondary.withValues(alpha: 0.6),
+              width: 1.2,
+            ),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Icon(
-                  Icons.notifications_rounded,
-                  color: AppTheme.primary,
-                  size: 20,
-                ),
+                child: Icon(provider.getNotificationIcon(type),
+                    color: color, size: 21),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      notification['title']?.toString() ?? 'Notification',
-                      style: TextStyle(
-                        inherit: true,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: isDark ? Colors.white : AppTheme.primary,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification['title']?.toString() ??
+                                'Notification',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              inherit: true,
+                              fontWeight:
+                              isRead ? FontWeight.w600 : FontWeight.w800,
+                              fontSize: 14,
+                              color: _ink(isDark),
+                            ),
+                          ),
+                        ),
+                        if (!isRead)
+                          Container(
+                            width: 9,
+                            height: 9,
+                            margin: const EdgeInsets.only(left: 8),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.secondary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      notification['body']?.toString() ?? '',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        inherit: true,
-                        fontSize: 13,
-                        color: isDark
-                            ? AppTheme.darkTextSecondary
-                            : AppTheme.greyText,
+                    if (body.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          inherit: true,
+                          fontSize: 13,
+                          height: 1.35,
+                          color: isDark
+                              ? AppTheme.darkTextSecondary
+                              : AppTheme.greyText,
+                        ),
                       ),
-                    ),
+                    ],
+                    if (time.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 13,
+                            color: isDark
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.greyText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            time,
+                            style: TextStyle(
+                              inherit: true,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppTheme.darkTextSecondary
+                                  : AppTheme.greyText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1486,7 +1793,7 @@ class _RequestTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDark ? Colors.white : AppTheme.primary;
+    final primaryText = _ink(isDark);
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     final status = request.status?.toString() ?? 'pending';
@@ -1503,7 +1810,7 @@ class _RequestTile extends StatelessWidget {
           onTap: () {
             final homeState =
             context.findAncestorStateOfType<FundiHomeScreenState>();
-            homeState?.navigateToTab(2); // <-- Updated
+            homeState?.navigateToTab(2);
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(
@@ -1513,7 +1820,7 @@ class _RequestTile extends StatelessWidget {
               border: Border.all(
                 color: isDark
                     ? AppTheme.darkBorder
-                    : AppTheme.borderLight.withOpacity(0.35),
+                    : AppTheme.borderLight.withValues(alpha: 0.35),
               ),
             ),
             child: Row(
@@ -1522,7 +1829,7 @@ class _RequestTile extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.13),
+                    color: statusColor.withValues(alpha: 0.13),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
@@ -1558,7 +1865,7 @@ class _RequestTile extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.13),
+                              color: statusColor.withValues(alpha: 0.13),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -1728,7 +2035,7 @@ class _SectionHeader extends StatelessWidget {
                     inherit: true,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.4,
-                    color: isDark ? Colors.white : AppTheme.primary,
+                    color: _ink(isDark),
                   ),
                 ),
               ),
@@ -1740,7 +2047,7 @@ class _SectionHeader extends StatelessWidget {
             onPressed: onViewAll,
             style: TextButton.styleFrom(
               foregroundColor: accent,
-              backgroundColor: accent.withOpacity(0.08),
+              backgroundColor: accent.withValues(alpha: 0.08),
               padding: const EdgeInsets.symmetric(
                 horizontal: 14,
                 vertical: 6,
@@ -1824,7 +2131,7 @@ class _EmptyBox extends StatelessWidget {
         border: Border.all(
           color: isDark
               ? AppTheme.darkBorder
-              : AppTheme.borderLight.withOpacity(0.35),
+              : AppTheme.borderLight.withValues(alpha: 0.35),
         ),
       ),
       child: Column(
@@ -1834,7 +2141,7 @@ class _EmptyBox extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppTheme.primary.withOpacity(0.06),
+              color: AppTheme.secondary.withValues(alpha: 0.14),
             ),
             child: Icon(icon, size: 30, color: mutedText),
           ),
@@ -1887,7 +2194,8 @@ class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final String subtitle;
-  final int count;
+  final int? count;
+  final bool highlightCount;
   final Color color;
   final VoidCallback onTap;
 
@@ -1897,14 +2205,15 @@ class _QuickAction extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     required this.color,
-    this.count = 0,
+    this.count,
+    this.highlightCount = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
-    final primaryText = isDark ? Colors.white : AppTheme.primary;
+    final primaryText = _ink(isDark);
     final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     return Material(
@@ -1920,13 +2229,15 @@ class _QuickAction extends StatelessWidget {
               color: cardBg,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark
+                color: highlightCount
+                    ? AppTheme.secondary.withValues(alpha: 0.7)
+                    : (isDark
                     ? AppTheme.darkBorder
-                    : AppTheme.borderLight.withOpacity(0.35),
+                    : AppTheme.borderLight.withValues(alpha: 0.35)),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.18 : 0.045),
+                  color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.045),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -1938,7 +2249,7 @@ class _QuickAction extends StatelessWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(isDark ? 0.20 : 0.09),
+                    color: color.withValues(alpha: isDark ? 0.20 : 0.09),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
@@ -1985,31 +2296,36 @@ class _QuickAction extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      constraints: const BoxConstraints(
-                        minWidth: 25,
-                        minHeight: 25,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: Text(
-                        count > 99 ? '99+' : '$count',
-                        style: TextStyle(
-                          inherit: true,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppTheme.secondary : color,
+                    if (count != null)
+                      Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 25,
+                          minHeight: 25,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: highlightCount
+                              ? AppTheme.secondary
+                              : color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          count! > 99 ? '99+' : '$count',
+                          style: TextStyle(
+                            inherit: true,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: highlightCount
+                                ? AppTheme.primary
+                                : (isDark ? AppTheme.secondary : color),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
+                    if (count != null) const SizedBox(height: 5),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 11,
@@ -2035,6 +2351,9 @@ class _HeroCard extends StatelessWidget {
   final String initial;
   final String greeting;
   final String? pendingText;
+  final int unreadChats;
+  final VoidCallback onChatTap;
+  final VoidCallback onPendingTap;
   final bool isTablet;
 
   const _HeroCard({
@@ -2042,23 +2361,45 @@ class _HeroCard extends StatelessWidget {
     required this.initial,
     required this.greeting,
     required this.pendingText,
+    required this.unreadChats,
+    required this.onChatTap,
+    required this.onPendingTap,
     required this.isTablet,
   });
 
-  Widget _chip(String text, {bool filled = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: filled ? AppTheme.secondary : Colors.white.withOpacity(0.18),
+  Widget _chip(
+      String text, {
+        bool filled = false,
+        IconData? icon,
+        VoidCallback? onTap,
+      }) {
+    final fg = filled ? AppTheme.primary : Colors.white;
+    return Material(
+      color: filled ? AppTheme.secondary : Colors.white.withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          inherit: true,
-          color: filled ? AppTheme.primary : Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: fg),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                text,
+                style: TextStyle(
+                  inherit: true,
+                  color: fg,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2090,7 +2431,7 @@ class _HeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.35),
+            color: AppTheme.primary.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -2108,8 +2449,8 @@ class _HeroCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.secondary.withOpacity(0.28),
-                    AppTheme.secondary.withOpacity(0),
+                    AppTheme.secondary.withValues(alpha: 0.28),
+                    AppTheme.secondary.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -2124,7 +2465,7 @@ class _HeroCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.10),
+                  color: Colors.white.withValues(alpha: 0.10),
                   width: 1.4,
                 ),
               ),
@@ -2165,7 +2506,7 @@ class _HeroCard extends StatelessWidget {
                       greeting,
                       style: TextStyle(
                         inherit: true,
-                        color: Colors.white.withOpacity(0.80),
+                        color: Colors.white.withValues(alpha: 0.80),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2183,9 +2524,26 @@ class _HeroCard extends StatelessWidget {
                         letterSpacing: -0.4,
                       ),
                     ),
-                    if (pendingText != null) ...[
+                    if (pendingText != null || unreadChats > 0) ...[
                       const SizedBox(height: 10),
-                      _chip(pendingText!, filled: true),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (pendingText != null)
+                            _chip(
+                              pendingText!,
+                              filled: true,
+                              onTap: onPendingTap,
+                            ),
+                          if (unreadChats > 0)
+                            _chip(
+                              unreadChats > 99 ? '99+' : '$unreadChats',
+                              icon: Icons.chat_bubble_rounded,
+                              onTap: onChatTap,
+                            ),
+                        ],
+                      ),
                     ],
                   ],
                 ),
@@ -2210,7 +2568,7 @@ class _JobTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark ? Colors.white : AppTheme.primary;
+    final primary = _ink(isDark);
     final color = workStatusColor(job.status);
 
     return Padding(
@@ -2229,7 +2587,7 @@ class _JobTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.13),
+                color: color.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(workStatusIcon(job.status), color: color, size: 22),
@@ -2288,7 +2646,7 @@ class _TicketTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = isDark ? Colors.white : AppTheme.primary;
+    final primary = _ink(isDark);
     final color = workStatusColor(ticket.status);
 
     return Padding(
@@ -2309,7 +2667,7 @@ class _TicketTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.13),
+                color: color.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(

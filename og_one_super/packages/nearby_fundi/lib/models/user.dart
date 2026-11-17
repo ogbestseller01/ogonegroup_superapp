@@ -3,7 +3,7 @@
 class User {
   final int id;
   final String name;
-  final String email;
+  final String email; // may be '' (Apple "hide my email" / phone-only accounts)
   final String? phone;
   final String? locale;
   final String? profilePhoto;
@@ -20,13 +20,15 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json, String token) {
+    final rawId = json['id'];
     return User(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'],
-      locale: json['locale'] ?? 'en',
-      profilePhoto: json['profile_photo'] ?? json['avatar'] ?? json['profile_image'],
+      id: rawId is int ? rawId : int.tryParse('${rawId ?? ''}') ?? 0,
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      locale: json['locale']?.toString() ?? 'en',
+      profilePhoto: (json['profile_photo'] ?? json['avatar'] ?? json['profile_image'])
+          ?.toString(),
       token: token,
     );
   }

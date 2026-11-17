@@ -41,9 +41,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String _currentLocale = 'en';
+
+  late final NotificationProvider _notif;
+  late final ChatProvider _chat;
+  bool _pollingActive = false;
 
   static const double _tabletBreakpoint = 700;
   static const double _desktopBreakpoint = 1100;
@@ -53,12 +57,15 @@ class _HomeScreenState extends State<HomeScreen> {
   static const Set<int> _privateTabs = {2, 3, 4};
 
   // ================================================================
-  // INIT
+  // INIT / DISPOSE / LIFECYCLE
   // ================================================================
 
   @override
   void initState() {
     super.initState();
+    _notif = context.read<NotificationProvider>();
+    _chat = context.read<ChatProvider>();
+    WidgetsBinding.instance.addObserver(this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -70,9 +77,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (AuthGuard.isLoggedIn(context)) {
         _loadNotifications();
-        _initializeChat();
+        // Chat is initialised by build() when the logged-in state is first seen.
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _notif.stopPolling();
+    _chat.stopPolling();
+    super.dispose();
+  }
+
+  /// Pause the auto-checks (notifications every 2s, chat every 3s) in the
+  /// background and resume them on return.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted || !AuthGuard.isLoggedIn(context)) return;
+    if (state == AppLifecycleState.resumed) {
+      _notif.loadNotifications(silent: true);
+      _notif.startPolling();
+      _chat.refreshConversations(silent: true);
+      _chat.startPolling();
+    } else if (state == AppLifecycleState.paused) {
+      _notif.stopPolling();
+      _chat.stopPolling();
+    }
   }
 
   List<Widget> _buildScreens(bool loggedIn) {
@@ -90,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  /// Fixed: now also refreshes conversations so totalUnread is available on Home
+  /// Also refreshes conversations so totalUnread is available on Home.
   Future<void> _initializeChat() async {
     final authProvider = context.read<AuthProvider>();
     final chatProvider = context.read<ChatProvider>();
@@ -115,11 +146,14 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       debugPrint('Chat init / refresh error: $e');
     }
+
+    // Keep the chat icon badge fresh (checks every few seconds).
+    if (mounted) chatProvider.startPolling();
   }
 
   Future<void> _loadNotifications() async {
     try {
-      await context.read<NotificationProvider>().loadNotifications();
+      await _notif.loadNotifications();
     } catch (e) {
       debugPrint('Notification loading error: $e');
     }
@@ -158,17 +192,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // DRAWER ACTIONS
+  // ACTIONS
   // ================================================================
 
   void _openChat() {
     final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(
-      context,
-      message: l10n.signInToChat,
-    )) {
-      return;
-    }
+    if (!AuthGuard.ensure(context, message: l10n.signInToChat)) return;
 
     Navigator.push(
       context,
@@ -180,12 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openTickets() {
     final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(
-      context,
-      message: l10n.signInToTickets,
-    )) {
-      return;
-    }
+    if (!AuthGuard.ensure(context, message: l10n.signInToTickets)) return;
 
     Navigator.pushNamed(context, AppRoutes.tickets);
   }
@@ -197,21 +221,16 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         icon: Container(
-          width: 64,
-          height: 64,
+          width: 68,
+          height: 68,
           decoration: BoxDecoration(
             color: _gold.withValues(alpha: 0.16),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
-            Icons.hourglass_top_rounded,
-            color: _gold,
-            size: 30,
-          ),
+          child: const Icon(Icons.hourglass_top_rounded,
+              color: _gold, size: 32),
         ),
         title: Text(
           feature,
@@ -239,10 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 28,
-                vertical: 12,
-              ),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
             child: Text(l10n.done),
           ),
@@ -257,12 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onRefreshTap() {
     final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(
-      context,
-      message: l10n.signInToRefresh,
-    )) {
-      return;
-    }
+    if (!AuthGuard.ensure(context, message: l10n.signInToRefresh)) return;
     _refreshCurrentScreen();
   }
 
@@ -291,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       if (!mounted) return;
-      await context.read<NotificationProvider>().loadNotifications();
+      await _notif.loadNotifications(silent: true);
 
       // Also refresh chat unread count
       if (!mounted) return;
@@ -345,22 +357,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // NOTIFICATIONS
+  // NOTIFICATIONS SHEET
   // ================================================================
 
-  void _showNotifications(BuildContext context) {
+  void _showNotifications() {
     final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(
-      context,
-      message: l10n.signInToNotifications,
-    )) {
+    if (!AuthGuard.ensure(context, message: l10n.signInToNotifications)) {
       return;
     }
 
     final theme = Theme.of(context);
     final ink = _ink(theme);
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -390,30 +399,35 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
+                  // ── Header ──
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
                     child: Consumer<NotificationProvider>(
-                      builder: (context, provider, child) {
+                      builder: (context, provider, _) {
                         final unread = provider.unreadCount;
                         return Row(
                           children: [
                             Container(
-                              width: 5,
-                              height: 36,
+                              width: 44,
+                              height: 44,
                               decoration: BoxDecoration(
+                                color: _gold.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(
+                                Icons.notifications_active_rounded,
                                 color: _gold,
-                                borderRadius: BorderRadius.circular(3),
+                                size: 24,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     l10n.notifications,
-                                    style:
-                                    theme.textTheme.titleLarge?.copyWith(
+                                    style: theme.textTheme.titleLarge?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       color: ink,
                                     ),
@@ -425,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : l10n.caughtUp,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: unread > 0
-                                          ? _gold
+                                          ? const Color(0xFFC98F00)
                                           : theme.hintColor,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -434,10 +448,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             if (unread > 0)
-                              TextButton(
-                                onPressed: () async {
-                                  await provider.markAllAsRead();
-                                },
+                              TextButton.icon(
+                                onPressed: () => provider.markAllAsRead(),
+                                icon: const Icon(Icons.done_all_rounded,
+                                    size: 18),
                                 style: TextButton.styleFrom(
                                   foregroundColor: ink,
                                   backgroundColor:
@@ -446,11 +460,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: Text(
+                                label: Text(
                                   l10n.markAllAsRead,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12.5),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
                               ),
                           ],
@@ -458,24 +473,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
+                  // ── List ──
                   Expanded(
                     child: Consumer<NotificationProvider>(
-                      builder: (context, provider, child) {
-                        if (provider.isLoading) {
+                      builder: (context, provider, _) {
+                        if (provider.isLoading &&
+                            provider.notifications.isEmpty) {
                           return Center(
                             child: CircularProgressIndicator(
                                 color: theme.primaryColor),
                           );
                         }
                         if (provider.notifications.isEmpty) {
-                          return _EmptyNotifications(
-                            theme: theme,
-                            title: l10n.noNotificationsYet,
+                          return RefreshIndicator(
+                            color: theme.primaryColor,
+                            onRefresh: () =>
+                                provider.loadNotifications(silent: true),
+                            child: ListView(
+                              controller: scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                  height: 320,
+                                  child: _EmptyNotifications(
+                                    theme: theme,
+                                    title: l10n.noNotificationsYet,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         }
                         return RefreshIndicator(
                           color: theme.primaryColor,
-                          onRefresh: provider.loadNotifications,
+                          onRefresh: () =>
+                              provider.loadNotifications(silent: true),
                           child: ListView.separated(
                             controller: scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
@@ -516,21 +548,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _handleNotificationNavigation(Map<String, dynamic> notification) {
     final type = notification['type']?.toString() ?? '';
-    final l10n = AppLocalizations.of(context)!;
 
     if (type == 'chat_message') {
-      if (!AuthGuard.ensure(
-        context,
-        message: l10n.signInToChat,
-      )) {
-        return;
-      }
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (ctx) => ChatListScreen(onBack: () => Navigator.pop(ctx)),
-        ),
-      );
+      _openChat();
       return;
     }
 
@@ -559,12 +579,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final name = user?.name ?? l10n.guestUser;
     final phone = user?.phone ?? l10n.notLoggedIn;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    final ink = _ink(theme);
 
     return Drawer(
       width: drawerWidth,
       backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+        borderRadius: BorderRadius.horizontal(right: Radius.circular(28)),
       ),
       child: SafeArea(
         top: false,
@@ -582,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: const BoxDecoration(
                 color: AppTheme.primary,
                 borderRadius: BorderRadius.only(
-                  bottomRight: Radius.circular(24),
+                  bottomRight: Radius.circular(28),
                 ),
               ),
               child: Column(
@@ -613,9 +634,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white),
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          backgroundColor:
+                          Colors.white.withValues(alpha: 0.15),
                           shape: const CircleBorder(),
                         ),
                       ),
@@ -635,6 +658,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     phone,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.nunito(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -648,14 +673,13 @@ class _HomeScreenState extends State<HomeScreen> {
             // ── MENU LIST ──
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 children: [
-                  // 👇 Chat menu item removed from drawer.
-                  // Chat is still accessible from the top AppBar.
                   _ModernDrawerItem(
                     icon: Icons.confirmation_number_outlined,
                     label: l10n.tickets,
-                    ink: _ink(theme),
+                    ink: ink,
                     onTap: () {
                       Navigator.pop(context);
                       _openTickets();
@@ -664,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _ModernDrawerItem(
                     icon: Icons.payments_outlined,
                     label: l10n.payments,
-                    ink: _ink(theme),
+                    ink: ink,
                     soonLabel: l10n.comingSoon,
                     onTap: () {
                       Navigator.pop(context);
@@ -756,12 +780,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ================================================================
-  // APP BAR  (responsive)
+  // APP BAR (responsive)
   // ================================================================
 
   PreferredSizeWidget _buildAppBar(ThemeData theme, AppLocalizations l10n) {
     final width = MediaQuery.sizeOf(context).width;
     final isCompact = width < 380; // very small phones
+    final buttonSize = isCompact ? 40.0 : 44.0;
+    final iconSize = isCompact ? 20.0 : 22.0;
 
     return AppBar(
       backgroundColor: AppTheme.primary,
@@ -777,7 +803,7 @@ class _HomeScreenState extends State<HomeScreen> {
       iconTheme: const IconThemeData(color: Colors.white),
       systemOverlayStyle: SystemUiOverlayStyle.light,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       leading: Padding(
         padding: EdgeInsets.only(left: isCompact ? 10 : 14),
@@ -785,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (barContext) {
             final unread = context.watch<ChatProvider>().totalUnread;
             return _BarButton(
-              size: isCompact ? 40 : 44,
+              size: buttonSize,
               tooltip: 'Menu',
               onTap: () => Scaffold.of(barContext).openDrawer(),
               child: Badge(
@@ -793,7 +819,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: AppTheme.error,
                 smallSize: 9,
                 child: Icon(Icons.menu_rounded,
-                    color: Colors.white, size: isCompact ? 20 : 22),
+                    color: Colors.white, size: iconSize),
               ),
             );
           },
@@ -825,12 +851,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       actions: [
-        // ── Chat icon with badge (Kept exactly as requested) ──
+        // Chat with unread badge (auto-updates every few seconds)
         Consumer<ChatProvider>(
           builder: (context, chat, _) {
             final unread = chat.totalUnread;
             return _BarButton(
-              size: isCompact ? 40 : 44,
+              size: buttonSize,
               tooltip: l10n.chat,
               onTap: _openChat,
               child: Badge(
@@ -844,11 +870,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: Colors.white,
-                  size: isCompact ? 20 : 22,
-                ),
+                child: Icon(Icons.chat_bubble_outline_rounded,
+                    color: Colors.white, size: iconSize),
               ),
             );
           },
@@ -857,28 +880,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Refresh
         _BarButton(
-          size: isCompact ? 40 : 44,
+          size: buttonSize,
           tooltip: l10n.refresh,
           onTap: _onRefreshTap,
-          child: Icon(Icons.refresh_rounded,
-              color: Colors.white, size: isCompact ? 20 : 22),
+          child:
+          Icon(Icons.refresh_rounded, color: Colors.white, size: iconSize),
         ),
         SizedBox(width: isCompact ? 4 : 6),
 
-        // Notifications
+        // Notifications (auto-updates every 2 seconds via provider polling)
         Consumer<NotificationProvider>(
-          builder: (context, provider, child) {
+          builder: (context, provider, _) {
             final unread = provider.unreadCount;
             return _BarButton(
-              size: isCompact ? 40 : 44,
+              size: buttonSize,
               tooltip: l10n.notifications,
-              onTap: () => _showNotifications(context),
+              onTap: _showNotifications,
               child: Badge(
                 isLabelVisible: unread > 0,
                 backgroundColor: AppTheme.error,
-                label: Text(unread > 9 ? '9+' : '$unread'),
+                label: Text(
+                  unread > 9 ? '9+' : '$unread',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 child: Icon(Icons.notifications_none_rounded,
-                    color: Colors.white, size: isCompact ? 20 : 22),
+                    color: Colors.white, size: iconSize),
               ),
             );
           },
@@ -898,6 +928,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsProvider>();
     final loggedIn = context.watch<AuthProvider>().isLoggedIn;
+
+    // Start / stop the background checks with login state.
+    if (loggedIn != _pollingActive) {
+      _pollingActive = loggedIn;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (loggedIn) {
+          _notif.startPolling();
+          _initializeChat(); // safe to repeat; also starts chat polling
+        } else {
+          _notif.stopPolling();
+          _chat.stopPolling();
+        }
+      });
+    }
 
     if (!loggedIn && _currentIndex != 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -969,13 +1014,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNavigation(ThemeData theme, AppLocalizations l10n) {
     final ink = _ink(theme);
-    final width = MediaQuery.sizeOf(context).width;
-    final isCompact = width < 380;
+    final isDark = theme.brightness == Brightness.dark;
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
 
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+        ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primary.withValues(alpha: 0.16),
@@ -990,7 +1040,7 @@ class _HomeScreenState extends State<HomeScreen> {
           data: NavigationBarThemeData(
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
-              return TextStyle(
+              return GoogleFonts.nunito(
                 fontSize: isCompact ? 11 : 12,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 color: selected ? ink : theme.hintColor,
@@ -1027,7 +1077,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               NavigationDestination(
                 icon: const Icon(Icons.list_alt_outlined),
-                selectedIcon: const Icon(Icons.list_alt_rounded, color: _gold),
+                selectedIcon:
+                const Icon(Icons.list_alt_rounded, color: _gold),
                 label: l10n.requests,
               ),
               NavigationDestination(
@@ -1076,50 +1127,57 @@ class _ModernDrawerItem extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.1)
         : const Color(0xFFF1F5F9);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: ink, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: GoogleFonts.nunito(
-                  color: ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (soonLabel != null)
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          child: Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: _gold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(16),
                 ),
+                child: Icon(icon, color: ink, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
                 child: Text(
-                  soonLabel!,
-                  style: TextStyle(
-                    color: isDark ? _gold : const Color(0xFF8A6200),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
+                  label,
+                  style: GoogleFonts.nunito(
+                    color: ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-          ],
+              if (soonLabel != null)
+                Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _gold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    soonLabel!,
+                    style: TextStyle(
+                      color: isDark ? _gold : const Color(0xFF8A6200),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+              else
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.hintColor, size: 22),
+            ],
+          ),
         ),
       ),
     );
@@ -1127,7 +1185,7 @@ class _ModernDrawerItem extends StatelessWidget {
 }
 
 // ==================================================================
-// APP BAR BUTTON  (now supports custom size for responsiveness)
+// APP BAR BUTTON
 // ==================================================================
 
 class _BarButton extends StatelessWidget {
@@ -1180,17 +1238,16 @@ class _EmptyNotifications extends StatelessWidget {
     final ink = _ink(theme);
 
     return Center(
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.08),
+                color: _gold.withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.notifications_none_rounded,
@@ -1302,19 +1359,33 @@ class _NotificationTile extends StatelessWidget {
     }
   }
 
+  /// Relative time, localized for English and Swahili.
   String _getRelativeTime(dynamic value) {
     if (value == null) return '';
+    final sw = locale == 'sw';
     try {
       DateTime dateTime = DateTime.parse(value.toString());
       if (dateTime.isUtc) dateTime = dateTime.toLocal();
 
-      final difference = DateTime.now().difference(dateTime);
+      final diff = DateTime.now().difference(dateTime);
 
-      if (difference.inSeconds < 30) return 'Just now';
-      if (difference.inMinutes < 60) return '${difference.inMinutes} min ago';
-      if (difference.inHours < 24) return '${difference.inHours} hr ago';
-      if (difference.inDays == 1) return 'Yesterday';
-      if (difference.inDays < 7) return '${difference.inDays} days ago';
+      if (diff.inSeconds < 30) return sw ? 'Sasa hivi' : 'Just now';
+      if (diff.inMinutes < 60) {
+        return sw
+            ? 'Dakika ${diff.inMinutes} zilizopita'
+            : '${diff.inMinutes} min ago';
+      }
+      if (diff.inHours < 24) {
+        return sw
+            ? 'Saa ${diff.inHours} zilizopita'
+            : '${diff.inHours} hr ago';
+      }
+      if (diff.inDays == 1) return sw ? 'Jana' : 'Yesterday';
+      if (diff.inDays < 7) {
+        return sw
+            ? 'Siku ${diff.inDays} zilizopita'
+            : '${diff.inDays} days ago';
+      }
       return _formatCreatedAt(value);
     } catch (_) {
       return '';
@@ -1325,10 +1396,10 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final ink = _ink(theme);
-    final isReadValue = notification['is_read'];
-    final isRead =
-        isReadValue == true || isReadValue == 1 || isReadValue == '1';
+
+    final isRead = context.read<NotificationProvider>().isRead(notification);
 
     final title = notification['title']?.toString() ?? l10n.notificationLabel;
     final body = notification['body']?.toString() ?? '';
@@ -1336,9 +1407,13 @@ class _NotificationTile extends StatelessWidget {
     final relativeTime = _getRelativeTime(notification['created_at']);
     final iconColor = _getIconColor(type, theme);
 
+    final unreadBg = isDark
+        ? _gold.withValues(alpha: 0.08)
+        : _gold.withValues(alpha: 0.10);
+
     return Material(
-      color: theme.colorScheme.surface,
-      elevation: isRead ? 1 : 3,
+      color: isRead ? theme.colorScheme.surface : unreadBg,
+      elevation: isRead ? 0 : 1,
       shadowColor: Colors.black.withValues(alpha: 0.10),
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
@@ -1349,8 +1424,10 @@ class _NotificationTile extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isRead ? Colors.transparent : _gold.withValues(alpha: 0.7),
-              width: 1.5,
+              color: isRead
+                  ? theme.dividerColor.withValues(alpha: 0.5)
+                  : _gold.withValues(alpha: 0.6),
+              width: 1.2,
             ),
           ),
           child: Row(
@@ -1360,8 +1437,8 @@ class _NotificationTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(_getIcon(type), color: iconColor, size: 22),
               ),
@@ -1413,7 +1490,7 @@ class _NotificationTile extends StatelessWidget {
                     ],
                     const SizedBox(height: 8),
                     Wrap(
-                      spacing: 6,
+                      spacing: 8,
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
@@ -1422,7 +1499,7 @@ class _NotificationTile extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: iconColor.withValues(alpha: 0.10),
+                              color: iconColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -1435,13 +1512,21 @@ class _NotificationTile extends StatelessWidget {
                             ),
                           ),
                         if (relativeTime.isNotEmpty)
-                          Text(
-                            relativeTime,
-                            style: GoogleFonts.nunito(
-                              color: theme.hintColor,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.schedule_rounded,
+                                  size: 13, color: theme.hintColor),
+                              const SizedBox(width: 3),
+                              Text(
+                                relativeTime,
+                                style: GoogleFonts.nunito(
+                                  color: theme.hintColor,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                       ],
                     ),

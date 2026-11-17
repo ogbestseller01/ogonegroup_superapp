@@ -45,6 +45,7 @@ class ApiService {
   static const List<String> _publicAuthPaths = [
     '/v1/auth/login',
     '/v1/auth/google',
+    '/v1/auth/apple',
     '/v1/auth/register',
     '/v1/auth/register-fundi',
     '/v1/auth/verify-otp',
@@ -128,6 +129,19 @@ class ApiService {
     };
     return _post('/v1/auth/google', data: body);
   }
+
+  Future<ApiResponse> loginWithApple({
+    required String identityToken,
+    String? nonce,
+    String? name,
+    String? fcmToken,
+  }) =>
+      _post('/v1/auth/apple', data: {
+        'identity_token': identityToken,
+        if (nonce != null && nonce.isNotEmpty) 'nonce': nonce,
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+      });
 
   Future<ApiResponse> verifyOtp(String email, String otp, {String? fcmToken}) =>
       _post('/v1/auth/verify-otp', data: {

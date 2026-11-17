@@ -1,4 +1,5 @@
 // lib/providers/chat_provider.dart
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,9 +14,16 @@ import '../services/chat_service.dart';
 class ChatProvider extends ChangeNotifier {
   final ChatService _service = ChatService();
 
+  /// How often the conversation list / unread badge is checked.
+  static const Duration _pollInterval = Duration(seconds: 3);
+
   bool _disposed = false;
   bool _notifyScheduled = false;
   String? _initKey;
+
+  Timer? _pollTimer;
+  bool _polling = false; // guards overlapping poll ticks
+  int? _openConversationId; // while a chat is open, its own loop is in charge
 
   bool isLoading = false;
   bool isLoadingMessages = false;
@@ -38,6 +46,7 @@ class ChatProvider extends ChangeNotifier {
   ValueListenable<bool> get peerTyping => _service.peerTyping;
   ValueListenable<double?> get uploadProgress => _service.uploadProgress;
   String? get error => _error ?? _service.listError;
+  bool get isPolling => _pollTimer?.isActive ?? false;
 
   void _safeNotify() {
     if (_disposed) return;
@@ -57,6 +66,7 @@ class ChatProvider extends ChangeNotifier {
     });
   }
 
+  /// Safe to call many times: repeat calls for the same user are ignored.
   void initialize({required String token, required ChatUser currentUser}) {
     final key = '${currentUser.id}:$token';
     if (_initKey == key) return;
@@ -64,33 +74,76 @@ class ChatProvider extends ChangeNotifier {
     _service.initialize(token: token, currentUser: currentUser);
   }
 
+  /// Call on logout: stops polling and clears all chat data.
   void disconnect() {
+    stopPolling();
+    _openConversationId = null;
     _service.reset();
     _initKey = null;
   }
 
-  Future<void> refreshConversations() async {
-    isLoading = true;
-    _error = null;
-    _safeNotify();
+  // ── Auto check for new chats (every few seconds) ───────
+
+  /// Safe to call repeatedly; only one timer ever runs. Does nothing until
+  /// [initialize] has been called for the current user.
+  void startPolling() {
+    if (_disposed || _initKey == null || isPolling) return;
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _pollTick());
+    debugPrint('⏱️ Chat polling started');
+  }
+
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  Future<void> _pollTick() async {
+    // Skip when: a check is still running, logged out, or a chat is open
+    // (an open chat keeps itself up to date).
+    if (_polling || _disposed || _initKey == null) return;
+    if (_openConversationId != null) return;
+
+    _polling = true;
+    try {
+      await _service.loadConversations();
+    } catch (e) {
+      debugPrint('❌ Chat poll error: $e');
+    } finally {
+      _polling = false;
+    }
+  }
+
+  // ── Conversations ──────────────────────────────────────
+
+  /// [silent] = true updates the list and unread badge without toggling
+  /// [isLoading], so no spinner appears (used by auto refresh).
+  Future<void> refreshConversations({bool silent = false}) async {
+    if (!silent) {
+      isLoading = true;
+      _error = null;
+      _safeNotify();
+    }
     try {
       await _service.loadConversations();
     } finally {
-      isLoading = false;
-      _safeNotify();
+      if (!silent) {
+        isLoading = false;
+        _safeNotify();
+      }
     }
   }
 
   Future<ChatConversation> createConversation({
     required int customerId,
     required int fundiId,
-  }) => _service.createConversation(customerId: customerId, fundiId: fundiId);
+  }) =>
+      _service.createConversation(customerId: customerId, fundiId: fundiId);
 
-  // ── THIS WAS MISSING ──
   Future<ChatConversation> getOrCreateConversation({
     required int customerId,
     required int fundiId,
-  }) => _service.createConversation(customerId: customerId, fundiId: fundiId);
+  }) =>
+      _service.createConversation(customerId: customerId, fundiId: fundiId);
 
   Future<void> markConversationAsRead(int conversationId) =>
       _service.markConversationAsRead(conversationId);
@@ -112,6 +165,7 @@ class ChatProvider extends ChangeNotifier {
       _service.markStatusSeen(technicianId);
 
   Future<void> openConversation(int id) async {
+    _openConversationId = id;
     isLoadingMessages = true;
     _safeNotify();
     try {
@@ -122,7 +176,13 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  void closeConversation() => _service.closeConversation();
+  void closeConversation() {
+    _openConversationId = null;
+    _service.closeConversation();
+    // Catch anything that arrived while the chat was open.
+    unawaited(refreshConversations(silent: true));
+  }
+
   Future<void> loadOlder() => _service.loadOlder();
   Future<bool> loadUntil(int messageId) => _service.loadUntil(messageId);
 
@@ -130,33 +190,42 @@ class ChatProvider extends ChangeNotifier {
       int conversationId,
       String tab, {
         int? beforeId,
-      }) => _service.fetchMedia(conversationId, tab, beforeId: beforeId);
+      }) =>
+      _service.fetchMedia(conversationId, tab, beforeId: beforeId);
 
   void send({
     required int conversationId,
     String? content,
     File? file,
     ReplyRef? replyTo,
-  }) => _service.send(
-    conversationId: conversationId,
-    content: content,
-    file: file,
-    replyTo: replyTo,
-  );
+  }) =>
+      _service.send(
+        conversationId: conversationId,
+        content: content,
+        file: file,
+        replyTo: replyTo,
+      );
 
   void retry(int tempId) => _service.retry(tempId);
   void discardPending(int tempId) => _service.discardPending(tempId);
-  Future<void> sendTyping(int conversationId) => _service.sendTyping(conversationId);
+  Future<void> sendTyping(int conversationId) =>
+      _service.sendTyping(conversationId);
 
-  Future<List<int>> deleteMessages(List<int> ids, {required bool forEveryone}) =>
+  Future<List<int>> deleteMessages(List<int> ids,
+      {required bool forEveryone}) =>
       _service.deleteMessages(ids, forEveryone: forEveryone);
 
-  Future<File> fetchForViewing(ChatMessage message) => _service.fetchForViewing(message);
+  Future<File> fetchForViewing(ChatMessage message) =>
+      _service.fetchForViewing(message);
 
-  Future<void> react(int messageId, String? emoji) => _service.react(messageId, emoji);
+  Future<void> react(int messageId, String? emoji) =>
+      _service.react(messageId, emoji);
   Future<bool> toggleStar(int messageId) => _service.toggleStar(messageId);
   Future<bool> togglePin(int messageId) => _service.togglePin(messageId);
-  Future<void> forward({required List<int> messageIds, required List<int> conversationIds}) =>
+  Future<void> forward({
+    required List<int> messageIds,
+    required List<int> conversationIds,
+  }) =>
       _service.forward(messageIds: messageIds, conversationIds: conversationIds);
   Future<MessageInfo> fetchInfo(int messageId) => _service.fetchInfo(messageId);
   Future<List<ChatMessage>> fetchStarred(int conversationId) =>
@@ -165,6 +234,7 @@ class ChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _pollTimer?.cancel();
     _service.conversations.removeListener(_safeNotify);
     _service.messages.removeListener(_safeNotify);
     _service.pins.removeListener(_safeNotify);

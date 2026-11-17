@@ -22,7 +22,6 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
@@ -34,6 +33,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/social_auth_service.dart';
 import '../../widgets/flag_icon.dart';
 
 /// Package name of this SDK (must match `name:` in pubspec.yaml).
@@ -53,9 +53,6 @@ const String _kAppleIconAsset = 'assets/icons/apple_signin.png';
 //
 // Master switch for the Apple button.
 const bool _kAppleSignInEnabled = true;
-
-// While true, Apple Sign-In is a DEMO only (no real auth call).
-const bool _kAppleSignInDemo = true;
 
 // true  → iOS shows Apple only, Android shows Google only.
 // false → iOS shows Google + Apple, Android shows Google only.
@@ -87,10 +84,6 @@ bool get _showGoogleButton {
   if (_isApplePlatform) return !_kStrictPlatformSplit;
   return true; // Android and everything else
 }
-
-/// Google OAuth server client ID — replace with your own per environment.
-const String _kGoogleServerClientId =
-    '217153819583-i53f9rsb46uiid53ikuiv6r68o93qe4s.apps.googleusercontent.com';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -202,67 +195,67 @@ class _LoginScreenState extends State<LoginScreen> {
   // ─────────────────────────────────────────────
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isLoading = true);
-
     final auth = context.read<AuthProvider>();
     auth.clearError();
 
     try {
-      final googleSignIn = GoogleSignIn(
-        serverClientId: _kGoogleServerClientId,
-        scopes: const ['email', 'profile'],
-      );
-
-      await googleSignIn.signOut(); // force account picker
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) {
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        throw Exception('Failed to obtain ID token');
-      }
-
-      final success = await auth.loginWithGoogle(idToken);
+      final cred = await SocialAuthService.google();
+      final ok = await auth.loginWithGoogle(cred.token);
 
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (success) {
+      if (ok) {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       } else if (auth.errorMessage != null) {
         _snack(auth.errorMessage!);
       }
+    } on SocialAuthCancelled {
+      if (mounted) setState(() => _isLoading = false);
     } catch (e) {
       debugPrint('❌ Google sign-in failed: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _snack('Google sign-in failed: $e');
+      _snack('Google sign-in failed. Please try again.');
     }
   }
 
   // ─────────────────────────────────────────────
-  // Apple Sign-In (DEMO for now)
+  // Apple Sign-In
   // ─────────────────────────────────────────────
   Future<void> _handleAppleSignIn() async {
-    if (_kAppleSignInDemo) {
-      debugPrint('🍎 Apple sign-in tapped (demo mode)');
-      _snack('Apple Sign-In is coming soon (demo)', error: false);
-      return;
-    }
+    setState(() => _isLoading = true);
+    final auth = context.read<AuthProvider>();
+    auth.clearError();
 
-    // TODO: real implementation, e.g.
-    //   final credential = await SignInWithApple.getAppleIDCredential(
-    //     scopes: [
-    //       AppleIDAuthorizationScopes.email,
-    //       AppleIDAuthorizationScopes.fullName,
-    //     ],
-    //   );
-    //   final success = await auth.loginWithApple(credential.identityToken!);
-    //   ...navigate to AppRoutes.home on success
+    try {
+      if (!await SocialAuthService.appleAvailable()) {
+        throw Exception('Sign in with Apple is not available on this device.');
+      }
+
+      final cred = await SocialAuthService.apple();
+      final ok = await auth.loginWithApple(
+        identityToken: cred.token,
+        nonce: cred.nonce,
+        name: cred.name,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (ok) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      } else if (auth.errorMessage != null) {
+        _snack(auth.errorMessage!);
+      }
+    } on SocialAuthCancelled {
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('🍎 Apple sign-in failed: $e');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _snack('Apple sign-in failed. Please try again.');
+    }
   }
 
   // ─────────────────────────────────────────────

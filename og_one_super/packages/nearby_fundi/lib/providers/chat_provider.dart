@@ -1,5 +1,6 @@
 // lib/providers/chat_provider.dart
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -14,9 +15,16 @@ import '../services/chat_service.dart';
 class ChatProvider extends ChangeNotifier {
   final ChatService _service = ChatService();
 
+  /// How often the conversation list / unread badge is checked.
+  static const Duration _pollInterval = Duration(seconds: 3);
+
   bool _disposed = false;
   bool _notifyScheduled = false;
   String? _initKey;
+
+  Timer? _pollTimer;
+  bool _polling = false; // guards overlapping poll ticks
+  int? _openConversationId; // while a chat is open, its own loop is in charge
 
   bool isLoading = false;
   bool isLoadingMessages = false;
@@ -43,6 +51,7 @@ class ChatProvider extends ChangeNotifier {
   Map<String, String> get authHeaders => _service.authHeaders;
   ValueListenable<bool> get peerTyping => _service.peerTyping;
   String? get error => _error ?? _service.listError;
+  bool get isPolling => _pollTimer?.isActive ?? false;
 
   /// Never notifies while the widget tree is building or after dispose.
   void _safeNotify() {
@@ -79,20 +88,60 @@ class ChatProvider extends ChangeNotifier {
 
   /// Call on logout: stops polling and clears all chat data.
   void disconnectWebSocket() {
+    stopPolling();
+    _openConversationId = null;
     _service.reset();
     _initKey = null;
   }
 
+  // ── Auto check for new chats (every few seconds) ───────
+
+  /// Safe to call repeatedly; only one timer ever runs. Does nothing until
+  /// [initialize] has been called for the current user.
+  void startPolling() {
+    if (_disposed || _initKey == null || isPolling) return;
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _pollTick());
+    debugPrint('⏱️ Chat polling started');
+  }
+
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  Future<void> _pollTick() async {
+    // Skip when: a check is still running, logged out, or a chat is open
+    // (an open chat keeps itself up to date).
+    if (_polling || _disposed || _initKey == null) return;
+    if (_openConversationId != null) return;
+
+    _polling = true;
+    try {
+      await _service.loadConversations();
+    } catch (e) {
+      debugPrint('❌ Chat poll error: $e');
+    } finally {
+      _polling = false;
+    }
+  }
+
   // ── Conversations ──────────────────────────────────────
-  Future<void> refreshConversations() async {
-    isLoading = true;
-    _error = null;
-    _safeNotify();
+
+  /// [silent] = true updates the list and unread badge without toggling
+  /// [isLoading], so no spinner appears (used by auto refresh).
+  Future<void> refreshConversations({bool silent = false}) async {
+    if (!silent) {
+      isLoading = true;
+      _error = null;
+      _safeNotify();
+    }
     try {
       await _service.loadConversations();
     } finally {
-      isLoading = false;
-      _safeNotify();
+      if (!silent) {
+        isLoading = false;
+        _safeNotify();
+      }
     }
   }
 
@@ -112,8 +161,7 @@ class ChatProvider extends ChangeNotifier {
   List<ChatConversation> get archivedChats =>
       conversations.where((c) => c.isArchived).toList();
 
-  int get unreadChats =>
-      activeChats.where((c) => c.unreadCount > 0).length;
+  int get unreadChats => activeChats.where((c) => c.unreadCount > 0).length;
 
   bool get hasNewUpdates => conversations.any((c) => c.hasNewPost);
 
@@ -124,8 +172,7 @@ class ChatProvider extends ChangeNotifier {
       }) =>
       _service.setConversationState(id, pinned: pinned, archived: archived);
 
-  Future<bool> deleteConversation(int id) =>
-      _service.deleteConversation(id);
+  Future<bool> deleteConversation(int id) => _service.deleteConversation(id);
 
   // ── Updates / status ───────────────────────────────────
   Future<void> markStatusSeen(int technicianId) =>
@@ -135,6 +182,7 @@ class ChatProvider extends ChangeNotifier {
 
   // ── Open chat ──────────────────────────────────────────
   Future<void> openConversation(int id) async {
+    _openConversationId = id;
     isLoadingMessages = true;
     _safeNotify();
     try {
@@ -145,7 +193,12 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  void closeConversation() => _service.closeConversation();
+  void closeConversation() {
+    _openConversationId = null;
+    _service.closeConversation();
+    // Catch anything that arrived while the chat was open.
+    unawaited(refreshConversations(silent: true));
+  }
 
   Future<void> loadOlder() => _service.loadOlder();
 
@@ -215,6 +268,7 @@ class ChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _pollTimer?.cancel();
     _service.conversations.removeListener(_safeNotify);
     _service.messages.removeListener(_safeNotify);
     _service.pins.removeListener(_safeNotify);

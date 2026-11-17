@@ -56,19 +56,32 @@ class _AppTile {
   final String iconName;
   final Color color;
   final String? imageAsset;
+  final bool isComingSoon;
 
-  const _AppTile(this.slug, this.iconName, this.color, {this.imageAsset});
+  const _AppTile(
+      this.slug,
+      this.iconName,
+      this.color, {
+        this.imageAsset,
+        this.isComingSoon = false,
+      });
 }
+
+// ── APP DEFINITIONS ──
+// Only NearbyFundi and Fundi App are currently available.
+// Everything else is marked as Coming Soon (labels hidden).
 
 const _nearbyFundi = _AppTile('nearbyfundi', 'build', Color(0xFF2B7BFF), imageAsset: 'assets/images/apps/nearbyfundi.png');
 const _fundiApp = _AppTile('fundiapp', 'handyman', Color(0xFFFFB300), imageAsset: 'assets/images/apps/fundi_app.png');
-const _msosi = _AppTile('msosi', 'fastfood', Color(0xFFE85D04), imageAsset: 'assets/images/apps/msosi_chap_chap.png');
-const _safariPoa = _AppTile('safaripoa', 'directions_car', Color(0xFF00A86B), imageAsset: 'assets/images/apps/safaripoa.png');
-const _duma = _AppTile('duma', 'delivery_dining', Color(0xFF6D4C41), imageAsset: 'assets/images/apps/duma_app.png');
-const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1), imageAsset: 'assets/images/apps/laundry.png');
-const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png');
-const _hama = _AppTile('hama', 'local_shipping', Color(0xFF6A3FB5), imageAsset: 'assets/images/apps/hama_chap_chap.png');
-const _dalali = _AppTile('dalali', 'home_work', Color(0xFF0E8F6E), imageAsset: 'assets/images/apps/dalali_online.png');
+
+// ALL OTHERS HAVE isComingSoon: true (Labels Hidden)
+const _msosi = _AppTile('msosi', 'fastfood', Color(0xFFE85D04), imageAsset: 'assets/images/apps/msosi_chap_chap.png', isComingSoon: true);
+const _safariPoa = _AppTile('safaripoa', 'directions_car', Color(0xFF00A86B), imageAsset: 'assets/images/apps/safaripoa.png', isComingSoon: true);
+const _duma = _AppTile('duma', 'delivery_dining', Color(0xFF6D4C41), imageAsset: 'assets/images/apps/duma_app.png', isComingSoon: true);
+const _laundry = _AppTile('laundry', 'local_laundry_service', Color(0xFF2F80D1), imageAsset: 'assets/images/apps/laundry.png', isComingSoon: true);
+const _osha = _AppTile('osha', 'local_car_wash', Color(0xFF2E9E8A), imageAsset: 'assets/images/apps/osha_papo_hapo.png', isComingSoon: true);
+const _hama = _AppTile('hama', 'local_shipping', Color(0xFF6A3FB5), imageAsset: 'assets/images/apps/hama_chap_chap.png', isComingSoon: true);
+const _dalali = _AppTile('dalali', 'home_work', Color(0xFF0E8F6E), imageAsset: 'assets/images/apps/dalali_online.png', isComingSoon: true);
 
 enum StepType { welcome, trustedHelp, food, everyday, allInOne }
 
@@ -857,18 +870,25 @@ class _TileView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        Text(
-          t.serviceTitle(tile.slug),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: isDark ? Colors.white : AppTheme.primary,
-            fontSize: compact ? 10 : 11.5,
-            fontWeight: FontWeight.w700,
-            height: 1.2,
-          ),
-        ),
+
+        // ── THIS IS THE FIX ──
+        // If isComingSoon is true, we use a SizedBox to keep the height,
+        // otherwise we show the Text widget.
+        if (!tile.isComingSoon)
+          Text(
+            t.serviceTitle(tile.slug),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? Colors.white : AppTheme.primary,
+              fontSize: compact ? 10 : 11.5,
+              fontWeight: FontWeight.w700,
+              height: 1.2,
+            ),
+          )
+        else
+          const SizedBox(height: 14),
       ],
     );
   }

@@ -120,8 +120,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> loginWithGoogle(String idToken) async {
     _setLoading(true);
     try {
-      final fcmToken =
-      await FcmService.getToken().catchError((_) => null);
+      final fcmToken = await FcmService.getToken().catchError((_) => null);
       final res = await _api.loginWithGoogle(idToken, fcmToken: fcmToken);
       if (res.success && res.data != null) {
         await _saveSession(res.data);
@@ -129,6 +128,41 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
       _error = res.message;
+      return false;
+    } catch (e) {
+      debugPrint('Google login error: $e');
+      _error = 'Google sign-in failed. Please try again.';
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // ─── Apple login ──────────────────────────────────────────────
+  Future<bool> loginWithApple({
+    required String identityToken,
+    String? nonce,
+    String? name,
+  }) async {
+    _setLoading(true);
+    try {
+      final fcmToken = await FcmService.getToken().catchError((_) => null);
+      final res = await _api.loginWithApple(
+        identityToken: identityToken,
+        nonce: nonce,
+        name: name,
+        fcmToken: fcmToken,
+      );
+      if (res.success && res.data != null) {
+        await _saveSession(res.data);
+        _error = null;
+        return true;
+      }
+      _error = res.message;
+      return false;
+    } catch (e) {
+      debugPrint('Apple login error: $e');
+      _error = 'Apple sign-in failed. Please try again.';
       return false;
     } finally {
       _setLoading(false);
