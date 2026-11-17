@@ -11,18 +11,27 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 class SocialAuthController extends BaseApiController
 {
     use Auditable;
 
-    // POST /api/v1/auth/google   { id_token, fcm_token? }
+    // ════════════════════════════════════════════════════════════════
+    //  PUBLIC ENDPOINTS
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * POST /api/v1/auth/google
+     * Body: { id_token: string, fcm_token?: string }
+     *
+     * Rate limiting lives on the route (`->middleware('throttle:20,1')`).
+     * We do NOT touch RateLimiter directly here — that call was outside the
+     * try/catch and any cache backend hiccup would surface as a 500 before
+     * we could return the expected 401.
+     */
     public function google(Request $request, SocialTokenVerifier $verifier): JsonResponse
     {
-        $this->throttle('social-google:' . $request->ip());
-
         $request->validate([
             'id_token'  => 'required|string',
             'fcm_token' => 'nullable|string|max:4096',
@@ -31,7 +40,13 @@ class SocialAuthController extends BaseApiController
         try {
             $info = $verifier->google($request->id_token);
         } catch (\Throwable $e) {
-            Log::warning('Google token rejected', ['error' => $e->getMessage()]);
+            // safeLog() never throws — a broken log channel must not
+            // convert this legitimate 401 into an uncaught 500.
+            $this->safeLog('warning', 'Google token rejected', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'ip'    => $request->ip(),
+            ]);
             return $this->unauthorized('Invalid Google token.');
         }
 
@@ -46,13 +61,15 @@ class SocialAuthController extends BaseApiController
         );
     }
 
-    // POST /api/v1/auth/apple  { identity_token, nonce?, name?, fcm_token? }
-    // Apple only returns name + email on the FIRST authorization, so the app
-    // forwards `name`; email is read from the verified token.
+    /**
+     * POST /api/v1/auth/apple
+     * Body: { identity_token: string, nonce?: string, name?: string, fcm_token?: string }
+     *
+     * Apple only returns name + email on the FIRST authorization, so the app
+     * forwards `name`; email is read from the verified token.
+     */
     public function apple(Request $request, SocialTokenVerifier $verifier): JsonResponse
     {
-        $this->throttle('social-apple:' . $request->ip());
-
         $request->validate([
             'identity_token' => 'required|string',
             'nonce'          => 'nullable|string|max:255',
@@ -63,7 +80,11 @@ class SocialAuthController extends BaseApiController
         try {
             $info = $verifier->apple($request->identity_token, $request->nonce);
         } catch (\Throwable $e) {
-            Log::warning('Apple token rejected', ['error' => $e->getMessage()]);
+            $this->safeLog('warning', 'Apple token rejected', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'ip'    => $request->ip(),
+            ]);
             return $this->unauthorized('Invalid Apple token.');
         }
 
@@ -78,8 +99,13 @@ class SocialAuthController extends BaseApiController
         );
     }
 
-    // ─────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════
+    //  PRIVATE HELPERS
+    // ════════════════════════════════════════════════════════════════
 
+    /**
+     * Shared login / registration pipeline for both providers.
+     */
     private function loginOrRegister(
         Request $request,
         string $providerColumn,
@@ -116,8 +142,14 @@ class SocialAuthController extends BaseApiController
                     'is_active'         => true,
                     'locale'            => 'en',
                 ])->save();
+
                 $user->assignRole('CUSTOMER');
-                $this->logAudit("register_{$provider}", 'auth', $user->id, "Customer registered via {$provider}");
+                $this->logAudit(
+                    "register_{$provider}",
+                    'auth',
+                    $user->id,
+                    "Customer registered via {$provider}"
+                );
             }
 
             // Technicians must pass admin approval — never auto-activate them here
@@ -160,13 +192,26 @@ class SocialAuthController extends BaseApiController
                 'roles' => $user->getRoleNames(),
                 'token' => $token,
             ], ucfirst($provider) . ' login successful.');
+
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error("{$provider} login failed", ['error' => $e->getMessage()]);
+
+            // safeLog() is CRITICAL here — the original called Log::error()
+            // inside the catch block, so a broken log channel would itself
+            // throw and escape as an uncaught 500 with no response body.
+            $this->safeLog('error', "{$provider} login failed", [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+                'ip'    => $request->ip(),
+            ]);
+
             return $this->serverError(ucfirst($provider) . ' sign-in failed. Please try again.');
         }
     }
 
+    /**
+     * Persist a UserSession row for the given Sanctum plain-text token.
+     */
     private function createSession(User $user, Request $request, string $token): void
     {
         $tokenId = explode('|', $token)[0] ?? null;
@@ -179,18 +224,32 @@ class SocialAuthController extends BaseApiController
             'token'         => $tokenId,
             'ip_address'    => $request->ip(),
             'user_agent'    => $request->userAgent(),
-            'device_name'   => str_contains((string) $request->userAgent(), 'Dart') ? 'Mobile App' : 'Unknown',
+            'device_name'   => str_contains((string) $request->userAgent(), 'Dart')
+                ? 'Mobile App'
+                : 'Unknown',
             'last_activity' => now(),
             'expires_at'    => now()->addDays(30),
             'is_active'     => true,
         ]);
     }
 
-    private function throttle(string $key): void
+    /**
+     * Log without ever throwing.
+     *
+     * A broken log channel (full disk, bad permissions, misconfigured driver)
+     * must never turn a legitimate auth failure into an uncaught 500. This is
+     * the single most common reason a "fake token" test produces 500 instead
+     * of the expected 401.
+     *
+     * If you want to share this across controllers, move it to
+     * BaseApiController (or a LoggingSafe trait) and delete this copy.
+     */
+    protected function safeLog(string $level, string $message, array $context = []): void
     {
-        if (RateLimiter::tooManyAttempts($key, 10)) {
-            abort(429, 'Too many attempts. Please try again in ' . RateLimiter::availableIn($key) . ' seconds.');
+        try {
+            Log::{$level}($message, $context);
+        } catch (\Throwable $ignored) {
+            // swallow — logging must not break the response
         }
-        RateLimiter::hit($key, 60);
     }
 }
