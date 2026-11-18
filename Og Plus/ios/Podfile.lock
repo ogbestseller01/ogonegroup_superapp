@@ -1,0 +1,75 @@
+PODS:
+  - biometric_security (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - flutter_app_badger_plus (1.3.0):
+    - Flutter
+  - flutter_inappwebview_ios (0.0.1):
+    - Flutter
+    - flutter_inappwebview_ios/Core (= 0.0.1)
+    - OrderedSet (~> 6.0.3)
+  - flutter_inappwebview_ios/Core (0.0.1):
+    - Flutter
+    - OrderedSet (~> 6.0.3)
+  - gallery_saver_plus (0.0.1):
+    - Flutter
+  - NWWebSocket (0.5.10)
+  - OrderedSet (6.0.3)
+  - printing (1.0.0):
+    - Flutter
+  - pusher_channels_flutter (0.0.1):
+    - Flutter
+    - PusherSwift (~> 10.1.9)
+  - PusherSwift (10.1.10):
+    - NWWebSocket (~> 0.5.10)
+    - PusherTweetNacl (~> 1.2.0)
+  - PusherTweetNacl (1.2.0)
+
+DEPENDENCIES:
+  - biometric_security (from `.symlinks/plugins/biometric_security/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_app_badger_plus (from `.symlinks/plugins/flutter_app_badger_plus/ios`)
+  - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
+  - gallery_saver_plus (from `.symlinks/plugins/gallery_saver_plus/ios`)
+  - printing (from `.symlinks/plugins/printing/ios`)
+  - pusher_channels_flutter (from `.symlinks/plugins/pusher_channels_flutter/ios`)
+
+SPEC REPOS:
+  trunk:
+    - NWWebSocket
+    - OrderedSet
+    - PusherSwift
+    - PusherTweetNacl
+
+EXTERNAL SOURCES:
+  biometric_security:
+    :path: ".symlinks/plugins/biometric_security/ios"
+  Flutter:
+    :path: Flutter
+  flutter_app_badger_plus:
+    :path: ".symlinks/plugins/flutter_app_badger_plus/ios"
+  flutter_inappwebview_ios:
+    :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
+  gallery_saver_plus:
+    :path: ".symlinks/plugins/gallery_saver_plus/ios"
+  printing:
+    :path: ".symlinks/plugins/printing/ios"
+  pusher_channels_flutter:
+    :path: ".symlinks/plugins/pusher_channels_flutter/ios"
+
+SPEC CHECKSUMS:
+  biometric_security: 9dc8a0d52131db6197eb51381e8642d224c60963
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  flutter_app_badger_plus: aeb79cff76445e6639defd8d2b039c8c95d66c8e
+  flutter_inappwebview_ios: b89ba3482b96fb25e00c967aae065701b66e9b99
+  gallery_saver_plus: 61c8a831d5975e2bf57f87bcd64379dcc7d29ff2
+  NWWebSocket: 873eb4b18acd0317da70cdba388d792a3187ce00
+  OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
+  printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
+  pusher_channels_flutter: 2723222f2686852dd91d13780938d11cca114a39
+  PusherSwift: 6022fe6584b4317dc5c177091292b2a4d80a8c35
+  PusherTweetNacl: 015f56f2cf010e718703f2bd9bca66fdcc91b208
+
+PODFILE CHECKSUM: e36c1067b434b56e14657b6fc346f4946e913590
+
+COCOAPODS: 1.17.0

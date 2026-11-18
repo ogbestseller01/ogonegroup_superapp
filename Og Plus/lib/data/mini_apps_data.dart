@@ -1,0 +1,108 @@
+
+import '../models/mini_app.dart';
+
+const List<MiniApp> miniApps = [
+  // ── Live apps ──────────────────────────────────
+  MiniApp(
+    id: 1,
+    slug: 'nearbyfundi',
+    name: 'NearbyFundi',
+    subtitle: 'Find & hire fundis',
+    icon: 'build',
+    color: '#1E6BFF',
+    isComingSoon: false,
+    imageAsset: 'assets/images/apps/nearbyfundi.png',
+  ),
+
+  // ── Demo tile ──────────────────────────────────
+  MiniApp(
+    id: 2,
+    slug: 'demo',
+    name: 'Demo',
+    subtitle: 'Preview the Og Plus experience',
+    icon: 'touch_app',
+    color: '#7C4DFF',
+    isComingSoon: true,
+    isDemo: true,
+    imageAsset: 'assets/images/apps/demo.png',
+  ),
+
+  // ── Top coming-soon apps ────────────────────────
+  MiniApp(
+    id: 13,
+    slug: 'dalali',
+    name: 'Dalali Online',
+    subtitle: 'Find & list houses for rent',
+    icon: 'home_work',
+    color: '#0E8F6E',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/dalali_online.png',
+  ),
+
+  MiniApp(
+    id: 3,
+    slug: 'msosi',
+    name: 'Msosi Chap Chap',
+    subtitle: 'Order food fast',
+    icon: 'fastfood',
+    color: '#E65100',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/msosi_chap_chap.png',
+  ),
+
+  MiniApp(
+    id: 6,
+    slug: 'osha',
+    name: 'Osha Papo Hapo',
+    subtitle: 'Car wash at your spot',
+    icon: 'local_car_wash',
+    color: '#00897B',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/osha_papo_hapo.png',
+  ),
+
+  MiniApp(
+    id: 7,
+    slug: 'hama',
+    name: 'Hama Chap Chap',
+    subtitle: 'Moving & relocation fast',
+    icon: 'local_shipping',
+    color: '#5E35B1',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/hama_chap_chap.png',
+  ),
+
+  MiniApp(
+    id: 12,
+    slug: 'safaripoa',
+    name: 'Safari Poa',
+    subtitle: 'Book vehicles for events & trips',
+    icon: 'directions_car',
+    color: '#00A86B',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/safaripoa.png',
+  ),
+
+  MiniApp(
+    id: 11,
+    slug: 'duma',
+    name: 'Duma App',
+    subtitle: 'Delivery services',
+    icon: 'delivery_dining',
+    color: '#6D4C41',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/duma_app.png',
+  ),
+
+  // ── Lower priority apps ─────────────────────────
+  MiniApp(
+    id: 5,
+    slug: 'laundry',
+    name: 'Mfua Nguo',
+    subtitle: 'Laundry near you',
+    icon: 'local_laundry_service',
+    color: '#0277BD',
+    isComingSoon: true,
+    imageAsset: 'assets/images/apps/laundry.png',
+  ),
+];

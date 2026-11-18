@@ -1,0 +1,1165 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_en.dart';
+import 'app_localizations_sw.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('sw')
+  ];
+
+  /// No description provided for @appName.
+  ///
+  /// In en, this message translates to:
+  /// **'Og Plus'**
+  String get appName;
+
+  /// No description provided for @superApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Super App'**
+  String get superApps;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @selectLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select language'**
+  String get selectLanguage;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @swahili.
+  ///
+  /// In en, this message translates to:
+  /// **'Swahili'**
+  String get swahili;
+
+  /// Title for the App Updates list screen and card sheet
+  ///
+  /// In en, this message translates to:
+  /// **'App Updates'**
+  String get appUpdatesTitle;
+
+  /// Empty state message when there are no visible app updates
+  ///
+  /// In en, this message translates to:
+  /// **'No updates yet'**
+  String get appUpdatesEmpty;
+
+  /// Subtitle shown under the empty state icon on the App Updates screen
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up. New updates will appear here.'**
+  String get appUpdatesEmptySub;
+
+  /// Tooltip/label for the action that marks every visible update as viewed
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get appUpdatesMarkAllRead;
+
+  /// Tooltip for the X button that removes an app update card
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get appUpdatesDismiss;
+
+  /// Label shown on the app update card when more updates are stacked behind the top one
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String appUpdatesMore(int count);
+
+  /// Action label to open the full list of app updates
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get appUpdatesSeeAll;
+
+  /// Label showing when an app update was published
+  ///
+  /// In en, this message translates to:
+  /// **'Published {date}'**
+  String appUpdatesPublishedOn(String date);
+
+  /// Hint shown in the refresh indicator tooltip on the App Updates screen
+  ///
+  /// In en, this message translates to:
+  /// **'Pull to refresh'**
+  String get appUpdatesPullToRefresh;
+
+  /// No description provided for @chooseService.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the service you want and continue'**
+  String get chooseService;
+
+  /// No description provided for @services.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get services;
+
+  /// No description provided for @continueText.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueText;
+
+  /// No description provided for @comingSoonMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is coming soon 🚀'**
+  String get comingSoonMessage;
+
+  /// No description provided for @soon.
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get soon;
+
+  /// No description provided for @opening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening {name}...'**
+  String opening(String name);
+
+  /// No description provided for @nearbyFundi.
+  ///
+  /// In en, this message translates to:
+  /// **'NearbyFundi'**
+  String get nearbyFundi;
+
+  /// No description provided for @msosi.
+  ///
+  /// In en, this message translates to:
+  /// **'Msosi Chap Chap'**
+  String get msosi;
+
+  /// No description provided for @nearbyHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Health Facility'**
+  String get nearbyHealth;
+
+  /// No description provided for @laundry.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry'**
+  String get laundry;
+
+  /// No description provided for @osha.
+  ///
+  /// In en, this message translates to:
+  /// **'Osha Papo Hapo'**
+  String get osha;
+
+  /// No description provided for @hama.
+  ///
+  /// In en, this message translates to:
+  /// **'Hama Chap Chap'**
+  String get hama;
+
+  /// No description provided for @checkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'CheckSpace App'**
+  String get checkspace;
+
+  /// No description provided for @nimepoteza.
+  ///
+  /// In en, this message translates to:
+  /// **'Nimepoteza App'**
+  String get nimepoteza;
+
+  /// No description provided for @safariPoa.
+  ///
+  /// In en, this message translates to:
+  /// **'Safari Poa'**
+  String get safariPoa;
+
+  /// No description provided for @duma.
+  ///
+  /// In en, this message translates to:
+  /// **'Duma App'**
+  String get duma;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming Soon'**
+  String get comingSoon;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @followDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow device setting'**
+  String get followDevice;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @lightMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Light mode'**
+  String get lightMode;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get darkMode;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get contactUs;
+
+  /// No description provided for @termsConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get termsConditions;
+
+  /// No description provided for @rateApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate App'**
+  String get rateApp;
+
+  /// No description provided for @others.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get others;
+
+  /// No description provided for @welcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get welcome;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services'**
+  String get searchHint;
+
+  /// No description provided for @bannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All your services, one app'**
+  String get bannerTitle;
+
+  /// No description provided for @bannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fundis, hama chap chap, osha papo hapo, laundry and more'**
+  String get bannerSubtitle;
+
+  /// No description provided for @allServices.
+  ///
+  /// In en, this message translates to:
+  /// **'All services'**
+  String get allServices;
+
+  /// No description provided for @noResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No services found'**
+  String get noResults;
+
+  /// No description provided for @adsBannersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads/Banners'**
+  String get adsBannersTitle;
+
+  /// No description provided for @adsBannersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon — grow with us'**
+  String get adsBannersSubtitle;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get error;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @receivePushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive push notifications'**
+  String get receivePushNotifications;
+
+  /// No description provided for @orderUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Updates'**
+  String get orderUpdates;
+
+  /// No description provided for @orderUpdatesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified about your orders and bookings'**
+  String get orderUpdatesDesc;
+
+  /// No description provided for @promotions.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotions & Offers'**
+  String get promotions;
+
+  /// No description provided for @promotionsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive special offers and discounts'**
+  String get promotionsDesc;
+
+  /// No description provided for @appUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'App Updates'**
+  String get appUpdates;
+
+  /// No description provided for @appUpdatesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Important app updates and announcements'**
+  String get appUpdatesDesc;
+
+  /// No description provided for @privacyData.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Data'**
+  String get privacyData;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @clearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Cache'**
+  String get clearCache;
+
+  /// No description provided for @clearCacheConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This will clear temporary files and free up space. Continue?'**
+  String get clearCacheConfirm;
+
+  /// No description provided for @cacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared successfully'**
+  String get cacheCleared;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @helpFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Feedback'**
+  String get helpFeedback;
+
+  /// No description provided for @helpCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Center'**
+  String get helpCenter;
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Feedback'**
+  String get sendFeedback;
+
+  /// No description provided for @bannerFundiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted fundis, near you'**
+  String get bannerFundiTitle;
+
+  /// No description provided for @bannerFundiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book verified technicians in a few taps'**
+  String get bannerFundiSubtitle;
+
+  /// No description provided for @bannerFoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Food & laundry, delivered'**
+  String get bannerFoodTitle;
+
+  /// No description provided for @bannerFoodSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Msosi Chap Chap and Mfua Nguo at your door'**
+  String get bannerFoodSubtitle;
+
+  /// No description provided for @faqs.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQs'**
+  String get faqs;
+
+  /// No description provided for @searchFaqs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search FAQs'**
+  String get searchFaqs;
+
+  /// No description provided for @noFaqs.
+  ///
+  /// In en, this message translates to:
+  /// **'No FAQs available yet.'**
+  String get noFaqs;
+
+  /// No description provided for @couldNotOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this link.'**
+  String get couldNotOpen;
+
+  /// No description provided for @getInTouch.
+  ///
+  /// In en, this message translates to:
+  /// **'Get in touch'**
+  String get getInTouch;
+
+  /// No description provided for @getInTouchSub.
+  ///
+  /// In en, this message translates to:
+  /// **'We are happy to help. Reach us any way you like.'**
+  String get getInTouchSub;
+
+  /// No description provided for @emailWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'EMAIL & WEBSITE'**
+  String get emailWebsite;
+
+  /// No description provided for @phoneNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'PHONE NUMBERS'**
+  String get phoneNumbers;
+
+  /// No description provided for @whatsappSection.
+  ///
+  /// In en, this message translates to:
+  /// **'WHATSAPP'**
+  String get whatsappSection;
+
+  /// No description provided for @call.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get call;
+
+  /// No description provided for @chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chat;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get phone;
+
+  /// No description provided for @website.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get website;
+
+  /// No description provided for @address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get address;
+
+  /// No description provided for @helpUsImprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Help us improve'**
+  String get helpUsImprove;
+
+  /// No description provided for @helpUsImproveSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what you like, what is broken or what you would love to see next.'**
+  String get helpUsImproveSub;
+
+  /// No description provided for @feedbackTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'FEEDBACK TYPE'**
+  String get feedbackTypeLabel;
+
+  /// No description provided for @rateAppLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'HOW WOULD YOU RATE THE APP?'**
+  String get rateAppLabel;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get fullName;
+
+  /// No description provided for @yourFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Your feedback'**
+  String get yourFeedback;
+
+  /// No description provided for @sendFeedbackBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get sendFeedbackBtn;
+
+  /// No description provided for @required.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get required;
+
+  /// No description provided for @validEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address'**
+  String get validEmail;
+
+  /// No description provided for @suggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggestion'**
+  String get suggestion;
+
+  /// No description provided for @bugReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report'**
+  String get bugReport;
+
+  /// No description provided for @compliment.
+  ///
+  /// In en, this message translates to:
+  /// **'Compliment'**
+  String get compliment;
+
+  /// No description provided for @other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get other;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @nothingToShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show yet.'**
+  String get nothingToShow;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @aiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get aiAssistant;
+
+  /// No description provided for @partnerships.
+  ///
+  /// In en, this message translates to:
+  /// **'Partnerships'**
+  String get partnerships;
+
+  /// No description provided for @welcomePartnerships.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome for partnerships'**
+  String get welcomePartnerships;
+
+  /// No description provided for @featured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured App\'s'**
+  String get featured;
+
+  /// No description provided for @partnerApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner\'s Apps'**
+  String get partnerApps;
+
+  /// No description provided for @partnerAppsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner apps will appear here'**
+  String get partnerAppsHint;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @scan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get scan;
+
+  /// No description provided for @aiAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Agent'**
+  String get aiAgent;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @torch.
+  ///
+  /// In en, this message translates to:
+  /// **'Torch'**
+  String get torch;
+
+  /// No description provided for @switchCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch camera'**
+  String get switchCamera;
+
+  /// No description provided for @scannerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at an app QR code'**
+  String get scannerHint;
+
+  /// No description provided for @scannerNotOurCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not an Og Plus app code.'**
+  String get scannerNotOurCode;
+
+  /// No description provided for @scannerExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code has expired.'**
+  String get scannerExpired;
+
+  /// No description provided for @scannerInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not valid.'**
+  String get scannerInvalid;
+
+  /// No description provided for @scannerOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the code. Check your internet.'**
+  String get scannerOffline;
+
+  /// No description provided for @cameraPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission needed'**
+  String get cameraPermissionTitle;
+
+  /// No description provided for @cameraPermissionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow camera access in your phone Settings, then try again.'**
+  String get cameraPermissionBody;
+
+  /// No description provided for @cameraUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera not available'**
+  String get cameraUnavailableTitle;
+
+  /// No description provided for @cameraUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera could not be started. Please try again.'**
+  String get cameraUnavailableBody;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Og Plus'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One super app, many mini apps. Everything you need in daily life, together in one place.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingTrustedHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted help, near you'**
+  String get onboardingTrustedHelpTitle;
+
+  /// No description provided for @onboardingTrustedHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'NearbyFundi connects you with verified technicians and skilled fundis. Book in just a few taps.'**
+  String get onboardingTrustedHelpBody;
+
+  /// No description provided for @onboardingFoodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Food and deliveries, chap chap'**
+  String get onboardingFoodTitle;
+
+  /// No description provided for @onboardingFoodBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Order tasty meals with Msosi Chap Chap and get your items delivered fast with Duma App.'**
+  String get onboardingFoodBody;
+
+  /// No description provided for @onboardingEverydayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday life, made easy'**
+  String get onboardingEverydayTitle;
+
+  /// No description provided for @onboardingEverydayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry, car wash, moving, event rides and lost-and-found, each handled by its own mini app.'**
+  String get onboardingEverydayBody;
+
+  /// No description provided for @onboardingAllInOneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All in one place'**
+  String get onboardingAllInOneTitle;
+
+  /// No description provided for @onboardingAllInOneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open any mini app from your home screen. More are coming soon, plus an AI Agent to help you along the way.'**
+  String get onboardingAllInOneBody;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get getStarted;
+
+  /// No description provided for @dalaliOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Dalali Online'**
+  String get dalaliOnline;
+
+  /// No description provided for @navApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Apps'**
+  String get navApps;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
+  /// No description provided for @appsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Every service in one place'**
+  String get appsSubtitle;
+
+  /// No description provided for @accountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language and app settings'**
+  String get accountSubtitle;
+
+  /// No description provided for @recentApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentApps;
+
+  /// No description provided for @favoriteApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get favoriteApps;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get seeAll;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @favoritesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press any app to add it to your favorites.'**
+  String get favoritesHint;
+
+  /// No description provided for @addedFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to favorites'**
+  String get addedFavorite;
+
+  /// No description provided for @removedFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from favorites'**
+  String get removedFavorite;
+
+  /// No description provided for @noAppsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'No apps here yet'**
+  String get noAppsHere;
+
+  /// No description provided for @categoryFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get categoryFood;
+
+  /// No description provided for @categoryCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get categoryCleaning;
+
+  /// No description provided for @categoryDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get categoryDelivery;
+
+  /// No description provided for @categoryPartners.
+  ///
+  /// In en, this message translates to:
+  /// **'Partners'**
+  String get categoryPartners;
+
+  /// No description provided for @navActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get navActivity;
+
+  /// No description provided for @activitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings and orders from all apps'**
+  String get activitySubtitle;
+
+  /// No description provided for @filterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get filterActive;
+
+  /// No description provided for @filterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterDone;
+
+  /// No description provided for @activityEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get activityEmptyTitle;
+
+  /// No description provided for @activityEmptySub.
+  ///
+  /// In en, this message translates to:
+  /// **'Your bookings, orders and requests from every app will show up here.'**
+  String get activityEmptySub;
+
+  /// No description provided for @browseApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse apps'**
+  String get browseApps;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['en', 'sw'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'sw':
+      return AppLocalizationsSw();
+  }
+
+  throw FlutterError(
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
+}

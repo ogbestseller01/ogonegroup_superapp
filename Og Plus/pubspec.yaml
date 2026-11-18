@@ -1,0 +1,99 @@
+
+name: og_plus
+description: Og Plus - OG ONE GROUP Super App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_localizations:
+    sdk: flutter
+
+  intl: any
+  google_fonts: ^6.3.3
+  provider: ^6.1.1
+  shared_preferences: ^2.2.2
+
+  # HTTP client
+  dio: ^5.7.0
+
+  # External links, email, phone and WhatsApp
+  url_launcher: ^6.3.0
+
+  # Firebase
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.3.0
+  flutter_local_notifications: ^19.4.1
+
+  # Utilities
+  timeago: ^3.7.1
+
+  # QR codes
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.2
+
+  # NearbyFundi SDK
+  nearbyfundi_sdk:
+    path: packages/nearby_fundi
+  path_provider: ^2.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+# App launcher icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_icon_foreground.png
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/app_icon_foreground.png
+  adaptive_icon_foreground_inset: 22
+
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/apps/
+    - google_fonts/
+
+dependency_overrides:
+  js: ^0.7.1
+
+  # Google ML Kit
+  google_mlkit_face_detection: ^0.15.1
+  google_mlkit_commons: ^0.13.0
+
+  # Shared dependencies
+  file_picker: ^10.3.10
+  share_plus: ^11.0.0
+  permission_handler: ^12.0.3
+  open_file: ^4.0.0
+  connectivity_plus: ^7.2.0
+  emoji_picker_flutter: ^4.4.0
+  font_awesome_flutter: ^10.8.0
+  path_provider: ^2.1.4
+
+  # Record family
+  record: ^7.1.1
+  record_platform_interface: ^2.1.0
+  record_linux: ^2.1.0
+  record_android: ^2.2.0
+  record_ios: ^2.0.0
+  record_web: ^2.1.0
+  record_windows: ^2.3.0
+  record_macos: ^2.0.0
+
+  # Image and archive compatibility
+  archive: 3.6.1
+  image: 4.3.0
