@@ -81,7 +81,7 @@ Route::prefix('v1')->group(function () {
         // Rate limiting lives HERE only. Do not add a second manual RateLimiter
         // call inside the controller — it sits outside try/catch and would turn
         // a fake-token 401 into a 500 if the cache backend is unhealthy.
-        Route::post('google', [SocialAuthController::class, 'google'])->middleware('throttle:20,1');
+        Route::post('google', [AuthController::class, 'googleLogin'])->middleware('throttle:20,1');
         Route::post('apple',  [SocialAuthController::class, 'apple'])->middleware('throttle:20,1');
 
         Route::post('login', [AuthController::class, 'login']);

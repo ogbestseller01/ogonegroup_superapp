@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Google\Client as GoogleClient;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
@@ -862,6 +864,156 @@ class AuthController extends BaseApiController
 
         return $coords;
     }
+
+    // ──────────────────────────────────────────────
+// GOOGLE SIGN-IN (mobile ID-token flow)
+// ──────────────────────────────────────────────
+
+public function googleLogin(Request $request)
+{
+    $request->validate([
+        'id_token'  => 'required|string|max:4096',
+        'fcm_token' => 'nullable|string|max:255',
+    ]);
+
+    $payload = $this->verifyGoogleIdToken($request->id_token);
+
+    if (!$payload) {
+        $this->logAudit('google_login_failed', 'auth', null, 'Invalid Google token');
+        return $this->unauthorized('Invalid Google sign-in. Please try again.');
+    }
+
+    $googleId = (string) $payload['sub'];
+    $email    = strtolower(trim($payload['email'] ?? ''));
+    $name     = trim($payload['name'] ?? '') ?: Str::before($email, '@');
+    $picture  = $payload['picture'] ?? null;
+
+    if ($email === '' || empty($payload['email_verified'])) {
+        return $this->errorResponse('Your Google email is not verified.', 422);
+    }
+
+    // 1) match by google_id  2) match by email (links an existing account)
+    $user = User::withTrashed()->where('google_id', $googleId)->first()
+         ?? User::withTrashed()->where('email', $email)->first();
+
+    if ($user && $user->trashed()) {
+        return $this->forbidden('This account has been deleted. Please contact support.');
+    }
+
+    if ($user && $user->locked_until && $user->locked_until->isFuture()) {
+        return $this->errorResponse('Account temporarily locked. Try again later.', 429);
+    }
+
+    $isNew = false;
+
+    DB::beginTransaction();
+    try {
+        if (!$user) {
+            $isNew = true;
+
+            $user = User::create([
+                'name'              => $name,
+                'email'             => $email,
+                'password'          => Hash::make(Str::random(40)), // unused; column is NOT NULL
+                'status'            => 'active',
+                'is_active'         => true,
+                'email_verified_at' => now(),
+                'locale'            => 'en',
+            ]);
+
+            $user->forceFill([
+                'google_id'     => $googleId,
+                'google_avatar' => $picture,
+                'auth_provider' => 'google',
+            ])->save();
+
+            $user->assignRole('CUSTOMER');
+        } else {
+            $user->forceFill([
+                'google_id'         => $user->google_id ?: $googleId,
+                'google_avatar'     => $picture ?: $user->google_avatar,
+                'email_verified_at' => $user->email_verified_at ?: now(),
+            ])->save();
+        }
+
+        DB::commit();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('Google login failed', ['error' => $e->getMessage()]);
+        return $this->serverError('Google sign-in failed. Please try again.');
+    }
+
+    // Same gates as password login
+    if (!$user->is_active || $user->status !== 'active') {
+        return $this->forbidden('Account is not active.');
+    }
+
+    if ($user->hasRole('FUNDI')) {
+        $technician = Technician::where('user_id', $user->id)->first();
+        if (!$technician || !$technician->verified || $technician->verification_status !== 'approved') {
+            return $this->forbidden('Your technician account is not verified. Please wait for admin approval.');
+        }
+    }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+    $this->createSession($user, $request, $token);
+
+    $user->update([
+        'last_login_at' => now(),
+        'last_login_ip' => $request->ip(),
+        'locked_until'  => null,
+    ]);
+
+    if ($request->filled('fcm_token')) {
+        $this->storeFcmToken($user, $request->fcm_token);
+    }
+
+    $this->logAudit(
+        $isNew ? 'google_register' : 'google_login',
+        'auth',
+        $user->id,
+        'Google sign-in: ' . $user->email
+    );
+
+    $userData = $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']);
+    $userData['profile_photo'] = $user->google_avatar;
+
+    return $this->successResponse([
+        'user'        => $userData,
+        'roles'       => $user->getRoleNames(),
+        'token'       => $token,
+        'is_new_user' => $isNew,
+    ], $isNew ? 'Account created with Google.' : 'Login successful.');
+}
+
+/**
+ * Verifies a Google ID token (signature, expiry, issuer, audience).
+ * Returns the payload, or null if invalid.
+ */
+private function verifyGoogleIdToken(string $idToken): ?array
+{
+    $clientIds = config('services.google.client_ids', []);
+
+    if (empty($clientIds)) {
+        Log::error('GOOGLE_CLIENT_IDS is not configured');
+        return null;
+    }
+
+    foreach ($clientIds as $clientId) {
+        try {
+            $client  = new GoogleClient(['client_id' => $clientId]);
+            $payload = $client->verifyIdToken($idToken);
+
+            if (is_array($payload) && !empty($payload['sub'])) {
+                return $payload;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Google token verify error', ['error' => $e->getMessage()]);
+        }
+    }
+
+    return null;
+}
 
     private function ensureNotRateLimited(string $key, int $maxAttempts, int $decaySeconds): void
     {
