@@ -2,24 +2,35 @@
 //
 // Single source of truth for the authenticated session.
 //
-// • Every async entry point routes through _setLoading / _safeNotify so
-//   listeners never see a half-set state (_token set + _user null).
-// • _saveSession sets _token and _user together BEFORE notifying.
-// • _disposed guards all notifyListeners() after dispose().
-// • logout() has a bounded network call so offline logout returns fast.
-// • deleteAccount() skips the redundant API logout on success.
-// • _error is cleared on every successful write.
-// • loadUser() is a no-op when there is no token.
+// Debug: every Google sign-in step is tagged [GOOGLE n/8] so you can
+// isolate the failing stage via:
+//   flutter logs | grep GOOGLE
+//
+// Steps:
+//   1/8  entry (loading/terms already handled by UI)
+//   2/8  GoogleAuthService.getIdToken()  ← picker + native auth
+//   3/8  FCM token fetch (non-fatal)
+//   4/8  ApiService.loginWithGoogle()    ← server call
+//   5/8  server response validation
+//   6/8  GoogleAuthResult parse
+//   7/8  _saveSession (persist token + user + FCM)
+//   8/8  success / cancelled / failed resolved
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart'
+    show GoogleSignInException, GoogleSignInExceptionCode;
 
+import '../models/google_auth_result.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/fcm_service.dart';
+import '../services/google_auth_service.dart';
 import '../services/storage_service.dart';
+
+enum GoogleLoginOutcome { success, cancelled, failed }
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
@@ -29,12 +40,14 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _disposed = false;
   String? _error;
+  bool _lastGoogleWasNew = false;
 
   User? get user => _user;
   String? get token => _token;
   bool get isLoggedIn => _token != null;
   bool get isLoading => _isLoading;
   String? get errorMessage => _error;
+  bool get lastGoogleWasNew => _lastGoogleWasNew;
 
   AuthProvider({GlobalKey<NavigatorState>? navigatorKey}) {
     _api.onSessionExpired = () async {
@@ -116,25 +129,122 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Google login ─────────────────────────────────────────────
-  Future<bool> loginWithGoogle(String idToken) async {
+  // ─── Google login (picker → ID token → server) ───────────────
+  Future<GoogleLoginOutcome> signInWithGoogle() async {
+    debugPrint('[GOOGLE 1/8] signInWithGoogle() entered');
+
     _setLoading(true);
     try {
-      final fcmToken = await FcmService.getToken().catchError((_) => null);
-      final res = await _api.loginWithGoogle(idToken, fcmToken: fcmToken);
-      if (res.success && res.data != null) {
-        await _saveSession(res.data);
-        _error = null;
-        return true;
+      // ── 2/8: native picker + ID token ────────────────────────
+      debugPrint('[GOOGLE 2/8] requesting Google ID token...');
+      final String idToken;
+      try {
+        idToken = await GoogleAuthService.getIdToken();
+      } on GoogleSignInCancelled catch (c) {
+        // Closed almost instantly = Google rejected the app config,
+        // not a real user cancel.
+        if (c.looksLikeConfigError) {
+          debugPrint('[GOOGLE 2/8] closed after ${c.elapsed.inMilliseconds}ms '
+              '-> Android OAuth client (package + SHA-1) problem');
+          _error = 'Google sign-in closed immediately. '
+              'Check the Android OAuth client (package name and SHA-1).';
+          return GoogleLoginOutcome.failed;
+        }
+        debugPrint('[GOOGLE 2/8] user cancelled the Google picker');
+        return GoogleLoginOutcome.cancelled;
+      } on GoogleSignInException catch (e) {
+        // v7 surfaces all real failures here.
+        debugPrint('[GOOGLE 2/8] GoogleSignInException '
+            'code=${e.code} details=${e.details}');
+        _error = _googleErrorFor(e.code);
+        return GoogleLoginOutcome.failed;
+      } catch (e, st) {
+        debugPrint('[GOOGLE 2/8] unexpected error getting ID token: $e');
+        debugPrint('$st');
+        _error = 'Google sign-in failed. Please try again.';
+        return GoogleLoginOutcome.failed;
       }
-      _error = res.message;
-      return false;
-    } catch (e) {
-      debugPrint('Google login error: $e');
+
+      debugPrint('[GOOGLE 2/8] ID token received '
+          '(length=${idToken.length}, '
+          'preview=${idToken.substring(0, idToken.length < 16 ? idToken.length : 16)}...)');
+
+      // ── 3/8: FCM token (never fatal) ─────────────────────────
+      String? fcmToken;
+      try {
+        fcmToken = await FcmService.getToken();
+        debugPrint('[GOOGLE 3/8] FCM token: '
+            '${fcmToken == null ? "null" : "ok"}');
+      } catch (e) {
+        debugPrint('[GOOGLE 3/8] FCM token fetch failed (non-fatal): $e');
+      }
+
+      // ── 4/8: server exchange ─────────────────────────────────
+      debugPrint('[GOOGLE 4/8] calling /auth/google ...');
+      final res = await _api.loginWithGoogle(idToken, fcmToken: fcmToken);
+
+      debugPrint('[GOOGLE 5/8] server response: '
+          'success=${res.success} '
+          'message=${res.message} '
+          'hasData=${res.data != null}');
+
+      if (!res.success || res.data == null) {
+        debugPrint('[GOOGLE 5/8] server rejected Google login '
+            'message=${res.message}');
+        // res.message is non-nullable String
+        _error = res.message.isNotEmpty
+            ? res.message
+            : 'Google sign-in failed. Please try again.';
+        return GoogleLoginOutcome.failed;
+      }
+
+      // ── 6/8: parse GoogleAuthResult ──────────────────────────
+      final map = Map<String, dynamic>.from(res.data as Map);
+      final result = GoogleAuthResult.fromJson(map);
+      _lastGoogleWasNew = result.isNewUser;
+      debugPrint('[GOOGLE 6/8] parsed GoogleAuthResult: '
+          'isNewUser=$_lastGoogleWasNew '
+          'userId=${result.user.id} '
+          'email=${result.user.email}');
+
+      // ── 7/8: persist session ─────────────────────────────────
+      debugPrint('[GOOGLE 7/8] saving session...');
+      await _saveSession(map);
+
+      // ── 8/8: done ────────────────────────────────────────────
+      debugPrint('[GOOGLE 8/8] Google login SUCCESS '
+          '(isNewUser=$_lastGoogleWasNew)');
+      _error = null;
+      return GoogleLoginOutcome.success;
+    } catch (e, st) {
+      // Catch-all for anything not already handled above
+      debugPrint('[GOOGLE 8/8] unexpected failure: $e');
+      debugPrint('$st');
       _error = 'Google sign-in failed. Please try again.';
-      return false;
+      return GoogleLoginOutcome.failed;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Human-readable messages for GoogleSignInException codes.
+  String _googleErrorFor(GoogleSignInExceptionCode? code) {
+    switch (code) {
+      case GoogleSignInExceptionCode.canceled:
+      // Handled before this is called, but keep for safety.
+        return 'Google sign-in was cancelled.';
+      case GoogleSignInExceptionCode.clientConfigurationError:
+        return 'Google sign-in is misconfigured (serverClientId / SHA-1).';
+      case GoogleSignInExceptionCode.providerConfigurationError:
+        return 'Google provider is misconfigured on this device.';
+      case GoogleSignInExceptionCode.uiUnavailable:
+        return 'Google sign-in UI is unavailable. Try again.';
+      case GoogleSignInExceptionCode.userMismatch:
+        return 'A different Google account is already signed in.';
+      case GoogleSignInExceptionCode.unknownError:
+        return 'Google sign-in failed. Please try again.';
+      default:
+        return 'Google sign-in failed. Please try again.';
     }
   }
 
@@ -299,8 +409,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ─── Delete account ───────────────────────────────────────────
-  // We deliberately skip _api.logout() here: the account is gone, so
-  // the call would 401. Just wipe the local session.
   Future<bool> deleteAccount() async {
     _setLoading(true);
     try {
@@ -318,7 +426,7 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Load / refresh user ──────────────────────────────────────
   Future<void> loadUser() async {
-    if (_token == null) return; // Not signed in — nothing to load.
+    if (_token == null) return;
 
     _setLoading(true);
     try {
@@ -339,13 +447,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ─── Logout ───────────────────────────────────────────────────
-  // Bounded network call so offline logout returns in ≤5s.
   Future<void> logout() async {
     try {
+      await GoogleAuthService.signOut();
       await _api.logout().timeout(const Duration(seconds: 5));
-    } catch (_) {
-      // Ignore — network, timeout, 401, all irrelevant to the user.
-    }
+    } catch (_) {}
     await _clearSession();
   }
 
@@ -364,7 +470,6 @@ class AuthProvider extends ChangeNotifier {
         _token = storedToken;
         _user = User.fromJson(userMap, storedToken);
         _safeNotify();
-        // Refresh in the background — no spinner, no error surface.
         unawaited(_refreshProfileQuietly());
       } catch (_) {
         await _clearSession();
@@ -374,8 +479,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Silent refresh used at boot. Never sets _isLoading or _error so the
-  /// splash screen isn't disrupted by a transient network error.
   Future<void> _refreshProfileQuietly() async {
     try {
       final res = await _api.getProfile();
@@ -385,9 +488,7 @@ class AuthProvider extends ChangeNotifier {
         await _storeUser();
         _safeNotify();
       }
-    } catch (_) {
-      // Ignore — the stored user is still valid for the rest of the session.
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchAndSaveUser(String token) async {
@@ -409,13 +510,9 @@ class AuthProvider extends ChangeNotifier {
     final userData = data['user'] ?? data;
     final token = data['token']?.toString();
     if (token == null || token.isEmpty) {
-      // A "success" with no token is a broken server response. Treat it
-      // as a failed login instead of crashing on _token!.
       throw StateError('Login response did not include a token.');
     }
 
-    // Build both first, then commit together so listeners never see a
-    // half-set state (token set, user null).
     final parsedUser = User.fromJson(userData, token);
     _token = token;
     _user = parsedUser;
@@ -427,6 +524,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _clearSession() async {
+    await GoogleAuthService.signOut();
     _token = null;
     _user = null;
     _isLoading = false;

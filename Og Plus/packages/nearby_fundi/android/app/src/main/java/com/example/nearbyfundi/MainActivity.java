@@ -24,11 +24,15 @@ public class MainActivity extends FlutterActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Enable secure flag to prevent screenshots
+        // ⚡ FIX: Do NOT apply FLAG_SECURE globally here.
+        // Doing so prevents the Google Sign-In HiddenActivity from rendering.
+        // If you need this, apply it conditionally via the SECURITY_CHANNEL.
+        /*
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE
         );
+        */
 
         handleFCMIntent(getIntent());
     }
@@ -96,16 +100,6 @@ public class MainActivity extends FlutterActivity {
 
         // ─────────────────────────────────────────────
         // BADGE CHANNEL
-        //
-        // Android 8+ shows launcher badges automatically when a
-        // notification is posted through flutter_local_notifications.
-        // No ShortcutBadger — it created a persistent
-        // "NearbyFundi / N" tray notification on Samsung and other
-        // OEM launchers.
-        //
-        // This handler persists the count locally so getBadgeCount()
-        // still returns a meaningful value. It does NOT create or
-        // remove tray notifications.
         // ─────────────────────────────────────────────
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), BADGE_CHANNEL)
                 .setMethodCallHandler((call, result) -> {
@@ -184,6 +178,7 @@ public class MainActivity extends FlutterActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        enableSecureScreen();
+        // ⚡ FIX: Do NOT force enableSecureScreen() here.
+        // enableSecureScreen();
     }
 }

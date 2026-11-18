@@ -122,13 +122,11 @@ class ApiService {
       _post('/v1/auth/login',
           data: {'email': identifier, 'password': password});
 
-  Future<ApiResponse> loginWithGoogle(String idToken, {String? fcmToken}) async {
-    final body = <String, dynamic>{
-      'id_token': idToken,
-      if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
-    };
-    return _post('/v1/auth/google', data: body);
-  }
+  Future<ApiResponse> loginWithGoogle(String idToken, {String? fcmToken}) =>
+      _post('/v1/auth/google', data: {
+        'id_token': idToken,
+        if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+      });
 
   Future<ApiResponse> loginWithApple({
     required String identityToken,

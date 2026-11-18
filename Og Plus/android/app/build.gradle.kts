@@ -1,4 +1,3 @@
-
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -18,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "co.tz.ogonegroup.ogplus"
+    namespace = "com.example.og_one_superapp"
 
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
@@ -30,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "co.tz.ogonegroup.ogplus"
+        applicationId = "com.example.og_one_superapp"
 
         minSdk = flutter.minSdkVersion
         targetSdk = 36

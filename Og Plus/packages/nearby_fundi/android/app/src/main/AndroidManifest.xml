@@ -69,6 +69,23 @@
         android:supportsRtl="true"
         android:theme="@style/LaunchTheme">
 
+        <!-- ═══════════════════════════════════════════════════
+             GOOGLE SIGN-IN ANDROID 14 FIX
+             ═══════════════════════════════════════════════════
+             These flags disable the new Android 14 Credential
+             Manager, which has a bug where it silently cancels
+             the login flow. This forces the legacy stable flow.
+             ═══════════════════════════════════════════════════ -->
+        <meta-data
+            android:name="com.google.android.gms.credentials.API_ENABLED"
+            android:value="false" />
+        <meta-data
+            android:name="com.google.android.gms.credentials.CredentialPickerConfig"
+            android:value="false" />
+        <meta-data
+            android:name="androidx.credentials.CREDENTIAL_SERVICE_ENABLED"
+            android:value="false" />
+
         <!-- MAIN ACTIVITY -->
         <activity
             android:name=".MainActivity"
@@ -97,16 +114,6 @@
              ═══════════════════════════════════════════════════
              ⚠️ IMPORTANT: Do NOT declare `default_notification_icon`
              or `default_notification_channel_id` as meta-data here.
-
-             Those meta-data tags tell Android's FCM SDK to auto-render
-             ANY incoming push as a notification — even data-only pushes
-             with no title/body. When that happens, Android falls back
-             to using the app label as the title and the badge count as
-             the body, producing the "NearbyFundi / N" banner.
-
-             Let Flutter's FcmService handle ALL notification rendering
-             explicitly so it can validate title/body and skip bad
-             payloads. Flutter already sets channel_id per-message.
              ═══════════════════════════════════════════════════ -->
 
         <!-- FILE PROVIDER -->

@@ -1,6 +1,3 @@
-
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +11,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../services/social_auth_service.dart';
 import '../../widgets/flag_icon.dart';
 
 /// SDK package name.
@@ -25,34 +21,8 @@ const String _kAppIconAsset = 'assets/icons/app_icon.png';
 const String _kAppIconForegroundAsset =
     'assets/icons/app_icon_foreground.png';
 const String _kGoogleIconAsset = 'assets/icons/google_signin.png';
-const String _kAppleIconAsset = 'assets/icons/apple_signin.png';
 
 const Color _kFieldTint = Color(0xFFF4F7F6);
-
-const bool _kAppleSignInEnabled = true;
-const bool _kStrictPlatformSplit = true;
-const bool _kShowAppleOnAndroid = false;
-
-bool get _isApplePlatform =>
-    defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-
-bool get _showAppleButton {
-  if (!_kAppleSignInEnabled) return false;
-
-  if (_isApplePlatform) return true;
-
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    return _kShowAppleOnAndroid;
-  }
-
-  return false;
-}
-
-bool get _showGoogleButton {
-  if (_isApplePlatform) return !_kStrictPlatformSplit;
-  return true;
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -102,8 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor:
-          error ? AppTheme.error : AppTheme.warning,
+          backgroundColor: error ? AppTheme.error : AppTheme.warning,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -111,6 +80,15 @@ class _LoginScreenState extends State<LoginScreen> {
           margin: const EdgeInsets.all(16),
         ),
       );
+  }
+
+  bool _requireTerms() {
+    if (_termsAccepted) return true;
+    _snack(
+      AppLocalizations.of(context)!.pleaseAcceptTerms,
+      error: false,
+    );
+    return false;
   }
 
   String get _fullPhone {
@@ -122,24 +100,19 @@ class _LoginScreenState extends State<LoginScreen> {
       digits = digits.substring(1);
     }
 
-    final dialCode =
-    _selectedCountry.dialCode.replaceAll('+', '');
+    final dialCode = _selectedCountry.dialCode.replaceAll('+', '');
 
     return '$dialCode$digits';
   }
+
+  // ============================ EMAIL / PHONE LOGIN ============================
 
   Future<void> _handleLogin() async {
     if (_isLoading) return;
 
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_termsAccepted) {
-      _snack(
-        AppLocalizations.of(context)!.pleaseAcceptTerms,
-        error: false,
-      );
-      return;
-    }
+    if (!_requireTerms()) return;
 
     setState(() => _isLoading = true);
 
@@ -147,9 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final auth = context.read<AuthProvider>();
       auth.clearError();
 
-      final identifier = _isEmailMode
-          ? _identifierController.text.trim()
-          : _fullPhone;
+      final identifier =
+      _isEmailMode ? _identifierController.text.trim() : _fullPhone;
 
       final success = await auth.login(
         identifier,
@@ -159,10 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (success) {
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.home,
-        );
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
       } else {
         setState(() => _isLoading = false);
 
@@ -180,114 +149,58 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ============================ GOOGLE SIGN-IN ============================
+  // Delegates entirely to AuthProvider.signInWithGoogle(), which:
+  //   • opens the Google account picker via GoogleAuthService,
+  //   • exchanges the ID token on the server,
+  //   • persists the session,
+  //   • reports success / cancelled / failed.
+  // The UI only disables buttons, awaits, and routes by outcome.
+
   Future<void> _handleGoogleSignIn() async {
     if (_isLoading) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      final auth = context.read<AuthProvider>();
-      auth.clearError();
-
-      final credential = await SocialAuthService.google();
-
-      final success = await auth.loginWithGoogle(
-        credential.token,
-      );
-
-      if (!mounted) return;
-
-      if (success) {
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.home,
-        );
-      } else {
-        setState(() => _isLoading = false);
-
-        if (auth.errorMessage != null) {
-          _snack(auth.errorMessage!);
-        }
-      }
-    } on SocialAuthCancelled {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      debugPrint('Google sign-in failed: $e');
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-      _snack('Google sign-in failed. Please try again.');
-    }
-  }
-
-  Future<void> _handleAppleSignIn() async {
-    if (_isLoading) return;
+    if (!_requireTerms()) return;
 
     setState(() => _isLoading = true);
 
-    try {
-      final auth = context.read<AuthProvider>();
-      auth.clearError();
+    final auth = context.read<AuthProvider>();
+    auth.clearError();
 
-      if (!await SocialAuthService.appleAvailable()) {
-        throw Exception(
-          'Sign in with Apple is not available on this device.',
-        );
-      }
+    final outcome = await auth.signInWithGoogle();
 
-      final credential = await SocialAuthService.apple();
+    if (!mounted) return;
 
-      final success = await auth.loginWithApple(
-        identityToken: credential.token,
-        nonce: credential.nonce,
-        name: credential.name,
-      );
+    switch (outcome) {
+      case GoogleLoginOutcome.success:
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        break;
 
-      if (!mounted) return;
-
-      if (success) {
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.home,
-        );
-      } else {
+      case GoogleLoginOutcome.cancelled:
         setState(() => _isLoading = false);
+        break;
 
-        if (auth.errorMessage != null) {
-          _snack(auth.errorMessage!);
-        }
-      }
-    } on SocialAuthCancelled {
-      if (mounted) {
+      case GoogleLoginOutcome.failed:
         setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      debugPrint('Apple sign-in failed: $e');
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-      _snack('Apple sign-in failed. Please try again.');
+        _snack(
+          auth.errorMessage ?? 'Google sign-in failed. Please try again.',
+        );
+        break;
     }
   }
+
+  // ============================ COUNTRY / LANGUAGE / THEME ============================
 
   Future<void> _openCountrySheet() async {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final picked = await showModalBottomSheet<Country>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor:
-      isDark ? AppTheme.darkSurface : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _CountrySheet(
         countries: _countries,
@@ -325,8 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ServiceProvider serviceProvider,
       AppLocalizations l10n,
       ) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     _showAppSheet(
       title: l10n.language,
@@ -334,37 +246,21 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         _SheetTile(
           title: 'English',
-          leading: const FlagIcon(
-            emoji: '🇬🇧',
-            height: 18,
-          ),
+          leading: const FlagIcon(emoji: '🇬🇧', height: 18),
           selected: settings.locale == 'en',
           onTap: () async {
             Navigator.pop(context);
-            await _changeLanguage(
-              'en',
-              settings,
-              auth,
-              serviceProvider,
-            );
+            await _changeLanguage('en', settings, auth, serviceProvider);
           },
         ),
         const SizedBox(height: 10),
         _SheetTile(
           title: 'Kiswahili',
-          leading: const FlagIcon(
-            emoji: '🇹🇿',
-            height: 18,
-          ),
+          leading: const FlagIcon(emoji: '🇹🇿', height: 18),
           selected: settings.locale == 'sw',
           onTap: () async {
             Navigator.pop(context);
-            await _changeLanguage(
-              'sw',
-              settings,
-              auth,
-              serviceProvider,
-            );
+            await _changeLanguage('sw', settings, auth, serviceProvider);
           },
         ),
       ],
@@ -375,8 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ThemeProvider themeProvider,
       AppLocalizations l10n,
       ) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     _showAppSheet(
       title: l10n.theme,
@@ -385,8 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _SheetTile(
           title: 'Light',
           leading: const Icon(Icons.light_mode_rounded),
-          selected:
-          themeProvider.themeMode == ThemeMode.light,
+          selected: themeProvider.themeMode == ThemeMode.light,
           onTap: () {
             themeProvider.setThemeMode(ThemeMode.light);
             Navigator.pop(context);
@@ -396,8 +290,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _SheetTile(
           title: 'Dark',
           leading: const Icon(Icons.dark_mode_rounded),
-          selected:
-          themeProvider.themeMode == ThemeMode.dark,
+          selected: themeProvider.themeMode == ThemeMode.dark,
           onTap: () {
             themeProvider.setThemeMode(ThemeMode.dark);
             Navigator.pop(context);
@@ -407,8 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _SheetTile(
           title: 'System',
           leading: const Icon(Icons.brightness_auto_rounded),
-          selected:
-          themeProvider.themeMode == ThemeMode.system,
+          selected: themeProvider.themeMode == ThemeMode.system,
           onTap: () {
             themeProvider.setThemeMode(ThemeMode.system);
             Navigator.pop(context);
@@ -425,12 +317,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-      isDark ? AppTheme.darkSurface : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -442,9 +331,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppTheme.darkBorder
-                      : Colors.grey.shade400,
+                  color:
+                  isDark ? AppTheme.darkBorder : Colors.grey.shade400,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -454,9 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? Colors.white
-                      : AppTheme.primary,
+                  color: isDark ? Colors.white : AppTheme.primary,
                 ),
               ),
               const SizedBox(height: 18),
@@ -467,6 +353,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  // ============================ BUILD ============================
 
   @override
   Widget build(BuildContext context) {
@@ -486,15 +374,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final canExitToHost =
     Navigator.of(context, rootNavigator: true).canPop();
 
-    final cardColor =
-    isDark ? AppTheme.darkSurface : Colors.white;
-
+    final cardColor = isDark ? AppTheme.darkSurface : Colors.white;
     final mutedText =
     isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 
     final primaryText = theme.colorScheme.onSurface;
-    final linkColor =
-    isDark ? AppTheme.secondary : AppTheme.primary;
+    final linkColor = isDark ? AppTheme.secondary : AppTheme.primary;
 
     final themeIcon = switch (themeProvider.themeMode) {
       ThemeMode.dark => Icons.dark_mode_rounded,
@@ -502,15 +387,9 @@ class _LoginScreenState extends State<LoginScreen> {
       ThemeMode.system => Icons.brightness_auto_rounded,
     };
 
-    final showGoogle = _showGoogleButton;
-    final showApple = _showAppleButton;
-    final showSocial = showGoogle || showApple;
-    final bothSocial = showGoogle && showApple;
-
     return Scaffold(
-      backgroundColor: isDark
-          ? AppTheme.darkBackground
-          : AppTheme.scaffoldLight,
+      backgroundColor:
+      isDark ? AppTheme.darkBackground : AppTheme.scaffoldLight,
       body: Stack(
         children: [
           Positioned(
@@ -531,29 +410,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   24,
                 ),
                 child: ConstrainedBox(
-                  constraints:
-                  const BoxConstraints(maxWidth: 440),
+                  constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           if (canExitToHost)
                             _GlassIconButton(
                               icon: Icons.arrow_back_rounded,
                               tooltip: 'Back',
-                              onTap: () =>
-                                  Navigator.of(
-                                    context,
-                                    rootNavigator: true,
-                                  ).maybePop(),
+                              onTap: () => Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).maybePop(),
                             )
                           else
-                            const SizedBox(
-                              width: 44,
-                              height: 44,
-                            ),
+                            const SizedBox(width: 44, height: 44),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -571,10 +444,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               _GlassIconButton(
                                 icon: themeIcon,
                                 tooltip: l10n.theme,
-                                onTap: () => _showThemeSheet(
-                                  themeProvider,
-                                  l10n,
-                                ),
+                                onTap: () =>
+                                    _showThemeSheet(themeProvider, l10n),
                               ),
                             ],
                           ),
@@ -597,8 +468,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: cardColor,
-                          borderRadius:
-                          BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(
@@ -613,8 +483,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Form(
                           key: _formKey,
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.stretch,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
                                 l10n.welcomeBack,
@@ -656,15 +525,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 TextFormField(
                                   controller: _identifierController,
                                   enabled: !_isLoading,
-                                  keyboardType:
-                                  TextInputType.emailAddress,
-                                  textInputAction:
-                                  TextInputAction.next,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                  ),
-                                  decoration:
-                                  _modernInputDecoration(
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  style: const TextStyle(fontSize: 15),
+                                  decoration: _modernInputDecoration(
                                     context,
                                     hint: 'you@example.com',
                                     icon: Icons.email_outlined,
@@ -699,18 +563,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: TextFormField(
-                                        controller:
-                                        _identifierController,
+                                        controller: _identifierController,
                                         enabled: !_isLoading,
-                                        keyboardType:
-                                        TextInputType.phone,
+                                        keyboardType: TextInputType.phone,
                                         textInputAction:
                                         TextInputAction.next,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                        ),
-                                        decoration:
-                                        _modernInputDecoration(
+                                        style: const TextStyle(fontSize: 15),
+                                        decoration: _modernInputDecoration(
                                           context,
                                           hint: '679117291',
                                           icon: Icons.phone_outlined,
@@ -729,8 +588,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
 
                                           if (digits.startsWith('0')) {
-                                            digits =
-                                                digits.substring(1);
+                                            digits = digits.substring(1);
                                           }
 
                                           if (!RegExp(r'^[67]\d{8}$')
@@ -751,9 +609,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 enabled: !_isLoading,
                                 obscureText: _obscurePassword,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                ),
+                                style: const TextStyle(fontSize: 15),
                                 decoration: _modernInputDecoration(
                                   context,
                                   hint: l10n.enterPassword,
@@ -775,8 +631,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 validator: (value) {
-                                  if (value == null ||
-                                      value.isEmpty) {
+                                  if (value == null || value.isEmpty) {
                                     return l10n.enterPassword;
                                   }
 
@@ -808,8 +663,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     'Remember me',
                                     style: TextStyle(
                                       fontSize: 13.5,
-                                      color: primaryText
-                                          .withOpacity(0.75),
+                                      color: primaryText.withOpacity(0.75),
                                     ),
                                   ),
                                   const Spacer(),
@@ -841,20 +695,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 textColor: primaryText,
                                 onChanged: (value) {
                                   setState(() {
-                                    _termsAccepted =
-                                        value ?? false;
+                                    _termsAccepted = value ?? false;
                                   });
                                 },
-                                onTermsTap: () =>
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.terms,
-                                    ),
-                                onPrivacyTap: () =>
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.privacyPolicy,
-                                    ),
+                                onTermsTap: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.terms,
+                                ),
+                                onPrivacyTap: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.privacyPolicy,
+                                ),
                               ),
 
                               const SizedBox(height: 22),
@@ -862,62 +713,30 @@ class _LoginScreenState extends State<LoginScreen> {
                               _PrimaryButton(
                                 label: l10n.signIn,
                                 loading: _isLoading,
-                                onPressed: _isLoading
-                                    ? null
-                                    : _handleLogin,
+                                onPressed: _isLoading ? null : _handleLogin,
                               ),
 
-                              if (showSocial) ...[
-                                const SizedBox(height: 20),
-                                _OrDivider(
-                                  label: 'or continue with',
-                                  color: mutedText,
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    if (showGoogle)
-                                      Expanded(
-                                        child: _SocialButton(
-                                          label: bothSocial
-                                              ? 'Google'
-                                              : 'Continue with Google',
-                                          assetPath:
-                                          _kGoogleIconAsset,
-                                          fallbackIcon:
-                                          Icons.g_mobiledata_rounded,
-                                          enabled: !_isLoading,
-                                          onPressed:
-                                          _handleGoogleSignIn,
-                                        ),
-                                      ),
-                                    if (bothSocial)
-                                      const SizedBox(width: 12),
-                                    if (showApple)
-                                      Expanded(
-                                        child: _SocialButton(
-                                          label: bothSocial
-                                              ? 'Apple'
-                                              : 'Continue with Apple',
-                                          assetPath:
-                                          _kAppleIconAsset,
-                                          fallbackIcon:
-                                          Icons.apple_rounded,
-                                          tintInDark: true,
-                                          enabled: !_isLoading,
-                                          onPressed:
-                                          _handleAppleSignIn,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
+                              const SizedBox(height: 20),
+
+                              _OrDivider(
+                                label: 'or continue with',
+                                color: mutedText,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              _SocialButton(
+                                label: 'Continue with Google',
+                                assetPath: _kGoogleIconAsset,
+                                fallbackIcon: Icons.g_mobiledata_rounded,
+                                enabled: !_isLoading,
+                                onPressed: _handleGoogleSignIn,
+                              ),
 
                               const SizedBox(height: 20),
 
                               Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Flexible(
                                     child: Text(
@@ -931,11 +750,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   TextButton(
                                     onPressed: _isLoading
                                         ? null
-                                        : () =>
-                                        Navigator.pushNamed(
-                                          context,
-                                          AppRoutes.register,
-                                        ),
+                                        : () => Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.register,
+                                    ),
                                     child: Text(
                                       l10n.signUp,
                                       style: TextStyle(
@@ -993,10 +811,7 @@ class _HeroBackground extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppTheme.navy900,
-              AppTheme.primary,
-            ],
+            colors: [AppTheme.navy900, AppTheme.primary],
           ),
         ),
         child: Stack(
@@ -1025,7 +840,7 @@ class _HeroBackground extends StatelessWidget {
 }
 
 // ============================================================
-// BRAND HEADER - PACKAGE ASSET LOADING
+// BRAND HEADER
 // ============================================================
 
 class _BrandHeader extends StatelessWidget {
@@ -1063,9 +878,7 @@ class _BrandHeader extends StatelessWidget {
                   package: _kAssetPackage,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    debugPrint(
-                      'App foreground icon error: $error',
-                    );
+                    debugPrint('App foreground icon error: $error');
 
                     return const ColoredBox(
                       color: Colors.white,
@@ -1136,8 +949,7 @@ class _PrimaryButton extends StatelessWidget {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primary,
-          disabledBackgroundColor:
-          AppTheme.primary.withOpacity(0.55),
+          disabledBackgroundColor: AppTheme.primary.withOpacity(0.55),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -1150,8 +962,7 @@ class _PrimaryButton extends StatelessWidget {
           height: 24,
           child: CircularProgressIndicator(
             strokeWidth: 2.6,
-            valueColor:
-            AlwaysStoppedAnimation(Colors.white),
+            valueColor: AlwaysStoppedAnimation(Colors.white),
           ),
         )
             : Text(
@@ -1190,9 +1001,7 @@ class _LoginToggle extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.06)
-            : _kFieldTint,
+        color: isDark ? Colors.white.withOpacity(0.06) : _kFieldTint,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -1230,9 +1039,7 @@ class _LoginToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: active
-                ? AppTheme.primary
-                : Colors.transparent,
+            color: active ? AppTheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(11),
           ),
           alignment: Alignment.center,
@@ -1279,9 +1086,7 @@ class _CountryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isDark
-          ? Colors.white.withOpacity(0.05)
-          : _kFieldTint,
+      color: isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -1292,10 +1097,7 @@ class _CountryButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              FlagIcon(
-                emoji: country.flag,
-                height: 20,
-              ),
+              FlagIcon(emoji: country.flag, height: 20),
               const SizedBox(width: 6),
               Text(
                 country.dialCode,
@@ -1343,8 +1145,7 @@ class _TermsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final linkColor =
-    isDark ? AppTheme.secondary : AppTheme.primary;
+    final linkColor = isDark ? AppTheme.secondary : AppTheme.primary;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1370,8 +1171,7 @@ class _TermsRow extends StatelessWidget {
                     color: linkColor,
                     fontWeight: FontWeight.w700,
                   ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = onTermsTap,
+                  recognizer: TapGestureRecognizer()..onTap = onTermsTap,
                 ),
                 TextSpan(text: ' ${l10n.and} '),
                 TextSpan(
@@ -1380,8 +1180,7 @@ class _TermsRow extends StatelessWidget {
                     color: linkColor,
                     fontWeight: FontWeight.w700,
                   ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = onPrivacyTap,
+                  recognizer: TapGestureRecognizer()..onTap = onPrivacyTap,
                 ),
               ],
             ),
@@ -1417,8 +1216,7 @@ class _CompactCheckbox extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(5),
         ),
-        materialTapTargetSize:
-        MaterialTapTargetSize.shrinkWrap,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
@@ -1442,10 +1240,7 @@ class _OrDivider extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Divider(
-            color: color.withOpacity(0.25),
-            thickness: 1,
-          ),
+          child: Divider(color: color.withOpacity(0.25), thickness: 1),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1459,10 +1254,7 @@ class _OrDivider extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Divider(
-            color: color.withOpacity(0.25),
-            thickness: 1,
-          ),
+          child: Divider(color: color.withOpacity(0.25), thickness: 1),
         ),
       ],
     );
@@ -1492,11 +1284,8 @@ class _SocialButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
-
-    final foreground =
-        Theme.of(context).colorScheme.onSurface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final foreground = Theme.of(context).colorScheme.onSurface;
 
     Widget icon = Image.asset(
       assetPath,
@@ -1506,21 +1295,13 @@ class _SocialButton extends StatelessWidget {
       fit: BoxFit.contain,
       errorBuilder: (context, error, stackTrace) {
         debugPrint('$assetPath failed to load: $error');
-
-        return Icon(
-          fallbackIcon,
-          size: 24,
-          color: foreground,
-        );
+        return Icon(fallbackIcon, size: 24, color: foreground);
       },
     );
 
     if (tintInDark && isDark) {
       icon = ColorFiltered(
-        colorFilter: const ColorFilter.mode(
-          Colors.white,
-          BlendMode.srcIn,
-        ),
+        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
         child: icon,
       );
     }
@@ -1544,10 +1325,7 @@ class _SocialButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: enabled ? 1 : 0.5,
-              child: icon,
-            ),
+            Opacity(opacity: enabled ? 1 : 0.5, child: icon),
             const SizedBox(width: 10),
             Flexible(
               child: Text(
@@ -1594,11 +1372,7 @@ class _GlassIconButton extends StatelessWidget {
           child: SizedBox(
             width: 44,
             height: 44,
-            child: Icon(
-              icon,
-              size: 22,
-              color: Colors.white,
-            ),
+            child: Icon(icon, size: 22, color: Colors.white),
           ),
         ),
       ),
@@ -1625,56 +1399,39 @@ class _SheetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
-
-    final activeColor =
-    isDark ? AppTheme.secondary : AppTheme.primary;
-
-    final textColor =
-        Theme.of(context).colorScheme.onSurface;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? AppTheme.secondary : AppTheme.primary;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     return Material(
-      color: selected
-          ? activeColor.withOpacity(0.1)
-          : Colors.transparent,
+      color: selected ? activeColor.withOpacity(0.1) : Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 15,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: selected
                   ? activeColor
-                  : Theme.of(context)
-                  .dividerColor
-                  .withOpacity(0.35),
+                  : Theme.of(context).dividerColor.withOpacity(0.35),
               width: selected ? 1.6 : 1,
             ),
           ),
           child: Row(
             children: [
               if (selected) ...[
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: activeColor,
-                  size: 20,
-                ),
+                Icon(Icons.check_circle_rounded,
+                    color: activeColor, size: 20),
                 const SizedBox(width: 12),
               ],
               if (leading != null) ...[
                 IconTheme(
                   data: IconThemeData(
-                    color: selected
-                        ? activeColor
-                        : textColor,
+                    color: selected ? activeColor : textColor,
                     size: 20,
                   ),
                   child: leading!,
@@ -1685,12 +1442,8 @@ class _SheetTile extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontSize: 15.5,
-                  fontWeight: selected
-                      ? FontWeight.w700
-                      : FontWeight.w500,
-                  color: selected
-                      ? activeColor
-                      : textColor,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? activeColor : textColor,
                 ),
               ),
             ],
@@ -1709,20 +1462,14 @@ class _Blob extends StatelessWidget {
   final double size;
   final Color color;
 
-  const _Blob({
-    required this.size,
-    required this.color,
-  });
+  const _Blob({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
@@ -1741,13 +1488,11 @@ class _CountrySheet extends StatefulWidget {
   });
 
   @override
-  State<_CountrySheet> createState() =>
-      _CountrySheetState();
+  State<_CountrySheet> createState() => _CountrySheetState();
 }
 
 class _CountrySheetState extends State<_CountrySheet> {
   final _searchController = TextEditingController();
-
   late List<Country> _filtered;
 
   @override
@@ -1780,11 +1525,8 @@ class _CountrySheetState extends State<_CountrySheet> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final activeColor =
-    isDark ? AppTheme.secondary : AppTheme.primary;
-
-    final bottomInset =
-        MediaQuery.of(context).viewInsets.bottom;
+    final activeColor = isDark ? AppTheme.secondary : AppTheme.primary;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -1825,9 +1567,8 @@ class _CountrySheetState extends State<_CountrySheet> {
                   ? Center(
                 child: Text(
                   'No country found',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.hintColor,
-                  ),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.hintColor),
                 ),
               )
                   : ListView.builder(
@@ -1841,10 +1582,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                               widget.selected.dialCode;
 
                   return ListTile(
-                    leading: FlagIcon(
-                      emoji: country.flag,
-                      height: 24,
-                    ),
+                    leading: FlagIcon(emoji: country.flag, height: 24),
                     title: Text(
                       country.name,
                       style: TextStyle(
@@ -1861,9 +1599,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                       children: [
                         Text(
                           country.dialCode,
-                          style: TextStyle(
-                            color: theme.hintColor,
-                          ),
+                          style: TextStyle(color: theme.hintColor),
                         ),
                         if (isSelected) ...[
                           const SizedBox(width: 8),
@@ -1875,8 +1611,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                         ],
                       ],
                     ),
-                    onTap: () =>
-                        Navigator.pop(context, country),
+                    onTap: () => Navigator.pop(context, country),
                   );
                 },
               ),
@@ -1907,16 +1642,10 @@ InputDecoration _modernInputDecoration(
       color: theme.hintColor.withOpacity(0.65),
       fontSize: 14.5,
     ),
-    prefixIcon: Icon(
-      icon,
-      size: 20,
-      color: theme.hintColor,
-    ),
+    prefixIcon: Icon(icon, size: 20, color: theme.hintColor),
     suffixIcon: suffix,
     filled: true,
-    fillColor: isDark
-        ? Colors.white.withOpacity(0.05)
-        : _kFieldTint,
+    fillColor: isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
     contentPadding: const EdgeInsets.symmetric(
       horizontal: 16,
       vertical: 16,
@@ -1932,25 +1661,17 @@ InputDecoration _modernInputDecoration(
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
       borderSide: BorderSide(
-        color: isDark
-            ? AppTheme.secondary
-            : AppTheme.primary,
+        color: isDark ? AppTheme.secondary : AppTheme.primary,
         width: 1.8,
       ),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(
-        color: Colors.redAccent,
-        width: 1.4,
-      ),
+      borderSide: const BorderSide(color: Colors.redAccent, width: 1.4),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(
-        color: Colors.redAccent,
-        width: 1.8,
-      ),
+      borderSide: const BorderSide(color: Colors.redAccent, width: 1.8),
     ),
   );
 }

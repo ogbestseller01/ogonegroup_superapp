@@ -1,4 +1,3 @@
-
 name: nearbyfundi_sdk
 description: "NearbyFundi local package - customer app models, services and widgets."
 version: 1.0.0+1
@@ -30,6 +29,8 @@ dependencies:
 
   # Social Authentication
   google_sign_in: ^7.2.0
+  # ⚡ FIX FOR ANDROID 14 BUG: (Prevents the picker from silently failing)
+  google_sign_in_android: 7.2.7
   sign_in_with_apple: ^8.2.0
   crypto: ^3.0.3
 
