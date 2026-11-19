@@ -48,7 +48,7 @@ use App\Http\Controllers\Api\ChatExtrasController;
 use App\Http\Controllers\Api\SystemUpdateController;
 use App\Http\Controllers\Api\PrintReportController;
 
-// ▲▲▲ NEW — public device token controller (anonymous super app)
+// ▲▲▲ Public device token controller (anonymous super app)
 use App\Http\Controllers\Api\DeviceTokenController;
 
 // Health check
@@ -60,7 +60,7 @@ Route::get('/media/{path}', [MediaController::class, 'stream'])->where('path', '
 // ▲▲▲ Moved under v26 as `v26/system-updates/all` (kept here as legacy alias)
 Route::get('system-updates/all', [SystemUpdateController::class, 'all']);
 
-// ▲▲▲ NEW — PUBLIC device-token registration (super app, anonymous)
+// ▲▲▲ PUBLIC device-token registration (super app, anonymous)
 //     No auth required so the super app can register its FCM token at boot.
 Route::post('v1/device-token', [DeviceTokenController::class, 'store'])
     ->middleware('throttle:60,1');
@@ -106,7 +106,12 @@ Route::prefix('v1')->group(function () {
             Route::post('locale', [AuthController::class, 'updateLocale']);
             Route::delete('account', [AuthController::class, 'deleteAccount']);
 
-            // ▲▲▲ NEW — link this device to the logged-in user
+            // ▲▲▲ Authenticated Device Tokens (moved from V1 group)
+            Route::post('device-token', [AuthController::class, 'updateDeviceToken']);
+            Route::get('device-token', [AuthController::class, 'getDeviceToken']);
+            Route::delete('device-token', [AuthController::class, 'deleteDeviceToken']);
+
+            // ▲▲▲ Link this device to the logged-in user
             //     (mini apps call this right after login so anonymous super-app
             //     tokens can be traced back to the user)
             Route::post('device-token/link', [DeviceTokenController::class, 'link'])
@@ -116,13 +121,8 @@ Route::prefix('v1')->group(function () {
 
     Route::get('verification/verify-token', [AuthController::class, 'verifyToken']);
 
-    // Device Token — AUTHENTICATED (mini apps, technicians)
+    // FCM-specific endpoint (uses `fcm_device_token` field)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('device-token', [AuthController::class, 'updateDeviceToken']);
-        Route::get('device-token', [AuthController::class, 'getDeviceToken']);
-        Route::delete('device-token', [AuthController::class, 'deleteDeviceToken']);
-
-        // FCM-specific endpoint (uses `fcm_device_token` field)
         Route::post('device/fcm-token', [TechnicianController::class, 'updateFcmToken']);
     });
 

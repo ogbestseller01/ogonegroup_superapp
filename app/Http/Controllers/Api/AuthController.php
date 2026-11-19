@@ -7,6 +7,7 @@ use App\Models\Otp;
 use App\Models\FailedLoginAttempt;
 use App\Models\UserSession;
 use App\Models\Technician;
+use App\Models\UserDeviceToken;
 use App\Traits\Auditable;
 use App\Services\OtpDeliveryService;
 use App\Services\GeocodingService;
@@ -244,7 +245,7 @@ class AuthController extends BaseApiController
 
         $token = null;
         if (!$isFundi) {
-            $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $this->issueToken($user);
             $this->createSession($user, $request, $token);
         }
 
@@ -367,7 +368,7 @@ class AuthController extends BaseApiController
             }
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user);
         $this->createSession($user, $request, $token);
 
         $user->update([
@@ -388,22 +389,27 @@ class AuthController extends BaseApiController
         ], 'Login successful.');
     }
 
-    // Google / Apple sign-in live in SocialAuthController.
-
     // ──────────────────────────────────────────────
     // LOGOUT & SESSIONS
     // ──────────────────────────────────────────────
 
     public function logout(Request $request)
     {
-        $user    = $request->user();
-        $tokenId = $user->currentAccessToken()->id;
+        $request->validate(['fcm_token' => 'nullable|string|max:255']);
 
-        $user->currentAccessToken()->delete();
+        $user  = $request->user();
+        $token = $user->currentAccessToken();
 
         UserSession::where('user_id', $user->id)
-            ->where('token', $tokenId)
+            ->where('token', $token->id)
             ->update(['is_active' => false]);
+
+        // Stop pushes for this user on this device
+        if ($request->filled('fcm_token')) {
+            $this->releaseDeviceToken($request->fcm_token);
+        }
+
+        $token->delete();
 
         $this->logAudit('logout', 'auth', $user->id, 'User logged out: ' . ($user->email ?? $user->phone));
 
@@ -416,6 +422,10 @@ class AuthController extends BaseApiController
 
         $user->tokens()->delete();
         UserSession::where('user_id', $user->id)->update(['is_active' => false]);
+
+        // Disconnect FCM tokens associated with the user
+        UserDeviceToken::where('user_id', $user->id)->delete();
+        $user->forceFill(['fcm_device_token' => null])->save();
 
         $this->logAudit('logout_all', 'auth', $user->id, 'User logged out from all devices: ' . ($user->email ?? $user->phone));
 
@@ -591,47 +601,47 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-    // FCM
+    // FCM / DEVICE TOKENS
     // ──────────────────────────────────────────────
 
     public function updateDeviceToken(Request $request)
-{
-    $request->validate([
-        'token'    => 'required|string|min:10',
-        'app'      => 'nullable|string|in:og_one_super,fundi,nearby',
-        'platform' => 'nullable|string|in:android,ios',
-    ]);
+    {
+        $request->validate([
+            'token'    => 'required|string|min:10',
+            'app'      => 'nullable|string|in:og_one_super,fundi,nearby',
+            'platform' => 'nullable|string|in:android,ios',
+        ]);
 
-    $user = $request->user();
-    $app  = $request->input('app', \App\Models\UserDeviceToken::APP_SUPER);
+        $user = $request->user();
+        $app  = $request->input('app', UserDeviceToken::APP_SUPER);
 
-    try {
-        \App\Models\UserDeviceToken::updateOrCreate(
-            ['token' => $request->token, 'app' => $app],
-            [
-                'user_id'      => $user->id,
-                'platform'     => $request->input('platform', 'android'),
-                'last_seen_at' => now(),
-            ]
-        );
+        $this->releaseDeviceToken($request->token, $user->id);
 
-        if ($app === \App\Models\UserDeviceToken::APP_SUPER) {
-            $user->forceFill(['fcm_device_token' => $request->token])->save();
+        try {
+            UserDeviceToken::updateOrCreate(
+                ['token' => $request->token, 'app' => $app],
+                [
+                    'user_id'      => $user->id,
+                    'platform'     => $request->input('platform', 'android'),
+                    'last_seen_at' => now(),
+                ]
+            );
+
+            if ($app === UserDeviceToken::APP_SUPER) {
+                $user->forceFill(['fcm_device_token' => $request->token])->save();
+            }
+
+            $this->logAudit('update_device_token', 'user', $user->id, "FCM token updated for app={$app}");
+
+            return $this->successResponse(
+                ['message' => 'Device token updated successfully.'],
+                'Device token updated.'
+            );
+        } catch (\Throwable $e) {
+            Log::error('updateDeviceToken failed: ' . $e->getMessage());
+            return $this->errorResponse('Could not update device token.', 500);
         }
-
-        $this->logAudit('update_device_token', 'user', $user->id, "FCM token updated for app={$app}");
-
-        return $this->successResponse(
-            ['message' => 'Device token updated successfully.'],
-            'Device token updated.'
-        );
-    } catch (\Throwable $e) {
-        \Log::error('updateDeviceToken failed: ' . $e->getMessage());
-        return $this->errorResponse('Could not update device token.', 500);
     }
-}
-
-   
 
     public function getDeviceToken(Request $request)
     {
@@ -643,32 +653,32 @@ class AuthController extends BaseApiController
         ]);
     }
 
-   public function deleteDeviceToken(Request $request)
-{
-    $request->validate([
-        'app' => 'nullable|string|in:og_one_super,fundi,nearby',
-    ]);
+    public function deleteDeviceToken(Request $request)
+    {
+        $request->validate([
+            'app' => 'nullable|string|in:og_one_super,fundi,nearby',
+        ]);
 
-    $user = $request->user();
-    $app  = $request->input('app', \App\Models\UserDeviceToken::APP_SUPER);
+        $user = $request->user();
+        $app  = $request->input('app', UserDeviceToken::APP_SUPER);
 
-    try {
-        \App\Models\UserDeviceToken::where('user_id', $user->id)
-            ->where('app', $app)
-            ->delete();
+        try {
+            UserDeviceToken::where('user_id', $user->id)
+                ->where('app', $app)
+                ->delete();
 
-        if ($app === \App\Models\UserDeviceToken::APP_SUPER) {
-            $user->forceFill(['fcm_device_token' => null])->save();
+            if ($app === UserDeviceToken::APP_SUPER) {
+                $user->forceFill(['fcm_device_token' => null])->save();
+            }
+
+            $this->logAudit('delete_device_token', 'user', $user->id, "FCM token deleted for app={$app}");
+
+            return $this->successResponse(null, 'Device token deleted.');
+        } catch (\Throwable $e) {
+            Log::error('deleteDeviceToken failed: ' . $e->getMessage());
+            return $this->errorResponse('Could not delete device token.', 500);
         }
-
-        $this->logAudit('delete_device_token', 'user', $user->id, "FCM token deleted for app={$app}");
-
-        return $this->successResponse(null, 'Device token deleted.');
-    } catch (\Throwable $e) {
-        \Log::error('deleteDeviceToken failed: ' . $e->getMessage());
-        return $this->errorResponse('Could not delete device token.', 500);
     }
-}
 
     // ──────────────────────────────────────────────
     // ACCOUNT DELETION
@@ -682,6 +692,9 @@ class AuthController extends BaseApiController
         try {
             $user->tokens()->delete();
             UserSession::where('user_id', $user->id)->delete();
+            
+            UserDeviceToken::where('user_id', $user->id)->delete();
+            $user->forceFill(['fcm_device_token' => null])->save();
 
             if ($user->technician) {
                 $technician = $user->technician;
@@ -735,6 +748,27 @@ class AuthController extends BaseApiController
     // ──────────────────────────────────────────────
     // PRIVATE HELPERS
     // ──────────────────────────────────────────────
+
+    /** Sanctum token with a real expiry (matches UserSession expires_at). */
+    private function issueToken(User $user): string
+    {
+        return $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+    }
+
+    /**
+     * A device FCM token may belong to ONE user at a time. Release it from
+     * everyone else (or from everyone if $exceptUserId is null).
+     */
+    private function releaseDeviceToken(string $token, ?int $exceptUserId = null): void
+    {
+        UserDeviceToken::where('token', $token)
+            ->when($exceptUserId, fn ($q) => $q->where('user_id', '!=', $exceptUserId))
+            ->delete();
+
+        User::where('fcm_device_token', $token)
+            ->when($exceptUserId, fn ($q) => $q->where('id', '!=', $exceptUserId))
+            ->update(['fcm_device_token' => null]);
+    }
 
     /**
      * Verification OTPs belonging to THIS user only (by phone and/or email).
@@ -841,13 +875,11 @@ class AuthController extends BaseApiController
         }
 
         try {
+            $this->releaseDeviceToken($token, $user->id);   // <- no more ghost pushes
             $user->fcm_device_token = $token;
             $user->save();
         } catch (\Throwable $e) {
-            Log::error('Failed to store FCM token', [
-                'user_id' => $user->id,
-                'error'   => $e->getMessage(),
-            ]);
+            Log::error('Failed to store FCM token', ['user_id' => $user->id, 'error' => $e->getMessage()]);
         }
     }
 
@@ -866,154 +898,171 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-// GOOGLE SIGN-IN (mobile ID-token flow)
-// ──────────────────────────────────────────────
+    // GOOGLE SIGN-IN (mobile ID-token flow)
+    // ──────────────────────────────────────────────
 
-public function googleLogin(Request $request)
-{
-    $request->validate([
-        'id_token'  => 'required|string|max:4096',
-        'fcm_token' => 'nullable|string|max:255',
-    ]);
+    public function googleLogin(Request $request)
+    {
+        $request->validate([
+            'id_token'  => 'required|string|max:4096',
+            'fcm_token' => 'nullable|string|max:255',
+        ]);
 
-    $payload = $this->verifyGoogleIdToken($request->id_token);
+        $payload = $this->verifyGoogleIdToken($request->id_token);
 
-    if (!$payload) {
-        $this->logAudit('google_login_failed', 'auth', null, 'Invalid Google token');
-        return $this->unauthorized('Invalid Google sign-in. Please try again.');
-    }
-
-    $googleId = (string) $payload['sub'];
-    $email    = strtolower(trim($payload['email'] ?? ''));
-    $name     = trim($payload['name'] ?? '') ?: Str::before($email, '@');
-    $picture  = $payload['picture'] ?? null;
-
-    if ($email === '' || empty($payload['email_verified'])) {
-        return $this->errorResponse('Your Google email is not verified.', 422);
-    }
-
-    // 1) match by google_id  2) match by email (links an existing account)
-    $user = User::withTrashed()->where('google_id', $googleId)->first()
-         ?? User::withTrashed()->where('email', $email)->first();
-
-    if ($user && $user->trashed()) {
-        return $this->forbidden('This account has been deleted. Please contact support.');
-    }
-
-    if ($user && $user->locked_until && $user->locked_until->isFuture()) {
-        return $this->errorResponse('Account temporarily locked. Try again later.', 429);
-    }
-
-    $isNew = false;
-
-    DB::beginTransaction();
-    try {
-        if (!$user) {
-            $isNew = true;
-
-            $user = User::create([
-                'name'              => $name,
-                'email'             => $email,
-                'password'          => Hash::make(Str::random(40)), // unused; column is NOT NULL
-                'status'            => 'active',
-                'is_active'         => true,
-                'email_verified_at' => now(),
-                'locale'            => 'en',
-            ]);
-
-            $user->forceFill([
-                'google_id'     => $googleId,
-                'google_avatar' => $picture,
-                'auth_provider' => 'google',
-            ])->save();
-
-            $user->assignRole('CUSTOMER');
-        } else {
-            $user->forceFill([
-                'google_id'         => $user->google_id ?: $googleId,
-                'google_avatar'     => $picture ?: $user->google_avatar,
-                'email_verified_at' => $user->email_verified_at ?: now(),
-            ])->save();
+        if (!$payload) {
+            $this->logAudit('google_login_failed', 'auth', null, 'Invalid Google token');
+            return $this->unauthorized('Invalid Google sign-in. Please try again.');
         }
 
-        DB::commit();
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        Log::error('Google login failed', ['error' => $e->getMessage()]);
-        return $this->serverError('Google sign-in failed. Please try again.');
-    }
+        $googleId = (string) $payload['sub'];
+        $email    = strtolower(trim($payload['email'] ?? ''));
+        $name     = trim($payload['name'] ?? '') ?: Str::before($email, '@');
+        $picture  = $payload['picture'] ?? null;
 
-    // Same gates as password login
-    if (!$user->is_active || $user->status !== 'active') {
-        return $this->forbidden('Account is not active.');
-    }
-
-    if ($user->hasRole('FUNDI')) {
-        $technician = Technician::where('user_id', $user->id)->first();
-        if (!$technician || !$technician->verified || $technician->verification_status !== 'approved') {
-            return $this->forbidden('Your technician account is not verified. Please wait for admin approval.');
+        if ($email === '' || empty($payload['email_verified'])) {
+            return $this->errorResponse('Your Google email is not verified.', 422);
         }
+
+        // 1) match by google_id  2) match by email (links an existing account)
+        $user = User::withTrashed()->where('google_id', $googleId)->first()
+             ?? User::withTrashed()->where('email', $email)->first();
+
+        if ($user && $user->trashed()) {
+            return $this->forbidden('This account has been deleted. Please contact support.');
+        }
+
+        // Prevent different Google account takeover
+        if ($user && $user->google_id && $user->google_id !== $googleId) {
+            return $this->forbidden('This email is linked to a different Google account.');
+        }
+
+        if ($user && $user->locked_until && $user->locked_until->isFuture()) {
+            return $this->errorResponse('Account temporarily locked. Try again later.', 429);
+        }
+
+        $isNew = false;
+
+        DB::beginTransaction();
+        try {
+            if (!$user) {
+                $isNew = true;
+
+                $user = User::create([
+                    'name'              => $name,
+                    'email'             => $email,
+                    'password'          => Hash::make(Str::random(40)), // unused; column is NOT NULL
+                    'status'            => 'active',
+                    'is_active'         => true,
+                    'email_verified_at' => now(),
+                    'locale'            => 'en',
+                ]);
+
+                $user->forceFill([
+                    'google_id'     => $googleId,
+                    'google_avatar' => $picture,
+                    'auth_provider' => 'google',
+                ])->save();
+
+                $user->assignRole('CUSTOMER');
+            } else {
+                $neverVerified = is_null($user->email_verified_at)
+                    && is_null($user->phone_verified_at)
+                    && empty($user->google_id);
+
+                if ($neverVerified) {
+                    // Someone may have pre-registered this email with a password they
+                    // know. Google proves the real owner now, so kill that credential.
+                    $user->forceFill(['password' => Hash::make(Str::random(40))]);
+                    $user->tokens()->delete();
+                    UserSession::where('user_id', $user->id)->update(['is_active' => false]);
+                }
+
+                $user->forceFill([
+                    'google_id'         => $user->google_id ?: $googleId,
+                    'google_avatar'     => $picture ?: $user->google_avatar,
+                    'email_verified_at' => $user->email_verified_at ?: now(),
+                ])->save();
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Google login failed', ['error' => $e->getMessage()]);
+            return $this->serverError('Google sign-in failed. Please try again.');
+        }
+
+        // Same gates as password login
+        if (!$user->is_active || $user->status !== 'active') {
+            return $this->forbidden('Account is not active.');
+        }
+
+        if ($user->hasRole('FUNDI')) {
+            $technician = Technician::where('user_id', $user->id)->first();
+            if (!$technician || !$technician->verified || $technician->verification_status !== 'approved') {
+                return $this->forbidden('Your technician account is not verified. Please wait for admin approval.');
+            }
+        }
+
+        $token = $this->issueToken($user);
+        $this->createSession($user, $request, $token);
+
+        $user->update([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+            'locked_until'  => null,
+        ]);
+
+        if ($request->filled('fcm_token')) {
+            $this->storeFcmToken($user, $request->fcm_token);
+        }
+
+        $this->logAudit(
+            $isNew ? 'google_register' : 'google_login',
+            'auth',
+            $user->id,
+            'Google sign-in: ' . $user->email
+        );
+
+        $userData = $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']);
+        $userData['profile_photo'] = $user->google_avatar;
+
+        return $this->successResponse([
+            'user'        => $userData,
+            'roles'       => $user->getRoleNames(),
+            'token'       => $token,
+            'is_new_user' => $isNew,
+        ], $isNew ? 'Account created with Google.' : 'Login successful.');
     }
 
-    $token = $user->createToken('auth_token')->plainTextToken;
-    $this->createSession($user, $request, $token);
+    /**
+     * Verifies a Google ID token (signature, expiry, issuer, audience).
+     * Returns the payload, or null if invalid.
+     */
+    private function verifyGoogleIdToken(string $idToken): ?array
+    {
+        $clientIds = config('services.google.client_ids', []);
 
-    $user->update([
-        'last_login_at' => now(),
-        'last_login_ip' => $request->ip(),
-        'locked_until'  => null,
-    ]);
+        if (empty($clientIds)) {
+            Log::error('GOOGLE_CLIENT_IDS is not configured');
+            return null;
+        }
 
-    if ($request->filled('fcm_token')) {
-        $this->storeFcmToken($user, $request->fcm_token);
-    }
+        foreach ($clientIds as $clientId) {
+            try {
+                $client  = new GoogleClient(['client_id' => $clientId]);
+                $payload = $client->verifyIdToken($idToken);
 
-    $this->logAudit(
-        $isNew ? 'google_register' : 'google_login',
-        'auth',
-        $user->id,
-        'Google sign-in: ' . $user->email
-    );
+                if (is_array($payload) && !empty($payload['sub'])) {
+                    return $payload;
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Google token verify error', ['error' => $e->getMessage()]);
+            }
+        }
 
-    $userData = $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']);
-    $userData['profile_photo'] = $user->google_avatar;
-
-    return $this->successResponse([
-        'user'        => $userData,
-        'roles'       => $user->getRoleNames(),
-        'token'       => $token,
-        'is_new_user' => $isNew,
-    ], $isNew ? 'Account created with Google.' : 'Login successful.');
-}
-
-/**
- * Verifies a Google ID token (signature, expiry, issuer, audience).
- * Returns the payload, or null if invalid.
- */
-private function verifyGoogleIdToken(string $idToken): ?array
-{
-    $clientIds = config('services.google.client_ids', []);
-
-    if (empty($clientIds)) {
-        Log::error('GOOGLE_CLIENT_IDS is not configured');
         return null;
     }
-
-    foreach ($clientIds as $clientId) {
-        try {
-            $client  = new GoogleClient(['client_id' => $clientId]);
-            $payload = $client->verifyIdToken($idToken);
-
-            if (is_array($payload) && !empty($payload['sub'])) {
-                return $payload;
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Google token verify error', ['error' => $e->getMessage()]);
-        }
-    }
-
-    return null;
-}
 
     private function ensureNotRateLimited(string $key, int $maxAttempts, int $decaySeconds): void
     {
