@@ -14,7 +14,9 @@ class FeedbackController extends BaseApiController
     // =========================================================
     // PUBLIC (mobile app) — SEND ONLY
     // POST /api/v23/feedback
-    // No login needed: the sender just enters name, email, etc.
+    // No login needed. The SAME user / email / IP CAN submit
+    // MULTIPLE feedbacks. There is intentionally NO uniqueness
+    // check on `email` or `ip_address` here or in the DB.
     // =========================================================
     public function store(Request $request)
     {
@@ -26,6 +28,8 @@ class FeedbackController extends BaseApiController
             'message' => 'required|string|min:5|max:5000',
         ]);
 
+        // NOTE: no `firstOrCreate`, no `unique:feedbacks,email`.
+        // Every call inserts a new row on purpose.
         $feedback = Feedback::create([
             'name'       => $data['name'],
             'email'      => $data['email'],
@@ -44,8 +48,6 @@ class FeedbackController extends BaseApiController
 
     // =========================================================
     // ADMIN — INDEX
-    // GET /api/v23/admin/feedback
-    // ?status=new|reviewed|resolved &type= &rating= &search= &per_page=
     // =========================================================
     public function index(Request $request)
     {
@@ -64,7 +66,6 @@ class FeedbackController extends BaseApiController
 
     // =========================================================
     // ADMIN — STATS
-    // GET /api/v23/admin/feedback/stats
     // =========================================================
     public function stats()
     {
@@ -86,7 +87,6 @@ class FeedbackController extends BaseApiController
 
     // =========================================================
     // ADMIN — SHOW
-    // GET /api/v23/admin/feedback/{id}
     // =========================================================
     public function show($id)
     {
@@ -96,8 +96,7 @@ class FeedbackController extends BaseApiController
     }
 
     // =========================================================
-    // ADMIN — EDIT (status and/or reply)
-    // PUT /api/v23/admin/feedback/{id}
+    // ADMIN — UPDATE (status and/or reply)
     // =========================================================
     public function update(Request $request, $id)
     {
@@ -135,7 +134,6 @@ class FeedbackController extends BaseApiController
 
     // =========================================================
     // ADMIN — DELETE (soft delete)
-    // DELETE /api/v23/admin/feedback/{id}
     // =========================================================
     public function destroy(Request $request, $id)
     {

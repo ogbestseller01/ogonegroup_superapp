@@ -61,7 +61,6 @@ Route::get('/media/{path}', [MediaController::class, 'stream'])->where('path', '
 Route::get('system-updates/all', [SystemUpdateController::class, 'all']);
 
 // ▲▲▲ PUBLIC device-token registration (super app, anonymous)
-//     No auth required so the super app can register its FCM token at boot.
 Route::post('v1/device-token', [DeviceTokenController::class, 'store'])
     ->middleware('throttle:60,1');
 Route::delete('v1/device-token', [DeviceTokenController::class, 'destroy'])
@@ -72,15 +71,10 @@ Route::delete('v1/device-token', [DeviceTokenController::class, 'destroy'])
 // =============================================
 Route::prefix('v1')->group(function () {
 
-    // Auth
     Route::prefix('auth')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('register-fundi', [AuthController::class, 'registerFundi']);
 
-        // Social sign-in (mobile ID-token flow)
-        // Rate limiting lives HERE only. Do not add a second manual RateLimiter
-        // call inside the controller — it sits outside try/catch and would turn
-        // a fake-token 401 into a 500 if the cache backend is unhealthy.
         Route::post('google', [AuthController::class, 'googleLogin'])->middleware('throttle:20,1');
         Route::post('apple',  [SocialAuthController::class, 'apple'])->middleware('throttle:20,1');
 
@@ -90,12 +84,10 @@ Route::prefix('v1')->group(function () {
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('reset-password', [AuthController::class, 'resetPassword']);
 
-        // Web OTP Login
         Route::post('web-otp/request', [WebOtpLoginController::class, 'requestOtp']);
         Route::post('web-otp/verify',  [WebOtpLoginController::class, 'verifyOtp']);
         Route::post('web-otp/resend',  [WebOtpLoginController::class, 'resendOtp']);
 
-        // Authenticated auth routes
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::post('logout-all', [AuthController::class, 'logoutAll']);
@@ -106,14 +98,10 @@ Route::prefix('v1')->group(function () {
             Route::post('locale', [AuthController::class, 'updateLocale']);
             Route::delete('account', [AuthController::class, 'deleteAccount']);
 
-            // ▲▲▲ Authenticated Device Tokens (moved from V1 group)
             Route::post('device-token', [AuthController::class, 'updateDeviceToken']);
             Route::get('device-token', [AuthController::class, 'getDeviceToken']);
             Route::delete('device-token', [AuthController::class, 'deleteDeviceToken']);
 
-            // ▲▲▲ Link this device to the logged-in user
-            //     (mini apps call this right after login so anonymous super-app
-            //     tokens can be traced back to the user)
             Route::post('device-token/link', [DeviceTokenController::class, 'link'])
                 ->middleware('throttle:30,1');
         });
@@ -121,15 +109,12 @@ Route::prefix('v1')->group(function () {
 
     Route::get('verification/verify-token', [AuthController::class, 'verifyToken']);
 
-    // FCM-specific endpoint (uses `fcm_device_token` field)
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('device/fcm-token', [TechnicianController::class, 'updateFcmToken']);
     });
 
-    // Public
     Route::get('services', [ServiceController::class, 'index']);
 
-    // Nearby search (whole Tanzania) — MUST be before technicians/{id}
     Route::get('technicians/nearby', [SearchNearbyFundiController::class, 'nearby'])
         ->middleware('throttle:60,1');
     Route::get('technicians/nearby-by-place', [SearchNearbyFundiController::class, 'nearbyByPlace'])
@@ -144,7 +129,6 @@ Route::prefix('v1')->group(function () {
     Route::get('faqs', [FaqController::class, 'index']);
     Route::get('terms', [TermsController::class, 'show']);
 
-    // Sessions
     Route::middleware(['auth:sanctum', 'active.session'])->prefix('sessions')->group(function () {
         Route::get('/', [UserSessionController::class, 'index']);
         Route::delete('/all', [UserSessionController::class, 'destroyAll']);
@@ -154,7 +138,7 @@ Route::prefix('v1')->group(function () {
 });
 
 // =============================================
-// NEARBY SEARCH (legacy prefix, kept for old clients)
+// NEARBY SEARCH (legacy prefix)
 // =============================================
 Route::prefix('fundis')->group(function () {
     Route::get('nearby', [SearchNearbyFundiController::class, 'nearby']);
@@ -162,7 +146,7 @@ Route::prefix('fundis')->group(function () {
 });
 
 // =============================================
-// V2 – TECHNICIAN PROFILE (Authenticated + Subscription)
+// V2 – TECHNICIAN PROFILE
 // =============================================
 Route::prefix('v2')->middleware(['auth:sanctum', 'active.session', 'subscription'])->group(function () {
     Route::get('technicians/profile', [TechnicianController::class, 'getOwnProfile']);
@@ -644,9 +628,12 @@ Route::prefix('v22')->middleware(['auth:sanctum', 'active.session'])->group(func
 
 // =============================================
 // V23 – FEEDBACK
+// Public POST: SAME user can submit MANY feedbacks.
+// throttle raised 5 → 30 / minute so a single user is
+// never blocked while still protecting against spam.
 // =============================================
 Route::prefix('v23')->group(function () {
-    Route::post('feedback', [FeedbackController::class, 'store'])->middleware('throttle:5,1');
+    Route::post('feedback', [FeedbackController::class, 'store'])->middleware('throttle:30,1');
 
     Route::middleware(['auth:sanctum', 'active.session'])->prefix('admin')->group(function () {
         Route::middleware('permission:feedback.view')->group(function () {
@@ -710,19 +697,14 @@ Route::prefix('v25')->group(function () {
 // V26 – SYSTEM UPDATES
 // =============================================
 Route::prefix('v26')->group(function () {
-    // Public
     Route::get('system-updates', [SystemUpdateController::class, 'active'])->middleware('throttle:60,1');
-
-    // ▲▲▲ NEW — /v26/system-updates/all (alias for /system-updates/all)
     Route::get('system-updates/all', [SystemUpdateController::class, 'all']);
-
     Route::get('system-updates/{id}', [SystemUpdateController::class, 'showPublic'])->whereNumber('id');
     Route::post('system-updates/{id}/view', [SystemUpdateController::class, 'markViewed'])
         ->whereNumber('id')->middleware('throttle:60,1');
     Route::post('system-updates/{id}/dismiss', [SystemUpdateController::class, 'dismiss'])
         ->whereNumber('id')->middleware('throttle:60,1');
 
-    // Admin
     Route::middleware(['auth:sanctum', 'active.session', 'permission:system-updates.manage'])
         ->prefix('admin')->group(function () {
             Route::post('system-updates/draft', [SystemUpdateController::class, 'saveDraft']);
