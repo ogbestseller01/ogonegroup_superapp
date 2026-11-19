@@ -9,6 +9,7 @@ use App\Models\ServiceRequest;
 use App\Models\Technician;
 use App\Models\User;
 use App\Services\ApprovalNotificationService;
+use App\Services\FundiRegistrationNotifier;
 use App\Services\GeocodingService;
 use App\Services\OtpDeliveryService;
 use App\Services\SmsNotificationService;
@@ -345,6 +346,7 @@ class TechnicianController extends BaseApiController
 
     // ═══════════════════════════════════════════════════════
     // STEP 6 — Creates User + Technician + services atomically
+    //          then emails every ADMINISTRATOR (name, area, services)
     // ═══════════════════════════════════════════════════════
     public function registerStep6(Request $request)
     {
@@ -463,6 +465,7 @@ class TechnicianController extends BaseApiController
             );
         }
 
+        // ── Post-registration side effects (never break the response) ──
         try {
             SendAdminNotificationJob::dispatch(
                 $user->name ?? 'Unknown',
@@ -473,6 +476,10 @@ class TechnicianController extends BaseApiController
         } catch (\Throwable $e) {
             Log::warning('Post-registration side effects failed', ['error' => $e->getMessage()]);
         }
+
+        // Email all active ADMINISTRATORs: fundi name, area and services.
+        // The notifier catches its own errors, so this can never fail the request.
+        FundiRegistrationNotifier::notifyAdministrators($technician);
 
         return $this->successResponse([
             'user'           => $user->only(['id', 'name', 'email', 'phone', 'status']),

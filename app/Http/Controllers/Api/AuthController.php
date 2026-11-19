@@ -162,7 +162,7 @@ class AuthController extends BaseApiController
             return $this->successResponse(null, 'If the account exists, a new OTP was sent.');
         }
 
-        // ✅ FIX: Check both email and phone verified status
+        // Check both email and phone verified status
         if ($user->email_verified_at || $user->phone_verified_at) {
             return $this->errorResponse('Account is already verified.', 422);
         }
@@ -222,7 +222,7 @@ class AuthController extends BaseApiController
 
         $isFundi = $user->hasRole('FUNDI');
 
-        // ✅ FIX: Detect if identifier was an email or phone and update the correct column
+        // Detect if identifier was an email or phone and update the correct column
         $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL) || $identifier === $user->email;
 
         $updateData = [
@@ -309,7 +309,7 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-    // LOGIN
+    // LOGIN  (UPDATED: clear message for Google-linked accounts)
     // ──────────────────────────────────────────────
 
     public function login(Request $request)
@@ -321,7 +321,7 @@ class AuthController extends BaseApiController
             'password' => 'required|string',
         ]);
 
-        $login = $request->email;
+        $login = trim($request->email);
         $user  = User::where('email', $login)->first()
               ?? User::where('phone', $login)->first();
 
@@ -331,6 +331,24 @@ class AuthController extends BaseApiController
         }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+
+            // Google-linked account: the password may never have been set.
+            // Give a helpful message instead of a generic "Invalid credentials".
+            // These attempts are NOT counted toward the lockout.
+            if ($user && !empty($user->google_id)) {
+                $this->logAudit(
+                    'login_failed_google_account',
+                    'auth',
+                    $user->id,
+                    "Password login on Google-linked account: {$login}"
+                );
+
+                return $this->unauthorized(
+                    'This account uses Google sign-in. Tap "Continue with Google", '
+                    . 'or use "Forgot password" to create a password for email login.'
+                );
+            }
+
             FailedLoginAttempt::record($login, $request->ip());
 
             if ($user) {
@@ -352,7 +370,7 @@ class AuthController extends BaseApiController
             $user->update(['locked_until' => null]);
         }
 
-        // ✅ FIX: Allow login if EITHER email OR phone is verified
+        // Allow login if EITHER email OR phone is verified
         if (is_null($user->email_verified_at) && is_null($user->phone_verified_at)) {
             return $this->forbidden('Please verify your account first.');
         }
@@ -692,7 +710,7 @@ class AuthController extends BaseApiController
         try {
             $user->tokens()->delete();
             UserSession::where('user_id', $user->id)->delete();
-            
+
             UserDeviceToken::where('user_id', $user->id)->delete();
             $user->forceFill(['fcm_device_token' => null])->save();
 
@@ -743,158 +761,6 @@ class AuthController extends BaseApiController
         return $this->successResponse([
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
         ]);
-    }
-
-    // ──────────────────────────────────────────────
-    // PRIVATE HELPERS
-    // ──────────────────────────────────────────────
-
-    /** Sanctum token with a real expiry (matches UserSession expires_at). */
-    private function issueToken(User $user): string
-    {
-        return $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
-    }
-
-    /**
-     * A device FCM token may belong to ONE user at a time. Release it from
-     * everyone else (or from everyone if $exceptUserId is null).
-     */
-    private function releaseDeviceToken(string $token, ?int $exceptUserId = null): void
-    {
-        UserDeviceToken::where('token', $token)
-            ->when($exceptUserId, fn ($q) => $q->where('user_id', '!=', $exceptUserId))
-            ->delete();
-
-        User::where('fcm_device_token', $token)
-            ->when($exceptUserId, fn ($q) => $q->where('id', '!=', $exceptUserId))
-            ->update(['fcm_device_token' => null]);
-    }
-
-    /**
-     * Verification OTPs belonging to THIS user only (by phone and/or email).
-     * Null phone/email are skipped so we never match other users' null rows.
-     */
-    private function verificationOtps(User $user)
-    {
-        $query = Otp::where('type', Otp::TYPE_EMAIL_VERIFICATION);
-
-        if (empty($user->phone) && empty($user->email)) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where(function ($q) use ($user) {
-            if (!empty($user->phone)) {
-                $q->where('phone', $user->phone);
-            }
-            if (!empty($user->email)) {
-                $q->orWhere('email', $user->email);
-            }
-        });
-    }
-
-    /**
-     * Safe OTP check. Old rows stored as plain text would make Hash::check()
-     * throw "This password does not use the Bcrypt algorithm"; treat as no match.
-     */
-    private function otpMatches(string $plain, ?string $stored): bool
-    {
-        if (empty($stored)) {
-            return false;
-        }
-
-        try {
-            return Hash::check($plain, $stored);
-        } catch (\Throwable $e) {
-            return false;
-        }
-    }
-
-    private function issueVerificationOtp(User $user, Request $request, OtpDeliveryService $otpDelivery): array
-    {
-        $this->verificationOtps($user)->delete();
-
-        $plainOtp = Otp::generateOtp();
-
-        $otp = Otp::create([
-            'email'      => $user->email,
-            'phone'      => $user->phone,
-            'otp'        => Hash::make($plainOtp),
-            'token'      => Otp::generateToken(),
-            'type'       => Otp::TYPE_EMAIL_VERIFICATION,
-            'name'       => $user->name,
-            'expires_at' => now()->addMinutes(10),
-            'is_used'    => false,
-            'attempts'   => 0,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
-
-        $otp->plain_otp = $plainOtp;
-
-        return $otpDelivery->deliver(
-            $user,
-            $otp,
-            method_exists($otp, 'getVerificationUrl') ? $otp->getVerificationUrl() : null
-        );
-    }
-
-    private function createSession(User $user, Request $request, string $token): void
-    {
-        $tokenId = explode('|', $token)[0] ?? null;
-        if (!$tokenId) {
-            return;
-        }
-
-        UserSession::create([
-            'user_id'       => $user->id,
-            'token'         => $tokenId,
-            'ip_address'    => $request->ip(),
-            'user_agent'    => $request->userAgent(),
-            'device_name'   => $this->getDeviceName($request),
-            'last_activity' => now(),
-            'expires_at'    => now()->addDays(30),
-            'is_active'     => true,
-        ]);
-    }
-
-    private function getDeviceName(Request $request): string
-    {
-        $ua = $request->userAgent() ?? '';
-
-        if (str_contains($ua, 'Postman')) return 'Postman';
-        if (str_contains($ua, 'Flutter')) return 'Mobile App';
-        if (str_contains($ua, 'Mozilla')) return 'Web Browser';
-
-        return 'Unknown';
-    }
-
-    private function storeFcmToken(User $user, string $token): void
-    {
-        if (empty($token)) {
-            return;
-        }
-
-        try {
-            $this->releaseDeviceToken($token, $user->id);   // <- no more ghost pushes
-            $user->fcm_device_token = $token;
-            $user->save();
-        } catch (\Throwable $e) {
-            Log::error('Failed to store FCM token', ['user_id' => $user->id, 'error' => $e->getMessage()]);
-        }
-    }
-
-    private function validateAndGeocodeArea(string $area, ?float $lat, ?float $lng, GeocodingService $geocoder): array
-    {
-        if ($lat !== null && $lng !== null) {
-            return ['lat' => $lat, 'lng' => $lng];
-        }
-
-        $coords = $geocoder->geocode($area);
-        if (!$coords) {
-            abort(422, "Could not locate the area '{$area}'. Please check the spelling or provide latitude/longitude.");
-        }
-
-        return $coords;
     }
 
     // ──────────────────────────────────────────────
@@ -1033,6 +899,158 @@ class AuthController extends BaseApiController
             'token'       => $token,
             'is_new_user' => $isNew,
         ], $isNew ? 'Account created with Google.' : 'Login successful.');
+    }
+
+    // ──────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ──────────────────────────────────────────────
+
+    /** Sanctum token with a real expiry (matches UserSession expires_at). */
+    private function issueToken(User $user): string
+    {
+        return $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+    }
+
+    /**
+     * A device FCM token may belong to ONE user at a time. Release it from
+     * everyone else (or from everyone if $exceptUserId is null).
+     */
+    private function releaseDeviceToken(string $token, ?int $exceptUserId = null): void
+    {
+        UserDeviceToken::where('token', $token)
+            ->when($exceptUserId, fn ($q) => $q->where('user_id', '!=', $exceptUserId))
+            ->delete();
+
+        User::where('fcm_device_token', $token)
+            ->when($exceptUserId, fn ($q) => $q->where('id', '!=', $exceptUserId))
+            ->update(['fcm_device_token' => null]);
+    }
+
+    /**
+     * Verification OTPs belonging to THIS user only (by phone and/or email).
+     * Null phone/email are skipped so we never match other users' null rows.
+     */
+    private function verificationOtps(User $user)
+    {
+        $query = Otp::where('type', Otp::TYPE_EMAIL_VERIFICATION);
+
+        if (empty($user->phone) && empty($user->email)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function ($q) use ($user) {
+            if (!empty($user->phone)) {
+                $q->where('phone', $user->phone);
+            }
+            if (!empty($user->email)) {
+                $q->orWhere('email', $user->email);
+            }
+        });
+    }
+
+    /**
+     * Safe OTP check. Old rows stored as plain text would make Hash::check()
+     * throw "This password does not use the Bcrypt algorithm"; treat as no match.
+     */
+    private function otpMatches(string $plain, ?string $stored): bool
+    {
+        if (empty($stored)) {
+            return false;
+        }
+
+        try {
+            return Hash::check($plain, $stored);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function issueVerificationOtp(User $user, Request $request, OtpDeliveryService $otpDelivery): array
+    {
+        $this->verificationOtps($user)->delete();
+
+        $plainOtp = Otp::generateOtp();
+
+        $otp = Otp::create([
+            'email'      => $user->email,
+            'phone'      => $user->phone,
+            'otp'        => Hash::make($plainOtp),
+            'token'      => Otp::generateToken(),
+            'type'       => Otp::TYPE_EMAIL_VERIFICATION,
+            'name'       => $user->name,
+            'expires_at' => now()->addMinutes(10),
+            'is_used'    => false,
+            'attempts'   => 0,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        $otp->plain_otp = $plainOtp;
+
+        return $otpDelivery->deliver(
+            $user,
+            $otp,
+            method_exists($otp, 'getVerificationUrl') ? $otp->getVerificationUrl() : null
+        );
+    }
+
+    private function createSession(User $user, Request $request, string $token): void
+    {
+        $tokenId = explode('|', $token)[0] ?? null;
+        if (!$tokenId) {
+            return;
+        }
+
+        UserSession::create([
+            'user_id'       => $user->id,
+            'token'         => $tokenId,
+            'ip_address'    => $request->ip(),
+            'user_agent'    => $request->userAgent(),
+            'device_name'   => $this->getDeviceName($request),
+            'last_activity' => now(),
+            'expires_at'    => now()->addDays(30),
+            'is_active'     => true,
+        ]);
+    }
+
+    private function getDeviceName(Request $request): string
+    {
+        $ua = $request->userAgent() ?? '';
+
+        if (str_contains($ua, 'Postman')) return 'Postman';
+        if (str_contains($ua, 'Flutter')) return 'Mobile App';
+        if (str_contains($ua, 'Mozilla')) return 'Web Browser';
+
+        return 'Unknown';
+    }
+
+    private function storeFcmToken(User $user, string $token): void
+    {
+        if (empty($token)) {
+            return;
+        }
+
+        try {
+            $this->releaseDeviceToken($token, $user->id);   // no more ghost pushes
+            $user->fcm_device_token = $token;
+            $user->save();
+        } catch (\Throwable $e) {
+            Log::error('Failed to store FCM token', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function validateAndGeocodeArea(string $area, ?float $lat, ?float $lng, GeocodingService $geocoder): array
+    {
+        if ($lat !== null && $lng !== null) {
+            return ['lat' => $lat, 'lng' => $lng];
+        }
+
+        $coords = $geocoder->geocode($area);
+        if (!$coords) {
+            abort(422, "Could not locate the area '{$area}'. Please check the spelling or provide latitude/longitude.");
+        }
+
+        return $coords;
     }
 
     /**
