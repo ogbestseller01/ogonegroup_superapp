@@ -1,3 +1,4 @@
+// lib/screens/dashboard/tabs/account_tab.dart
 import 'package:flutter/material.dart';
 
 import '../../../config/app_routes.dart';
@@ -7,7 +8,7 @@ import '../core/app_launcher.dart';
 import '../core/dash_theme.dart';
 import '../../../widgets/dash_header.dart';
 
-// Static pages moved from Settings to Account
+// Static pages — the single consolidated place for About / Terms / etc.
 import '../../settings/staticpages/about_screen.dart';
 import '../../settings/staticpages/contact_screen.dart';
 import '../../settings/staticpages/faq_screen.dart';
@@ -16,7 +17,8 @@ import '../../settings/staticpages/privacy_screen.dart';
 import '../../settings/staticpages/terms_screen.dart';
 import '../../system_updates/system_updates_list_screen.dart';
 
-/// Account tab: Settings, App Updates, and all Static Pages.
+/// Settings tab: App Preferences, App Updates, and all static pages
+/// (About, Terms, Privacy, Help Center, Contact, Feedback, Rate).
 class AccountTab extends StatelessWidget {
   final VoidCallback onMenu;
 
@@ -33,16 +35,18 @@ class AccountTab extends StatelessWidget {
     final layout = DashGrid.of(context);
 
     return CustomScrollView(
-      physics:
-      const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       slivers: [
         SliverToBoxAdapter(
           child: DashHeader(
-            headline: t.navAccount,
-            subline: t.accountSubtitle,
+            headline: t.settings, // ← was t.navAccount
+            subline: t.accountSubtitle, // "Language and app settings"
             hPad: layout.hPad,
             onMenu: onMenu,
-            onAiAgent: () => AppLauncher.snack(context, t.comingSoonMessage),
+            onAiAgent: () =>
+                AppLauncher.snack(context, t.comingSoonMessage),
           ),
         ),
         SliverPadding(
@@ -50,78 +54,91 @@ class AccountTab extends StatelessWidget {
           sliver: SliverList.list(
             children: [
               // ========== MAIN MENU ==========
-              _Group(isDark: isDark, tiles: [
-                _Tile(
-                  icon: Icons.settings_rounded,
-                  title: t.settings,
-                  onTap: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.settings),
-                ),
-                _Tile(
-                  icon: Icons.system_update_rounded,
-                  title: t.appUpdates,
-                  onTap: () => _go(context, const SystemUpdatesListScreen()),
-                ),
-              ]),
+              _Group(
+                isDark: isDark,
+                tiles: [
+                  _Tile(
+                    icon: Icons.settings_rounded,
+                    title: t.settings,
+                    onTap: () => Navigator.of(context)
+                        .pushNamed(AppRoutes.settings),
+                  ),
+                  _Tile(
+                    icon: Icons.system_update_rounded,
+                    title: t.appUpdates,
+                    onTap: () =>
+                        _go(context, const SystemUpdatesListScreen()),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 20),
 
               // ========== PRIVACY & DATA ==========
-              _Group(isDark: isDark, tiles: [
-                _Tile(
-                  icon: Icons.privacy_tip_outlined,
-                  title: t.privacyPolicy,
-                  onTap: () => _go(context, const PrivacyScreen()),
-                ),
-              ]),
+              _Group(
+                isDark: isDark,
+                tiles: [
+                  _Tile(
+                    icon: Icons.privacy_tip_outlined,
+                    title: t.privacyPolicy,
+                    onTap: () => _go(context, const PrivacyScreen()),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 20),
 
               // ========== HELP & FEEDBACK ==========
-              _Group(isDark: isDark, tiles: [
-                _Tile(
-                  icon: Icons.help_outline_rounded,
-                  title: t.helpCenter,
-                  onTap: () => _go(context, const FaqScreen()),
-                ),
-                _Tile(
-                  icon: Icons.contact_support_rounded,
-                  title: t.contactUs,
-                  onTap: () => _go(context, const ContactScreen()),
-                ),
-                _Tile(
-                  icon: Icons.feedback_outlined,
-                  title: t.sendFeedback,
-                  onTap: () => _go(context, const FeedbackScreen()),
-                ),
-              ]),
+              _Group(
+                isDark: isDark,
+                tiles: [
+                  _Tile(
+                    icon: Icons.help_outline_rounded,
+                    title: t.helpCenter,
+                    onTap: () => _go(context, const FaqScreen()),
+                  ),
+                  _Tile(
+                    icon: Icons.contact_support_rounded,
+                    title: t.contactUs,
+                    onTap: () => _go(context, const ContactScreen()),
+                  ),
+                  _Tile(
+                    icon: Icons.feedback_outlined,
+                    title: t.sendFeedback,
+                    onTap: () => _go(context, const FeedbackScreen()),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 20),
 
-              // ========== ABOUT & SUPPORT ==========
-              _Group(isDark: isDark, tiles: [
-                _Tile(
-                  icon: Icons.info_outline_rounded,
-                  title: t.about,
-                  onTap: () => _go(context, const AboutScreen()),
-                ),
-                _Tile(
-                  icon: Icons.description_outlined,
-                  title: t.termsConditions,
-                  onTap: () => _go(context, const TermsScreen()),
-                ),
-                _Tile(
-                  icon: Icons.star_outline_rounded,
-                  title: t.rateApp,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Rate App feature coming soon!'),
-                      ),
-                    );
-                  },
-                ),
-              ]),
+              // ========== ABOUT & LEGAL ==========
+              _Group(
+                isDark: isDark,
+                tiles: [
+                  _Tile(
+                    icon: Icons.info_outline_rounded,
+                    title: t.about,
+                    onTap: () => _go(context, const AboutScreen()),
+                  ),
+                  _Tile(
+                    icon: Icons.description_outlined,
+                    title: t.termsConditions,
+                    onTap: () => _go(context, const TermsScreen()),
+                  ),
+                  _Tile(
+                    icon: Icons.star_outline_rounded,
+                    title: t.rateApp,
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Rate App feature coming soon!'),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -129,6 +146,10 @@ class AccountTab extends StatelessWidget {
     );
   }
 }
+
+// ============================================================
+// HELPER WIDGETS
+// ============================================================
 
 class _Group extends StatelessWidget {
   final bool isDark;

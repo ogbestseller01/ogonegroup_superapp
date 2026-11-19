@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -133,21 +132,6 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.pushNamed(
                         context,
                         AppRoutes.settings,
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  _ProfileActionCard(
-                    icon: Icons.notifications_none_rounded,
-                    iconColor: const Color(0xFF8E5AC7),
-                    title: l10n.notifications,
-                    subtitle: 'View your latest notifications',
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.notifications,
                       );
                     },
                   ),

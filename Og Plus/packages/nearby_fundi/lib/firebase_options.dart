@@ -24,28 +24,32 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAI8DIC73GaDmuLhyMa-V9LKUV9JowpTXc',
-    appId: '1:217153819583:android:76772644eb984f5311c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
+    apiKey: 'AIzaSyB6YCImgt00-zk9F6Nr1b3kfHUDCdsHxJI',
+    appId: '1:911035937686:android:6e3194663eae1cd8faa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCuamKYH11O-_DMpyyOuuI6DDTRSoy49i0',
-    appId: '1:217153819583:ios:f3dde484abd4d83811c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
-    iosBundleId: 'nearbyfundi',
+    apiKey: 'AIzaSyAUTJ7rruTIu8aVCjVISRzLk-hTMg_7lNA',
+    appId: '1:911035937686:ios:bc52f1e5ad4d5810faa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
+    androidClientId:
+    '911035937686-71vp8hnmc6sn2ggmgu1ipvo46p416tlm.apps.googleusercontent.com',
+    iosBundleId: 'com.ogonegroup.fundiapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCuamKYH11O-_DMpyyOuuI6DDTRSoy49i0',
-    appId: '1:217153819583:ios:f3dde484abd4d83811c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
-    iosBundleId: 'nearbyfundi',
+    apiKey: 'AIzaSyAUTJ7rruTIu8aVCjVISRzLk-hTMg_7lNA',
+    appId: '1:911035937686:ios:bc52f1e5ad4d5810faa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
+    androidClientId:
+    '911035937686-71vp8hnmc6sn2ggmgu1ipvo46p416tlm.apps.googleusercontent.com',
+    iosBundleId: 'com.ogonegroup.fundiapp',
   );
 }

@@ -515,7 +515,7 @@ abstract class AppLocalizations {
   /// No description provided for @appUpdatesDesc.
   ///
   /// In en, this message translates to:
-  /// **'Important app updates and announcements'**
+  /// **'See the latest app updates'**
   String get appUpdatesDesc;
 
   /// No description provided for @privacyData.
@@ -595,6 +595,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Msosi Chap Chap and Mfua Nguo at your door'**
   String get bannerFoodSubtitle;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
+
+  /// No description provided for @settingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language, appearance & more'**
+  String get settingsSubtitle;
+
+  /// No description provided for @rateAppTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the app'**
+  String get rateAppTitle;
+
+  /// No description provided for @helpCenterDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse help articles'**
+  String get helpCenterDesc;
+
+  /// No description provided for @faqsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers to common questions'**
+  String get faqsDesc;
+
+  /// No description provided for @contactUsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reach our support team'**
+  String get contactUsDesc;
+
+  /// No description provided for @sendFeedbackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what you think'**
+  String get sendFeedbackDesc;
+
+  /// No description provided for @termsConditionsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Read our terms of use'**
+  String get termsConditionsDesc;
+
+  /// No description provided for @privacyPolicyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'How we handle your data'**
+  String get privacyPolicyDesc;
+
+  /// No description provided for @aboutDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'About OG Plus'**
+  String get aboutDesc;
 
   /// No description provided for @faqs.
   ///

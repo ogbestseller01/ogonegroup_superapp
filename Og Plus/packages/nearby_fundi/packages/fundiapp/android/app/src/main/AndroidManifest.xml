@@ -57,7 +57,7 @@
         android:supportsRtl="true">
 
         <activity
-            android:name="com.fundapp.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"

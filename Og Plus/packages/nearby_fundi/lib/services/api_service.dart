@@ -36,6 +36,9 @@ class ApiResponse {
 /// Main API service – handles all HTTP requests to the backend.
 class ApiService {
   late final Dio _dio;
+
+  /// Fired when a 401 hits a request that belonged to the CURRENT session.
+  static void Function()? onGlobalSessionExpired;
   void Function()? onSessionExpired;
 
   Dio get dio => _dio;
@@ -67,7 +70,10 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        if (!_isPublicAuthPath(options.path)) {
+        // Never overwrite an explicitly supplied Authorization header
+        // (used by logoutWithToken so it can't be hijacked by a new login).
+        if (!_isPublicAuthPath(options.path) &&
+            !options.headers.containsKey('Authorization')) {
           final token = await StorageService.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -77,10 +83,19 @@ class ApiService {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
+        final req = e.requestOptions;
         if (e.response?.statusCode == 401 &&
-            !_isPublicAuthPath(e.requestOptions.path)) {
-          await StorageService.clearAll();
-          onSessionExpired?.call();
+            !_isPublicAuthPath(req.path) &&
+            req.extra['skip401'] != true) {
+          final sent = req.headers['Authorization']
+              ?.toString()
+              .replaceFirst('Bearer ', '');
+          final current = await StorageService.getToken();
+          // Only the LIVE session may end itself. A late 401 from an old
+          // user's request must not wipe the new user's session.
+          if (sent != null && sent.isNotEmpty && sent == current) {
+            (onSessionExpired ?? onGlobalSessionExpired)?.call();
+          }
         }
         return handler.next(e);
       },
@@ -166,7 +181,22 @@ class ApiService {
         'password_confirmation': password,
       });
 
-  Future<ApiResponse> logout() => _post('/v1/auth/logout');
+  /// Revokes a specific token (used after local logout already happened).
+  Future<ApiResponse> logoutWithToken(String token, {String? fcmToken}) async {
+    try {
+      final res = await _dio.post(
+        '/v1/auth/logout',
+        data: {if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken},
+        options: Options(
+          headers: {'Authorization': 'Bearer $token'},
+          extra: {'skip401': true},
+        ),
+      );
+      return _parseResponse('POST', '/v1/auth/logout', res);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
 
   Future<ApiResponse> getProfile() => _get('/v1/auth/me');
 
@@ -186,8 +216,9 @@ class ApiService {
   Future<ApiResponse> updateLocale(String locale) =>
       _post('/v1/auth/locale', data: {'locale': locale});
 
+  // Authenticated route (see routes patch): binds this device to THIS user.
   Future<ApiResponse> updateDeviceToken(String token) =>
-      _post('/v1/device-token', data: {'token': token});
+      _post('/v1/auth/device-token', data: {'token': token});
 
   Future<ApiResponse> deleteAccount() => _delete('/v1/auth/account');
 
@@ -280,11 +311,9 @@ class ApiService {
 
   Future<ApiResponse> getTechnicianProfile() => _get('/v2/technicians/profile');
 
-  // Backend route is POST /v2/technicians/services
   Future<ApiResponse> updateTechnicianServices(List<int> serviceIds) =>
       _post('/v2/technicians/services', data: {'service_ids': serviceIds});
 
-  // NOTE: no matching backend route yet (/v2/technicians/online-status)
   Future<ApiResponse> toggleTechnicianOnline(bool isOnline) =>
       _patch('/v2/technicians/online-status', data: {'is_online': isOnline});
 
@@ -313,7 +342,6 @@ class ApiService {
     return _post('/v2/technicians/profile/photo', data: formData);
   }
 
-  // NOTE: no matching backend route yet (/v2/technicians/service-prices)
   Future<ApiResponse> updateServicePrices(Map<String, dynamic> pricesData) =>
       _put('/v2/technicians/service-prices', data: pricesData);
 
@@ -390,11 +418,6 @@ class ApiService {
 
   // ═══════════════════════════════════════════════════════════════════════
   //  REQUESTS (Booking) - V4
-  //  requests.status: pending | accepted | cancelled | rejected
-  //  pending -> accepted / rejected (fundi), pending -> cancelled (customer)
-  //  accepted / cancelled / rejected are locked
-  //  A request that became a job carries a nested `job` object
-  //  (job.status: pending | on-progress | completed).
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> createRequest({
@@ -416,7 +439,6 @@ class ApiService {
 
   Future<ApiResponse> getMyRequests() => _get('/v4/my-requests');
 
-  /// status: 'accepted' | 'rejected' (fundi) | 'cancelled' (customer)
   Future<ApiResponse> updateRequestStatus(int id, String status) =>
       _patch('/v4/requests/$id/status', data: {'status': status});
 
@@ -424,7 +446,6 @@ class ApiService {
 
   Future<ApiResponse> rejectRequest(int id) => updateRequestStatus(id, 'rejected');
 
-  /// Customer cancels a PENDING request (server sets status = cancelled).
   Future<ApiResponse> cancelRequest(int id) => _delete('/v4/requests/$id/cancel');
 
   Future<ApiResponse> updateRequestLocation(
@@ -441,18 +462,7 @@ class ApiService {
       _get('/v4/requests/$requestId/tracking');
 
   // ─────────────────────────────────────────────────────────────────────
-  //  JOBS (created from accepted requests)
-  //  jobs.status: pending | on-progress | completed
-  //  Mark Complete  -> server SMSes a 6-digit code to the customer
-  //  Verify         -> job + ticket completed
-  //  Review         -> customer rates the completed job (1-5 + remark)
-  //
-  //  Optional server-side filters (all safe to omit):
-  //    [search] free-text
-  //    [sort]   created_at | completed_at | status | title | ticket_number
-  //    [order]  asc | desc
-  //    [limit]  1..200
-  //    [status] pending | on-progress | completed
+  //  JOBS
   // ─────────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> getMyJobs({
@@ -473,7 +483,6 @@ class ApiService {
 
   Future<ApiResponse> getJob(int jobId) => _get('/v4/jobs/$jobId');
 
-  // NOTE: no `mark-as-job` route is registered in routes/api.php yet.
   Future<ApiResponse> markRequestAsJob(int requestId) =>
       _post('/v4/requests/$requestId/mark-as-job', data: {});
 
@@ -483,13 +492,11 @@ class ApiService {
   Future<ApiResponse> verifyJobCompletion(int jobId, String otp) =>
       _post('/v4/jobs/$jobId/verify-completion', data: {'otp': otp});
 
-  // ── Aliases (so JobProvider can keep calling the shorter names) ──
   Future<ApiResponse> markAsJob(int requestId) => markRequestAsJob(requestId);
   Future<ApiResponse> requestCompletion(int jobId) => requestJobCompletion(jobId);
   Future<ApiResponse> verifyCompletion(int jobId, String code) =>
       verifyJobCompletion(jobId, code);
 
-  /// Customer reviews a COMPLETED job: rating (1-5) + optional remark.
   Future<ApiResponse> submitJobReview(
       int jobId, {
         required int rating,
@@ -502,14 +509,7 @@ class ApiService {
       });
 
   // ─────────────────────────────────────────────────────────────────────
-  //  TICKETS (read-only)
-  //  Backend TicketController::index() accepts:
-  //    ?status=  pending | on-progress | completed
-  //    ?search=  free-text across ticket_number/title/description
-  //    ?sort=    created_at | completed_at | status | title | ticket_number
-  //    ?order=   asc | desc
-  //    ?limit=   1..200 (default 50)
-  //  `created_at` is NOT returned by the API anymore.
+  //  TICKETS
   // ─────────────────────────────────────────────────────────────────────
 
   Future<ApiResponse> getTickets({
@@ -532,7 +532,6 @@ class ApiService {
 
   // ═══════════════════════════════════════════════════════════════════════
   //  BLOG (Posts, Comments, Likes) - V1 & V5
-  //  A post is media only: up to 10 images + an optional video.
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<ApiResponse> getPosts({int page = 1, int? technicianId}) =>
@@ -552,7 +551,6 @@ class ApiService {
 
   Future<ApiResponse> deleteComment(int id) => _delete('/v5/comments/$id');
 
-  /// Adds a local file (by path) to [formData] under [field] if it exists.
   Future<void> _addFile(FormData formData, String field, dynamic p) async {
     if (p is! String || p.isEmpty) return;
     final file = File(p);
@@ -564,7 +562,6 @@ class ApiService {
     ));
   }
 
-  /// Create post. data keys: `images` (List<String> paths), `video` (String path).
   Future<ApiResponse> createPost(Map<String, dynamic> data) async {
     final formData = FormData();
 
@@ -579,8 +576,6 @@ class ApiService {
     return _post('/v5/posts', data: formData);
   }
 
-  /// Update post. data keys: `images` (new paths), `keep_images` (existing
-  /// URLs/paths to keep), `video` (new path), `remove_video` (bool).
   Future<ApiResponse> updatePost(int id, Map<String, dynamic> data) async {
     final formData = FormData();
     formData.fields.add(const MapEntry('_method', 'PUT'));
@@ -603,7 +598,6 @@ class ApiService {
           formData.fields.add(MapEntry('keep_images[]', url.toString()));
         }
       }
-      // Tells the backend the kept list is authoritative
       formData.fields.add(const MapEntry('images_managed', '1'));
     }
 
@@ -624,7 +618,6 @@ class ApiService {
   //  CONTACT
   // ═══════════════════════════════════════════════════════════════════════
 
-  // NOTE: no matching backend route yet (/v1/contact). Feedback lives at POST /v23/feedback.
   Future<ApiResponse> sendContactMessage(Map<String, dynamic> data) =>
       _post('/v1/contact', data: data);
 
@@ -875,7 +868,6 @@ class ApiService {
   //  REVIEWS (V4) & PRIVACY POLICY (V18)
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Reviews of a technician (rating + remark + customer name).
   Future<ApiResponse> getTechnicianReviews(int technicianId) =>
       _get('/v4/technicians/$technicianId/reviews');
 

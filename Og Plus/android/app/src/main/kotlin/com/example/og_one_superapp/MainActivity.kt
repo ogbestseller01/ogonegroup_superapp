@@ -1,4 +1,4 @@
-package com.example.og_one_superapp
+package com.ogonegroup.ogplusapp
 
 import android.content.Context
 import android.content.Intent
@@ -12,7 +12,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 
     private val securityChannel = "og.one.security"
-    private val badgeChannel = "com.nearbyfundi/badge"
+    private val badgeChannel = "com.ogonegroup.ogplusapp/badge"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -59,7 +59,7 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        // ── Badge channel (NearbyFundi notifications) ──
+        // ── Badge channel ──
         // Android launcher badges come from posted notifications, so this
         // only persists the count locally.
         MethodChannel(messenger, badgeChannel).setMethodCallHandler { call, result ->

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -262,6 +261,19 @@ class SettingsScreen extends StatelessWidget {
 
             _SettingsCard(
               children: [
+                // ===== NOTIFICATIONS (moved from Profile) =====
+                _NavigationTile(
+                  icon: Icons.notifications_none_rounded,
+                  iconColor: const Color(0xFF8E5AC7),
+                  title: l10n.notifications,
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.notifications,
+                  ),
+                ),
+
+                _CardDivider(),
+
                 _NavigationTile(
                   icon: Icons.info_outline_rounded,
                   iconColor: const Color(0xFF1976D2),

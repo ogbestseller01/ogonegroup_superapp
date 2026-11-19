@@ -75,7 +75,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<_OnboardStep> _steps = [
     const _OnboardStep(
-      title: 'Welcome to Og Plus',
+      title: 'Welcome to OG Plus',
       subtitle: 'Your ultimate hub for professional booking services, securely unified in one intelligent experience.',
     ),
     _OnboardStep(
@@ -180,7 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                           const SizedBox(width: 12),
                           const Text(
-                            'Og Plus',
+                            'OG Plus',
                             style: TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.w900,

@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.nearbyfundi"
+    namespace = "com.ogonegroup.nearbyfundi"
     compileSdk = 36
     ndkVersion = "28.2.13676358"
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.nearbyfundi"
+        applicationId = "com.ogonegroup.nearbyfundi"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

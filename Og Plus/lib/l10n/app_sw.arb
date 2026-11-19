@@ -59,6 +59,24 @@
   "dark": "Giza",
   "darkMode": "Hali ya giza",
 
+    "navSettings": "Mipangilio",
+    "settingsSubtitle": "Lugha, muonekano na zaidi",
+
+    "english": "Kiingereza",
+    "swahili": "Kiswahili",
+    "language": "Lugha",
+    "selectLanguage": "Chagua lugha",
+
+    "rateAppTitle": "Kadiria programu",
+    "helpCenterDesc": "Vinjari makala za msaada",
+    "faqsDesc": "Majibu ya maswali ya kawaida",
+    "contactUsDesc": "Wasiliana na timu yetu ya msaada",
+    "sendFeedbackDesc": "Tuambie unachofikiri",
+    "termsConditionsDesc": "Soma vigezo vyetu vya matumizi",
+    "privacyPolicyDesc": "Jinsi tunavyoshughulikia data yako",
+    "aboutDesc": "Kuhusu OG Plus",
+    "appUpdatesDesc": "Tazama taarifa mpya za programu",
+
   "about": "Kuhusu",
   "version": "Toleo",
   "contactUs": "Wasiliana Nasi",

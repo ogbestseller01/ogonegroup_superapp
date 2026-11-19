@@ -36,39 +36,33 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // ============================================================
-  // ANDROID — matches google-services.json (project nearbyfundi-8032f)
-  // ============================================================
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAI8DIC73GaDmuLhyMa-V9LKUV9JowpTXc',
-    appId: '1:217153819583:android:e805e315e875010811c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
+    apiKey: 'AIzaSyB6YCImgt00-zk9F6Nr1b3kfHUDCdsHxJI',
+    appId: '1:911035937686:android:4ccf2e4bb5502581faa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
   );
 
-  // ============================================================
-  // iOS — matches GoogleService-Info.plist (project nearbyfundi-8032f)
-  // ============================================================
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCuamKYH11O-_DMpyyOuuI6DDTRSoy49i0',
-    appId: '1:217153819583:ios:5bdbce08eb57f8ae11c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
-    iosClientId:
-    '217153819583-i53f9rsb46uiid53ikuiv6r68o93qe4s.apps.googleusercontent.com',
-    iosBundleId: 'com.example.ogonesuperapp',
+    apiKey: 'AIzaSyAUTJ7rruTIu8aVCjVISRzLk-hTMg_7lNA',
+    appId: '1:911035937686:ios:af239c28439b0acdfaa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
+    androidClientId:
+    '911035937686-71vp8hnmc6sn2ggmgu1ipvo46p416tlm.apps.googleusercontent.com',
+    iosBundleId: 'com.ogonegroup.ogplusapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCuamKYH11O-_DMpyyOuuI6DDTRSoy49i0',
-    appId: '1:217153819583:ios:5bdbce08eb57f8ae11c70a',
-    messagingSenderId: '217153819583',
-    projectId: 'nearbyfundi-8032f',
-    storageBucket: 'nearbyfundi-8032f.firebasestorage.app',
-    iosClientId:
-    '217153819583-i53f9rsb46uiid53ikuiv6r68o93qe4s.apps.googleusercontent.com',
-    iosBundleId: 'com.example.ogonesuperapp',
+    apiKey: 'AIzaSyAUTJ7rruTIu8aVCjVISRzLk-hTMg_7lNA',
+    appId: '1:911035937686:ios:af239c28439b0acdfaa3b7',
+    messagingSenderId: '911035937686',
+    projectId: 'og-plus-515119',
+    storageBucket: 'og-plus-515119.firebasestorage.app',
+    androidClientId:
+    '911035937686-71vp8hnmc6sn2ggmgu1ipvo46p416tlm.apps.googleusercontent.com',
+    iosBundleId: 'com.ogonegroup.ogplusapp',
   );
 }

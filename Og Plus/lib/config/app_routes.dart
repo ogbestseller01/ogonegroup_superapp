@@ -2,11 +2,14 @@
 class AppRoutes {
   AppRoutes._();
 
+  // Shell / landing
   static const String splash = '/';
   static const String dashboard = '/dashboard';
-  static const String home = '/home'; // 👈 Added back to resolve errors
+  static const String home = '/home';
+
+  // Settings (detail screen, opened from the Settings tab)
   static const String settings = '/settings';
 
-  // 👇 SYSTEM UPDATES
+  // Settings → System Updates
   static const String systemUpdates = '/settings/system-updates';
 }

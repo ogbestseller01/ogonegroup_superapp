@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "911035937686",
+    "project_id": "og-plus-515119",
+    "storage_bucket": "og-plus-515119.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911035937686:android:6e3194663eae1cd8faa3b7",
+        "android_client_info": {
+          "package_name": "com.ogonegroup.fundiapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6YCImgt00-zk9F6Nr1b3kfHUDCdsHxJI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911035937686:android:2c94c09904faba4efaa3b7",
+        "android_client_info": {
+          "package_name": "com.ogonegroup.nearbyfundi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6YCImgt00-zk9F6Nr1b3kfHUDCdsHxJI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

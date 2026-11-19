@@ -31,6 +31,7 @@ import 'providers/settings_provider.dart';
 import 'providers/static_page_provider.dart';
 import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/session_scoped.dart';
 
 import 'main.dart' show generateNearbyFundiRoute;
 
@@ -56,22 +57,21 @@ class NearbyFundiMiniApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(navigatorKey: navigatorKey),
         ),
-        ChangeNotifierProvider(create: (_) => PostProvider()),
-        ChangeNotifierProvider(create: (_) => RequestProvider()),
 
-        // Jobs + tickets. Every job carries its ticket nested inside
-        // (Job.ticket), so one provider is the single source of truth
-        // for both JobsScreen and TicketsScreen.
-        ChangeNotifierProvider(create: (_) => JobProvider()),
-
-        ChangeNotifierProvider(create: (_) => TechnicianProvider()),
-        ChangeNotifierProvider(create: (_) => ServiceProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        // Device-level (not per user)
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => StaticPageProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => ServiceProvider()),
+
+        // Per-user: rebuilt on every logout / login / user switch
+        perSession<PostProvider>(() => PostProvider()),
+        perSession<RequestProvider>(() => RequestProvider()),
+        perSession<JobProvider>(() => JobProvider()),
+        perSession<TechnicianProvider>(() => TechnicianProvider()),
+        perSession<NotificationProvider>(() => NotificationProvider()),
+        perSession<ChatProvider>(() => ChatProvider()),
       ],
       child: Consumer2<ThemeProvider, SettingsProvider>(
         builder: (context, themeProvider, settings, _) {

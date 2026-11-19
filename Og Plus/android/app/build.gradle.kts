@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.og_one_superapp"
+    namespace = "com.ogonegroup.ogplusapp"
 
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.og_one_superapp"
+        applicationId = "com.ogonegroup.ogplusapp"
 
         minSdk = flutter.minSdkVersion
         targetSdk = 36

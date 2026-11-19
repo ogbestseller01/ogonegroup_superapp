@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "217153819583",
-    "project_id": "nearbyfundi-8032f",
-    "storage_bucket": "nearbyfundi-8032f.firebasestorage.app"
+    "project_number": "911035937686",
+    "project_id": "og-plus-515119",
+    "storage_bucket": "og-plus-515119.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:217153819583:android:76772644eb984f5311c70a",
+        "mobilesdk_app_id": "1:911035937686:android:2c94c09904faba4efaa3b7",
         "android_client_info": {
-          "package_name": "com.example.nearbyfundi"
+          "package_name": "com.ogonegroup.nearbyfundi"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAI8DIC73GaDmuLhyMa-V9LKUV9JowpTXc"
+          "current_key": "AIzaSyB6YCImgt00-zk9F6Nr1b3kfHUDCdsHxJI"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911035937686-cqi341oqv9n22j6jtu9lh52fdai51ot3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

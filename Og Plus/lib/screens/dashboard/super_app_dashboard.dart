@@ -1,3 +1,4 @@
+// lib/screens/dashboard/super_app_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,7 @@ import 'tabs/home_tab.dart';
 import '../../widgets/dash_bottom_nav.dart';
 import '../../widgets/dash_drawer.dart';
 
-/// Super app shell: Home | Apps | Account.
+/// Super app shell: Home | Apps | Settings.
 /// QR scanning lives only in the search bar (Home and Apps tabs).
 class SuperAppDashboard extends StatelessWidget {
   const SuperAppDashboard({super.key});
@@ -26,11 +27,12 @@ class SuperAppDashboard extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AppUsageProvider()..load()),
-        // BannerProvider is also available from main; this ensures it exists
-        // even if main is not updated yet.
-        ChangeNotifierProvider(create: (_) => BannerProvider()..fetchBanners()),
-        // System updates shown as a dismissible card at the top of Home.
-        ChangeNotifierProvider(create: (_) => SystemUpdateProvider()..load()),
+        ChangeNotifierProvider(
+          create: (_) => BannerProvider()..fetchBanners(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SystemUpdateProvider()..load(),
+        ),
       ],
       child: const _DashboardShell(),
     );
@@ -66,8 +68,6 @@ class _DashboardShellState extends State<_DashboardShell> {
     try {
       await Future.wait([
         MiniAppService.instance.refresh(),
-        // banners and system updates are already fetched in
-        // SuperAppDashboard create, but we can refresh again safely if needed
         Future<void>.delayed(const Duration(milliseconds: 600)),
       ]);
     } catch (_) {}
@@ -93,7 +93,7 @@ class _DashboardShellState extends State<_DashboardShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    context.watch<SettingsProvider>(); // rebuild when the language changes
+    context.watch<SettingsProvider>(); // rebuild on language change
     final t = context.t;
     final layout = DashGrid.of(context);
 
@@ -101,7 +101,10 @@ class _DashboardShellState extends State<_DashboardShell> {
       DashNavItem(Icons.home_outlined, Icons.home_rounded, t.home),
       DashNavItem(Icons.apps_outlined, Icons.apps_rounded, t.navApps),
       DashNavItem(
-          Icons.person_outline_rounded, Icons.person_rounded, t.navAccount),
+        Icons.settings_outlined,
+        Icons.settings_rounded,
+        t.settings, // ← was t.navAccount
+      ),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -109,7 +112,6 @@ class _DashboardShellState extends State<_DashboardShell> {
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.3,
         child: PopScope(
-          // Back from any other tab returns to Home first.
           canPop: _index == _home,
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) setState(() => _index = _home);

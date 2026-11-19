@@ -1,28 +1,13 @@
-// lib/providers/auth_provider.dart
-//
-// Single source of truth for the authenticated session.
-//
-// Debug: every Google sign-in step is tagged [GOOGLE n/8] so you can
-// isolate the failing stage via:
-//   flutter logs | grep GOOGLE
-//
-// Steps:
-//   1/8  entry (loading/terms already handled by UI)
-//   2/8  GoogleAuthService.getIdToken()  ← picker + native auth
-//   3/8  FCM token fetch (non-fatal)
-//   4/8  ApiService.loginWithGoogle()    ← server call
-//   5/8  server response validation
-//   6/8  GoogleAuthResult parse
-//   7/8  _saveSession (persist token + user + FCM)
-//   8/8  success / cancelled / failed resolved
-
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignInException, GoogleSignInExceptionCode;
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../providers/auth_provider.dart'; // <-- ADDED AS REQUESTED
+import '../config/app_routes.dart';
 import '../models/google_auth_result.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
@@ -34,13 +19,25 @@ enum GoogleLoginOutcome { success, cancelled, failed }
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
+  final GlobalKey<NavigatorState>? _navigatorKey;
+
+  /// SharedPreferences key prefixes that belong to ONE user and must be
+  /// wiped on logout / account switch. Add new per-user keys here.
+  static const List<String> _userScopedPrefPrefixes = [
+    'location_search_history',
+  ];
 
   User? _user;
   String? _token;
   bool _isLoading = false;
   bool _disposed = false;
+  bool _ending = false;
   String? _error;
   bool _lastGoogleWasNew = false;
+
+  /// Bumps on every logout / expiry / user switch. Per-user providers and
+  /// async work compare against it to avoid cross-session leaks.
+  int _sessionEpoch = 0;
 
   User? get user => _user;
   String? get token => _token;
@@ -48,19 +45,15 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _error;
   bool get lastGoogleWasNew => _lastGoogleWasNew;
+  int get sessionEpoch => _sessionEpoch;
 
-  AuthProvider({GlobalKey<NavigatorState>? navigatorKey}) {
-    _api.onSessionExpired = () async {
-      await _clearSession();
-      navigatorKey?.currentState
-          ?.pushNamedAndRemoveUntil('/login', (_) => false);
-    };
+  AuthProvider({GlobalKey<NavigatorState>? navigatorKey})
+      : _navigatorKey = navigatorKey {
+    // Any ApiService (not just ours) reports an expired LIVE session here.
+    ApiService.onGlobalSessionExpired = () => _endSession(redirect: true);
+    _api.onSessionExpired = () => _endSession(redirect: true);
     _loadStoredSession();
   }
-
-  // ==============================================================
-  // PUBLIC API
-  // ==============================================================
 
   void clearError() {
     if (_error == null) return;
@@ -68,14 +61,10 @@ class AuthProvider extends ChangeNotifier {
     _safeNotify();
   }
 
-  // ─── Register Customer ────────────────────────────────────────
-  Future<bool> register(
-      String name,
-      String email,
-      String password,
-      String confirmPassword, {
-        String? phone,
-      }) async {
+  // ─── Register ────────────────────────────────────────────────
+  Future<bool> register(String name, String email, String password,
+      String confirmPassword,
+      {String? phone}) async {
     _setLoading(true);
     try {
       final res = await _api.register({
@@ -85,141 +74,89 @@ class AuthProvider extends ChangeNotifier {
         'password_confirmation': confirmPassword,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
       });
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
+      _error = res.success ? null : res.message;
+      return res.success;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ─── Register Fundi ───────────────────────────────────────────
   Future<bool> registerFundi(Map<String, dynamic> data) async {
     _setLoading(true);
     try {
       final res = await _api.registerFundi(data);
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
+      _error = res.success ? null : res.message;
+      return res.success;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ─── Login (email or phone) ───────────────────────────────────
+  // ─── Password login ──────────────────────────────────────────
   Future<bool> login(String identifier, String password) async {
     _setLoading(true);
     try {
       final res = await _api.login(identifier.trim(), password);
       if (res.success && res.data != null) {
-        await _saveSession(res.data);
+        await _saveSession(Map<String, dynamic>.from(res.data as Map));
         _error = null;
         return true;
       }
       _error = res.message;
+      return false;
+    } catch (e) {
+      debugPrint('login error: $e');
+      _error = 'Login failed. Please try again.';
       return false;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ─── Google login (picker → ID token → server) ───────────────
+  // ─── Google login ────────────────────────────────────────────
   Future<GoogleLoginOutcome> signInWithGoogle() async {
-    debugPrint('[GOOGLE 1/8] signInWithGoogle() entered');
-
     _setLoading(true);
     try {
-      // ── 2/8: native picker + ID token ────────────────────────
-      debugPrint('[GOOGLE 2/8] requesting Google ID token...');
       final String idToken;
       try {
         idToken = await GoogleAuthService.getIdToken();
       } on GoogleSignInCancelled catch (c) {
-        // Closed almost instantly = Google rejected the app config,
-        // not a real user cancel.
         if (c.looksLikeConfigError) {
-          debugPrint('[GOOGLE 2/8] closed after ${c.elapsed.inMilliseconds}ms '
-              '-> Android OAuth client (package + SHA-1) problem');
           _error = 'Google sign-in closed immediately. '
               'Check the Android OAuth client (package name and SHA-1).';
           return GoogleLoginOutcome.failed;
         }
-        debugPrint('[GOOGLE 2/8] user cancelled the Google picker');
         return GoogleLoginOutcome.cancelled;
       } on GoogleSignInException catch (e) {
-        // v7 surfaces all real failures here.
-        debugPrint('[GOOGLE 2/8] GoogleSignInException '
-            'code=${e.code} details=${e.details}');
+        debugPrint('[GOOGLE] code=${e.code} details=${e.details}');
         _error = _googleErrorFor(e.code);
         return GoogleLoginOutcome.failed;
-      } catch (e, st) {
-        debugPrint('[GOOGLE 2/8] unexpected error getting ID token: $e');
-        debugPrint('$st');
+      } catch (e) {
+        debugPrint('[GOOGLE] token error: $e');
         _error = 'Google sign-in failed. Please try again.';
         return GoogleLoginOutcome.failed;
       }
 
-      debugPrint('[GOOGLE 2/8] ID token received '
-          '(length=${idToken.length}, '
-          'preview=${idToken.substring(0, idToken.length < 16 ? idToken.length : 16)}...)');
-
-      // ── 3/8: FCM token (never fatal) ─────────────────────────
       String? fcmToken;
       try {
         fcmToken = await FcmService.getToken();
-        debugPrint('[GOOGLE 3/8] FCM token: '
-            '${fcmToken == null ? "null" : "ok"}');
-      } catch (e) {
-        debugPrint('[GOOGLE 3/8] FCM token fetch failed (non-fatal): $e');
-      }
+      } catch (_) {}
 
-      // ── 4/8: server exchange ─────────────────────────────────
-      debugPrint('[GOOGLE 4/8] calling /auth/google ...');
       final res = await _api.loginWithGoogle(idToken, fcmToken: fcmToken);
-
-      debugPrint('[GOOGLE 5/8] server response: '
-          'success=${res.success} '
-          'message=${res.message} '
-          'hasData=${res.data != null}');
-
       if (!res.success || res.data == null) {
-        debugPrint('[GOOGLE 5/8] server rejected Google login '
-            'message=${res.message}');
-        // res.message is non-nullable String
         _error = res.message.isNotEmpty
             ? res.message
             : 'Google sign-in failed. Please try again.';
         return GoogleLoginOutcome.failed;
       }
 
-      // ── 6/8: parse GoogleAuthResult ──────────────────────────
       final map = Map<String, dynamic>.from(res.data as Map);
-      final result = GoogleAuthResult.fromJson(map);
-      _lastGoogleWasNew = result.isNewUser;
-      debugPrint('[GOOGLE 6/8] parsed GoogleAuthResult: '
-          'isNewUser=$_lastGoogleWasNew '
-          'userId=${result.user.id} '
-          'email=${result.user.email}');
-
-      // ── 7/8: persist session ─────────────────────────────────
-      debugPrint('[GOOGLE 7/8] saving session...');
+      _lastGoogleWasNew = GoogleAuthResult.fromJson(map).isNewUser;
       await _saveSession(map);
-
-      // ── 8/8: done ────────────────────────────────────────────
-      debugPrint('[GOOGLE 8/8] Google login SUCCESS '
-          '(isNewUser=$_lastGoogleWasNew)');
       _error = null;
       return GoogleLoginOutcome.success;
     } catch (e, st) {
-      // Catch-all for anything not already handled above
-      debugPrint('[GOOGLE 8/8] unexpected failure: $e');
-      debugPrint('$st');
+      debugPrint('[GOOGLE] unexpected: $e\n$st');
       _error = 'Google sign-in failed. Please try again.';
       return GoogleLoginOutcome.failed;
     } finally {
@@ -227,11 +164,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Human-readable messages for GoogleSignInException codes.
   String _googleErrorFor(GoogleSignInExceptionCode? code) {
     switch (code) {
       case GoogleSignInExceptionCode.canceled:
-      // Handled before this is called, but keep for safety.
         return 'Google sign-in was cancelled.';
       case GoogleSignInExceptionCode.clientConfigurationError:
         return 'Google sign-in is misconfigured (serverClientId / SHA-1).';
@@ -241,14 +176,12 @@ class AuthProvider extends ChangeNotifier {
         return 'Google sign-in UI is unavailable. Try again.';
       case GoogleSignInExceptionCode.userMismatch:
         return 'A different Google account is already signed in.';
-      case GoogleSignInExceptionCode.unknownError:
-        return 'Google sign-in failed. Please try again.';
       default:
         return 'Google sign-in failed. Please try again.';
     }
   }
 
-  // ─── Apple login ──────────────────────────────────────────────
+  // ─── Apple login ─────────────────────────────────────────────
   Future<bool> loginWithApple({
     required String identityToken,
     String? nonce,
@@ -264,7 +197,7 @@ class AuthProvider extends ChangeNotifier {
         fcmToken: fcmToken,
       );
       if (res.success && res.data != null) {
-        await _saveSession(res.data);
+        await _saveSession(Map<String, dynamic>.from(res.data as Map));
         _error = null;
         return true;
       }
@@ -279,15 +212,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Verify OTP ───────────────────────────────────────────────
+  // ─── OTP / password flows ────────────────────────────────────
   Future<bool> verifyOtp(String email, String otp) async {
     _setLoading(true);
     try {
-      final fcmToken =
-      await FcmService.getToken().catchError((_) => null);
+      final fcmToken = await FcmService.getToken().catchError((_) => null);
       final res = await _api.verifyOtp(email, otp, fcmToken: fcmToken);
       if (res.success && res.data != null) {
-        await _saveSession(res.data);
+        await _saveSession(Map<String, dynamic>.from(res.data as Map));
         _error = null;
         return true;
       }
@@ -298,49 +230,37 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Forgot password ──────────────────────────────────────────
-  Future<bool> forgotPassword(String email) async {
+  Future<bool> forgotPassword(String email) =>
+      _simple(() => _api.forgotPassword(email));
+
+  Future<bool> resetPassword(String email, String otp, String password) =>
+      _simple(() =>
+          _api.resetPassword(email: email, otp: otp, password: password));
+
+  Future<bool> changePassword(String current, String newPwd) => _simple(
+          () => _api.changePassword(currentPassword: current, newPassword: newPwd));
+
+  Future<bool> resendOtp(String email) => _simple(() => _api.resendOtp(email));
+
+  Future<bool> _simple(Future<ApiResponse> Function() call) async {
     _setLoading(true);
     try {
-      final res = await _api.forgotPassword(email);
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
+      final res = await call();
+      _error = res.success ? null : res.message;
+      return res.success;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ─── Reset password ───────────────────────────────────────────
-  Future<bool> resetPassword(
-      String email, String otp, String password) async {
-    _setLoading(true);
-    try {
-      final res = await _api.resetPassword(
-        email: email,
-        otp: otp,
-        password: password,
-      );
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // ─── Update profile ───────────────────────────────────────────
+  // ─── Profile ─────────────────────────────────────────────────
   Future<bool> updateProfile(Map<String, dynamic> data) async {
     _setLoading(true);
+    final epoch = _sessionEpoch;
     try {
       final res = await _api.updateProfile(data);
-      if (res.success && res.data != null) {
+      if (epoch != _sessionEpoch) return false;
+      if (res.success && res.data != null && _token != null) {
         final userData = res.data['user'] ?? res.data;
         _user = User.fromJson(userData, _token!);
         await _storeUser();
@@ -354,29 +274,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Change password ──────────────────────────────────────────
-  Future<bool> changePassword(String current, String newPwd) async {
-    _setLoading(true);
-    try {
-      final res = await _api.changePassword(
-        currentPassword: current,
-        newPassword: newPwd,
-      );
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // ─── Update locale ────────────────────────────────────────────
   Future<bool> updateLocale(String locale) async {
     _setLoading(true);
     try {
+      // Guests have no server profile; only persist locally.
+      if (_user == null) {
+        await StorageService.saveLocale(locale);
+        return true;
+      }
       final res = await _api.updateLocale(locale);
       if (res.success && _user != null) {
         _user = _user!.copyWith(locale: locale);
@@ -392,29 +297,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Resend OTP ───────────────────────────────────────────────
-  Future<bool> resendOtp(String email) async {
-    _setLoading(true);
-    try {
-      final res = await _api.resendOtp(email);
-      if (res.success) {
-        _error = null;
-        return true;
-      }
-      _error = res.message;
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // ─── Delete account ───────────────────────────────────────────
   Future<bool> deleteAccount() async {
     _setLoading(true);
     try {
+      final token = _token;
       final res = await _api.deleteAccount();
       if (res.success) {
-        await _clearSession();
+        await _endSession(redirect: true);
+        if (token != null) unawaited(_revokeRemote(token, null));
         return true;
       }
       _error = res.message;
@@ -424,16 +314,22 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Load / refresh user ──────────────────────────────────────
   Future<void> loadUser() async {
     if (_token == null) return;
-
+    final epoch = _sessionEpoch;
+    final tokenAtStart = _token;
     _setLoading(true);
     try {
       final res = await _api.getProfile();
+      if (epoch != _sessionEpoch || tokenAtStart != _token) return;
       if (res.success && res.data != null) {
         final userData = res.data['user'] ?? res.data;
-        _user = User.fromJson(userData, _token!);
+        final fresh = User.fromJson(userData, _token!);
+        if (_user != null && fresh.id != _user!.id) {
+          await _endSession(redirect: true);
+          return;
+        }
+        _user = fresh;
         await _storeUser();
         _error = null;
       } else {
@@ -446,18 +342,91 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Logout ───────────────────────────────────────────────────
+  // ─── Logout ──────────────────────────────────────────────────
+  /// Local logout is immediate and complete. Server revocation (Sanctum token
+  /// + FCM token) runs afterwards with an explicit token, with a retry.
   Future<void> logout() async {
+    final token = _token;
+    String? fcm;
     try {
-      await GoogleAuthService.signOut();
-      await _api.logout().timeout(const Duration(seconds: 5));
+      fcm = await FcmService.getToken().timeout(const Duration(seconds: 2));
     } catch (_) {}
-    await _clearSession();
+
+    await _endSession(redirect: true);
+
+    if (token != null) unawaited(_revokeRemote(token, fcm));
+  }
+
+  Future<void> _revokeRemote(String token, String? fcmToken) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final res = await _api
+            .logoutWithToken(token, fcmToken: fcmToken)
+            .timeout(const Duration(seconds: 8));
+        // sessionExpired == token already invalid server-side: also done.
+        if (res.success || res.sessionExpired) return;
+      } catch (_) {}
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+    debugPrint('Remote logout failed; token will expire server-side.');
   }
 
   // ==============================================================
   // PRIVATE
   // ==============================================================
+
+  /// Single place where a session ends (logout, expiry, user switch).
+  Future<void> _endSession({required bool redirect}) async {
+    if (_ending) return;
+    _ending = true;
+    try {
+      _token = null;
+      _user = null;
+      _isLoading = false;
+      _error = null;
+      _lastGoogleWasNew = false;
+      _sessionEpoch++; // <- every per-session provider is rebuilt
+      _safeNotify();
+
+      try {
+        await StorageService.clearAll();
+      } catch (e) {
+        debugPrint('clearAll failed: $e');
+      }
+      try {
+        await GoogleAuthService.signOut();
+      } catch (_) {}
+      await _wipeUserScopedPrefs();
+
+      if (redirect) _redirectToLogin();
+    } finally {
+      _ending = false;
+    }
+  }
+
+  Future<void> _wipeUserScopedPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final key in prefs.getKeys().toList()) {
+        if (_userScopedPrefPrefixes.any(key.startsWith)) {
+          await prefs.remove(key);
+        }
+      }
+    } catch (e) {
+      debugPrint('wipe prefs failed: $e');
+    }
+  }
+
+  /// Runs AFTER the frame in which providers were rebuilt, so the new
+  /// HomeScreen/LoginScreen reads the fresh providers.
+  void _redirectToLogin() {
+    final nav = _navigatorKey;
+    if (nav == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      nav.currentState
+          ?.pushNamedAndRemoveUntil(AppRoutes.login, (_) => false);
+    });
+  }
 
   Future<void> _loadStoredSession() async {
     final storedToken = await StorageService.getToken();
@@ -466,13 +435,13 @@ class AuthProvider extends ChangeNotifier {
     final userJson = await StorageService.getUserJson();
     if (userJson != null) {
       try {
-        final Map<String, dynamic> userMap = jsonDecode(userJson);
+        final map = jsonDecode(userJson) as Map<String, dynamic>;
         _token = storedToken;
-        _user = User.fromJson(userMap, storedToken);
+        _user = User.fromJson(map, storedToken);
         _safeNotify();
         unawaited(_refreshProfileQuietly());
       } catch (_) {
-        await _clearSession();
+        await _endSession(redirect: false);
       }
     } else {
       await _fetchAndSaveUser(storedToken);
@@ -480,11 +449,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _refreshProfileQuietly() async {
+    final epoch = _sessionEpoch;
+    final tokenAtStart = _token;
     try {
       final res = await _api.getProfile();
+      if (epoch != _sessionEpoch || tokenAtStart != _token) return;
       if (res.success && res.data != null) {
         final userData = res.data['user'] ?? res.data;
-        _user = User.fromJson(userData, _token!);
+        final fresh = User.fromJson(userData, _token!);
+        // Stored user doesn't match the token's owner -> corrupted/stale.
+        if (_user != null && fresh.id != _user!.id) {
+          await _endSession(redirect: true);
+          return;
+        }
+        _user = fresh;
         await _storeUser();
         _safeNotify();
       }
@@ -492,7 +470,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _fetchAndSaveUser(String token) async {
+    final epoch = _sessionEpoch;
     final res = await _api.getProfile();
+    if (epoch != _sessionEpoch) return;
     if (res.success && res.data != null) {
       final userData = res.data['user'] ?? res.data;
       _token = token;
@@ -502,7 +482,7 @@ class AuthProvider extends ChangeNotifier {
       await _registerFcmQuietly();
       _safeNotify();
     } else {
-      await _clearSession();
+      await _endSession(redirect: false);
     }
   }
 
@@ -513,24 +493,23 @@ class AuthProvider extends ChangeNotifier {
       throw StateError('Login response did not include a token.');
     }
 
-    final parsedUser = User.fromJson(userData, token);
+    final parsed = User.fromJson(userData, token);
+
+    // Logging in as someone else while a session exists: fully isolate.
+    if (_user != null && _user!.id != parsed.id) {
+      final oldToken = _token;
+      _sessionEpoch++;
+      await _wipeUserScopedPrefs();
+      if (oldToken != null) unawaited(_revokeRemote(oldToken, null));
+    }
+
     _token = token;
-    _user = parsedUser;
+    _user = parsed;
 
     await StorageService.saveToken(token);
     await _storeUser();
-    await _registerFcmQuietly();
     _safeNotify();
-  }
-
-  Future<void> _clearSession() async {
-    await GoogleAuthService.signOut();
-    _token = null;
-    _user = null;
-    _isLoading = false;
-    _error = null;
-    await StorageService.clearAll();
-    _safeNotify();
+    unawaited(_registerFcmQuietly());
   }
 
   Future<void> _storeUser() async {
@@ -539,15 +518,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _registerFcmQuietly() async {
+    final epoch = _sessionEpoch;
     try {
       final fcmToken = await FcmService.getToken();
-      if (fcmToken == null) return;
+      if (fcmToken == null || epoch != _sessionEpoch) return;
       final res = await _api.updateDeviceToken(fcmToken);
-      if (!res.success) {
-        debugPrint('⚠️ Failed to push FCM token: ${res.message}');
-      }
+      if (!res.success) debugPrint('FCM push failed: ${res.message}');
     } catch (e) {
-      debugPrint('⚠️ FCM registration error: $e');
+      debugPrint('FCM registration error: $e');
     }
   }
 
@@ -566,6 +544,7 @@ class AuthProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    ApiService.onGlobalSessionExpired = null;
     super.dispose();
   }
 }

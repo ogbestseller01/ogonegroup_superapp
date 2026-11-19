@@ -118,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen>
         backgroundColor: bg,
         body: Stack(
           children: [
-            // Deep navy gradient
+            // Deep navy gradient background for OG Plus
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -201,7 +201,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                   const SizedBox(height: 36),
 
-                  // App name
+                  // App name (OG Plus)
                   FadeTransition(
                     opacity: _nameFade,
                     child: SlideTransition(

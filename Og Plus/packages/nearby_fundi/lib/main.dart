@@ -40,7 +40,7 @@ import 'screens/chat/chat_list_screen.dart';
 import 'screens/chat/chat_screen.dart';
 
 import 'screens/home/home_screen.dart';
-import 'screens/home/blogs_screen.dart'; // <-- ADDED
+import 'screens/home/blogs_screen.dart';
 import 'screens/home/post_detail_screen.dart';
 
 import 'screens/jobs/job_detail_screen.dart';
@@ -167,7 +167,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // Pass navigatorKey so AuthProvider can redirect on session expiration
+        ChangeNotifierProvider(create: (_) => AuthProvider(navigatorKey: navigatorKey)),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => RequestProvider()),
         ChangeNotifierProvider(create: (_) => JobProvider()),
@@ -237,7 +238,7 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
       return route(ResetPasswordScreen(email: _stringArg(args)));
     case AppRoutes.home:
       return route(const HomeScreen());
-    case AppRoutes.blogs: // <-- ADDED CASE
+    case AppRoutes.blogs:
       final techId = _intArg(args);
       return route(BlogsScreen(technicianId: techId > 0 ? techId : null));
     case AppRoutes.technicianDetail:

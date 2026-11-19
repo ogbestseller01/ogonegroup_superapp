@@ -157,7 +157,6 @@ Route<dynamic> generateFundiRoute(RouteSettings settings) {
 
   // ── Chat ──────────────────────────────────────────────
     case AppRoutes.chatList:
-    // Adjust import if your chat list screen name is different
       return route(const FundiHomeScreen()); // temporary fallback
     case AppRoutes.chat:
       if (args is ChatConversation) {
@@ -193,7 +192,7 @@ Route<dynamic> generateFundiRoute(RouteSettings settings) {
   }
 }
 
-// ── Helpers (same as main.dart) ─────────────────────────────
+// ── Helpers ─────────────────────────────────────────────
 
 int _getDraftArgument(Object? args) {
   if (args is int) return args;

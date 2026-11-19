@@ -224,7 +224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appUpdates => 'App Updates';
 
   @override
-  String get appUpdatesDesc => 'Important app updates and announcements';
+  String get appUpdatesDesc => 'See the latest app updates';
 
   @override
   String get privacyData => 'Privacy & Data';
@@ -265,6 +265,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bannerFoodSubtitle => 'Msosi Chap Chap and Mfua Nguo at your door';
+
+  @override
+  String get navSettings => 'Settings';
+
+  @override
+  String get settingsSubtitle => 'Language, appearance & more';
+
+  @override
+  String get rateAppTitle => 'Rate the app';
+
+  @override
+  String get helpCenterDesc => 'Browse help articles';
+
+  @override
+  String get faqsDesc => 'Answers to common questions';
+
+  @override
+  String get contactUsDesc => 'Reach our support team';
+
+  @override
+  String get sendFeedbackDesc => 'Tell us what you think';
+
+  @override
+  String get termsConditionsDesc => 'Read our terms of use';
+
+  @override
+  String get privacyPolicyDesc => 'How we handle your data';
+
+  @override
+  String get aboutDesc => 'About OG Plus';
 
   @override
   String get faqs => 'FAQs';

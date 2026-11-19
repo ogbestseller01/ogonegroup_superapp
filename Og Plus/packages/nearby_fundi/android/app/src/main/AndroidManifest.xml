@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- ═══════════════════════════════════════════════════════
          HARDWARE FEATURES
@@ -32,9 +31,11 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <!-- Android 12 (API 32) and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
     <!-- ═══════════════════════════════════════════════════════
@@ -61,8 +62,8 @@
          APPLICATION CONFIGURATION
          ═══════════════════════════════════════════════════════ -->
     <application
-        android:label="NearbyFundi"
         android:name="${applicationName}"
+        android:label="NearbyFundi"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:allowBackup="true"
@@ -71,10 +72,6 @@
 
         <!-- ═══════════════════════════════════════════════════
              GOOGLE SIGN-IN ANDROID 14 FIX
-             ═══════════════════════════════════════════════════
-             These flags disable the new Android 14 Credential
-             Manager, which has a bug where it silently cancels
-             the login flow. This forces the legacy stable flow.
              ═══════════════════════════════════════════════════ -->
         <meta-data
             android:name="com.google.android.gms.credentials.API_ENABLED"
@@ -108,13 +105,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- ═══════════════════════════════════════════════════
-             FIREBASE CLOUD MESSAGING METADATA
-             ═══════════════════════════════════════════════════
-             ⚠️ IMPORTANT: Do NOT declare `default_notification_icon`
-             or `default_notification_channel_id` as meta-data here.
-             ═══════════════════════════════════════════════════ -->
 
         <!-- FILE PROVIDER -->
         <provider

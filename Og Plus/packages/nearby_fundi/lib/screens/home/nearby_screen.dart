@@ -37,6 +37,7 @@ import '../../config/tanzania_map.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/service.dart';
 import '../../models/technician.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/technician_provider.dart';
@@ -298,13 +299,12 @@ class _NearbyScreenState extends State<NearbyScreen>
       duration: const Duration(milliseconds: 1600),
     );
 
-    _loadSearchHistory();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final settings = context.read<SettingsProvider>();
       _currentLocale = settings.locale;
       context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
+      _loadSearchHistory(); // Moved inside the post-frame callback
     });
   }
 
@@ -411,8 +411,13 @@ class _NearbyScreenState extends State<NearbyScreen>
   }
 
   // ==============================================================
-  // SEARCH HISTORY
+  // SEARCH HISTORY (PER-USER)
   // ==============================================================
+
+  String get _historyKey {
+    final uid = context.read<AuthProvider>().user?.id;
+    return '${NearbyConstants.historyPrefsKey}_${uid ?? 'guest'}';
+  }
 
   Future<SharedPreferences> _getPrefs() async =>
       _prefs ??= await SharedPreferences.getInstance();
@@ -420,36 +425,27 @@ class _NearbyScreenState extends State<NearbyScreen>
   Future<void> _loadSearchHistory() async {
     final prefs = await _getPrefs();
     if (!mounted) return;
-    setState(() {
-      _searchHistory =
-          prefs.getStringList(NearbyConstants.historyPrefsKey) ?? [];
-    });
+    setState(() => _searchHistory = prefs.getStringList(_historyKey) ?? []);
   }
 
   Future<void> _saveToHistory(String place) async {
     if (place.trim().isEmpty) return;
-
     final prefs = await _getPrefs();
-    final history = List<String>.from(
-      prefs.getStringList(NearbyConstants.historyPrefsKey) ?? const [],
-    );
-
+    final key = _historyKey;
+    final history = List<String>.from(prefs.getStringList(key) ?? const []);
     history.remove(place);
     history.insert(0, place);
-
     if (history.length > NearbyConstants.maxHistoryEntries) {
       history.removeLast();
     }
-
-    await prefs.setStringList(NearbyConstants.historyPrefsKey, history);
-
+    await prefs.setStringList(key, history);
     if (!mounted) return;
     setState(() => _searchHistory = history);
   }
 
   Future<void> _clearHistory() async {
     final prefs = await _getPrefs();
-    await prefs.remove(NearbyConstants.historyPrefsKey);
+    await prefs.remove(_historyKey);
     if (!mounted) return;
     setState(() => _searchHistory = []);
   }

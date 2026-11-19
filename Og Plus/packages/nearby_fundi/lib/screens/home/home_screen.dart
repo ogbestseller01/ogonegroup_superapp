@@ -1,3 +1,5 @@
+// lib/screens/home/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -47,8 +49,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String _currentLocale = 'en';
 
-  late final NotificationProvider _notif;
-  late final ChatProvider _chat;
+  // Changed from late final to late to allow swapping providers on session change
+  late NotificationProvider _notif;
+  late ChatProvider _chat;
   bool _pollingActive = false;
 
   static const double _tabletBreakpoint = 700;
@@ -579,7 +582,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final user = context.watch<AuthProvider>().user;
 
     final name = user?.name ?? l10n.guestUser;
-    final phone = user?.phone ?? l10n.notLoggedIn;
+
+    // Google users often have no phone, so fall back to email.
+    final phone = (user?.phone?.isNotEmpty ?? false)
+        ? user!.phone!
+        : (user?.email.isNotEmpty ?? false)
+        ? user!.email
+        : l10n.notLoggedIn;
+
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final ink = _ink(theme);
 
@@ -699,7 +709,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
 
                   // Mini apps hosted inside NearbyFundi (registry-driven)
-                  // Restored to display everything from NfMiniApps.all
                   for (final app in NfMiniApps.all)
                     _ModernDrawerItem(
                       icon: app.icon,
@@ -944,6 +953,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsProvider>();
     final loggedIn = context.watch<AuthProvider>().isLoggedIn;
+
+    // Rebuild only when the provider INSTANCE changes (new session),
+    // not on every notification/chat update.
+    _notif = context.select<NotificationProvider, NotificationProvider>((p) => p);
+    _chat = context.select<ChatProvider, ChatProvider>((p) => p);
 
     // Start / stop the background checks with login state.
     if (loggedIn != _pollingActive) {

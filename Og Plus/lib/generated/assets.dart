@@ -19,8 +19,6 @@ class $AssetsImagesGen {
   const $AssetsImagesGen();
 
   final $AssetsAppsGen apps = const $AssetsAppsGen();
-  final AssetGenImage manoTelefonoRemovebgPreview =
-      const AssetGenImage('assets/images/ogplus.png');
   final AssetGenImage appIcon =
       const AssetGenImage('assets/images/app_icon.png');
   final AssetGenImage appIconForeground =
@@ -29,6 +27,7 @@ class $AssetsImagesGen {
       const AssetGenImage('assets/images/englishflug.png');
   final AssetGenImage homeimg =
       const AssetGenImage('assets/images/homeimg.png');
+  final AssetGenImage ogplus = const AssetGenImage('assets/images/ogplus.png');
   final AssetGenImage sliderimg =
       const AssetGenImage('assets/images/sliderimg.png');
   final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');

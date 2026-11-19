@@ -20,7 +20,7 @@ plugins {
 }
 
 android {
-    namespace = "com.fundapp"
+    namespace = "com.ogonegroup.fundiapp"
     compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.fundapp"
+        applicationId = "com.ogonegroup.fundiapp"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode

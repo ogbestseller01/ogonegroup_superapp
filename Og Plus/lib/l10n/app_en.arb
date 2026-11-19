@@ -142,6 +142,25 @@
   "bannerFoodTitle": "Food & laundry, delivered",
   "bannerFoodSubtitle": "Msosi Chap Chap and Mfua Nguo at your door",
 
+
+    "navSettings": "Settings",
+    "settingsSubtitle": "Language, appearance & more",
+
+    "rateAppTitle": "Rate the app",
+    "helpCenterDesc": "Browse help articles",
+    "faqsDesc": "Answers to common questions",
+    "contactUsDesc": "Reach our support team",
+    "sendFeedbackDesc": "Tell us what you think",
+    "termsConditionsDesc": "Read our terms of use",
+    "privacyPolicyDesc": "How we handle your data",
+    "aboutDesc": "About OG Plus",
+    "appUpdatesDesc": "See the latest app updates",
+
+    "english": "English",
+    "swahili": "Swahili",
+    "language": "Language",
+    "selectLanguage": "Select language",
+
   "faqs": "FAQs",
   "searchFaqs": "Search FAQs",
   "noFaqs": "No FAQs available yet.",

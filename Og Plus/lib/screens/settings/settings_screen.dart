@@ -5,9 +5,13 @@ import 'package:provider/provider.dart';
 import '../../config/app_strings.dart';
 import '../../config/app_theme.dart';
 import '../../providers/settings_provider.dart';
-import '../../widgets/page_skeletons.dart';
 import '../../widgets/language_sheet.dart';
+import '../../widgets/page_skeletons.dart';
 
+/// Focused preferences screen (language, appearance, notifications, cache).
+/// All static pages — About, Terms, Privacy, Help Center, FAQs, Contact,
+/// Feedback, App Updates and Rate App — live in the Settings tab
+/// (`AccountTab`), so this screen does not duplicate them.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -31,7 +35,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final settings = context.watch<SettingsProvider>();
     final t = context.t;
-    final lang = settings.locale.languageCode.toUpperCase();
+
+    // Fully localised language name for the trailing chip.
+    // In EN: "English" / "Swahili". In SW: "Kiingereza" / "Kiswahili".
+    final langName =
+    settings.locale.languageCode == 'sw' ? t.swahili : t.english;
 
     return Scaffold(
       backgroundColor:
@@ -63,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           key: const ValueKey('content'),
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
           children: [
-            // ========== GENERAL (LANGUAGE) ==========
+            // ========== LANGUAGE ==========
             _SectionTitle(title: t.language),
             const SizedBox(height: 12),
             _SettingsCard(
@@ -71,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsAction(
                   title: t.language,
                   icon: Icons.language_rounded,
-                  trailingText: lang,
+                  trailingText: langName,
                   onTap: () => showLanguageSheet(context),
                 ),
               ],
@@ -98,7 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: t.lightMode,
                   icon: Icons.light_mode_rounded,
                   selected: settings.themeMode == ThemeMode.light,
-                  onTap: () => settings.setThemeMode(ThemeMode.light),
+                  onTap: () =>
+                      settings.setThemeMode(ThemeMode.light),
                 ),
                 const _Divider(),
                 _ThemeOption(
@@ -106,7 +115,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: t.darkMode,
                   icon: Icons.dark_mode_rounded,
                   selected: settings.themeMode == ThemeMode.dark,
-                  onTap: () => settings.setThemeMode(ThemeMode.dark),
+                  onTap: () =>
+                      settings.setThemeMode(ThemeMode.dark),
                 ),
               ],
             ),
@@ -139,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 28),
 
-            // ========== PRIVACY & DATA (CLEAR CACHE ONLY) ==========
+            // ========== PRIVACY & DATA ==========
             _SectionTitle(title: t.privacyData),
             const SizedBox(height: 12),
             _SettingsCard(
@@ -151,6 +161,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _showClearCacheDialog(context, settings),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // ========== FOOTER (app name + version) ==========
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.settings_rounded,
+                    size: 24,
+                    color: isDark
+                        ? Colors.white38
+                        : Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    t.appName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? Colors.white70
+                          : Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    // Hardcoded version to fix the AppConfig error
+                    '${t.version} 1.0.0',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? Colors.white38
+                          : Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -189,7 +237,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-// ========== HELPER WIDGETS ==========
+// ============================================================
+// HELPER WIDGETS
+// ============================================================
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -222,7 +272,8 @@ class _SettingsCard extends StatelessWidget {
         color: isDark ? AppTheme.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: isDark
-            ? Border.all(color: AppTheme.darkBorder.withValues(alpha: 0.6))
+            ? Border.all(
+            color: AppTheme.darkBorder.withValues(alpha: 0.6))
             : null,
         boxShadow: isDark
             ? null
@@ -476,7 +527,8 @@ class _SettingsSwitch extends StatelessWidget {
               value: value,
               onChanged: enabled ? onChanged : null,
               activeColor: AppTheme.primary,
-              activeTrackColor: AppTheme.primary.withValues(alpha: 0.45),
+              activeTrackColor:
+              AppTheme.primary.withValues(alpha: 0.45),
               inactiveThumbColor:
               isDark ? Colors.grey.shade500 : Colors.grey.shade400,
               inactiveTrackColor:

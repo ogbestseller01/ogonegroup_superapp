@@ -1,4 +1,6 @@
 PODS:
+  - biometric_security (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_app_badger_plus (1.3.0):
     - Flutter
@@ -24,6 +26,7 @@ PODS:
   - PusherTweetNacl (1.2.0)
 
 DEPENDENCIES:
+  - biometric_security (from `.symlinks/plugins/biometric_security/ios`)
   - Flutter (from `Flutter`)
   - flutter_app_badger_plus (from `.symlinks/plugins/flutter_app_badger_plus/ios`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
@@ -39,6 +42,8 @@ SPEC REPOS:
     - PusherTweetNacl
 
 EXTERNAL SOURCES:
+  biometric_security:
+    :path: ".symlinks/plugins/biometric_security/ios"
   Flutter:
     :path: Flutter
   flutter_app_badger_plus:
@@ -53,6 +58,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/pusher_channels_flutter/ios"
 
 SPEC CHECKSUMS:
+  biometric_security: 9dc8a0d52131db6197eb51381e8642d224c60963
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_app_badger_plus: aeb79cff76445e6639defd8d2b039c8c95d66c8e
   flutter_inappwebview_ios: b89ba3482b96fb25e00c967aae065701b66e9b99

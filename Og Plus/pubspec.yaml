@@ -1,8 +1,7 @@
-
 name: og_plus
 description: Og Plus - OG ONE GROUP Super App
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -29,6 +28,7 @@ dependencies:
   firebase_core: ^4.15.0
   firebase_messaging: ^16.3.0
   flutter_local_notifications: ^19.4.1
+  package_info_plus: ^8.0.0
 
   # Utilities
   timeago: ^3.7.1
@@ -82,7 +82,6 @@ dependency_overrides:
   connectivity_plus: ^7.2.0
   emoji_picker_flutter: ^4.4.0
   font_awesome_flutter: ^10.8.0
-  path_provider: ^2.1.4
 
   # Record family
   record: ^7.1.1

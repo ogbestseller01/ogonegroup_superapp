@@ -121,10 +121,12 @@ class HomeTabState extends State<HomeTab> {
     final sorted = availableFirst(MiniAppService.instance.apps);
     if (q.isEmpty) return sorted;
     return sorted
-        .where((a) =>
-    t.serviceTitle(a.slug).toLowerCase().contains(q) ||
-        a.slug.toLowerCase().contains(q) ||
-        a.name.toLowerCase().contains(q))
+        .where(
+          (a) =>
+      t.serviceTitle(a.slug).toLowerCase().contains(q) ||
+          a.slug.toLowerCase().contains(q) ||
+          a.name.toLowerCase().contains(q),
+    )
         .toList();
   }
 

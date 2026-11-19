@@ -20,7 +20,7 @@ const String _kAssetPackage = 'nearbyfundi_sdk';
 const String _kAppIconAsset = 'assets/icons/app_icon.png';
 const String _kAppIconForegroundAsset =
     'assets/icons/app_icon_foreground.png';
-const String _kGoogleIconAsset = 'assets/icons/google_signin.png';
+const String _kGoogleIconAsset = 'assets/icons/google_logo.png';
 
 const Color _kFieldTint = Color(0xFFF4F7F6);
 

@@ -270,6 +270,36 @@ class AppLocalizationsSw extends AppLocalizations {
       'Msosi Chap Chap na Mfua Nguo mlangoni mwako';
 
   @override
+  String get navSettings => 'Mipangilio';
+
+  @override
+  String get settingsSubtitle => 'Lugha, muonekano na zaidi';
+
+  @override
+  String get rateAppTitle => 'Kadiria programu';
+
+  @override
+  String get helpCenterDesc => 'Vinjari makala za msaada';
+
+  @override
+  String get faqsDesc => 'Majibu ya maswali ya kawaida';
+
+  @override
+  String get contactUsDesc => 'Wasiliana na timu yetu ya msaada';
+
+  @override
+  String get sendFeedbackDesc => 'Tuambie unachofikiri';
+
+  @override
+  String get termsConditionsDesc => 'Soma vigezo vyetu vya matumizi';
+
+  @override
+  String get privacyPolicyDesc => 'Jinsi tunavyoshughulikia data yako';
+
+  @override
+  String get aboutDesc => 'Kuhusu OG Plus';
+
+  @override
   String get faqs => 'Maswali Yanayoulizwa Mara kwa Mara';
 
   @override

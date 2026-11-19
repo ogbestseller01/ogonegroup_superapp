@@ -3,19 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>217153819583-7jv5l9jai0vu02euuldqkdodssqkqfrl.apps.googleusercontent.com</string>
+	<string>911035937686-71vp8hnmc6sn2ggmgu1ipvo46p416tlm.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCuamKYH11O-_DMpyyOuuI6DDTRSoy49i0</string>
+	<string>AIzaSyAUTJ7rruTIu8aVCjVISRzLk-hTMg_7lNA</string>
 	<key>GCM_SENDER_ID</key>
-	<string>217153819583</string>
+	<string>911035937686</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.ogonesuperapp</string>
+	<string>com.ogonegroup.ogplusapp</string>
 	<key>PROJECT_ID</key>
-	<string>nearbyfundi-8032f</string>
+	<string>og-plus-515119</string>
 	<key>STORAGE_BUCKET</key>
-	<string>nearbyfundi-8032f.firebasestorage.app</string>
+	<string>og-plus-515119.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -27,6 +27,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:217153819583:ios:5bdbce08eb57f8ae11c70a</string>
+	<string>1:911035937686:ios:af239c28439b0acdfaa3b7</string>
 </dict>
 </plist>
