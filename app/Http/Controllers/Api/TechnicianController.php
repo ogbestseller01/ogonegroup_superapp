@@ -69,7 +69,6 @@ class TechnicianController extends BaseApiController
 
         $email = $data['email'] ?? null;
 
-        // ── Conflict checks (soft-delete aware — the fix) ──
         if ($conflict = $this->findUserByPhone($data['phone'])) {
             return $this->errorResponse($this->phoneConflictMessage($conflict), 422);
         }
@@ -384,7 +383,6 @@ class TechnicianController extends BaseApiController
             return $this->errorResponse('Next of kin details are required.', 422);
         }
 
-        // ── Conflict checks (soft-delete aware — the real fix) ──
         if ($conflict = $this->findUserByPhone($draft->phone)) {
             return $this->errorResponse($this->phoneConflictMessage($conflict), 422);
         }
@@ -965,12 +963,6 @@ class TechnicianController extends BaseApiController
     // ═══════════════════════════════════════════════════════
     // PRIVATE — user conflict helpers (soft-delete aware)
     // ═══════════════════════════════════════════════════════
-
-    /**
-     * Base query for User that includes soft-deleted rows when the model supports them.
-     * This prevents the false "already registered" error from stale / soft-deleted rows
-     * being silently ignored at the check point but still blocked by the DB unique index.
-     */
     private function userQuery(): Builder
     {
         $usesSoftDeletes = in_array(
@@ -1069,10 +1061,6 @@ class TechnicianController extends BaseApiController
         return true;
     }
 
-    /**
-     * Returns all common variants of a phone number so we catch users stored
-     * in any historical format (0…, 255…, +255…, or the raw input as-is).
-     */
     private function phoneVariants(string $phone): array
     {
         $raw = trim($phone);
@@ -1193,7 +1181,7 @@ class TechnicianController extends BaseApiController
     }
 
     // ═══════════════════════════════════════════════════════
-    // PRIVATE — OTP delivery
+    // PRIVATE — OTP delivery (reads result array directly)
     // ═══════════════════════════════════════════════════════
     private function deliverVerificationOtp(
         User $user,
@@ -1201,75 +1189,39 @@ class TechnicianController extends BaseApiController
         string $plainOtp,
         OtpDeliveryService $otpDelivery
     ): array {
-        $smsSent        = false;
-        $primaryChannel = 'none';
-        $primarySentTo  = null;
+        try {
+            $result = $otpDelivery->deliver(
+                $user,
+                $otp,
+                method_exists($otp, 'getVerificationUrl') ? $otp->getVerificationUrl() : null
+            );
+        } catch (\Throwable $e) {
+            Log::error('OTP delivery threw unexpectedly', [
+                'user_id' => $user->id,
+                'phone'   => $user->phone,
+                'email'   => $user->email,
+                'error'   => $e->getMessage(),
+            ]);
 
-        if (!empty($user->phone)) {
-            try {
-                $result = $otpDelivery->deliver(
-                    $user,
-                    $otp,
-                    method_exists($otp, 'getVerificationUrl') ? $otp->getVerificationUrl() : null
-                );
-
-                $reported = $result['channel'] ?? 'sms';
-
-                if ($reported === 'sms') {
-                    $smsSent        = true;
-                    $primaryChannel = 'sms';
-                    $primarySentTo  = $result['otp_sent_to'] ?? $user->phone;
-                } elseif ($reported === 'email') {
-                    $primaryChannel = 'email';
-                    $primarySentTo  = $result['otp_sent_to'] ?? $user->email;
-                }
-            } catch (\Throwable $e) {
-                Log::warning('SMS OTP delivery failed', [
-                    'phone' => $user->phone,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            return [
+                'sms_sent'        => false,
+                'email_sent'      => false,
+                'primary_channel' => 'none',
+                'primary_sent_to' => null,
+                'message'         => 'We could not deliver the verification code. Please use the resend option.',
+            ];
         }
 
-        $emailSent = false;
-        if (!empty($user->email) && $primaryChannel !== 'email') {
-            try {
-                $this->sendOtpEmail($user, $plainOtp);
-                $emailSent = true;
-
-                if ($primaryChannel === 'none') {
-                    $primaryChannel = 'email';
-                    $primarySentTo  = $user->email;
-                }
-            } catch (\Throwable $e) {
-                Log::warning('Email OTP delivery failed', [
-                    'email' => $user->email,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        } elseif ($primaryChannel === 'email') {
-            $emailSent = true;
-        }
+        $channel = $result['channel'] ?? 'failed';
+        $smsSent = (bool) ($result['sms_sent'] ?? ($channel === 'sms'));
 
         return [
             'sms_sent'        => $smsSent,
-            'email_sent'      => $emailSent,
-            'primary_channel' => $primaryChannel,
-            'primary_sent_to' => $primarySentTo,
-            'message'         => $this->buildOtpMessage($user, $smsSent, $emailSent),
+            'email_sent'      => (bool) ($result['email_sent'] ?? ($channel === 'email')),
+            'primary_channel' => $channel === 'failed' ? 'none' : $channel,
+            'primary_sent_to' => $result['otp_sent_to'] ?? null,
+            'message'         => $result['message'] ?? 'Verification code generated.',
         ];
-    }
-
-    private function sendOtpEmail(User $user, string $plainOtp): void
-    {
-        Mail::raw(
-            "Your Nearby Fundi verification code is: {$plainOtp}\n\n"
-            . "This code expires in 10 minutes.\n"
-            . "If you didn't request it, please ignore this email.",
-            function ($message) use ($user) {
-                $message->to($user->email)->subject('Your Nearby Fundi Verification Code');
-            }
-        );
     }
 
     private function buildOtpMessage(User $user, bool $sms, bool $email): string
@@ -1288,7 +1240,7 @@ class TechnicianController extends BaseApiController
     }
 
     // ═══════════════════════════════════════════════════════
-    // PRIVATE — approval (no free trial / no subscription)
+    // PRIVATE — approval
     // ═══════════════════════════════════════════════════════
     private function approveTechnician(
         $id,
@@ -1313,7 +1265,6 @@ class TechnicianController extends BaseApiController
             return $this->errorResponse('Technician has no user account.', 422);
         }
 
-        // 1) Commit the state change — failure here IS an error.
         try {
             $this->activateApprovedTechnician($technician);
         } catch (\Throwable $e) {
@@ -1324,8 +1275,6 @@ class TechnicianController extends BaseApiController
             return $this->serverError('Approval failed: ' . $e->getMessage());
         }
 
-        // 2) Best-effort side effects — never undo the approval.
-        //    ApprovalNotificationService sends in-app + FCM + SMS + email.
         try {
             $notifier->notifyApproved($technician->user, null, $technician->id, $event);
         } catch (\Throwable $e) {
@@ -1335,8 +1284,6 @@ class TechnicianController extends BaseApiController
                 'at'            => $e->getFile() . ':' . $e->getLine(),
             ]);
         }
-
-        // (SMS is already inside notifyApproved() → sendSms(); do not call it again.)
 
         $this->logAudit(
             "{$event}_technician",
@@ -1391,7 +1338,7 @@ class TechnicianController extends BaseApiController
     }
 
     // ═══════════════════════════════════════════════════════
-    // PRIVATE — geocoding helper (used by registerStep1)
+    // PRIVATE — geocoding helper
     // ═══════════════════════════════════════════════════════
     private function validateAndGeocodeArea(
         string $area,
