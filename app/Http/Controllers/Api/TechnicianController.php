@@ -1313,17 +1313,37 @@ class TechnicianController extends BaseApiController
             return $this->errorResponse('Technician has no user account.', 422);
         }
 
+        // 1) Commit the state change — failure here IS an error.
         try {
             $this->activateApprovedTechnician($technician);
         } catch (\Throwable $e) {
-            Log::error('Technician approval failed', ['technician_id' => $id, 'error' => $e->getMessage()]);
+            Log::error('Technician approval failed', [
+                'technician_id' => $id,
+                'error'         => $e->getMessage(),
+            ]);
             return $this->serverError('Approval failed: ' . $e->getMessage());
         }
 
-        $notifier->notifyApproved($technician->user, null, $technician->id, $event);
-        $sms->notifyFundiApproved($technician->user);
+        // 2) Best-effort side effects — never undo the approval.
+        //    ApprovalNotificationService sends in-app + FCM + SMS + email.
+        try {
+            $notifier->notifyApproved($technician->user, null, $technician->id, $event);
+        } catch (\Throwable $e) {
+            Log::warning('Approval notifier failed', [
+                'technician_id' => $technician->id,
+                'error'         => $e->getMessage(),
+                'at'            => $e->getFile() . ':' . $e->getLine(),
+            ]);
+        }
 
-        $this->logAudit("{$event}_technician", 'technician', $technician->id, "Technician #{$technician->id} {$event}");
+        // (SMS is already inside notifyApproved() → sendSms(); do not call it again.)
+
+        $this->logAudit(
+            "{$event}_technician",
+            'technician',
+            $technician->id,
+            "Technician #{$technician->id} {$event}"
+        );
 
         return $this->successResponse($technician->fresh()->load('user'), $message);
     }

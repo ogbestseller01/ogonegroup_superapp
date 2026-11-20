@@ -18,6 +18,10 @@ use Throwable;
  * Call it AFTER the approval transaction has committed. Every channel is
  * wrapped in its own try/catch, so one failing channel never blocks the
  * others and never undoes the approval.
+ *
+ * NOTE: Subscription is now OPTIONAL. Approval no longer requires a trial
+ * / subscription row to exist. Pass null (or omit) and the service will
+ * simply notify without any trial wording.
  */
 class ApprovalNotificationService
 {
@@ -26,31 +30,36 @@ class ApprovalNotificationService
     }
 
     /**
-     * @param string $context 'approved' (approve endpoint) or 'verified' (verify endpoint).
-     *                        Only changes the title and the notification "type" so the
-     *                        mobile app keeps receiving the same type it always did.
+     * @param string|null $context 'approved' (approve endpoint) or 'verified' (verify endpoint).
+     * @param Subscription|null $subscription Optional. When null, no trial wording is sent.
      *
      * @return array{in_app: bool, sms: bool, email: bool}
      */
     public function notifyApproved(
         User $user,
-        Subscription $subscription,
+        ?Subscription $subscription = null,
         ?int $technicianId = null,
         string $context = 'approved'
     ): array {
-        $trialDays = $this->trialDays($subscription);
+        $trialDays = $this->trialDays($subscription);   // 0 when null
         $verified  = $context === 'verified';
 
         $title = $verified ? 'Account Verified 🎉' : 'Account Approved 🎉';
         $type  = $verified ? 'technician_verified' : 'technician_approved';
-        $body  = 'Your fundi account has been ' . ($verified ? 'verified' : 'approved')
-               . "! You now have a {$trialDays}-day free trial.";
+
+        // Only mention a trial when one actually exists.
+        $verb = $verified ? 'verified' : 'approved';
+        $body = $trialDays > 0
+            ? "Your fundi account has been {$verb}! You now have a {$trialDays}-day free trial."
+            : "Your fundi account has been {$verb}! Open the app to start getting jobs.";
+
+        $data = ['technician_id' => $technicianId];
+        if ($subscription && $subscription->expiry_date) {
+            $data['trial_expires'] = $subscription->expiry_date->toIso8601String();
+        }
 
         $result = [
-            'in_app' => $this->sendInApp($user, $title, $body, $type, [
-                'technician_id' => $technicianId,
-                'trial_expires' => $subscription->expiry_date->toIso8601String(),
-            ]),
+            'in_app' => $this->sendInApp($user, $title, $body, $type, $data),
             'sms'    => $this->sendSms($user, $trialDays),
             'email'  => $this->sendEmail($user, $trialDays, $subscription),
         ];
@@ -113,14 +122,14 @@ class ApprovalNotificationService
     }
 
     /** Email is optional at registration, so skip quietly when there is none. */
-    protected function sendEmail(User $user, int $trialDays, Subscription $subscription): bool
+    protected function sendEmail(User $user, int $trialDays, ?Subscription $subscription): bool
     {
         if (empty($user->email)) {
             return false;
         }
 
         try {
-            $user->notify(new FundiAccountApproved($trialDays, $subscription->expiry_date));
+            $user->notify(new FundiAccountApproved($trialDays, $subscription?->expiry_date));
             return true;
         } catch (Throwable $e) {
             Log::error('Approval email failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
@@ -132,11 +141,17 @@ class ApprovalNotificationService
     // HELPERS
     // ──────────────────────────────────────────────
 
-    /** Trial length in whole days (minimum 1), taken from the subscription's expiry. */
-    protected function trialDays(Subscription $subscription): int
+    /** Trial length in whole days; 0 when no subscription / expiry exists. */
+    protected function trialDays(?Subscription $subscription): int
     {
-        $days = (int) now()->startOfDay()->diffInDays($subscription->expiry_date->copy()->startOfDay());
+        if (!$subscription || !$subscription->expiry_date) {
+            return 0;
+        }
 
-        return max(1, $days);
+        $days = (int) now()->startOfDay()->diffInDays(
+            $subscription->expiry_date->copy()->startOfDay()
+        );
+
+        return max(0, $days);
     }
 }
