@@ -462,8 +462,12 @@ class AuthController extends BaseApiController
             $user->technician->makeVisible('nida');
         }
 
+        $userData = $user->only(['id', 'name', 'email', 'phone', 'status', 'locale', 'fcm_device_token']);
+        // Keeps the Google photo after an app restart / profile refresh.
+        $userData['profile_photo'] = $user->google_avatar;
+
         return $this->successResponse([
-            'user'       => $user->only(['id', 'name', 'email', 'phone', 'status', 'locale', 'fcm_device_token']),
+            'user'       => $userData,
             'roles'      => $user->getRoleNames(),
             'technician' => $user->technician,
         ]);
@@ -764,7 +768,7 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-    // GOOGLE SIGN-IN (mobile ID-token flow)
+    // GOOGLE SIGN-IN (mobile ID-token flow)  ← REFINED
     // ──────────────────────────────────────────────
 
     public function googleLogin(Request $request)
@@ -798,7 +802,7 @@ class AuthController extends BaseApiController
             return $this->forbidden('This account has been deleted. Please contact support.');
         }
 
-        // Prevent different Google account takeover
+        // Prevent a different Google account taking over this email
         if ($user && $user->google_id && $user->google_id !== $googleId) {
             return $this->forbidden('This email is linked to a different Google account.');
         }
@@ -837,8 +841,8 @@ class AuthController extends BaseApiController
                     && empty($user->google_id);
 
                 if ($neverVerified) {
-                    // Someone may have pre-registered this email with a password they
-                    // know. Google proves the real owner now, so kill that credential.
+                    // Someone may have pre-registered this email with a password.
+                    // Google proves the real owner, so kill that credential.
                     $user->forceFill(['password' => Hash::make(Str::random(40))]);
                     $user->tokens()->delete();
                     UserSession::where('user_id', $user->id)->update(['is_active' => false]);
@@ -848,7 +852,16 @@ class AuthController extends BaseApiController
                     'google_id'         => $user->google_id ?: $googleId,
                     'google_avatar'     => $picture ?: $user->google_avatar,
                     'email_verified_at' => $user->email_verified_at ?: now(),
-                ])->save();
+                ]);
+
+                // Email is now proven: activate customers still waiting on
+                // verification. Only 'pending' is touched, so admin-suspended
+                // accounts stay suspended. Fundis still need admin approval.
+                if ($user->status === 'pending' && !$user->hasRole('FUNDI')) {
+                    $user->forceFill(['status' => 'active', 'is_active' => true]);
+                }
+
+                $user->save();
             }
 
             DB::commit();
