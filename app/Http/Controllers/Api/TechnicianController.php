@@ -14,6 +14,8 @@ use App\Services\GeocodingService;
 use App\Services\OtpDeliveryService;
 use App\Services\SmsNotificationService;
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +32,6 @@ class TechnicianController extends BaseApiController
 
     // ═══════════════════════════════════════════════════════
     // STEP 1 — create draft + send OTP (NO User row)
-    // Requires: name, email/phone, password, area, service_ids
     // ═══════════════════════════════════════════════════════
     public function registerStep1(
         Request $request,
@@ -58,23 +59,22 @@ class TechnicianController extends BaseApiController
             'profile_photo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'fcm_device_token' => 'nullable|string|max:4096',
 
-            // Location
             'area'             => 'required|string|max:255',
             'latitude'         => 'nullable|numeric|between:-90,90',
             'longitude'        => 'nullable|numeric|between:-180,180',
 
-            // Services the fundi offers — must pick at least one
             'service_ids'      => 'required|array|min:1',
             'service_ids.*'    => 'integer|exists:services,id',
         ]);
 
         $email = $data['email'] ?? null;
 
-        if (User::whereIn('phone', $this->phoneVariants($data['phone']))->exists()) {
-            return $this->errorResponse('This phone number is already registered.', 422);
+        // ── Conflict checks (soft-delete aware — the fix) ──
+        if ($conflict = $this->findUserByPhone($data['phone'])) {
+            return $this->errorResponse($this->phoneConflictMessage($conflict), 422);
         }
-        if ($email && User::where('email', $email)->exists()) {
-            return $this->errorResponse('This email is already registered.', 422);
+        if ($email && ($conflict = $this->findUserByEmail($email))) {
+            return $this->errorResponse($this->emailConflictMessage($conflict), 422);
         }
 
         $coords = $this->validateAndGeocodeArea(
@@ -84,7 +84,6 @@ class TechnicianController extends BaseApiController
             $geocoder
         );
 
-        // Deduplicate and cast to int
         $serviceIds = collect($data['service_ids'])
             ->map(fn ($id) => (int) $id)
             ->unique()
@@ -328,9 +327,20 @@ class TechnicianController extends BaseApiController
 
         abort_if($draft->registration_step < 4, 422, 'Complete face capture first.');
 
+        $request->merge([
+            'next_of_kin_phone' => $this->normalizePhone((string) $request->input('next_of_kin_phone', '')),
+        ]);
+
         $request->validate([
             'next_of_kin_name'         => 'required|string|max:255',
-            'next_of_kin_phone'        => 'required|string|max:20',
+            'next_of_kin_phone'        => [
+                'required', 'string',
+                function ($attr, $value, $fail) {
+                    if (!$this->isValidPhone($value)) {
+                        $fail('Enter a valid next-of-kin phone number.');
+                    }
+                },
+            ],
             'next_of_kin_relationship' => 'required|string|max:100',
         ]);
 
@@ -346,7 +356,7 @@ class TechnicianController extends BaseApiController
 
     // ═══════════════════════════════════════════════════════
     // STEP 6 — Creates User + Technician + services atomically
-    //          then emails every ADMINISTRATOR (name, area, services)
+    //          then emails every ADMINISTRATOR
     // ═══════════════════════════════════════════════════════
     public function registerStep6(Request $request)
     {
@@ -374,11 +384,12 @@ class TechnicianController extends BaseApiController
             return $this->errorResponse('Next of kin details are required.', 422);
         }
 
-        if (User::whereIn('phone', $this->phoneVariants($draft->phone))->exists()) {
-            return $this->errorResponse('Phone number already registered.', 422);
+        // ── Conflict checks (soft-delete aware — the real fix) ──
+        if ($conflict = $this->findUserByPhone($draft->phone)) {
+            return $this->errorResponse($this->phoneConflictMessage($conflict), 422);
         }
-        if ($draft->email && User::where('email', $draft->email)->exists()) {
-            return $this->errorResponse('Email already registered.', 422);
+        if ($draft->email && ($conflict = $this->findUserByEmail($draft->email))) {
+            return $this->errorResponse($this->emailConflictMessage($conflict), 422);
         }
         if (Technician::withTrashed()->where('nida_hash', Technician::nidaHash($draft->nida))->exists()) {
             return $this->errorResponse('This ID number has already been registered.', 422);
@@ -430,7 +441,6 @@ class TechnicianController extends BaseApiController
                 'is_online'                => false,
             ]);
 
-            // Attach chosen services to the technician_services pivot
             $technician->services()->sync($draft->service_ids);
 
             $authToken = $user->createToken('mobile')->plainTextToken;
@@ -452,8 +462,8 @@ class TechnicianController extends BaseApiController
                 $msg = $e->getMessage();
                 return match (true) {
                     str_contains($msg, 'nida_hash') => $this->errorResponse('This ID number has already been registered.', 422),
-                    str_contains($msg, 'phone')     => $this->errorResponse('Phone number already registered.', 422),
-                    str_contains($msg, 'email')     => $this->errorResponse('Email already registered.', 422),
+                    str_contains($msg, 'phone')     => $this->errorResponse('This phone number is already registered. Please log in or use a different number.', 422),
+                    str_contains($msg, 'email')     => $this->errorResponse('This email is already registered. Please log in or use a different email.', 422),
                     default                         => $this->errorResponse('This registration already exists.', 422),
                 };
             }
@@ -465,7 +475,6 @@ class TechnicianController extends BaseApiController
             );
         }
 
-        // ── Post-registration side effects (never break the response) ──
         try {
             SendAdminNotificationJob::dispatch(
                 $user->name ?? 'Unknown',
@@ -477,8 +486,6 @@ class TechnicianController extends BaseApiController
             Log::warning('Post-registration side effects failed', ['error' => $e->getMessage()]);
         }
 
-        // Email all active ADMINISTRATORs: fundi name, area and services.
-        // The notifier catches its own errors, so this can never fail the request.
         FundiRegistrationNotifier::notifyAdministrators($technician);
 
         return $this->successResponse([
@@ -956,6 +963,62 @@ class TechnicianController extends BaseApiController
     }
 
     // ═══════════════════════════════════════════════════════
+    // PRIVATE — user conflict helpers (soft-delete aware)
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * Base query for User that includes soft-deleted rows when the model supports them.
+     * This prevents the false "already registered" error from stale / soft-deleted rows
+     * being silently ignored at the check point but still blocked by the DB unique index.
+     */
+    private function userQuery(): Builder
+    {
+        $usesSoftDeletes = in_array(
+            SoftDeletes::class,
+            class_uses_recursive(User::class),
+            true
+        );
+
+        return $usesSoftDeletes ? User::withTrashed() : User::query();
+    }
+
+    private function findUserByPhone(string $phone): ?User
+    {
+        return $this->userQuery()
+            ->whereIn('phone', $this->phoneVariants($phone))
+            ->first();
+    }
+
+    private function findUserByEmail(string $email): ?User
+    {
+        return $this->userQuery()
+            ->where('email', strtolower(trim($email)))
+            ->first();
+    }
+
+    private function phoneConflictMessage(User $existing): string
+    {
+        $isTrashed = method_exists($existing, 'trashed') && $existing->trashed();
+
+        return $isTrashed
+            ? 'This phone number belongs to a previously deleted account. '
+              . 'Please contact support to restore it, or use a different number.'
+            : 'This phone number is already registered. '
+              . 'Please log in, reset your password, or use a different number.';
+    }
+
+    private function emailConflictMessage(User $existing): string
+    {
+        $isTrashed = method_exists($existing, 'trashed') && $existing->trashed();
+
+        return $isTrashed
+            ? 'This email belongs to a previously deleted account. '
+              . 'Please contact support to restore it, or use a different email.'
+            : 'This email is already registered. '
+              . 'Please log in, reset your password, or use a different email.';
+    }
+
+    // ═══════════════════════════════════════════════════════
     // PRIVATE — shared admin search
     // ═══════════════════════════════════════════════════════
     private function applyAdminSearch($query, ?string $search): void
@@ -1006,16 +1069,25 @@ class TechnicianController extends BaseApiController
         return true;
     }
 
+    /**
+     * Returns all common variants of a phone number so we catch users stored
+     * in any historical format (0…, 255…, +255…, or the raw input as-is).
+     */
     private function phoneVariants(string $phone): array
     {
-        $n        = $this->normalizePhone($phone);
-        $variants = [$n, '+' . $n];
+        $raw = trim($phone);
+        $n   = $this->normalizePhone($raw);
+
+        $variants = [$n, '+' . $n, $raw];
 
         if (str_starts_with($n, '255')) {
             $variants[] = '0' . substr($n, 3);
         }
 
-        return array_values(array_unique($variants));
+        return array_values(array_unique(array_filter(
+            array_map('trim', $variants),
+            fn ($v) => $v !== ''
+        )));
     }
 
     private function resolveDraft(string $identifier, ?int $draftId): ?RegistrationDraft
