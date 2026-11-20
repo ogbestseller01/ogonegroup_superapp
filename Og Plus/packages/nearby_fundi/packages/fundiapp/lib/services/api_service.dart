@@ -1,7 +1,9 @@
 // lib/services/api_service.dart
 import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
 import '../config/app_config.dart';
 import 'storage_service.dart';
 
@@ -12,6 +14,7 @@ class ApiResponse {
   final dynamic data;
   final Map<String, dynamic>? errors;
   final bool sessionExpired;
+  final int? statusCode;
 
   ApiResponse({
     required this.success,
@@ -19,6 +22,7 @@ class ApiResponse {
     this.data,
     this.errors,
     this.sessionExpired = false,
+    this.statusCode,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) => ApiResponse(
@@ -41,8 +45,7 @@ class ApiService {
       baseUrl: AppConfig.baseUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
-      // Video uploads (up to 20 MB) need more time
-      sendTimeout: const Duration(minutes: 2),
+      sendTimeout: const Duration(minutes: 2), // video uploads up to 20 MB
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
@@ -57,8 +60,8 @@ class ApiService {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        final path = e.requestOptions.path;
-        final isRegistrationCall = path.contains('/technicians/register/');
+        final isRegistrationCall =
+        e.requestOptions.path.contains('/technicians/register/');
 
         if (e.response?.statusCode == 401 && !isRegistrationCall) {
           await StorageService.clearAuth();
@@ -69,7 +72,7 @@ class ApiService {
     ));
   }
 
-  // Used by chat_service.dart to construct full media URLs
+  /// Used by chat_service.dart to build absolute media URLs.
   String get baseUrl => _dio.options.baseUrl;
 
   // ============================================================
@@ -80,18 +83,17 @@ class ApiService {
       _post('/v1/auth/register', data: data);
 
   Future<ApiResponse> registerFundi(Map<String, dynamic> data) async {
-    if (data.containsKey('profile_photo') && data['profile_photo'] is String) {
+    if (data['profile_photo'] is String) {
       final file = File(data['profile_photo']);
       final formData = FormData();
       data.forEach((key, value) {
-        if (key != 'profile_photo') {
-          if (key == 'service_ids' && value is List) {
-            for (var id in value) {
-              formData.fields.add(MapEntry('service_ids[]', id.toString()));
-            }
-          } else if (value != null) {
-            formData.fields.add(MapEntry(key, value.toString()));
+        if (key == 'profile_photo') return;
+        if (key == 'service_ids' && value is List) {
+          for (final id in value) {
+            formData.fields.add(MapEntry('service_ids[]', id.toString()));
           }
+        } else if (value != null) {
+          formData.fields.add(MapEntry(key, value.toString()));
         }
       });
       formData.files.add(
@@ -103,10 +105,7 @@ class ApiService {
   }
 
   Future<ApiResponse> login(String identifier, String password) =>
-      _post('/v1/auth/login', data: {
-        'email': identifier,
-        'password': password,
-      });
+      _post('/v1/auth/login', data: {'email': identifier, 'password': password});
 
   Future<ApiResponse> verifyOtp(String identifier, String otp, {String? fcmToken}) =>
       _post('/v1/auth/verify-otp', data: {
@@ -220,52 +219,64 @@ class ApiService {
   // SECTION 5: 6-STEP TECHNICIAN REGISTRATION
   // ============================================================
 
+  /// Step 1 needs: name, phone, password, password_confirmation,
+  /// area, service_ids (List<int>). Optional: email, latitude, longitude,
+  /// profile_photo (File or String path).
   Future<ApiResponse> registerTechnicianStep1(
       Map<String, dynamic> data, {
         String? fcmDeviceToken,
       }) async {
     final payload = Map<String, dynamic>.from(data);
+
+    // UI-only keys, not needed by the backend
+    payload.remove('phone_country_code');
+    payload.remove('phone_local_raw');
+
     if (fcmDeviceToken != null && fcmDeviceToken.isNotEmpty) {
       payload['fcm_device_token'] = fcmDeviceToken;
     }
 
-    final hasPhoto = payload['profile_photo'] is String &&
-        (payload['profile_photo'] as String).isNotEmpty;
+    // Accept the photo as File or String path
+    final rawPhoto = payload['profile_photo'];
+    final photoPath = rawPhoto is File
+        ? rawPhoto.path
+        : (rawPhoto is String ? rawPhoto : '');
+    final hasPhoto = photoPath.isNotEmpty && File(photoPath).existsSync();
+
+    final formData = FormData();
+
+    payload.forEach((key, value) {
+      if (key == 'profile_photo' || value == null) return;
+      if (value is List) {
+        for (final item in value) {
+          formData.fields.add(MapEntry('$key[]', item.toString()));
+        }
+      } else {
+        formData.fields.add(MapEntry(key, value.toString()));
+      }
+    });
 
     if (hasPhoto) {
-      final file = File(payload['profile_photo'] as String);
-      final formData = FormData();
-
-      payload.forEach((key, value) {
-        if (key == 'profile_photo' || value == null) return;
-
-        if (value is List) {
-          for (final item in value) {
-            formData.fields.add(MapEntry('$key[]', item.toString()));
-          }
-        } else {
-          formData.fields.add(MapEntry(key, value.toString()));
-        }
-      });
-
       formData.files.add(
-        MapEntry('profile_photo', await MultipartFile.fromFile(file.path)),
+        MapEntry('profile_photo', await MultipartFile.fromFile(photoPath)),
       );
-      return _post('/v19/technicians/register/step1', data: formData);
     }
 
-    return _post('/v19/technicians/register/step1', data: payload);
+    return _post('/v19/technicians/register/step1', data: formData);
   }
 
   Future<ApiResponse> verifyDraftOtp({
     required String identifier,
     required String otp,
     int? draftId,
+    String? fcmDeviceToken,
   }) =>
       _post('/v19/technicians/register/verify-otp', data: {
         'identifier': identifier,
         'otp': otp,
         if (draftId != null) 'draft_id': draftId,
+        if (fcmDeviceToken != null && fcmDeviceToken.isNotEmpty)
+          'fcm_device_token': fcmDeviceToken,
       });
 
   Future<ApiResponse> resendDraftOtp({
@@ -426,31 +437,8 @@ class ApiService {
 
   Future<ApiResponse> createPost(Map<String, dynamic> data) async {
     final formData = FormData();
-
-    if (data['video'] != null && data['video'] is String && data['video'].isNotEmpty) {
-      final file = File(data['video']);
-      if (await file.exists()) {
-        formData.files.add(MapEntry(
-          'video',
-          await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-        ));
-      }
-    }
-
-    if (data['images'] != null && data['images'] is List) {
-      for (final path in data['images']) {
-        if (path is String && path.isNotEmpty) {
-          final file = File(path);
-          if (await file.exists()) {
-            formData.files.add(MapEntry(
-              'images[]',
-              await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-            ));
-          }
-        }
-      }
-    }
-
+    await _appendFile(formData, 'video', data['video']);
+    await _appendFiles(formData, 'images[]', data['images']);
     return _post('/v5/posts', data: formData);
   }
 
@@ -458,35 +446,13 @@ class ApiService {
     final formData = FormData();
     formData.fields.add(const MapEntry('_method', 'PUT'));
 
-    if (data['video'] != null && data['video'] is String && data['video'].isNotEmpty) {
-      final file = File(data['video']);
-      if (await file.exists()) {
-        formData.files.add(MapEntry(
-          'video',
-          await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-        ));
-      }
-    }
-
+    await _appendFile(formData, 'video', data['video']);
     if (data['remove_video'] == true) {
       formData.fields.add(const MapEntry('remove_video', '1'));
     }
+    await _appendFiles(formData, 'images[]', data['images']);
 
-    if (data['images'] != null && data['images'] is List) {
-      for (final path in data['images']) {
-        if (path is String && path.isNotEmpty) {
-          final file = File(path);
-          if (await file.exists()) {
-            formData.files.add(MapEntry(
-              'images[]',
-              await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-            ));
-          }
-        }
-      }
-    }
-
-    if (data['keep_images'] != null && data['keep_images'] is List) {
+    if (data['keep_images'] is List) {
       for (final path in data['keep_images']) {
         formData.fields.add(MapEntry('keep_images[]', path.toString()));
       }
@@ -506,15 +472,7 @@ class ApiService {
 
   Future<ApiResponse> createPortfolio(List<String> imagePaths) async {
     final formData = FormData();
-    for (final path in imagePaths) {
-      final file = File(path);
-      if (await file.exists()) {
-        formData.files.add(MapEntry(
-          'images[]',
-          await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-        ));
-      }
-    }
+    await _appendFiles(formData, 'images[]', imagePaths);
     return _post('/v3/portfolios', data: formData);
   }
 
@@ -526,19 +484,9 @@ class ApiService {
     final formData = FormData();
     formData.fields.add(const MapEntry('_method', 'PUT'));
 
-    if (newImagePaths != null && newImagePaths.isNotEmpty) {
-      for (final path in newImagePaths) {
-        final file = File(path);
-        if (await file.exists()) {
-          formData.files.add(MapEntry(
-            'images[]',
-            await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
-          ));
-        }
-      }
-    }
+    await _appendFiles(formData, 'images[]', newImagePaths);
 
-    if (deleteImageIds != null && deleteImageIds.isNotEmpty) {
+    if (deleteImageIds != null) {
       for (final imgId in deleteImageIds) {
         formData.fields.add(MapEntry('delete_image_ids[]', imgId.toString()));
       }
@@ -549,7 +497,8 @@ class ApiService {
 
   Future<ApiResponse> deletePortfolio(int id) => _delete('/v3/portfolios/$id');
 
-  Future<ApiResponse> updatePortfolioSocialLinks(int id, Map<String, dynamic> socialLinks) =>
+  Future<ApiResponse> updatePortfolioSocialLinks(
+      int id, Map<String, dynamic> socialLinks) =>
       _put('/v3/portfolios/$id/social-links', data: socialLinks);
 
   Future<ApiResponse> getPortfolios({int? technicianId, int page = 1}) =>
@@ -633,22 +582,20 @@ class ApiService {
       _post('/v23/feedback', data: data);
 
   // ============================================================
-  // SECTION 12: CHAT & MESSAGING (V14 – CLEANED)
+  // SECTION 12: CHAT & MESSAGING (V14)
   // ============================================================
 
-  Future<ApiResponse> getConversations() async {
-    return _get('/v14/chat/conversations');
-  }
+  Future<ApiResponse> getConversations() =>
+      _get('/v14/chat/conversations');
 
   Future<ApiResponse> getOrCreateConversation({
     required int customerId,
     required int fundiId,
-  }) async {
-    return _post('/v14/chat/conversation', data: {
-      'customer_id': customerId,
-      'fundi_id': fundiId,
-    });
-  }
+  }) =>
+      _post('/v14/chat/conversation', data: {
+        'customer_id': customerId,
+        'fundi_id': fundiId,
+      });
 
   Future<ApiResponse> getMessages({
     required int conversationId,
@@ -657,7 +604,7 @@ class ApiService {
     int? afterId,
     int? untilId,
     String? since,
-  }) async {
+  }) {
     final q = <String, dynamic>{'limit': '$limit'};
     if (beforeId != null) q['before_id'] = '$beforeId';
     if (afterId != null) q['after_id'] = '$afterId';
@@ -685,79 +632,67 @@ class ApiService {
     return _postMultipart('/v14/chat/send', form, onSendProgress: onSendProgress);
   }
 
-  Future<ApiResponse> markConversationAsRead(int conversationId) async {
-    return _post('/v14/chat/conversations/$conversationId/read');
-  }
+  Future<ApiResponse> markConversationAsRead(int conversationId) =>
+      _post('/v14/chat/conversations/$conversationId/read');
 
-  Future<ApiResponse> deleteConversation(int conversationId) async {
-    return _delete('/v14/chat/conversations/$conversationId');
-  }
+  Future<ApiResponse> deleteConversation(int conversationId) =>
+      _delete('/v14/chat/conversations/$conversationId');
 
   Future<ApiResponse> setConversationState(
       int id, {
         bool? pinned,
         bool? archived,
-      }) async {
+      }) {
     final body = <String, dynamic>{};
     if (pinned != null) body['pinned'] = pinned;
     if (archived != null) body['archived'] = archived;
     return _post('/v14/chat/conversations/$id/state', data: body);
   }
 
-  Future<ApiResponse> deleteMessages(List<int> ids, {required String scope}) async {
-    return _post('/v14/chat/messages/delete', data: {
-      'message_ids': ids,
-      'scope': scope,
-    });
-  }
+  Future<ApiResponse> deleteMessages(List<int> ids, {required String scope}) =>
+      _post('/v14/chat/messages/delete', data: {
+        'message_ids': ids,
+        'scope': scope,
+      });
 
-  Future<ApiResponse> sendTyping(int conversationId) async {
-    return _post('/v14/chat/typing', data: {'conversation_id': '$conversationId'});
-  }
+  Future<ApiResponse> sendTyping(int conversationId) =>
+      _post('/v14/chat/typing', data: {'conversation_id': '$conversationId'});
 
-  Future<ApiResponse> react(int messageId, String? emoji) async {
-    return _post('/v14/chat/messages/$messageId/react', data: {'reaction': emoji ?? ''});
-  }
+  Future<ApiResponse> react(int messageId, String? emoji) =>
+      _post('/v14/chat/messages/$messageId/react',
+          data: {'reaction': emoji ?? ''});
 
-  Future<ApiResponse> toggleStar(int messageId) async {
-    return _post('/v14/chat/messages/$messageId/star');
-  }
+  Future<ApiResponse> toggleStar(int messageId) =>
+      _post('/v14/chat/messages/$messageId/star');
 
-  Future<ApiResponse> togglePin(int messageId) async {
-    return _post('/v14/chat/messages/$messageId/pin');
-  }
+  Future<ApiResponse> togglePin(int messageId) =>
+      _post('/v14/chat/messages/$messageId/pin');
 
   Future<ApiResponse> forward({
     required List<int> messageIds,
     required List<int> conversationIds,
-  }) async {
-    return _post('/v14/chat/forward', data: {
-      'message_ids': messageIds,
-      'conversation_ids': conversationIds,
-    });
-  }
+  }) =>
+      _post('/v14/chat/forward', data: {
+        'message_ids': messageIds,
+        'conversation_ids': conversationIds,
+      });
 
-  Future<ApiResponse> fetchStarred(int conversationId) async {
-    return _get('/v14/chat/conversations/$conversationId/starred');
-  }
+  Future<ApiResponse> fetchStarred(int conversationId) =>
+      _get('/v14/chat/conversations/$conversationId/starred');
 
-  Future<ApiResponse> fetchMedia(int conversationId, String tab, {int? beforeId}) async {
+  Future<ApiResponse> fetchMedia(int conversationId, String tab, {int? beforeId}) {
     final q = <String, dynamic>{'tab': tab, 'limit': '40'};
     if (beforeId != null) q['before_id'] = '$beforeId';
     return _get('/v14/chat/conversations/$conversationId/media', query: q);
   }
 
-  Future<ApiResponse> fetchMessageInfo(int messageId) async {
-    return _get('/v14/chat/messages/$messageId/info');
-  }
+  Future<ApiResponse> fetchMessageInfo(int messageId) =>
+      _get('/v14/chat/messages/$messageId/info');
 
-  Future<ApiResponse> fetchChatUpdates() async {
-    return _get('/v14/chat/updates');
-  }
+  Future<ApiResponse> fetchChatUpdates() => _get('/v14/chat/updates');
 
-  Future<ApiResponse> markStatusSeen(int technicianId) async {
-    return _post('/v14/chat/status/$technicianId/seen');
-  }
+  Future<ApiResponse> markStatusSeen(int technicianId) =>
+      _post('/v14/chat/status/$technicianId/seen');
 
   Future<ApiResponse> getUnreadCount() => _get('/v14/chat/unread');
 
@@ -811,7 +746,8 @@ class ApiService {
       formData.fields.addAll([
         MapEntry('rate_card_id', rateCardId.toString()),
         MapEntry('payment_method_id', paymentMethodId.toString()),
-        if (paymentReference != null) MapEntry('payment_reference', paymentReference),
+        if (paymentReference != null)
+          MapEntry('payment_reference', paymentReference),
         if (notes != null) MapEntry('notes', notes),
       ]);
       formData.files.add(
@@ -912,7 +848,9 @@ class ApiService {
       final res = await _dio.get(
         path,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
       );
       return ApiResponse.fromJson(res.data);
     } catch (e) {
@@ -930,7 +868,9 @@ class ApiService {
       final res = await _dio.post(
         path,
         data: data,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
         onSendProgress: onSendProgress,
       );
       return ApiResponse.fromJson(res.data);
@@ -950,7 +890,9 @@ class ApiService {
       final res = await _dio.post(
         path,
         data: formData,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
         onSendProgress: onSendProgress,
       );
       return ApiResponse.fromJson(res.data);
@@ -970,7 +912,9 @@ class ApiService {
         path,
         data: data,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
       );
       return ApiResponse.fromJson(res.data);
     } catch (e) {
@@ -987,7 +931,9 @@ class ApiService {
       final res = await _dio.patch(
         path,
         data: data,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
       );
       return ApiResponse.fromJson(res.data);
     } catch (e) {
@@ -1004,7 +950,9 @@ class ApiService {
       final res = await _dio.delete(
         path,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null,
+        options: (headers != null && headers.isNotEmpty)
+            ? Options(headers: headers)
+            : null,
       );
       return ApiResponse.fromJson(res.data);
     } catch (e) {
@@ -1012,44 +960,112 @@ class ApiService {
     }
   }
 
+  /// Append a single file to a FormData if the path is a non-empty string
+  /// and the file exists. Silently skips missing files.
+  Future<void> _appendFile(FormData formData, String key, dynamic path) async {
+    if (path is! String || path.isEmpty) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    formData.files.add(MapEntry(
+      key,
+      await MultipartFile.fromFile(
+        file.path,
+        filename: file.path.split(Platform.pathSeparator).last,
+      ),
+    ));
+  }
+
+  Future<void> _appendFiles(FormData formData, String key, dynamic paths) async {
+    if (paths is! List) return;
+    for (final p in paths) {
+      await _appendFile(formData, key, p);
+    }
+  }
+
   ApiResponse _handleError(dynamic error) {
+    // Shows the real server error in the debug console
     if (error is DioException) {
-      final path = error.requestOptions.path;
-      final isRegistrationCall = path.contains('/technicians/register/');
+      debugPrint(
+        '❌ ${error.requestOptions.path} → '
+            '${error.response?.statusCode} ${error.response?.data}',
+      );
+    }
 
-      if (error.response?.statusCode == 401) {
+    if (error is! DioException) {
+      return ApiResponse(
+        success: false,
+        message: 'Unexpected error. Please try again.',
+      );
+    }
+
+    final isRegistrationCall =
+    error.requestOptions.path.contains('/technicians/register/');
+
+    // Network-level failures
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
         return ApiResponse(
           success: false,
-          message: isRegistrationCall
-              ? 'Registration session expired. Please start over.'
-              : 'Session expired. Please log in again.',
-          sessionExpired: !isRegistrationCall,
+          message: 'Connection timed out. Please check your network and try again.',
         );
-      }
-
-      if (error.response?.statusCode == 422 && error.response?.data is Map) {
-        final data = error.response!.data as Map;
+      case DioExceptionType.connectionError:
         return ApiResponse(
           success: false,
-          message: data['message']?.toString() ?? 'Validation failed',
-          errors: data['errors'] is Map
-              ? Map<String, dynamic>.from(data['errors'] as Map)
-              : null,
+          message: 'No internet connection. Please check your network.',
         );
+      case DioExceptionType.cancel:
+        return ApiResponse(success: false, message: 'Request cancelled.');
+      default:
+        break;
+    }
+
+    final statusCode = error.response?.statusCode;
+
+    if (statusCode == 401) {
+      return ApiResponse(
+        success: false,
+        statusCode: statusCode,
+        message: isRegistrationCall
+            ? 'Registration session expired. Please start over.'
+            : 'Session expired. Please log in again.',
+        sessionExpired: !isRegistrationCall,
+      );
+    }
+
+    final data = error.response?.data;
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final message = map['message']?.toString();
+      final errors = map['errors'] is Map
+          ? Map<String, dynamic>.from(map['errors'] as Map)
+          : null;
+
+      // Prefer the first validation error when the server sends one
+      String? firstError;
+      if (errors != null && errors.isNotEmpty) {
+        final first = errors.values.first;
+        firstError = (first is List && first.isNotEmpty)
+            ? first.first.toString()
+            : first.toString();
       }
 
-      if (error.response?.data is Map) {
-        final data = error.response!.data as Map;
-        return ApiResponse(
-          success: false,
-          message: data['message']?.toString() ?? 'Something went wrong',
-        );
-      }
+      return ApiResponse(
+        success: false,
+        statusCode: statusCode,
+        message: firstError ??
+            ((message != null && message.isNotEmpty)
+                ? message
+                : 'Something went wrong (HTTP $statusCode).'),
+        errors: errors,
+      );
     }
 
     return ApiResponse(
       success: false,
-      message: 'Network error. Please check your connection.',
+      statusCode: statusCode,
+      message: 'Something went wrong. Please try again.',
     );
   }
 }

@@ -57,6 +57,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActions => 'Quick Actions';
 
   @override
+  String get regStep1Failed => 'Could not create your account. Please check your details and try again.';
+
+  @override
+  String get regOtpDeliveryFailed => 'Account created, but we could not send the code right now. Tap Resend on the next screen.';
+
+  @override
+  String regOtpSentSms(String recipient) {
+    return 'We sent a 6-digit verification code via SMS to $recipient';
+  }
+
+  @override
+  String regOtpSentEmail(String recipient) {
+    return 'We sent a 6-digit verification code to your email $recipient';
+  }
+
+  @override
   String get welcomeBack => 'Welcome Back';
 
   @override
@@ -261,7 +277,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copy => 'Copy';
 
   @override
-  String get deleteMessage => 'Delete Message';
+  String get deleteMessage => 'Delete message?';
 
   @override
   String get reply => 'Reply';
@@ -357,7 +373,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPosts => 'No posts yet.';
 
   @override
-  String get createPost => 'Create Post';
+  String get createPost => 'Create your first post';
 
   @override
   String get createPostTitle => 'Create Post';
@@ -657,7 +673,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectAtLeastOneService => 'Select at least one service';
 
   @override
-  String get servicesUpdated => 'Services updated successfully';
+  String get servicesUpdated => 'Services updated';
 
   @override
   String get profileUpdated => 'Profile updated successfully';
@@ -714,179 +730,179 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noRequestsMatchFilter => 'No requests match the selected filter';
 
   @override
-  String get subscriptions => 'Subscriptions';
+  String get subscriptions => 'Usajili';
 
   @override
-  String get mySubscriptions => 'My Subscriptions';
+  String get mySubscriptions => 'Usajili Wangu';
 
   @override
-  String get subscriptionStatus => 'Subscription Status';
+  String get subscriptionStatus => 'Hali ya Usajili';
 
   @override
-  String get choosePlan => 'Choose Your Plan';
+  String get choosePlan => 'Chagua Mpango Wako';
 
   @override
-  String get selectPlan => 'Select a subscription plan that works for you';
+  String get selectPlan => 'Chagua mpango wa usajili unaokufaa';
 
   @override
-  String get continueToPayment => 'Continue to Payment';
+  String get continueToPayment => 'Endelea na Malipo';
 
   @override
-  String get paymentMethods => 'Payment Methods';
+  String get paymentMethods => 'Njia za Malipo';
 
   @override
-  String get choosePaymentMethod => 'Choose Payment Method';
+  String get choosePaymentMethod => 'Chagua Njia ya Malipo';
 
   @override
-  String get selectedPlan => 'Selected Plan';
+  String get selectedPlan => 'Mpango Uliyochagua';
 
   @override
-  String get paymentReference => 'Payment Reference';
+  String get paymentReference => 'Kumbukumbu ya Malipo';
 
   @override
-  String get paymentReferenceHint => 'e.g., MPESA-123456';
+  String get paymentReferenceHint => 'mf., MPESA-123456';
 
   @override
-  String get notes => 'Notes';
+  String get notes => 'Maelezo';
 
   @override
-  String get notesHint => 'Any additional information...';
+  String get notesHint => 'Taarifa yoyote ya ziada...';
 
   @override
-  String get uploadPaymentProof => 'Upload Payment Proof';
+  String get uploadPaymentProof => 'Pakia Uthibitisho wa Malipo';
 
   @override
-  String get tapToUpload => 'Tap to upload payment proof';
+  String get tapToUpload => 'Gusa kupakia uthibitisho wa malipo';
 
   @override
-  String get paymentProofFormats => 'JPG, PNG, or PDF';
+  String get paymentProofFormats => 'JPG, PNG, au PDF';
 
   @override
-  String get paymentInstructions => 'Payment Instructions';
+  String get paymentInstructions => 'Maelekezo ya Malipo';
 
   @override
   String sendAmountTo(String amount) {
-    return 'Send $amount to:';
+    return 'Tuma $amount kwa:';
   }
 
   @override
-  String get account => 'Account';
+  String get account => 'Akaunti';
 
   @override
-  String get submitSubscription => 'Submit Subscription';
+  String get submitSubscription => 'Wasilisha Usajili';
 
   @override
-  String get subscriptionCreated => 'Subscription Created!';
+  String get subscriptionCreated => 'Usajili Umeundwa!';
 
   @override
-  String get subscriptionCreatedMessage => 'Your subscription request has been created successfully.';
+  String get subscriptionCreatedMessage => 'Ombi lako la usajili limeundwa kwa mafanikio.';
 
   @override
-  String get waitForApproval => 'Please wait for admin approval. You will receive a notification once your subscription is approved.';
+  String get waitForApproval => 'Tafadhali subiri idhini ya msimamizi. Utapokea taarifa mara usajili wako utakapoidhinishwa.';
 
   @override
-  String get goToDashboard => 'Go to Dashboard';
+  String get goToDashboard => 'Nenda kwenye Dashibodi';
 
   @override
-  String get renewNow => 'Renew Now';
+  String get renewNow => 'Sasisha Sasa';
 
   @override
-  String get subscribeNow => 'Subscribe Now';
+  String get subscribeNow => 'Jisajili Sasa';
 
   @override
-  String get subscriptionExpired => 'Subscription Expired';
+  String get subscriptionExpired => 'Usajili Umeisha';
 
   @override
-  String get subscriptionPending => 'Pending Approval';
+  String get subscriptionPending => 'Inasubiri Idhini';
 
   @override
-  String get subscriptionActive => 'Active';
+  String get subscriptionActive => 'Hai';
 
   @override
-  String get subscriptionInactive => 'Inactive';
+  String get subscriptionInactive => 'Haifanyi Kazi';
 
   @override
   String daysRemaining(int days) {
-    return '$days days remaining';
+    return 'Siku $days zimebaki';
   }
 
   @override
   String expiresOn(String date) {
-    return 'Expires: $date';
+    return 'Inaisha: $date';
   }
 
   @override
   String validUntil(String date) {
-    return 'Valid until: $date';
+    return 'Ni halali hadi: $date';
   }
 
   @override
-  String get noSubscriptions => 'No subscriptions yet';
+  String get noSubscriptions => 'Hakuna usajili bado';
 
   @override
-  String get noInvoices => 'No invoices available';
+  String get noInvoices => 'Hakuna ankara zinazopatikana';
 
   @override
   String invoiceNumber(String number) {
-    return 'Invoice #$number';
+    return 'Ankara #$number';
   }
 
   @override
-  String get invoiceStatus => 'Status';
+  String get invoiceStatus => 'Hali';
 
   @override
-  String get viewInvoice => 'View Invoice';
+  String get viewInvoice => 'Tazama Ankara';
 
   @override
-  String get downloadPdf => 'Download PDF';
+  String get downloadPdf => 'Pakua PDF';
 
   @override
-  String get subscriptionHistory => 'Subscription History';
+  String get subscriptionHistory => 'Historia ya Usajili';
 
   @override
-  String get paid => 'Paid';
+  String get paid => 'Imelipwa';
 
   @override
-  String get unpaid => 'Unpaid';
+  String get unpaid => 'Haijalipwa';
 
   @override
-  String get yourSubscriptionHasExpired => 'Your subscription has expired. Please renew to continue.';
+  String get yourSubscriptionHasExpired => 'Usajili wako umeisha. Tafadhali sasisha ili kuendelea.';
 
   @override
-  String get subscriptionPendingApproval => 'Your subscription is pending approval. Please wait.';
+  String get subscriptionPendingApproval => 'Usajili wako unasubiri idhini. Tafadhali subiri.';
 
   @override
-  String get subscribeToUnlock => 'Subscribe to unlock all Fundi features.';
+  String get subscribeToUnlock => 'Jisajili ili kufungua vipengele vyote vya Fundi.';
 
   @override
-  String get rateCards => 'Rate Cards';
+  String get rateCards => 'Kadi za Viwango';
 
   @override
-  String get subscriptionDetails => 'Subscription Details';
+  String get subscriptionDetails => 'Maelezo ya Usajili';
 
   @override
-  String get invoiceDetails => 'Invoice Details';
+  String get invoiceDetails => 'Maelezo ya Ankara';
 
   @override
-  String get activePlan => 'Active Plan';
+  String get activePlan => 'Mpango Hai';
 
   @override
-  String get amountPaid => 'Amount Paid';
+  String get amountPaid => 'Kiasi Kilicholipwa';
 
   @override
-  String get paymentMethod => 'Payment Method';
+  String get paymentMethod => 'Njia ya Malipo';
 
   @override
-  String get paymentReferenceLabel => 'Payment Reference';
+  String get paymentReferenceLabel => 'Kumbukumbu ya Malipo';
 
   @override
-  String get approvedAt => 'Approved At';
+  String get approvedAt => 'Imeidhinishwa Tarehe';
 
   @override
-  String get approvedBy => 'Approved By';
+  String get approvedBy => 'Imeidhinishwa Na';
 
   @override
-  String get adminNotes => 'Admin Notes';
+  String get adminNotes => 'Maelezo ya Msimamizi';
 
   @override
   String get noNotifications => 'No Notifications';
@@ -1283,7 +1299,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloads => 'Downloads';
 
   @override
-  String get subscription => 'Subscription';
+  String get subscription => 'Usajili';
 
   @override
   String get viewAll => 'View All';
@@ -1310,13 +1326,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noJobsFound => 'No jobs found';
 
   @override
+  String get noTicketsFound => 'No tickets found';
+
+  @override
   String get searchJobsHint => 'Search job number, customer, service...';
 
   @override
-  String get subscriptionComingSoonTitle => 'Subscription';
+  String get searchTicketsHint => 'Search ticket, job, customer, service...';
 
   @override
-  String get subscriptionComingSoonBody => 'Premium version — Coming soon 🚀\nUnlock more features and grow your business.';
+  String get subscriptionComingSoonTitle => 'Usajili';
+
+  @override
+  String get subscriptionComingSoonBody => 'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua vipengele zaidi na kukuza biashara yako.';
 
   @override
   String get pendingStatus => 'PENDING';
@@ -1326,12 +1348,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get completedStatus => 'COMPLETED';
-
-  @override
-  String get noTicketsFound => 'No tickets found';
-
-  @override
-  String get searchTicketsHint => 'Search ticket, job, customer, service...';
 
   @override
   String get jobDetails => 'Job Details';
@@ -1399,6 +1415,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterCompleted => 'Completed';
+
+  @override
+  String get settingsPreferences => 'Preferences';
+
+  @override
+  String get settingsInformation => 'Information';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get settingsDarkMode => 'Dark Mode';
+
+  @override
+  String get settingsDarkOn => 'Dark theme enabled';
+
+  @override
+  String get settingsLightOn => 'Light theme enabled';
+
+  @override
+  String get editServices => 'Edit services';
+
+  @override
+  String get noServicesAvailable => 'No services available.';
+
+  @override
+  String get couldNotDeleteAccount => 'Could not delete account';
 
   @override
   String get payments => 'Payments';

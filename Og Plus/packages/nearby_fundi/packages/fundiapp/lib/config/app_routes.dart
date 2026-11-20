@@ -12,9 +12,21 @@ class AppRoutes {
   static const String forgot = '/forgot-password';
   static const String reset = '/reset-password';
 
+  // ===== REGISTRATION FLOW =====
+  static const String registerStep1 = '/register-step1';
+  static const String registerOtp = '/register/otp';
+  static const String registerServices = '/register-services';
+  static const String registerLocation = '/register-location';
+  static const String registerStep2 = '/register-step2';
+  static const String registerStep3 = '/register-step3';
+  static const String registerStep4 = '/register-step4';
+  static const String registerStep5 = '/register-step5';
+  static const String registerReview = '/register-review';
+
   // ===== FUNDI MAIN SCREENS =====
   static const String home = '/home';
   static const String posts = '/posts';
+  static const String blog = posts;
   static const String createPost = '/create-post';
   static const String editPost = '/edit-post';
   static const String portfolio = '/portfolio';
@@ -25,8 +37,6 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String settings = '/settings';
   static const String notifications = '/notifications';
-  static const String registerServices = '/register-services';
-  static const String registerLocation = '/register-location';
 
   // ===== TICKETS & JOBS =====
   static const String tickets = '/tickets';
@@ -41,9 +51,6 @@ class AppRoutes {
   static const String chat = '/chat';
   static const String voiceCall = '/voice-call';
   static const String videoCall = '/video-call';
-
-  // ===== BLOG/POSTS (alias) =====
-  static const String blog = '/posts';
 
   // ===== STATIC PAGES =====
   static const String about = '/about';
@@ -60,19 +67,9 @@ class AppRoutes {
   static const String invoiceDetails = '/invoice-details';
   static const String paymentMethods = '/payment-methods';
 
-  // ===== PAYMENTS =====
+  // ===== PAYMENTS & DOWNLOADS =====
   static const String payment = '/payment';
-
-  // ===== DOWNLOADS =====
   static const String downloads = '/downloads';
-
-  // ===== 6-STEP FUNDI REGISTRATION =====
-  static const String registerStep1 = '/register-step1';
-  static const String registerStep2 = '/register-step2';
-  static const String registerStep3 = '/register-step3';
-  static const String registerStep4 = '/register-step4';
-  static const String registerStep5 = '/register-step5';
-  static const String registerReview = '/register-review';
 
   // ===== NAVIGATION HELPERS =====
   static String getChatRoute(int conversationId) => '/chat/$conversationId';
@@ -81,24 +78,16 @@ class AppRoutes {
   static String getOtpRoute(String email) => '/otp?email=$email';
   static String getResetRoute(String email) => '/reset-password?email=$email';
 
-  static String registrationRouteForStep(int step) {
-    switch (step) {
-      case 1:
-        return registerStep1;
-      case 2:
-        return registerStep2;
-      case 3:
-        return registerStep3;
-      case 4:
-        return registerStep4;
-      case 5:
-        return registerStep5;
-      default:
-        return registerReview;
-    }
-  }
+  static String registrationRouteForStep(int step) => switch (step) {
+    1 => registerStep1,
+    2 => registerStep2,
+    3 => registerStep3,
+    4 => registerStep4,
+    5 => registerStep5,
+    _ => registerReview,
+  };
 
-  // ===== ROUTE MAP FOR REFERENCE =====
+  // ===== ROUTE DISPLAY NAMES =====
   static const Map<String, String> routeNames = {
     splash: 'Splash Screen',
     onboarding: 'Onboarding',
@@ -107,7 +96,14 @@ class AppRoutes {
     otp: 'OTP Verification',
     forgot: 'Forgot Password',
     reset: 'Reset Password',
-
+    registerStep1: 'Register – Step 1 (Account)',
+    registerServices: 'Register – Services',
+    registerLocation: 'Register – Location',
+    registerStep2: 'Register – Step 2 (Identity)',
+    registerStep3: 'Register – Step 3 (Fingerprint)',
+    registerStep4: 'Register – Step 4 (Face)',
+    registerStep5: 'Register – Step 5 (Emergency Contact)',
+    registerReview: 'Register – Review & Submit',
     home: 'Home Dashboard',
     posts: 'My Posts',
     createPost: 'Create Post',
@@ -120,38 +116,26 @@ class AppRoutes {
     editProfile: 'Edit Profile',
     settings: 'Settings',
     notifications: 'Notifications',
-    registerServices: 'Register Services',
-    registerLocation: 'Register Location',
-
     tickets: 'Tickets',
     jobs: 'Jobs',
     earnings: 'Earnings',
     reports: 'Reports',
-
     chatList: 'Chat List',
     chat: 'Chat',
     voiceCall: 'Voice Call',
     videoCall: 'Video Call',
-
     about: 'About Us',
     terms: 'Terms & Conditions',
     faq: 'FAQ',
     contactUs: 'Contact Us',
     privacy: 'Privacy Policy',
-
     subscriptions: 'My Subscriptions',
     rateCards: 'Rate Cards',
     createSubscription: 'Create Subscription',
     subscriptionDetails: 'Subscription Details',
     invoiceDetails: 'Invoice Details',
     paymentMethods: 'Payment Methods',
+    payment: 'Payment',
     downloads: 'Downloads',
-
-    registerStep1: 'Register – Step 1 (Account)',
-    registerStep2: 'Register – Step 2 (Identity)',
-    registerStep3: 'Register – Step 3 (Fingerprint)',
-    registerStep4: 'Register – Step 4 (Face)',
-    registerStep5: 'Register – Step 5 (Emergency Contact)',
-    registerReview: 'Register – Review & Submit',
   };
 }

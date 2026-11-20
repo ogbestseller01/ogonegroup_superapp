@@ -14,11 +14,14 @@
 // - fitCamera() is only called with minZoom >= TanzaniaMap.minZoom and bounds
 //   pre-clamped to Tanzania, so its result is always in-constraint.
 //
-// UI cleanup notes (logic untouched):
-// - Suggestion list: ListTiles now sit on a real Material (fixes the
+// UI notes:
+// - Suggestion list: ListTiles sit on a real Material (fixes the
 //   "ListTile background color or ink splashes may be invisible" assertion).
 // - Filter chips: background is painted by Material (not a child
 //   AnimatedContainer) so their ink splash is visible.
+// - A "clear search" button sits right after the yellow search button and
+//   only shows when there is something to clear.
+// - All user-facing strings come from AppLocalizations (en / sw).
 
 import 'dart:async';
 import 'dart:convert';
@@ -48,6 +51,14 @@ import '../../widgets/route_polylines.dart';
 import '../../widgets/safe_network_image.dart';
 import 'map_location_picker_screen.dart';
 import 'nearby_map_screen.dart';
+
+// ================================================================
+// LOCALIZATION SHORTCUT
+// ================================================================
+
+extension _NearbyL10n on BuildContext {
+  AppLocalizations get t => AppLocalizations.of(this)!;
+}
 
 // ================================================================
 // RESPONSIVE CONSTANTS
@@ -110,7 +121,7 @@ class ResponsiveConstants {
 
 class NearbyConstants {
   // IMPORTANT: use your real package name (not com.example.*)
-  static const String userAgentPackageName = 'com.yourcompany.nearbyfundi';
+  static const String userAgentPackageName = 'com.ogonegroup.nearbyfundi';
 
   static const LatLng defaultMapCenter = TanzaniaMap.center;
 
@@ -130,37 +141,6 @@ class NearbyConstants {
 
   static const String historyPrefsKey = 'location_search_history';
 }
-
-class NearbyStrings {
-  static const filterByService = 'Filter by service...';
-  static const chooseOnMap = 'Choose location on map';
-  static const recommendedReason =
-      'Top ranked near you: rating, jobs and requests';
-  static const recentSearches = 'Recent searches';
-  static const clear = 'Clear';
-  static const findingRoutes = 'Finding best routes...';
-  static const searchForTechnicians = 'Search for technicians';
-  static const noTechniciansNearby = 'No technicians found nearby';
-  static const expandSearchRadius = 'Search wider';
-  static const you = 'You';
-  static const zoomIn = 'Zoom in';
-  static const zoomOut = 'Zoom out';
-  static const fitTechnicians = 'Fit technicians';
-  static const showList = 'Show technician list';
-  static const showFullMap = 'Show full-screen map';
-  static const clearFilters = 'Clear filters';
-  static const viewProfile = 'View Profile';
-  static const directions = 'Get directions';
-  static const couldNotOpenMaps = 'Could not open maps app.';
-  static const topPick = 'Top pick';
-  static const searchFailed =
-      'Search failed. Please check your connection and try again.';
-}
-
-const String _kSearchLoginMessage =
-    'Sign in or create an account to search for fundis near you.';
-const String _kFilterLoginMessage =
-    'Sign in or create an account to filter fundis by service.';
 
 // ================================================================
 // UI HELPERS
@@ -304,7 +284,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       final settings = context.read<SettingsProvider>();
       _currentLocale = settings.locale;
       context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
-      _loadSearchHistory(); // Moved inside the post-frame callback
+      _loadSearchHistory();
     });
   }
 
@@ -431,6 +411,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   Future<void> _saveToHistory(String place) async {
     if (place.trim().isEmpty) return;
     final prefs = await _getPrefs();
+    if (!mounted) return;
     final key = _historyKey;
     final history = List<String>.from(prefs.getStringList(key) ?? const []);
     history.remove(place);
@@ -445,6 +426,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   Future<void> _clearHistory() async {
     final prefs = await _getPrefs();
+    if (!mounted) return;
     await prefs.remove(_historyKey);
     if (!mounted) return;
     setState(() => _searchHistory = []);
@@ -561,7 +543,9 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   Future<void> _openMapPicker() async {
-    if (!AuthGuard.ensure(context, message: _kSearchLoginMessage)) return;
+    if (!AuthGuard.ensure(context, message: context.t.nearbySearchLoginMessage)) {
+      return;
+    }
 
     final techProvider = context.read<TechnicianProvider>();
 
@@ -585,7 +569,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     if (lat == null ||
         lng == null ||
         !TanzaniaMap.containsLatLng(LatLng(lat, lng))) {
-      _showErrorSnackBar('Invalid location selected. Please try again.');
+      _showErrorSnackBar(context.t.nearbyInvalidLocation);
       return;
     }
 
@@ -600,7 +584,9 @@ class _NearbyScreenState extends State<NearbyScreen>
   // ==============================================================
 
   Future<void> _performSearch() async {
-    if (!AuthGuard.ensure(context, message: _kSearchLoginMessage)) return;
+    if (!AuthGuard.ensure(context, message: context.t.nearbySearchLoginMessage)) {
+      return;
+    }
 
     final place = _locationController.text.trim();
 
@@ -654,7 +640,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     _locationFocus.unfocus();
 
     if (!succeeded) {
-      _showErrorSnackBar(NearbyStrings.searchFailed);
+      _showErrorSnackBar(context.t.nearbySearchFailed);
       return;
     }
 
@@ -817,6 +803,16 @@ class _NearbyScreenState extends State<NearbyScreen>
   // CLEAR
   // ==============================================================
 
+  /// True when there is anything for the "clear search" button to reset.
+  bool _hasSearchState(TechnicianProvider p) =>
+      _locationController.text.isNotEmpty ||
+          _serviceSearchController.text.isNotEmpty ||
+          _searchedArea.isNotEmpty ||
+          _selectedServiceId != null ||
+          _selectedCategoryId != null ||
+          p.hasSearchOrigin ||
+          p.technicians.isNotEmpty;
+
   void _clearAllFilters() {
     _locationController.clear();
     _serviceSearchController.clear();
@@ -834,7 +830,9 @@ class _NearbyScreenState extends State<NearbyScreen>
       _searchedArea = '';
       _showSuggestions = false;
       _placeSuggestions = [];
+      _isLoadingSuggestions = false;
       _isSearching = false;
+      _isHeaderVisible = true;
       _searchRadiusKm = NearbyConstants.defaultRadiusKm;
     });
 
@@ -1088,11 +1086,17 @@ class _NearbyScreenState extends State<NearbyScreen>
 
   List<Widget> _proofChips(Technician t) => [
     if (t.completedJobsCount > 0)
-      _infoChip(Icons.task_alt_rounded, '${t.completedJobsCount} jobs',
-          AppTheme.accent),
+      _infoChip(
+        Icons.task_alt_rounded,
+        context.t.nearbyJobsCount(t.completedJobsCount),
+        AppTheme.accent,
+      ),
     if (t.requestsCount > 0)
-      _infoChip(Icons.assignment_turned_in_rounded,
-          '${t.requestsCount} requests', AppTheme.primary),
+      _infoChip(
+        Icons.assignment_turned_in_rounded,
+        context.t.nearbyRequestsCount(t.requestsCount),
+        AppTheme.primary,
+      ),
   ];
 
   // ==============================================================
@@ -1306,13 +1310,14 @@ class _NearbyScreenState extends State<NearbyScreen>
                       children: [
                         _infoChip(
                           Icons.directions_car_rounded,
-                          '${distance.toStringAsFixed(1)} km',
+                          context.t.nearbyKm(distance.toStringAsFixed(1)),
                           AppTheme.primary,
                         ),
                         if (duration != null)
                           _infoChip(
                             Icons.access_time_rounded,
-                            '~${duration.toStringAsFixed(0)} min',
+                            context.t
+                                .nearbyApproxMin(duration.toStringAsFixed(0)),
                             AppTheme.accent,
                           ),
                         if (tech.rating > 0)
@@ -1330,9 +1335,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                               color: _gold.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              NearbyStrings.topPick,
-                              style: TextStyle(
+                            child: Text(
+                              context.t.nearbyTopPick,
+                              style: const TextStyle(
                                 color: _goldInk,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -1384,9 +1389,9 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final String subtitle;
     if (recommended) {
-      subtitle = NearbyStrings.topPick;
+      subtitle = context.t.nearbyTopPick;
     } else if (tech.completedJobsCount > 0) {
-      subtitle = '${tech.completedJobsCount} jobs done';
+      subtitle = context.t.nearbyJobsDone(tech.completedJobsCount);
     } else {
       subtitle = (tech.area != null && tech.area!.isNotEmpty) ? tech.area! : '';
     }
@@ -1503,13 +1508,15 @@ class _NearbyScreenState extends State<NearbyScreen>
                               children: [
                                 _infoChip(
                                   Icons.directions_car_rounded,
-                                  '${distance.toStringAsFixed(1)} km',
+                                  context.t
+                                      .nearbyKm(distance.toStringAsFixed(1)),
                                   AppTheme.primary,
                                 ),
                                 if (duration != null)
                                   _infoChip(
                                     Icons.access_time_rounded,
-                                    '~${duration.toStringAsFixed(0)} min',
+                                    context.t.nearbyApproxMin(
+                                        duration.toStringAsFixed(0)),
                                     AppTheme.accent,
                                   ),
                               ],
@@ -1630,19 +1637,19 @@ class _NearbyScreenState extends State<NearbyScreen>
                 children: [
                   _MapControlButton(
                     icon: Icons.add,
-                    tooltip: NearbyStrings.zoomIn,
+                    tooltip: context.t.nearbyZoomIn,
                     onPressed: () => _zoomBy(1),
                   ),
                   const SizedBox(height: 8),
                   _MapControlButton(
                     icon: Icons.remove,
-                    tooltip: NearbyStrings.zoomOut,
+                    tooltip: context.t.nearbyZoomOut,
                     onPressed: () => _zoomBy(-1),
                   ),
                   const SizedBox(height: 8),
                   _MapControlButton(
                     icon: Icons.my_location_rounded,
-                    tooltip: NearbyStrings.fitTechnicians,
+                    tooltip: context.t.nearbyFitTechnicians,
                     onPressed: _updateMapBounds,
                     highlighted: true,
                   ),
@@ -1659,7 +1666,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     _PillButton(
                       icon: Icons.list_rounded,
                       label: '${techProvider.technicians.length}',
-                      tooltip: NearbyStrings.showList,
+                      tooltip: context.t.nearbyShowList,
                       filled: true,
                       onPressed: () => _showTechniciansList(
                         context,
@@ -1670,7 +1677,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                     const SizedBox(width: 8),
                     _PillButton(
                       icon: Icons.fullscreen_rounded,
-                      tooltip: NearbyStrings.showFullMap,
+                      tooltip: context.t.nearbyShowFullMap,
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -1737,8 +1744,8 @@ class _NearbyScreenState extends State<NearbyScreen>
         child: _PillButton(
           key: const ValueKey('hidden-search'),
           icon: Icons.search_rounded,
-          label: 'Search',
-          tooltip: 'Show search',
+          label: context.t.nearbySearch,
+          tooltip: context.t.nearbyShowSearch,
           filled: true,
           onPressed: () => setState(() => _isHeaderVisible = true),
         ),
@@ -1760,6 +1767,10 @@ class _NearbyScreenState extends State<NearbyScreen>
     final loggedIn = AuthGuard.isLoggedIn(context);
     final availableHeight = media.size.height - media.viewInsets.bottom;
     final usedRadius = techProvider.searchRadiusKm ?? _searchRadiusKm;
+    final canClear = _hasSearchState(techProvider);
+    final hasSuggestionContent = _isLoadingSuggestions ||
+        _placeSuggestions.isNotEmpty ||
+        _searchHistory.isNotEmpty;
 
     return Container(
       key: const ValueKey('visible-search'),
@@ -1796,7 +1807,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Find a fundi near you',
+                      context.t.nearbyFindFundiTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1808,7 +1819,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                   ),
                   _SoftIconButton(
                     icon: Icons.keyboard_arrow_up_rounded,
-                    tooltip: 'Hide search',
+                    tooltip: context.t.nearbyHideSearch,
                     size: 34,
                     iconSize: 22,
                     onTap: () => setState(() => _isHeaderVisible = false),
@@ -1817,6 +1828,7 @@ class _NearbyScreenState extends State<NearbyScreen>
               ),
               const SizedBox(height: 12),
 
+              // ── Location field + yellow search + clear search ──
               Row(
                 children: [
                   Expanded(
@@ -1832,33 +1844,11 @@ class _NearbyScreenState extends State<NearbyScreen>
                         TextStyle(color: theme.hintColor, fontSize: 14),
                         prefixIcon:
                         Icon(Icons.search_rounded, color: ink, size: 22),
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (_locationController.text.isNotEmpty)
-                              IconButton(
-                                tooltip: NearbyStrings.clear,
-                                icon: const Icon(Icons.close_rounded, size: 18),
-                                onPressed: () {
-                                  _locationController.clear();
-                                  _suggestionDebounce?.cancel();
-                                  _suggestionRequestId++;
-                                  _pickedPlace = null;
-                                  setState(() {
-                                    _placeSuggestions = [];
-                                    _isLoadingSuggestions = false;
-                                    _showSuggestions =
-                                        _searchHistory.isNotEmpty;
-                                  });
-                                },
-                              ),
-                            IconButton(
-                              tooltip: NearbyStrings.chooseOnMap,
-                              icon: Icon(Icons.map_outlined,
-                                  color: ink, size: 22),
-                              onPressed: _openMapPicker,
-                            ),
-                          ],
+                        // The inline "x" lives next to the search button now.
+                        suffixIcon: IconButton(
+                          tooltip: context.t.nearbyChooseOnMap,
+                          icon: Icon(Icons.map_outlined, color: ink, size: 22),
+                          onPressed: _openMapPicker,
                         ),
                         filled: true,
                         fillColor: _softFill(context),
@@ -1875,7 +1865,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                           _locationFocus.unfocus();
                           AuthGuard.showLoginRequired(
                             context,
-                            message: _kSearchLoginMessage,
+                            message: context.t.nearbySearchLoginMessage,
                           );
                           return;
                         }
@@ -1914,10 +1904,33 @@ class _NearbyScreenState extends State<NearbyScreen>
                           : const Icon(Icons.search_rounded, size: 24),
                     ),
                   ),
+                  if (canClear) ...[
+                    const SizedBox(width: 10),
+                    Tooltip(
+                      message: context.t.nearbyClearSearch,
+                      child: Material(
+                        color: _softFill(context),
+                        borderRadius: BorderRadius.circular(16),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: _clearAllFilters,
+                          child: SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: ink,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
 
-              if (_showSuggestions)
+              if (_showSuggestions && hasSuggestionContent)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 200),
                   child: _buildSuggestions(context, theme),
@@ -1961,7 +1974,10 @@ class _NearbyScreenState extends State<NearbyScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '${techProvider.technicians.length} found • $usedRadius km',
+                          context.t.nearbyFoundWithRadius(
+                            techProvider.technicians.length,
+                            usedRadius,
+                          ),
                           style: TextStyle(
                             color: _goldText(context),
                             fontSize: 12.5,
@@ -1984,7 +2000,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'No fundis very close, so we searched up to $usedRadius km.',
+                          context.t.nearbyExpandedNotice(usedRadius),
                           style: TextStyle(
                             color: theme.hintColor,
                             fontSize: 12,
@@ -2007,20 +2023,20 @@ class _NearbyScreenState extends State<NearbyScreen>
                       FocusScope.of(context).unfocus();
                       AuthGuard.showLoginRequired(
                         context,
-                        message: _kFilterLoginMessage,
+                        message: context.t.nearbyFilterLoginMessage,
                       );
                     }
                   },
                   style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: NearbyStrings.filterByService,
+                    hintText: context.t.nearbyFilterByService,
                     hintStyle:
                     TextStyle(color: theme.hintColor, fontSize: 13.5),
                     prefixIcon:
                     Icon(Icons.build_outlined, color: ink, size: 18),
                     suffixIcon: _serviceSearchQuery.isNotEmpty
                         ? IconButton(
-                      tooltip: NearbyStrings.clear,
+                      tooltip: context.t.nearbyClear,
                       icon: const Icon(Icons.close_rounded, size: 16),
                       onPressed: () {
                         _serviceSearchController.clear();
@@ -2053,7 +2069,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                       scrollDirection: Axis.horizontal,
                       children: [
                         _buildChip(
-                          label: 'All',
+                          label: context.t.nearbyAll,
                           isSelected: _selectedServiceId == null,
                           onTap: () {
                             setState(() {
@@ -2113,7 +2129,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                   child: TextButton.icon(
                     onPressed: _clearAllFilters,
                     icon: const Icon(Icons.clear_all_rounded, size: 18),
-                    label: const Text(NearbyStrings.clearFilters),
+                    label: Text(context.t.nearbyClearFilters),
                     style: TextButton.styleFrom(
                       foregroundColor: ink,
                       visualDensity: VisualDensity.compact,
@@ -2165,7 +2181,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                 child: Row(
                   children: [
                     Text(
-                      NearbyStrings.recentSearches,
+                      context.t.nearbyRecentSearches,
                       style: TextStyle(
                         color: theme.hintColor,
                         fontWeight: FontWeight.w700,
@@ -2180,7 +2196,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                         minimumSize: const Size(0, 28),
                       ),
                       child: Text(
-                        NearbyStrings.clear,
+                        context.t.nearbyClear,
                         style: TextStyle(color: ink, fontSize: 12),
                       ),
                     ),
@@ -2276,13 +2292,13 @@ class _NearbyScreenState extends State<NearbyScreen>
       overlay = _emptyMapState(
         theme,
         Icons.map_outlined,
-        NearbyStrings.searchForTechnicians,
+        context.t.nearbySearchForTechnicians,
       );
     } else if (technicians.isEmpty) {
       overlay = _emptyMapState(
         theme,
         Icons.person_search_rounded,
-        NearbyStrings.noTechniciansNearby,
+        context.t.nearbyNoTechniciansNearby,
         showExpandRadius: true,
       );
     }
@@ -2320,6 +2336,7 @@ class _NearbyScreenState extends State<NearbyScreen>
       avatarSize,
       safeOrigin.latitude,
       safeOrigin.longitude,
+      Localizations.localeOf(context).languageCode,
     );
     if (markerKey != _markerKey) {
       _markerKey = markerKey;
@@ -2389,9 +2406,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                 color: AppTheme.error,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                NearbyStrings.you,
-                style: TextStyle(
+              child: Text(
+                context.t.nearbyYou,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -2541,7 +2558,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                         ],
                       ),
                       child: Text(
-                        '${distance.toStringAsFixed(1)} km',
+                        context.t.nearbyKm(distance.toStringAsFixed(1)),
                         style: TextStyle(
                           color: isRecommended || selected
                               ? AppTheme.primary
@@ -2577,9 +2594,9 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     final String subtitle = showExpandRadius
         ? (nextStep == null
-        ? 'No fundis within ${NearbyConstants.maxRadiusKm} km of this location. Try another place or service.'
-        : 'No fundis within $current km of this location.')
-        : 'Search a place or pick one on the map.';
+        ? context.t.nearbyNoneWithinMax(NearbyConstants.maxRadiusKm)
+        : context.t.nearbyNoneWithin(current))
+        : context.t.nearbySearchHint;
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -2653,7 +2670,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                 onPressed: _retryWithLargerRadius,
                 icon: const Icon(Icons.add_location_alt_outlined, size: 18),
                 label: Text(
-                  '${NearbyStrings.expandSearchRadius} (up to $nextStep km)',
+                  context.t.nearbySearchWiderUpTo(nextStep),
                   style: const TextStyle(fontSize: 13),
                 ),
                 style: FilledButton.styleFrom(
@@ -2692,10 +2709,10 @@ class _NearbyScreenState extends State<NearbyScreen>
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(
@@ -2703,10 +2720,10 @@ class _NearbyScreenState extends State<NearbyScreen>
               color: _gold,
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Text(
-            NearbyStrings.findingRoutes,
-            style: TextStyle(
+            context.t.nearbyFindingRoutes,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -2783,6 +2800,7 @@ class _NearbyScreenState extends State<NearbyScreen>
     final theme = Theme.of(context);
     final ink = _ink(context);
     final goldText = _goldText(context);
+    final l10n = context.t;
 
     final route = _routesData[tech.id];
     final distance = route?.distanceKm ?? tech.distanceKm;
@@ -2800,22 +2818,22 @@ class _NearbyScreenState extends State<NearbyScreen>
         final mainStats = <Widget>[
           _statTile(
             Icons.directions_car_rounded,
-            '${distance.toStringAsFixed(1)} km',
-            'Distance',
+            l10n.nearbyKm(distance.toStringAsFixed(1)),
+            l10n.nearbyStatDistance,
             AppTheme.primary,
           ),
           if (duration != null)
             _statTile(
               Icons.access_time_rounded,
-              '~${duration.toStringAsFixed(0)} min',
-              'Drive time',
+              l10n.nearbyApproxMin(duration.toStringAsFixed(0)),
+              l10n.nearbyStatDriveTime,
               AppTheme.accent,
             ),
           if (tech.rating > 0)
             _statTile(
               Icons.star_rounded,
               tech.rating.toStringAsFixed(1),
-              'Rating',
+              l10n.nearbyStatRating,
               AppTheme.secondary,
             ),
         ];
@@ -2825,21 +2843,21 @@ class _NearbyScreenState extends State<NearbyScreen>
             _statTile(
               Icons.task_alt_rounded,
               '${tech.completedJobsCount}',
-              'Jobs done',
+              l10n.nearbyStatJobsDone,
               AppTheme.accent,
             ),
           if (tech.requestsCount > 0)
             _statTile(
               Icons.assignment_turned_in_rounded,
               '${tech.requestsCount}',
-              'Requests',
+              l10n.nearbyStatRequests,
               AppTheme.primary,
             ),
           if (tech.reviewsCount > 0)
             _statTile(
               Icons.reviews_rounded,
               '${tech.reviewsCount}',
-              'Reviews',
+              l10n.nearbyStatReviews,
               AppTheme.secondary,
             ),
         ];
@@ -2943,7 +2961,7 @@ class _NearbyScreenState extends State<NearbyScreen>
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            NearbyStrings.recommendedReason,
+                            l10n.nearbyRecommendedReason,
                             style: TextStyle(
                               color: goldText,
                               fontSize: 12.5,
@@ -3011,9 +3029,9 @@ class _NearbyScreenState extends State<NearbyScreen>
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      NearbyStrings.viewProfile,
-                      style: TextStyle(
+                    child: Text(
+                      l10n.nearbyViewProfile,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15.5,
                       ),
@@ -3032,6 +3050,7 @@ class _NearbyScreenState extends State<NearbyScreen>
   // GOOGLE MAPS
   // ==============================================================
 
+  // ignore: unused_element
   Future<void> _openDirectionsInGoogleMaps(
       BuildContext context, {
         required LatLng origin,
@@ -3053,7 +3072,7 @@ class _NearbyScreenState extends State<NearbyScreen>
 
     if (!launched && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(NearbyStrings.couldNotOpenMaps)),
+        SnackBar(content: Text(context.t.nearbyCouldNotOpenMaps)),
       );
     }
   }
@@ -3097,7 +3116,10 @@ class _NearbyScreenState extends State<NearbyScreen>
         animationDuration: const Duration(milliseconds: 160),
         child: InkWell(
           onTap: () {
-            if (!AuthGuard.ensure(context, message: _kFilterLoginMessage)) {
+            if (!AuthGuard.ensure(
+              context,
+              message: context.t.nearbyFilterLoginMessage,
+            )) {
               return;
             }
             onTap();

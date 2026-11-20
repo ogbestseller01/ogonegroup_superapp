@@ -10,7 +10,6 @@ import '../../config/app_config.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 
-import '../../widgets/confirmation_dialog.dart';
 import '../../widgets/flag_icon.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -54,12 +53,14 @@ class SettingsScreen extends StatelessWidget {
             // HEADER
             _HeaderSection(
               isDark: isDark,
+              title: l10n.manageSettings,
+              subtitle: l10n.personalizeExperience,
             ),
 
             const SizedBox(height: 28),
 
             // PREFERENCES
-            _SectionTitle(title: 'PREFERENCES'),
+            _SectionTitle(title: l10n.preferences),
 
             const SizedBox(height: 12),
 
@@ -92,7 +93,7 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: settings.updateNotificationStatus,
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -102,9 +103,9 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.language_rounded,
                     color: Color(0xFF1976D2),
                   ),
-                  title: const Text(
-                    'Language',
-                    style: TextStyle(
+                  title: Text(
+                    l10n.language,
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -167,7 +168,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -177,14 +178,17 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.palette_rounded,
                     color: Color(0xFF8E5AC7),
                   ),
-                  title: const Text(
-                    'Appearance',
-                    style: TextStyle(
+                  title: Text(
+                    l10n.appearance,
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   subtitle: Text(
-                    _themeLabel(themeProvider.themeMode),
+                    _themeSubtitle(
+                      themeProvider.themeMode,
+                      l10n,
+                    ),
                     style: TextStyle(
                       fontSize: 12,
                       color: theme.hintColor,
@@ -197,18 +201,18 @@ class SettingsScreen extends StatelessWidget {
                       icon: const Icon(
                         Icons.keyboard_arrow_down_rounded,
                       ),
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: ThemeMode.light,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.light_mode_rounded,
                                 size: 17,
                               ),
-                              SizedBox(width: 8),
-                              Text('Light'),
+                              const SizedBox(width: 8),
+                              Text(l10n.light),
                             ],
                           ),
                         ),
@@ -217,12 +221,12 @@ class SettingsScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.dark_mode_rounded,
                                 size: 17,
                               ),
-                              SizedBox(width: 8),
-                              Text('Dark'),
+                              const SizedBox(width: 8),
+                              Text(l10n.dark),
                             ],
                           ),
                         ),
@@ -231,12 +235,12 @@ class SettingsScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.settings_suggest_rounded,
                                 size: 17,
                               ),
-                              SizedBox(width: 8),
-                              Text('System'),
+                              const SizedBox(width: 8),
+                              Text(l10n.system),
                             ],
                           ),
                         ),
@@ -255,13 +259,12 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 28),
 
             // INFORMATION
-            _SectionTitle(title: 'INFORMATION'),
+            _SectionTitle(title: l10n.information),
 
             const SizedBox(height: 12),
 
             _SettingsCard(
               children: [
-                // ===== NOTIFICATIONS (moved from Profile) =====
                 _NavigationTile(
                   icon: Icons.notifications_none_rounded,
                   iconColor: const Color(0xFF8E5AC7),
@@ -272,7 +275,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 _NavigationTile(
                   icon: Icons.info_outline_rounded,
@@ -284,7 +287,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 _NavigationTile(
                   icon: Icons.help_outline_rounded,
@@ -296,7 +299,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 _NavigationTile(
                   icon: Icons.description_outlined,
@@ -308,7 +311,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 _NavigationTile(
                   icon: Icons.privacy_tip_outlined,
@@ -320,7 +323,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
 
-                _CardDivider(),
+                const _CardDivider(),
 
                 _NavigationTile(
                   icon: Icons.support_agent_rounded,
@@ -329,29 +332,6 @@ class SettingsScreen extends StatelessWidget {
                   onTap: () => Navigator.pushNamed(
                     context,
                     AppRoutes.contactUs,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 28),
-
-            // ACCOUNT
-            _SectionTitle(title: 'ACCOUNT'),
-
-            const SizedBox(height: 12),
-
-            _SettingsCard(
-              children: [
-                _NavigationTile(
-                  icon: Icons.logout_rounded,
-                  iconColor: AppTheme.error,
-                  title: l10n.deleteAccount,
-                  titleColor: AppTheme.error,
-                  onTap: () => _confirmLogout(
-                    context,
-                    auth,
-                    l10n,
                   ),
                 ),
               ],
@@ -370,7 +350,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'NearbyFundi',
+                    l10n.appTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -384,7 +364,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    'Find trusted technicians near you.',
+                    l10n.findTrustedNearby,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.hintColor,
                       fontSize: 11,
@@ -399,39 +379,18 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  static String _themeLabel(ThemeMode mode) {
+  static String _themeSubtitle(
+      ThemeMode mode,
+      AppLocalizations l10n,
+      ) {
     switch (mode) {
       case ThemeMode.light:
-        return 'Light appearance';
+        return l10n.lightAppearance;
       case ThemeMode.dark:
-        return 'Dark appearance';
+        return l10n.darkAppearance;
       case ThemeMode.system:
-        return 'Follow device settings';
+        return l10n.followDeviceSettings;
     }
-  }
-
-  Future<void> _confirmLogout(
-      BuildContext context,
-      AuthProvider auth,
-      AppLocalizations l10n,
-      ) async {
-    final confirm = await showConfirmationDialog(
-      context,
-      l10n.deleteAccount,
-      l10n.deleteAccountConfirmation,
-    );
-
-    if (confirm != true) return;
-
-    await auth.logout();
-
-    if (!context.mounted) return;
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.login,
-          (_) => false,
-    );
   }
 }
 
@@ -441,15 +400,17 @@ class SettingsScreen extends StatelessWidget {
 
 class _HeaderSection extends StatelessWidget {
   final bool isDark;
+  final String title;
+  final String subtitle;
 
   const _HeaderSection({
     required this.isDark,
+    required this.title,
+    required this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -483,9 +444,9 @@ class _HeaderSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Manage your settings',
-                  style: TextStyle(
+                Text(
+                  title,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -493,7 +454,7 @@ class _HeaderSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  'Personalize your NearbyFundi experience.',
+                  subtitle,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.85),
                     fontSize: 12,
@@ -522,7 +483,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      title,
+      title.toUpperCase(),
       style: TextStyle(
         fontSize: 11,
         letterSpacing: 1.2,
@@ -572,6 +533,8 @@ class _SettingsCard extends StatelessWidget {
 // ============================================================
 
 class _CardDivider extends StatelessWidget {
+  const _CardDivider();
+
   @override
   Widget build(BuildContext context) {
     return Divider(

@@ -12,10 +12,22 @@ import 'config/app_routes.dart';
 import 'config/app_theme.dart';
 import 'fundi_routes.dart' show generateFundiRoute;
 import 'l10n/app_localizations.dart';
+import 'payments/chanel/mock_channel.dart';
+import 'payments/provider/payment_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/chat_provider.dart';
+import 'providers/job_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/portfolio_provider.dart';
+import 'providers/post_provider.dart';
+import 'providers/request_provider.dart';
+import 'providers/service_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/static_page_provider.dart';
+import 'providers/subscription_provider.dart';
+import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
-// TODO: import every other provider that fundiapp's main.dart registers.
+import 'providers/ticket_provider.dart';
 
 class FundiMiniApp extends StatelessWidget {
   const FundiMiniApp({super.key, this.initialRoute});
@@ -35,7 +47,20 @@ class FundiMiniApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        // TODO: copy the remaining providers from fundiapp's main.dart.
+        ChangeNotifierProvider(create: (_) => ServiceProvider()),
+        ChangeNotifierProvider(create: (_) => TechnicianProvider()),
+        ChangeNotifierProvider(create: (_) => RequestProvider()),
+        ChangeNotifierProvider(create: (_) => JobProvider()),
+        ChangeNotifierProvider(create: (_) => PortfolioProvider()),
+        ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+        ChangeNotifierProvider(create: (_) => TicketProvider()),
+        ChangeNotifierProvider(create: (_) => StaticPageProvider()),
+        ChangeNotifierProvider(
+          create: (_) => PaymentProvider(channel: MockPaymentChannel()),
+        ),
       ],
       child: Consumer2<ThemeProvider, SettingsProvider>(
         builder: (context, themeProvider, settings, _) {

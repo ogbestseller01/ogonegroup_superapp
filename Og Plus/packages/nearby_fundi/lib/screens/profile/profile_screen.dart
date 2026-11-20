@@ -19,7 +19,6 @@ class ProfileScreen extends StatelessWidget {
 
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final displayName = user?.name ?? l10n.guest;
     final trimmedName = displayName.trim();
@@ -61,7 +60,7 @@ class ProfileScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh profile',
+            tooltip: l10n.refreshProfile,
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () async {
               await context.read<AuthProvider>().loadUser();
@@ -76,9 +75,7 @@ class ProfileScreen extends StatelessWidget {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 720,
-            ),
+            constraints: const BoxConstraints(maxWidth: 720),
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
@@ -95,15 +92,15 @@ class ProfileScreen extends StatelessWidget {
                     name: displayName,
                     email: user?.email ?? '',
                     phone: user?.phone,
-                    isDark: isDark,
+                    activeLabel: l10n.activeStatus,
                   ),
 
                   const SizedBox(height: 28),
 
                   // QUICK ACTIONS
-                  const _SectionHeading(
-                    title: 'YOUR ACCOUNT',
-                    subtitle: 'Manage your personal account',
+                  _SectionHeading(
+                    title: l10n.yourAccount,
+                    subtitle: l10n.managePersonalAccount,
                   ),
 
                   const SizedBox(height: 14),
@@ -112,7 +109,7 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.person_outline_rounded,
                     iconColor: const Color(0xFF1976D2),
                     title: l10n.editProfile,
-                    subtitle: 'Update your personal information',
+                    subtitle: l10n.updatePersonalInfo,
                     onTap: () {
                       Navigator.pushNamed(
                         context,
@@ -127,7 +124,7 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.settings_outlined,
                     iconColor: const Color(0xFF00897B),
                     title: l10n.settings,
-                    subtitle: 'Manage your app preferences',
+                    subtitle: l10n.manageAppPreferences,
                     onTap: () {
                       Navigator.pushNamed(
                         context,
@@ -139,19 +136,44 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 28),
 
                   // ACCOUNT STATUS
-                  const _SectionHeading(
-                    title: 'ACCOUNT STATUS',
-                    subtitle: 'Your NearbyFundi account',
+                  _SectionHeading(
+                    title: l10n.accountStatus,
+                    subtitle: l10n.yourNearbyFundiAccount,
                   ),
 
                   const SizedBox(height: 14),
 
-                  _AccountStatusCard(),
+                  _AccountStatusCard(
+                    title: l10n.accountActive,
+                    subtitle: l10n.accountReadyToUse,
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // DANGER ZONE
+                  _SectionHeading(
+                    title: l10n.dangerZone,
+                    subtitle: l10n.irreversibleActions,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  _DangerActionCard(
+                    icon: Icons.delete_outline_rounded,
+                    title: l10n.deleteAccount,
+                    subtitle: l10n.deleteAccountSubtitle,
+                    onTap: () => _confirmDelete(
+                      context,
+                      auth,
+                      l10n,
+                    ),
+                  ),
 
                   const SizedBox(height: 28),
 
                   // LOGOUT
                   _LogoutButton(
+                    label: l10n.logout,
                     onTap: () => _confirmLogout(
                       context,
                       auth,
@@ -170,31 +192,26 @@ class ProfileScreen extends StatelessWidget {
                           size: 24,
                           color: theme.hintColor.withOpacity(0.55),
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
-                          'NearbyFundi',
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          l10n.appTitle,
+                          style:
+                          theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-
                         const SizedBox(height: 4),
-
                         Text(
-                          'Your trusted connection to local technicians.',
+                          l10n.trustedConnection,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.hintColor,
                             fontSize: 11,
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
-                          'Version 0.0.1',
+                          '${l10n.version} 0.0.1',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.hintColor,
                             fontSize: 11,
@@ -239,6 +256,115 @@ class ProfileScreen extends StatelessWidget {
           (_) => false,
     );
   }
+
+  // ============================================================
+  // DELETE ACCOUNT (just logs out)
+  // ============================================================
+
+  Future<void> _confirmDelete(
+      BuildContext context,
+      AuthProvider auth,
+      AppLocalizations l10n,
+      ) async {
+    final theme = Theme.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        icon: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppTheme.error.withOpacity(0.10),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.warning_amber_rounded,
+            color: AppTheme.error,
+            size: 30,
+          ),
+        ),
+        title: Text(
+          l10n.deleteAccountTitle,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: Text(
+          l10n.deleteAccountWarning,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
+            height: 1.45,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          OutlinedButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.onSurface,
+              side: BorderSide(
+                color: theme.dividerColor.withOpacity(0.5),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 14,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              l10n.cancelActionLabel,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 14,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Just log out of the app — no backend deletion.
+    await auth.logout();
+
+    if (!context.mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.login,
+          (_) => false,
+    );
+  }
 }
 
 // ============================================================
@@ -250,20 +376,18 @@ class _ProfileHeader extends StatelessWidget {
   final String name;
   final String email;
   final String? phone;
-  final bool isDark;
+  final String activeLabel;
 
   const _ProfileHeader({
     required this.initial,
     required this.name,
     required this.email,
     required this.phone,
-    required this.isDark,
+    required this.activeLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     final hasPhone = phone != null && phone!.trim().isNotEmpty;
 
     return Container(
@@ -290,7 +414,6 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // AVATAR
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -316,7 +439,6 @@ class _ProfileHeader extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // NAME
           Text(
             name,
             textAlign: TextAlign.center,
@@ -329,7 +451,6 @@ class _ProfileHeader extends StatelessWidget {
 
           if (email.isNotEmpty) ...[
             const SizedBox(height: 7),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -355,7 +476,6 @@ class _ProfileHeader extends StatelessWidget {
 
           if (hasPhone) ...[
             const SizedBox(height: 7),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -378,7 +498,6 @@ class _ProfileHeader extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          // STATUS
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -391,18 +510,18 @@ class _ProfileHeader extends StatelessWidget {
                 color: Colors.white.withOpacity(0.25),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.check_circle_rounded,
                   color: Color(0xFF8FF0B0),
                   size: 15,
                 ),
-                SizedBox(width: 7),
+                const SizedBox(width: 7),
                 Text(
-                  'Active',
-                  style: TextStyle(
+                  activeLabel,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
@@ -438,7 +557,7 @@ class _SectionHeading extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
+          title.toUpperCase(),
           style: TextStyle(
             fontSize: 11,
             letterSpacing: 1.2,
@@ -501,7 +620,6 @@ class _ProfileActionCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // ICON
               Container(
                 width: 46,
                 height: 46,
@@ -515,10 +633,7 @@ class _ProfileActionCard extends StatelessWidget {
                   size: 23,
                 ),
               ),
-
               const SizedBox(width: 15),
-
-              // TITLE AND SUBTITLE
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,9 +655,7 @@ class _ProfileActionCard extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 15,
@@ -561,19 +674,26 @@ class _ProfileActionCard extends StatelessWidget {
 // ============================================================
 
 class _AccountStatusCard extends StatelessWidget {
-  const _AccountStatusCard();
+  final String title;
+  final String subtitle;
+
+  const _AccountStatusCard({
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const successColor = Color(0xFF16A36A);
 
     return Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: const Color(0xFF16A36A).withOpacity(0.07),
+        color: successColor.withOpacity(0.07),
         borderRadius: BorderRadius.circular(17),
         border: Border.all(
-          color: const Color(0xFF16A36A).withOpacity(0.20),
+          color: successColor.withOpacity(0.20),
         ),
       ),
       child: Row(
@@ -582,32 +702,30 @@ class _AccountStatusCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFF16A36A).withOpacity(0.12),
+              color: successColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(13),
             ),
             child: const Icon(
               Icons.verified_user_rounded,
-              color: Color(0xFF16A36A),
+              color: successColor,
               size: 22,
             ),
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Account active',
+                  title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF16A36A),
+                    color: successColor,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Your account is ready to use.',
+                  subtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.hintColor,
                     fontSize: 11,
@@ -616,13 +734,102 @@ class _AccountStatusCard extends StatelessWidget {
               ],
             ),
           ),
-
           const Icon(
             Icons.check_circle_rounded,
-            color: Color(0xFF16A36A),
+            color: successColor,
             size: 21,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// DANGER ACTION CARD
+// ============================================================
+
+class _DangerActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _DangerActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: AppTheme.error.withOpacity(0.06),
+      borderRadius: BorderRadius.circular(17),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 15,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(
+              color: AppTheme.error.withOpacity(0.16),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppTheme.error,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.error,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 15,
+                color: AppTheme.error.withOpacity(0.65),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -633,9 +840,11 @@ class _AccountStatusCard extends StatelessWidget {
 // ============================================================
 
 class _LogoutButton extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
 
   const _LogoutButton({
+    required this.label,
     required this.onTap,
   });
 
@@ -668,19 +877,16 @@ class _LogoutButton extends StatelessWidget {
                 color: AppTheme.error,
                 size: 22,
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Text(
-                  'Logout',
+                  label,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: AppTheme.error,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 15,

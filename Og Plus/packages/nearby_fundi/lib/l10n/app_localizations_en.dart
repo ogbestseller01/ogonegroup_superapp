@@ -358,6 +358,399 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithGoogle => 'Continue with Google';
 
   @override
+  String get yourAccount => 'Your Account';
+
+  @override
+  String get managePersonalAccount => 'Manage your personal account';
+
+  @override
+  String get updatePersonalInfo => 'Update your personal information';
+
+  @override
+  String get manageAppPreferences => 'Manage your app preferences';
+
+  @override
+  String get yourNearbyFundiAccount => 'Your NearbyFundi account';
+
+  @override
+  String get accountActive => 'Account active';
+
+  @override
+  String get accountReadyToUse => 'Your account is ready to use.';
+
+  @override
+  String get dangerZone => 'Danger Zone';
+
+  @override
+  String get irreversibleActions => 'Irreversible account actions';
+
+  @override
+  String get deleteAccountSubtitle => 'Permanently remove your account and data';
+
+  @override
+  String get deleteAccountTitle => 'Delete account?';
+
+  @override
+  String get deleteAccountWarning => 'You will be signed out of this app immediately. You can sign in again at any time.';
+
+  @override
+  String get manageSettings => 'Manage your settings';
+
+  @override
+  String get personalizeExperience => 'Personalize your NearbyFundi experience.';
+
+  @override
+  String get lightAppearance => 'Light appearance';
+
+  @override
+  String get darkAppearance => 'Dark appearance';
+
+  @override
+  String get followDeviceSettings => 'Follow device settings';
+
+  @override
+  String get light => 'Light';
+
+  @override
+  String get dark => 'Dark';
+
+  @override
+  String get system => 'System';
+
+  @override
+  String get preferences => 'Preferences';
+
+  @override
+  String get information => 'Information';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get manageYourAccount => 'Manage your account';
+
+  @override
+  String get refreshProfile => 'Refresh profile';
+
+  @override
+  String get trustedConnection => 'Your trusted connection to local technicians.';
+
+  @override
+  String get findTrustedNearby => 'Find trusted technicians near you.';
+
+  @override
+  String get nameRequired => 'Name is required';
+
+  @override
+  String get enterValidName => 'Enter a valid name';
+
+  @override
+  String get enterFullName => 'Enter your full name';
+
+  @override
+  String get enterPhoneNumber => 'Enter your phone number';
+
+  @override
+  String get personalInformation => 'Personal information';
+
+  @override
+  String get editNameAndContact => 'Edit your name and contact details.';
+
+  @override
+  String get keepInfoUpdated => 'Keep your personal information up to date.';
+
+  @override
+  String get profileHeaderSubtitle => 'Manage your account details';
+
+  @override
+  String get cancelActionLabel => 'Cancel';
+
+  @override
+  String get activeStatus => 'Active';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String minAgo(int count) {
+    return '$count min ago';
+  }
+
+  @override
+  String hrAgo(int count) {
+    return '$count hr ago';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return '$count days ago';
+  }
+
+  @override
+  String get nearbyRefresh => 'Refresh';
+
+  @override
+  String get nearbyFitAll => 'Fit all';
+
+  @override
+  String get nearbyNoTechniciansFound => 'No technicians found';
+
+  @override
+  String get nearbyTryAnotherLocation => 'Try another location or a different service';
+
+  @override
+  String get nearbyNearYou => 'Near you';
+
+  @override
+  String nearbyApproxMinShort(String value) {
+    return '~${value}m';
+  }
+
+  @override
+  String nearbyMapSummary(int count, int radius) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count technicians',
+      one: '1 technician',
+    );
+    return '$_temp0 • within $radius km';
+  }
+
+  @override
+  String get techMapLocationUnavailable => 'Location not available for this technician.';
+
+  @override
+  String get techMapRefreshRoute => 'Refresh route';
+
+  @override
+  String get techMapCalculatingRoute => 'Calculating route…';
+
+  @override
+  String get techMapRecenter => 'Recenter';
+
+  @override
+  String get techMapMaps => 'Maps';
+
+  @override
+  String get techMapOnline => 'Online';
+
+  @override
+  String get techMapOffline => 'Offline';
+
+  @override
+  String get pickerTitle => 'Pick location';
+
+  @override
+  String get pickerOk => 'OK';
+
+  @override
+  String get pickerSettings => 'Settings';
+
+  @override
+  String get pickerEnableLocation => 'Please enable location services.';
+
+  @override
+  String get pickerPermissionDenied => 'Location permission denied.';
+
+  @override
+  String get pickerPermissionDeniedForever => 'Location permission permanently denied.';
+
+  @override
+  String get pickerOutsideTanzania => 'Your location is outside Tanzania.';
+
+  @override
+  String get pickerLocationFailed => 'Could not get your location. Please try again.';
+
+  @override
+  String get pickerPickInsideTanzania => 'Please pick a location inside Tanzania.';
+
+  @override
+  String get pickerMyLocation => 'My current location';
+
+  @override
+  String get pickerSearchHint => 'Search a place in Tanzania…';
+
+  @override
+  String get pickerRecent => 'Recent';
+
+  @override
+  String get pickerClearAll => 'Clear all';
+
+  @override
+  String get pickerRemove => 'Remove';
+
+  @override
+  String get pickerGettingAddress => 'Getting address…';
+
+  @override
+  String get pickerTapMapHint => 'Tap the map or search for a place';
+
+  @override
+  String get pickerUseLocation => 'Use this location';
+
+  @override
+  String get nearbyFindFundiTitle => 'Find a fundi near you';
+
+  @override
+  String get nearbySearch => 'Search';
+
+  @override
+  String get nearbyShowSearch => 'Show search';
+
+  @override
+  String get nearbyHideSearch => 'Hide search';
+
+  @override
+  String get nearbyClearSearch => 'Clear search';
+
+  @override
+  String get nearbyFilterByService => 'Filter by service...';
+
+  @override
+  String get nearbyChooseOnMap => 'Choose location on map';
+
+  @override
+  String get nearbyRecommendedReason => 'Top ranked near you: rating, jobs and requests';
+
+  @override
+  String get nearbyRecentSearches => 'Recent searches';
+
+  @override
+  String get nearbyClear => 'Clear';
+
+  @override
+  String get nearbyClearFilters => 'Clear filters';
+
+  @override
+  String get nearbyFindingRoutes => 'Finding best routes...';
+
+  @override
+  String get nearbySearchForTechnicians => 'Search for technicians';
+
+  @override
+  String get nearbyNoTechniciansNearby => 'No technicians found nearby';
+
+  @override
+  String get nearbyYou => 'You';
+
+  @override
+  String get nearbyZoomIn => 'Zoom in';
+
+  @override
+  String get nearbyZoomOut => 'Zoom out';
+
+  @override
+  String get nearbyFitTechnicians => 'Fit technicians';
+
+  @override
+  String get nearbyShowList => 'Show technician list';
+
+  @override
+  String get nearbyShowFullMap => 'Show full-screen map';
+
+  @override
+  String get nearbyViewProfile => 'View Profile';
+
+  @override
+  String get nearbyDirections => 'Get directions';
+
+  @override
+  String get nearbyCouldNotOpenMaps => 'Could not open maps app.';
+
+  @override
+  String get nearbyTopPick => 'Top pick';
+
+  @override
+  String get nearbyAll => 'All';
+
+  @override
+  String get nearbySearchFailed => 'Search failed. Please check your connection and try again.';
+
+  @override
+  String get nearbyInvalidLocation => 'Invalid location selected. Please try again.';
+
+  @override
+  String get nearbySearchLoginMessage => 'Sign in or create an account to search for fundis near you.';
+
+  @override
+  String get nearbyFilterLoginMessage => 'Sign in or create an account to filter fundis by service.';
+
+  @override
+  String get nearbySearchHint => 'Search a place or pick one on the map.';
+
+  @override
+  String get nearbyStatDistance => 'Distance';
+
+  @override
+  String get nearbyStatDriveTime => 'Drive time';
+
+  @override
+  String get nearbyStatRating => 'Rating';
+
+  @override
+  String get nearbyStatJobsDone => 'Jobs done';
+
+  @override
+  String get nearbyStatRequests => 'Requests';
+
+  @override
+  String get nearbyStatReviews => 'Reviews';
+
+  @override
+  String nearbyKm(String value) {
+    return '$value km';
+  }
+
+  @override
+  String nearbyApproxMin(String value) {
+    return '~$value min';
+  }
+
+  @override
+  String nearbyFoundWithRadius(int count, int radius) {
+    return '$count found • $radius km';
+  }
+
+  @override
+  String nearbyExpandedNotice(int radius) {
+    return 'No fundis very close, so we searched up to $radius km.';
+  }
+
+  @override
+  String nearbyNoneWithinMax(int radius) {
+    return 'No fundis within $radius km of this location. Try another place or service.';
+  }
+
+  @override
+  String nearbyNoneWithin(int radius) {
+    return 'No fundis within $radius km of this location.';
+  }
+
+  @override
+  String nearbySearchWiderUpTo(int radius) {
+    return 'Search wider (up to $radius km)';
+  }
+
+  @override
+  String nearbyJobsCount(int count) {
+    return '$count jobs';
+  }
+
+  @override
+  String nearbyRequestsCount(int count) {
+    return '$count requests';
+  }
+
+  @override
+  String nearbyJobsDone(int count) {
+    return '$count jobs done';
+  }
+
+  @override
   String get today => 'Today';
 
   @override
@@ -658,9 +1051,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get typeAMessage => 'Type a message...';
-
-  @override
-  String get justNow => 'Just now';
 
   @override
   String get copy => 'Copy';

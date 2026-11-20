@@ -16,10 +16,12 @@ class $AssetsIconsGen {
       const AssetGenImage('assets/icons/app_icon.png');
   final AssetGenImage appIconForeground =
       const AssetGenImage('assets/icons/app_icon_foreground.png');
-  final AssetGenImage appleSigninRemovebgPreview =
+  final AssetGenImage appleSignin =
       const AssetGenImage('assets/icons/apple_signin.png');
-  final AssetGenImage googleSignin =
+  final AssetGenImage googleLogo =
       const AssetGenImage('assets/icons/google_logo.png');
+  final AssetGenImage googleSignin =
+      const AssetGenImage('assets/icons/google_signin.png');
   final AssetGenImage nearby = const AssetGenImage('assets/icons/nearby.png');
   final AssetGenImage nearbyfundiLogo =
       const AssetGenImage('assets/icons/nearbyfundi-logo.png');

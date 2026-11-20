@@ -358,6 +358,399 @@ class AppLocalizationsSw extends AppLocalizations {
   String get continueWithGoogle => 'Endelea na Google';
 
   @override
+  String get yourAccount => 'Akaunti Yako';
+
+  @override
+  String get managePersonalAccount => 'Simamia akaunti yako binafsi';
+
+  @override
+  String get updatePersonalInfo => 'Sasisha taarifa zako binafsi';
+
+  @override
+  String get manageAppPreferences => 'Simamia mapendeleo ya programu';
+
+  @override
+  String get yourNearbyFundiAccount => 'Akaunti yako ya NearbyFundi';
+
+  @override
+  String get accountActive => 'Akaunti inatumika';
+
+  @override
+  String get accountReadyToUse => 'Akaunti yako iko tayari kutumika.';
+
+  @override
+  String get dangerZone => 'Eneo la Hatari';
+
+  @override
+  String get irreversibleActions => 'Vitendo visivyoweza kurejeshwa';
+
+  @override
+  String get deleteAccountSubtitle => 'Ondoa akaunti yako na data kabisa';
+
+  @override
+  String get deleteAccountTitle => 'Futa akaunti?';
+
+  @override
+  String get deleteAccountWarning => 'Utatolewa kwenye programu hii mara moja. Unaweza kuingia tena wakati wowote.';
+
+  @override
+  String get manageSettings => 'Simamia mipangilio yako';
+
+  @override
+  String get personalizeExperience => 'Binafsisha uzoefu wako wa NearbyFundi.';
+
+  @override
+  String get lightAppearance => 'Muonekano mweupe';
+
+  @override
+  String get darkAppearance => 'Muonekano mweusi';
+
+  @override
+  String get followDeviceSettings => 'Fuata mipangilio ya kifaa';
+
+  @override
+  String get light => 'Mweupe';
+
+  @override
+  String get dark => 'Mweusi';
+
+  @override
+  String get system => 'Mfumo';
+
+  @override
+  String get preferences => 'Mapendeleo';
+
+  @override
+  String get information => 'Taarifa';
+
+  @override
+  String get appearance => 'Muonekano';
+
+  @override
+  String get manageYourAccount => 'Simamia akaunti yako';
+
+  @override
+  String get refreshProfile => 'Sasisha profaili';
+
+  @override
+  String get trustedConnection => 'Muunganisho wako wa kuaminika kwa mafundi wa karibu.';
+
+  @override
+  String get findTrustedNearby => 'Pata mafundi wa kuaminika karibu nawe.';
+
+  @override
+  String get nameRequired => 'Jina linahitajika';
+
+  @override
+  String get enterValidName => 'Ingiza jina sahihi';
+
+  @override
+  String get enterFullName => 'Ingiza jina lako kamili';
+
+  @override
+  String get enterPhoneNumber => 'Ingiza namba yako ya simu';
+
+  @override
+  String get personalInformation => 'Taarifa binafsi';
+
+  @override
+  String get editNameAndContact => 'Hariri jina lako na maelezo ya mawasiliano.';
+
+  @override
+  String get keepInfoUpdated => 'Weka taarifa zako binafsi ziwe za kisasa.';
+
+  @override
+  String get profileHeaderSubtitle => 'Simamia maelezo ya akaunti yako';
+
+  @override
+  String get cancelActionLabel => 'Ghairi';
+
+  @override
+  String get activeStatus => 'Inatumika';
+
+  @override
+  String get menu => 'Menyu';
+
+  @override
+  String get justNow => 'Sasa hivi';
+
+  @override
+  String minAgo(int count) {
+    return 'Dakika $count zilizopita';
+  }
+
+  @override
+  String hrAgo(int count) {
+    return 'Saa $count zilizopita';
+  }
+
+  @override
+  String daysAgo(int count) {
+    return 'Siku $count zilizopita';
+  }
+
+  @override
+  String get nearbyRefresh => 'Onyesha upya';
+
+  @override
+  String get nearbyFitAll => 'Onyesha vyote';
+
+  @override
+  String get nearbyNoTechniciansFound => 'Hakuna mafundi waliopatikana';
+
+  @override
+  String get nearbyTryAnotherLocation => 'Jaribu eneo lingine au huduma tofauti';
+
+  @override
+  String get nearbyNearYou => 'Karibu nawe';
+
+  @override
+  String nearbyApproxMinShort(String value) {
+    return '~dk $value';
+  }
+
+  @override
+  String nearbyMapSummary(int count, int radius) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'mafundi $count',
+      one: 'fundi 1',
+    );
+    return '$_temp0 • ndani ya km $radius';
+  }
+
+  @override
+  String get techMapLocationUnavailable => 'Eneo la fundi huyu halipatikani.';
+
+  @override
+  String get techMapRefreshRoute => 'Onyesha upya njia';
+
+  @override
+  String get techMapCalculatingRoute => 'Inakokotoa njia…';
+
+  @override
+  String get techMapRecenter => 'Rudisha katikati';
+
+  @override
+  String get techMapMaps => 'Ramani';
+
+  @override
+  String get techMapOnline => 'Yupo mtandaoni';
+
+  @override
+  String get techMapOffline => 'Hayupo mtandaoni';
+
+  @override
+  String get pickerTitle => 'Chagua eneo';
+
+  @override
+  String get pickerOk => 'SAWA';
+
+  @override
+  String get pickerSettings => 'Mipangilio';
+
+  @override
+  String get pickerEnableLocation => 'Tafadhali washa huduma za eneo.';
+
+  @override
+  String get pickerPermissionDenied => 'Ruhusa ya eneo imekataliwa.';
+
+  @override
+  String get pickerPermissionDeniedForever => 'Ruhusa ya eneo imekataliwa kabisa.';
+
+  @override
+  String get pickerOutsideTanzania => 'Eneo lako liko nje ya Tanzania.';
+
+  @override
+  String get pickerLocationFailed => 'Imeshindwa kupata eneo lako. Tafadhali jaribu tena.';
+
+  @override
+  String get pickerPickInsideTanzania => 'Tafadhali chagua eneo ndani ya Tanzania.';
+
+  @override
+  String get pickerMyLocation => 'Eneo langu la sasa';
+
+  @override
+  String get pickerSearchHint => 'Tafuta mahali Tanzania…';
+
+  @override
+  String get pickerRecent => 'Za hivi karibuni';
+
+  @override
+  String get pickerClearAll => 'Futa zote';
+
+  @override
+  String get pickerRemove => 'Ondoa';
+
+  @override
+  String get pickerGettingAddress => 'Inapata anwani…';
+
+  @override
+  String get pickerTapMapHint => 'Gusa ramani au tafuta mahali';
+
+  @override
+  String get pickerUseLocation => 'Tumia eneo hili';
+
+  @override
+  String get nearbyFindFundiTitle => 'Tafuta fundi karibu nawe';
+
+  @override
+  String get nearbySearch => 'Tafuta';
+
+  @override
+  String get nearbyShowSearch => 'Onyesha utafutaji';
+
+  @override
+  String get nearbyHideSearch => 'Ficha utafutaji';
+
+  @override
+  String get nearbyClearSearch => 'Futa utafutaji';
+
+  @override
+  String get nearbyFilterByService => 'Chuja kwa huduma...';
+
+  @override
+  String get nearbyChooseOnMap => 'Chagua eneo kwenye ramani';
+
+  @override
+  String get nearbyRecommendedReason => 'Bora zaidi karibu nawe: ukadiriaji, kazi na maombi';
+
+  @override
+  String get nearbyRecentSearches => 'Utafutaji wa hivi karibuni';
+
+  @override
+  String get nearbyClear => 'Futa';
+
+  @override
+  String get nearbyClearFilters => 'Futa vichujio';
+
+  @override
+  String get nearbyFindingRoutes => 'Inatafuta njia bora...';
+
+  @override
+  String get nearbySearchForTechnicians => 'Tafuta mafundi';
+
+  @override
+  String get nearbyNoTechniciansNearby => 'Hakuna mafundi walio karibu';
+
+  @override
+  String get nearbyYou => 'Wewe';
+
+  @override
+  String get nearbyZoomIn => 'Kuza';
+
+  @override
+  String get nearbyZoomOut => 'Punguza';
+
+  @override
+  String get nearbyFitTechnicians => 'Onyesha mafundi wote';
+
+  @override
+  String get nearbyShowList => 'Onyesha orodha ya mafundi';
+
+  @override
+  String get nearbyShowFullMap => 'Onyesha ramani nzima';
+
+  @override
+  String get nearbyViewProfile => 'Tazama Wasifu';
+
+  @override
+  String get nearbyDirections => 'Pata maelekezo';
+
+  @override
+  String get nearbyCouldNotOpenMaps => 'Imeshindwa kufungua programu ya ramani.';
+
+  @override
+  String get nearbyTopPick => 'Chaguo bora';
+
+  @override
+  String get nearbyAll => 'Zote';
+
+  @override
+  String get nearbySearchFailed => 'Utafutaji umeshindikana. Tafadhali angalia mtandao wako ujaribu tena.';
+
+  @override
+  String get nearbyInvalidLocation => 'Eneo ulilochagua si sahihi. Tafadhali jaribu tena.';
+
+  @override
+  String get nearbySearchLoginMessage => 'Ingia au fungua akaunti ili kutafuta mafundi walio karibu nawe.';
+
+  @override
+  String get nearbyFilterLoginMessage => 'Ingia au fungua akaunti ili kuchuja mafundi kwa huduma.';
+
+  @override
+  String get nearbySearchHint => 'Tafuta eneo au chagua kwenye ramani.';
+
+  @override
+  String get nearbyStatDistance => 'Umbali';
+
+  @override
+  String get nearbyStatDriveTime => 'Muda wa safari';
+
+  @override
+  String get nearbyStatRating => 'Ukadiriaji';
+
+  @override
+  String get nearbyStatJobsDone => 'Kazi zilizokamilika';
+
+  @override
+  String get nearbyStatRequests => 'Maombi';
+
+  @override
+  String get nearbyStatReviews => 'Maoni';
+
+  @override
+  String nearbyKm(String value) {
+    return 'km $value';
+  }
+
+  @override
+  String nearbyApproxMin(String value) {
+    return '~dakika $value';
+  }
+
+  @override
+  String nearbyFoundWithRadius(int count, int radius) {
+    return '$count wamepatikana • km $radius';
+  }
+
+  @override
+  String nearbyExpandedNotice(int radius) {
+    return 'Hakuna mafundi walio karibu sana, kwa hiyo tumetafuta hadi km $radius.';
+  }
+
+  @override
+  String nearbyNoneWithinMax(int radius) {
+    return 'Hakuna mafundi ndani ya km $radius kutoka eneo hili. Jaribu eneo au huduma nyingine.';
+  }
+
+  @override
+  String nearbyNoneWithin(int radius) {
+    return 'Hakuna mafundi ndani ya km $radius kutoka eneo hili.';
+  }
+
+  @override
+  String nearbySearchWiderUpTo(int radius) {
+    return 'Tafuta eneo pana zaidi (hadi km $radius)';
+  }
+
+  @override
+  String nearbyJobsCount(int count) {
+    return 'kazi $count';
+  }
+
+  @override
+  String nearbyRequestsCount(int count) {
+    return 'maombi $count';
+  }
+
+  @override
+  String nearbyJobsDone(int count) {
+    return 'kazi $count zimekamilika';
+  }
+
+  @override
   String get today => 'Leo';
 
   @override
@@ -658,9 +1051,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get typeAMessage => 'Andika ujumbe...';
-
-  @override
-  String get justNow => 'Sasa hivi';
 
   @override
   String get copy => 'Nakili';

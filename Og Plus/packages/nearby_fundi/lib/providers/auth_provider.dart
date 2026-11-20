@@ -1,3 +1,4 @@
+// lib/providers/auth_provider.dart
 import 'dart:async';
 import 'dart:convert';
 
@@ -6,9 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart'
     show GoogleSignInException, GoogleSignInExceptionCode;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../providers/auth_provider.dart'; // <-- ADDED AS REQUESTED
 import '../config/app_routes.dart';
-import '../models/google_auth_result.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/fcm_service.dart';
@@ -113,14 +112,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ─── Google login ────────────────────────────────────────────
+  // ─── Google login (with detailed logs) ───────────────────────
   Future<GoogleLoginOutcome> signInWithGoogle() async {
     _setLoading(true);
     try {
+      debugPrint('[GOOGLE] ===== Starting Google Sign-In =====');
+
+      // 1) Get a Google ID token from the device.
       final String idToken;
       try {
         idToken = await GoogleAuthService.getIdToken();
+        debugPrint('[GOOGLE] Successfully got ID Token (length: ${idToken.length})');
       } on GoogleSignInCancelled catch (c) {
+        debugPrint('[GOOGLE] Cancelled. looksLikeConfigError=${c.looksLikeConfigError}');
         if (c.looksLikeConfigError) {
           _error = 'Google sign-in closed immediately. '
               'Check the Android OAuth client (package name and SHA-1).';
@@ -128,21 +132,35 @@ class AuthProvider extends ChangeNotifier {
         }
         return GoogleLoginOutcome.cancelled;
       } on GoogleSignInException catch (e) {
-        debugPrint('[GOOGLE] code=${e.code} details=${e.details}');
+        debugPrint('[GOOGLE] GoogleSignInException');
+        debugPrint('  code    : ${e.code}');
+        debugPrint('  details : ${e.details}');
+        debugPrint('  message : ${e.toString()}');
         _error = _googleErrorFor(e.code);
         return GoogleLoginOutcome.failed;
-      } catch (e) {
-        debugPrint('[GOOGLE] token error: $e');
+      } catch (e, st) {
+        debugPrint('[GOOGLE] Unexpected error while getting token:');
+        debugPrint('  $e');
+        debugPrint('  $st');
         _error = 'Google sign-in failed. Please try again.';
         return GoogleLoginOutcome.failed;
       }
 
+      // 2) Optional push token.
       String? fcmToken;
       try {
         fcmToken = await FcmService.getToken();
-      } catch (_) {}
+        debugPrint('[GOOGLE] FCM token: ${fcmToken != null ? "received" : "null"}');
+      } catch (e) {
+        debugPrint('[GOOGLE] FCM error (ignored): $e');
+      }
 
+      // 3) Exchange the ID token with the server.
+      debugPrint('[GOOGLE] Sending ID token to backend...');
       final res = await _api.loginWithGoogle(idToken, fcmToken: fcmToken);
+
+      debugPrint('[GOOGLE] Backend response → success=${res.success}, message=${res.message}');
+
       if (!res.success || res.data == null) {
         _error = res.message.isNotEmpty
             ? res.message
@@ -151,12 +169,16 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final map = Map<String, dynamic>.from(res.data as Map);
-      _lastGoogleWasNew = GoogleAuthResult.fromJson(map).isNewUser;
+      _lastGoogleWasNew = map['is_new_user'] == true;
       await _saveSession(map);
       _error = null;
+
+      debugPrint('[GOOGLE] Login successful. is_new_user=$_lastGoogleWasNew');
       return GoogleLoginOutcome.success;
     } catch (e, st) {
-      debugPrint('[GOOGLE] unexpected: $e\n$st');
+      debugPrint('[GOOGLE] Unexpected top-level error:');
+      debugPrint('  $e');
+      debugPrint('  $st');
       _error = 'Google sign-in failed. Please try again.';
       return GoogleLoginOutcome.failed;
     } finally {

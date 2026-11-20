@@ -57,6 +57,22 @@ class AppLocalizationsSw extends AppLocalizations {
   String get quickActions => 'Vitendo vya Haraka';
 
   @override
+  String get regStep1Failed => 'Imeshindwa kufungua akaunti. Tafadhali hakiki taarifa zako na ujaribu tena.';
+
+  @override
+  String get regOtpDeliveryFailed => 'Akaunti imefunguliwa, lakini tumeshindwa kutuma msimbo sasa hivi. Bonyeza Tuma Tena kwenye ukurasa unaofuata.';
+
+  @override
+  String regOtpSentSms(String recipient) {
+    return 'Tumetuma msimbo wa uthibitisho wa tarakimu 6 kwa SMS kwenda $recipient';
+  }
+
+  @override
+  String regOtpSentEmail(String recipient) {
+    return 'Tumetuma msimbo wa uthibitisho wa tarakimu 6 kwenye barua pepe $recipient';
+  }
+
+  @override
   String get welcomeBack => 'Karibu Tena';
 
   @override
@@ -261,7 +277,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get copy => 'Nakili';
 
   @override
-  String get deleteMessage => 'Futa Ujumbe';
+  String get deleteMessage => 'Futa ujumbe?';
 
   @override
   String get reply => 'Jibu';
@@ -657,7 +673,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get selectAtLeastOneService => 'Chagua angalau huduma moja';
 
   @override
-  String get servicesUpdated => 'Huduma zimesasishwa kwa mafanikio';
+  String get servicesUpdated => 'Huduma zimesasishwa';
 
   @override
   String get profileUpdated => 'Profaili imesasishwa kwa mafanikio';
@@ -738,7 +754,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get choosePaymentMethod => 'Chagua Njia ya Malipo';
 
   @override
-  String get selectedPlan => 'Mpango Ulichochagua';
+  String get selectedPlan => 'Mpango Uliyochagua';
 
   @override
   String get paymentReference => 'Rejea ya Malipo';
@@ -910,7 +926,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get loadingNotifications => 'Inapakia arifa...';
 
   @override
-  String get viewAllNotifications => 'Tazama Arifa Zote';
+  String get viewAllNotifications => 'View All Notifications';
 
   @override
   String get notificationSettings => 'Mipangilio ya Arifa';
@@ -1310,7 +1326,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noJobsFound => 'Hakuna kazi zilizopatikana';
 
   @override
+  String get noTicketsFound => 'Hakuna tiketi zilizopatikana';
+
+  @override
   String get searchJobsHint => 'Tafuta namba ya kazi, mteja, huduma...';
+
+  @override
+  String get searchTicketsHint => 'Tafuta tiketi, kazi, mteja, huduma...';
 
   @override
   String get subscriptionComingSoonTitle => 'Usajili';
@@ -1326,12 +1348,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get completedStatus => 'IMEKAMILIKA';
-
-  @override
-  String get noTicketsFound => 'Hakuna tiketi zilizopatikana';
-
-  @override
-  String get searchTicketsHint => 'Tafuta tiketi, kazi, mteja, huduma...';
 
   @override
   String get jobDetails => 'Maelezo ya Kazi';
@@ -1399,6 +1415,33 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get filterCompleted => 'Zilizokamilika';
+
+  @override
+  String get settingsPreferences => 'Mapendeleo';
+
+  @override
+  String get settingsInformation => 'Taarifa';
+
+  @override
+  String get settingsAccount => 'Akaunti';
+
+  @override
+  String get settingsDarkMode => 'Hali ya Giza';
+
+  @override
+  String get settingsDarkOn => 'Mandhari ya giza imewashwa';
+
+  @override
+  String get settingsLightOn => 'Mandhari ya mwanga imewashwa';
+
+  @override
+  String get editServices => 'Hariri huduma';
+
+  @override
+  String get noServicesAvailable => 'Hakuna huduma zilizopo.';
+
+  @override
+  String get couldNotDeleteAccount => 'Imeshindwa kufuta akaunti';
 
   @override
   String get payments => 'Malipo';

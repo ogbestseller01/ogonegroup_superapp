@@ -9,6 +9,7 @@
 //   Max 10 entries, newest first, de-duped. Individual delete + "Clear all".
 // • Single reused http.Client, LRU suggestion cache, debounced and
 //   cancellable search + reverse geocoding.
+// • All user-facing strings come from AppLocalizations (en / sw).
 //
 // Returns {'lat': double, 'lng': double, 'name': String} via Navigator.pop.
 
@@ -24,7 +25,16 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/tanzania_map.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+
+// ================================================================
+// LOCALIZATION SHORTCUT
+// ================================================================
+
+extension _PickerL10n on BuildContext {
+  AppLocalizations get t => AppLocalizations.of(this)!;
+}
 
 // ================================================================
 // CONSTANTS
@@ -42,10 +52,11 @@ class _PickerConst {
 
   // IMPORTANT: Replace with your REAL package name (not com.example.*)
   // This becomes the User-Agent that OSM sees.
-  static const String userAgentPackageName = 'com.yourcompany.nearbyfundi';
+  static const String userAgentPackageName = 'com.ogonegroup.nearbyfundi';
 
+  // IMPORTANT: Nominatim's usage policy asks for a real contact address.
   static const Map<String, String> nominatimHeaders = {
-    'User-Agent': 'NearbyFundi/1.0 (contact@yourdomain.com)', // better identification
+    'User-Agent': 'NearbyFundi/1.0 (contact@yourdomain.com)',
   };
 }
 
@@ -254,8 +265,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   Future<void> _loadHistory() async {
     final prefs = await _getPrefs();
-    final key = _resolveHistoryKey();
     if (!mounted) return;
+    final key = _resolveHistoryKey();
     setState(() {
       _historyKey = key;
       _history = prefs.getStringList(key) ?? const <String>[];
@@ -268,6 +279,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     if (trimmed.isEmpty) return;
 
     final prefs = await _getPrefs();
+    if (!mounted) return;
     final key = _historyKey ?? _resolveHistoryKey();
 
     final list = List<String>.from(
@@ -289,6 +301,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   Future<void> _removeHistory(String value) async {
     final prefs = await _getPrefs();
+    if (!mounted) return;
     final key = _historyKey ?? _resolveHistoryKey();
     final list = List<String>.from(
       prefs.getStringList(key) ?? const <String>[],
@@ -300,6 +313,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   Future<void> _clearHistory() async {
     final prefs = await _getPrefs();
+    if (!mounted) return;
     final key = _historyKey ?? _resolveHistoryKey();
     await prefs.remove(key);
     if (!mounted) return;
@@ -312,14 +326,19 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   Future<void> _getCurrentLocation({bool moveToLocation = false}) async {
     if (_isLocating) return;
+
+    // Resolve localized strings BEFORE any await so context is never used
+    // across an async gap.
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() => _isLocating = true);
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _showSnack(
-          'Please enable location services.',
-          actionLabel: 'Settings',
+          l10n.pickerEnableLocation,
+          actionLabel: l10n.pickerSettings,
           onAction: () => Geolocator.openLocationSettings(),
         );
         return;
@@ -329,14 +348,14 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showSnack('Location permission denied.');
+          _showSnack(l10n.pickerPermissionDenied);
           return;
         }
       }
       if (permission == LocationPermission.deniedForever) {
         _showSnack(
-          'Location permission permanently denied.',
-          actionLabel: 'Settings',
+          l10n.pickerPermissionDeniedForever,
+          actionLabel: l10n.pickerSettings,
           onAction: () => Geolocator.openAppSettings(),
         );
         return;
@@ -351,7 +370,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
       final point = LatLng(position.latitude, position.longitude);
       if (!TanzaniaMap.contains(point.latitude, point.longitude)) {
-        _showSnack('Your location is outside Tanzania.');
+        _showSnack(l10n.pickerOutsideTanzania);
         return;
       }
 
@@ -363,7 +382,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       if (moveToLocation) _applyCamera(point, _PickerConst.pickZoom);
     } catch (e) {
       debugPrint('getCurrentLocation error: $e');
-      _showSnack('Could not get your location. Please try again.');
+      _showSnack(l10n.pickerLocationFailed);
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }
@@ -597,6 +616,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
         : null;
   }
 
+  // Intentionally NOT localized: this value is returned to the caller as the
+  // place name that is searched and saved in history, so it must stay stable.
   String _coordinateLabel(LatLng point) =>
       'Lat: ${point.latitude.toStringAsFixed(4)}, '
           'Lng: ${point.longitude.toStringAsFixed(4)}';
@@ -607,7 +628,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
 
   void _onMapTap(TapPosition _, LatLng point) {
     if (!TanzaniaMap.contains(point.latitude, point.longitude)) {
-      _showSnack('Please pick a location inside Tanzania.');
+      _showSnack(context.t.pickerPickInsideTanzania);
       return;
     }
     _searchFocusNode.unfocus();
@@ -661,18 +682,20 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.t;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Pick location'),
+        title: Text(l10n.pickerTitle),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _selectedPoint != null ? _confirm : null,
-            child: const Text(
-              'OK',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: Text(
+              l10n.pickerOk,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
@@ -690,8 +713,6 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                   'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: _PickerConst.userAgentPackageName,
                   maxZoom: 19,
-                  // Optional: improves behaviour on flaky networks
-                  // tileProvider: NetworkTileProvider(),
                 ),
                 if (_selectedPoint != null)
                   MarkerLayer(
@@ -739,7 +760,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                   icon: _isLocating
                       ? Icons.hourglass_empty_rounded
                       : Icons.my_location_rounded,
-                  tooltip: 'My current location',
+                  tooltip: l10n.pickerMyLocation,
                   onPressed: _isLocating
                       ? null
                       : () => _getCurrentLocation(moveToLocation: true),
@@ -747,13 +768,13 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                 const SizedBox(height: 10),
                 _CircleButton(
                   icon: Icons.add,
-                  tooltip: 'Zoom in',
+                  tooltip: l10n.nearbyZoomIn,
                   onPressed: () => _zoomBy(1),
                 ),
                 const SizedBox(height: 10),
                 _CircleButton(
                   icon: Icons.remove,
-                  tooltip: 'Zoom out',
+                  tooltip: l10n.nearbyZoomOut,
                   onPressed: () => _zoomBy(-1),
                 ),
               ],
@@ -801,10 +822,11 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
             },
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Search a place in Tanzania…',
+              hintText: context.t.pickerSearchHint,
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
+                tooltip: context.t.nearbyClear,
                 icon: const Icon(Icons.close_rounded),
                 onPressed: () {
                   _searchDebounce?.cancel();
@@ -889,7 +911,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                       size: 18, color: theme.hintColor),
                   const SizedBox(width: 8),
                   Text(
-                    'Recent',
+                    context.t.pickerRecent,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
@@ -903,9 +925,9 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       minimumSize: const Size(0, 28),
                     ),
-                    child: const Text(
-                      'Clear all',
-                      style: TextStyle(fontSize: 12),
+                    child: Text(
+                      context.t.pickerClearAll,
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -931,7 +953,7 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                       style: const TextStyle(fontSize: 13.5),
                     ),
                     trailing: IconButton(
-                      tooltip: 'Remove',
+                      tooltip: context.t.pickerRemove,
                       iconSize: 18,
                       onPressed: () => _removeHistory(value),
                       icon: const Icon(Icons.close_rounded),
@@ -967,8 +989,8 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   Widget _buildConfirmCard(ThemeData theme) {
     final hasPoint = _selectedPoint != null;
     final label = _isReverseGeocoding
-        ? 'Getting address…'
-        : (_placeName ?? 'Tap the map or search for a place');
+        ? context.t.pickerGettingAddress
+        : (_placeName ?? context.t.pickerTapMapHint);
 
     return Card(
       elevation: 8,
@@ -1005,9 +1027,9 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Use this location',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  context.t.pickerUseLocation,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),

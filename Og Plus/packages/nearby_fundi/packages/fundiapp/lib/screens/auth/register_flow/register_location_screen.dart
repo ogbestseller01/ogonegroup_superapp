@@ -52,6 +52,25 @@ class _RegisterLocationScreenState extends State<RegisterLocationScreen> {
       return;
     }
 
+    final args = widget.args;
+    final email = args['email']?.toString() ?? '';
+    final fullPhone =
+        (args['phone_full'] ?? args['phone'])?.toString() ?? '';
+
+    if (fullPhone.isEmpty) {
+      setState(() => _error = 'Phone number is missing. Please go back to step 1.');
+      return;
+    }
+
+    final serviceIds =
+        (args['service_ids'] as List?)?.whereType<int>().toList() ??
+            <int>[];
+
+    if (serviceIds.isEmpty) {
+      setState(() => _error = 'Select at least one service.');
+      return;
+    }
+
     await StorageService.clearTechnicianData();
     if (!mounted) return;
 
@@ -63,18 +82,11 @@ class _RegisterLocationScreenState extends State<RegisterLocationScreen> {
     String? fcmToken;
     try {
       fcmToken = await FcmService.getToken();
-      debugPrint(
-          '🔔 Step 1 FCM: ${fcmToken != null ? "acquired" : "null"}');
+      debugPrint('🔔 Step 1 FCM: ${fcmToken != null ? "acquired" : "null"}');
     } catch (e) {
       debugPrint('⚠️ FCM unavailable: $e');
     }
     if (!mounted) return;
-
-    final args = widget.args;
-    final email = args['email']?.toString() ?? '';
-    final fullPhone = args['phone_full']?.toString() ?? '';
-    final serviceIds =
-        (args['service_ids'] as List?)?.whereType<int>().toList() ?? const [];
 
     final id = await auth.registerTechnicianStep1({
       'name': args['name']?.toString() ?? '',
@@ -87,7 +99,8 @@ class _RegisterLocationScreenState extends State<RegisterLocationScreen> {
       'latitude': _latitude,
       'longitude': _longitude,
       'service_ids': serviceIds,
-      if (args['profile_photo'] != null)
+      if (args['profile_photo'] != null &&
+          args['profile_photo'].toString().isNotEmpty)
         'profile_photo': args['profile_photo'].toString(),
       if (fcmToken != null && fcmToken.isNotEmpty)
         'fcm_device_token': fcmToken,
@@ -106,7 +119,7 @@ class _RegisterLocationScreenState extends State<RegisterLocationScreen> {
       context,
       AppRoutes.otp,
       arguments: {
-        'identifier': email.isNotEmpty ? email : fullPhone,
+        'identifier': fullPhone, // draft OTP is stored against the phone
         'email': email,
         'phone': fullPhone,
         'technicianId': id,
@@ -119,7 +132,12 @@ class _RegisterLocationScreenState extends State<RegisterLocationScreen> {
     Navigator.pushReplacementNamed(
       context,
       AppRoutes.registerServices,
-      arguments: widget.args,
+      arguments: {
+        ...widget.args,
+        if (_areaName != null) 'area': _areaName,
+        if (_latitude != null) 'latitude': _latitude,
+        if (_longitude != null) 'longitude': _longitude,
+      },
     );
   }
 

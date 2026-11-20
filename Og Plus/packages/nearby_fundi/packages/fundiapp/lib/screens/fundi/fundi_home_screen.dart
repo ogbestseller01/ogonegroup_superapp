@@ -77,7 +77,7 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
       const FundiPostsScreen(),
       const FundiRequestsScreen(),
       const FundiChatListScreen(),
-      const FundiProfileScreen(),
+      const FundiProfileScreen(), // tab 5 = Settings (profile + settings menus)
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -386,7 +386,7 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
             blogLabel: l10n.blog,
             requestsLabel: l10n.requests,
             chatLabel: l10n.chat,
-            profileLabel: l10n.profile,
+            settingsLabel: l10n.settings, // <-- was l10n.profile
             requestsBadge: requests.pendingCount,
             chatBadge: chat.totalUnread,
           ),
@@ -928,12 +928,15 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
+                  // Settings now opens the Settings tab (profile + menus)
                   _DrawerItem(
                     icon: Icons.settings_outlined,
                     label: l10n.settings,
                     onTap: () {
+                      final home = context
+                          .findAncestorStateOfType<FundiHomeScreenState>();
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, AppRoutes.settings);
+                      home?.navigateToTab(4);
                     },
                   ),
                 ],
@@ -1073,7 +1076,7 @@ class _FloatingNavBar extends StatelessWidget {
   final String blogLabel;
   final String requestsLabel;
   final String chatLabel;
-  final String profileLabel;
+  final String settingsLabel;
   final int requestsBadge;
   final int chatBadge;
 
@@ -1084,7 +1087,7 @@ class _FloatingNavBar extends StatelessWidget {
     required this.blogLabel,
     required this.requestsLabel,
     required this.chatLabel,
-    required this.profileLabel,
+    required this.settingsLabel,
     this.requestsBadge = 0,
     this.chatBadge = 0,
   });
@@ -1148,9 +1151,9 @@ class _FloatingNavBar extends StatelessWidget {
                 onTap: () => onTap(3),
               ),
               _NavItem(
-                icon: Icons.person_outline_rounded,
-                selectedIcon: Icons.person_rounded,
-                label: profileLabel,
+                icon: Icons.settings_outlined,
+                selectedIcon: Icons.settings_rounded,
+                label: settingsLabel,
                 selected: currentIndex == 4,
                 onTap: () => onTap(4),
               ),

@@ -1,38 +1,66 @@
-import 'package:flutter/foundation.dart';
+// lib/services/google_auth_service.dart
+//
+// Single place that talks to Google. Works with google_sign_in 7.x.
+// Returns a Google ID token; the Laravel API (POST /v1/auth/google) verifies it.
+
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform;
 import 'package:google_sign_in/google_sign_in.dart';
+
 import '../config/google_config.dart';
 
-/// Thrown when Google reports "canceled".
-/// On Android, a missing/wrong OAuth client also comes back as "canceled",
-/// but it happens very fast and the picker never shows.
+/// User closed the picker, OR Google refused instantly because the Android
+/// OAuth client (package name / SHA-1) is wrong. [looksLikeConfigError]
+/// tells the two apart.
 class GoogleSignInCancelled implements Exception {
-  final Duration elapsed;
-  GoogleSignInCancelled(this.elapsed);
+  final bool looksLikeConfigError;
+  final String? details;
 
-  bool get looksLikeConfigError => elapsed.inMilliseconds < 2500;
+  const GoogleSignInCancelled({
+    this.looksLikeConfigError = false,
+    this.details,
+  });
+
+  @override
+  String toString() => 'GoogleSignInCancelled(config=$looksLikeConfigError, $details)';
 }
 
 class GoogleAuthService {
-  static final GoogleSignIn _google = GoogleSignIn.instance;
-  static bool _initialized = false;
+  GoogleAuthService._();
 
-  static Future<void> _ensureInitialized() async {
-    if (_initialized) return;
-    await _google.initialize(
-      serverClientId: GoogleConfig.webClientId,
-    );
-    _initialized = true;
+  static final GoogleSignIn _google = GoogleSignIn.instance;
+  static Future<void>? _init;
+
+  /// initialize() may only run once per app run. Safe to call repeatedly.
+  static Future<void> _ensureInitialized() {
+    return _init ??= _doInit();
   }
 
-  /// Opens the Google account picker and returns a Google ID token.
+  static Future<void> _doInit() async {
+    try {
+      await _google.initialize(
+        serverClientId: GoogleConfig.webClientId,
+        clientId: defaultTargetPlatform == TargetPlatform.iOS
+            ? GoogleConfig.iosClientId
+            : null,
+      );
+    } catch (e) {
+      _init = null; // allow retry
+      rethrow;
+    }
+  }
+
+  /// Opens the Google account picker and returns the ID token.
+  /// Throws [GoogleSignInCancelled] or [GoogleSignInException] on failure.
   static Future<String> getIdToken() async {
     await _ensureInitialized();
 
-    if (!_google.supportsAuthenticate()) {
-      throw Exception('Google authenticate() is not supported on this platform.');
-    }
+    // Forget the previous account so the picker always shows.
+    try {
+      await _google.signOut();
+    } catch (_) {}
 
-    final sw = Stopwatch()..start();
+    final watch = Stopwatch()..start();
 
     try {
       final account = await _google.authenticate(
@@ -45,13 +73,19 @@ class GoogleAuthService {
       }
       return idToken;
     } on GoogleSignInException catch (e) {
-      debugPrint('[GOOGLE] code=${e.code} '
-          'description=${e.description} '
-          'details=${e.details} '
-          'elapsed=${sw.elapsedMilliseconds}ms');
+      debugPrint('[GOOGLE] code=${e.code} desc=${e.description} '
+          'after=${watch.elapsedMilliseconds}ms');
 
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        throw GoogleSignInCancelled(sw.elapsed);
+        final text = '${e.description ?? ''} ${e.details ?? ''}'.toLowerCase();
+        final configHint = text.contains('[16]') ||
+            text.contains('matching credential') ||
+            text.contains('no credential') ||
+            watch.elapsedMilliseconds < 700; // no human closes it that fast
+        throw GoogleSignInCancelled(
+          looksLikeConfigError: configHint,
+          details: e.description,
+        );
       }
       rethrow;
     }
@@ -59,6 +93,7 @@ class GoogleAuthService {
 
   static Future<void> signOut() async {
     try {
+      await _ensureInitialized();
       await _google.signOut();
     } catch (_) {}
   }

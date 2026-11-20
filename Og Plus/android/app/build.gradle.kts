@@ -1,5 +1,5 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -8,17 +8,14 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// Release signing properties
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
-
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
     namespace = "com.ogonegroup.ogplusapp"
-
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -30,13 +27,10 @@ android {
 
     defaultConfig {
         applicationId = "com.ogonegroup.ogplusapp"
-
         minSdk = flutter.minSdkVersion
         targetSdk = 36
-
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-
         multiDexEnabled = true
     }
 
@@ -45,7 +39,7 @@ android {
             keyAlias = keystoreProperties["keyAlias"] as String?
             keyPassword = keystoreProperties["keyPassword"] as String?
             storeFile = keystoreProperties["storeFile"]?.let {
-                file(it)
+                rootProject.file(it.toString())
             }
             storePassword = keystoreProperties["storePassword"] as String?
         }
@@ -54,7 +48,6 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-
             isMinifyEnabled = false
             isShrinkResources = false
         }
@@ -72,7 +65,5 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring(
-        "com.android.tools:desugar_jdk_libs:2.1.5"
-    )
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

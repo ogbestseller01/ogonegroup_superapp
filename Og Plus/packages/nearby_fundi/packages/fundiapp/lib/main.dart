@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
@@ -10,8 +9,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fundiapp_sdk/payments/chanel/mock_channel.dart';
 import 'package:fundiapp_sdk/screens/chat/chat_list_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
-// ── Local: core ──────────────────────────────────────────────
+// ── Core ─────────────────────────────────────────────────────
 import 'app_navigator.dart';
 import 'config/app_routes.dart';
 import 'config/app_theme.dart';
@@ -19,7 +19,7 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'models/chat_conversation.dart';
 
-// ── Local: providers ─────────────────────────────────────────
+// ── Providers ────────────────────────────────────────────────
 import 'providers/auth_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/job_provider.dart';
@@ -35,16 +35,16 @@ import 'providers/technician_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/ticket_provider.dart';
 
-// ── Local: payments ──────────────────────────────────────────
+// ── Payments ─────────────────────────────────────────────────
 import 'payments/provider/payment_provider.dart';
 import 'payments/screens/payment_screen.dart';
 
-// ── Local: services ──────────────────────────────────────────
-import 'services/app_security_middleware.dart'; // <-- 🛡️ Comprehensive Security Middleware
+// ── Services ─────────────────────────────────────────────────
+import 'services/app_security_middleware.dart';
 import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
-// ── Local: screens ───────────────────────────────────────────
+// ── Screens ──────────────────────────────────────────────────
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
@@ -57,10 +57,7 @@ import 'screens/auth/register_flow/register_step3_screen.dart';
 import 'screens/auth/register_flow/register_step4_screen.dart';
 import 'screens/auth/register_flow/register_step5_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
-
-// ── CHAT SCREENS (New Fundi-only structure) ──────────────────
 import 'screens/chat/fundi_chat_screen.dart';
-
 import 'screens/fundi/fundi_home_screen.dart';
 import 'screens/fundi/fundi_portfolio_screen.dart';
 import 'screens/fundi/fundi_posts_screen.dart';
@@ -78,8 +75,15 @@ import 'screens/static/privacy_policy_screen.dart';
 import 'screens/static/terms_screen.dart';
 import 'screens/tickets/tickets_screen.dart';
 
+const SystemUiOverlayStyle _kSystemUiOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.dark,
+  systemNavigationBarColor: Colors.transparent,
+  systemNavigationBarIconBrightness: Brightness.light,
+);
+
 // ============================================================
-//  FCM BACKGROUND HANDLER  (must be top-level + vm:entry-point)
+//  FCM BACKGROUND HANDLER (must be top-level + vm:entry-point)
 // ============================================================
 
 @pragma('vm:entry-point')
@@ -98,29 +102,20 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Global error hooks ────────────────────────────────────
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-  };
+  FlutterError.onError = FlutterError.presentError;
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) => true;
 
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    return true;
-  };
-
-  // ==========================================================
-  // 🛡️ 0/5  STRICT APP SECURITY MIDDLEWARE ENFORCEMENT
-  // ==========================================================
+  // 0/5 Security middleware
   try {
     await AppSecurityMiddleware.initialize();
-  } catch (error) {
+  } catch (_) {
     try {
-      SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
     } catch (_) {}
     return;
   }
-  // ==========================================================
 
-  // ── 1/5  Firebase ─────────────────────────────────────────
+  // 1/5 Firebase
   if (Firebase.apps.isEmpty) {
     try {
       await Firebase.initializeApp(
@@ -128,69 +123,61 @@ Future<void> main() async {
       );
     } catch (_) {}
   }
-
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // ── 2/5  Secure screen ────────────────────────────────────
+  // 2/5 Secure screen
   try {
     await SecurityService.enableSecureScreen();
   } catch (_) {}
 
-  // ── 3/5  System UI ────────────────────────────────────────
+  // 3/5 System UI
   try {
     await SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarIconBrightness: Brightness.light,
-      ),
-    );
+    SystemChrome.setSystemUIOverlayStyle(_kSystemUiOverlayStyle);
   } catch (_) {}
 
-  // ── 4/5  AuthProvider (eager — mini-app + FCM need it) ────
+  // 4/5 Eager AuthProvider for mini-app & FCM hooks
   final authProvider = AuthProvider(navigatorKey: navigatorKey);
   ProviderRegistry.registerAuthProvider(authProvider);
 
-  // ── 5/5  runApp ───────────────────────────────────────────
+  // 5/5 Run app
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider(create: (_) => PostProvider()),
-        ChangeNotifierProvider(create: (_) => RequestProvider()),
-        ChangeNotifierProvider(create: (_) => PortfolioProvider()),
-        ChangeNotifierProvider(create: (_) => TechnicianProvider()),
-        ChangeNotifierProvider(create: (_) => ServiceProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (_) => StaticPageProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
-        // ── Tickets & Jobs ──
-        ChangeNotifierProvider(create: (_) => TicketProvider()),
-        ChangeNotifierProvider(create: (_) => JobProvider()),
-
-        // ── Payment System ──
-        ChangeNotifierProvider(
-          create: (_) => PaymentProvider(channel: MockPaymentChannel()),
-        ),
-      ],
+      providers: fundiAppProviders(authProvider: authProvider),
       child: const MyApp(),
     ),
   );
 
-  // ── FCM (background, so the splash shows immediately) ─────
-  unawaited(() async {
-    try {
-      await FcmService.init();
-    } catch (_) {}
-  }());
+  // Background FCM setup after first frame
+  unawaited(FcmService.init().catchError((_) {}));
+}
+
+/// Shared provider list so both standalone [MyApp] and host mini-apps
+/// mount every required provider above Fundi routes.
+List<SingleChildWidget> fundiAppProviders({AuthProvider? authProvider}) {
+  final resolvedAuth = authProvider ?? AuthProvider(navigatorKey: navigatorKey);
+  return [
+    ChangeNotifierProvider<AuthProvider>.value(value: resolvedAuth),
+    ChangeNotifierProvider(create: (_) => PostProvider()),
+    ChangeNotifierProvider(create: (_) => RequestProvider()),
+    ChangeNotifierProvider(create: (_) => PortfolioProvider()),
+    ChangeNotifierProvider(create: (_) => TechnicianProvider()),
+    ChangeNotifierProvider(create: (_) => ServiceProvider()),
+    ChangeNotifierProvider(create: (_) => NotificationProvider()),
+    ChangeNotifierProvider(create: (_) => SettingsProvider()),
+    ChangeNotifierProvider(create: (_) => StaticPageProvider()),
+    ChangeNotifierProvider(create: (_) => ThemeProvider()),
+    ChangeNotifierProvider(create: (_) => ChatProvider()),
+    ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
+    ChangeNotifierProvider(create: (_) => TicketProvider()),
+    ChangeNotifierProvider(create: (_) => JobProvider()),
+    ChangeNotifierProvider(
+      create: (_) => PaymentProvider(channel: MockPaymentChannel()),
+    ),
+  ];
 }
 
 // ============================================================
@@ -224,17 +211,10 @@ class MyApp extends StatelessWidget {
           ],
           initialRoute: AppRoutes.splash,
           onGenerateRoute: generateFundiAppRoute,
-          builder: (context, child) {
-            return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: const SystemUiOverlayStyle(
-                statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark,
-                systemNavigationBarColor: Colors.transparent,
-                systemNavigationBarIconBrightness: Brightness.light,
-              ),
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
+          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+            value: _kSystemUiOverlayStyle,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );
@@ -242,7 +222,7 @@ class MyApp extends StatelessWidget {
 }
 
 // ============================================================
-//  ROUTING  (exported for use by FundiAppMiniApp)
+//  ROUTING (exported for use by FundiAppMiniApp)
 // ============================================================
 
 Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
@@ -254,7 +234,7 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
   );
 
   switch (settings.name) {
-  // ── Entry screens ─────────────────────────────────────
+  // Entry
     case AppRoutes.splash:
       return route(const SplashScreen());
     case AppRoutes.onboarding:
@@ -262,25 +242,19 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
     case AppRoutes.login:
       return route(const LoginScreen());
 
-  // ── Registration flow ─────────────────────────────────
+  // Registration flow
     case AppRoutes.registerStep1:
-      return route(RegisterStep1Screen(
-        initialData:
-        args is Map<String, dynamic> && args.isNotEmpty ? args : null,
-      ));
-
+      return route(RegisterStep1Screen(initialData: _mapOrNull(args)));
     case AppRoutes.registerServices:
-      if (args is Map<String, dynamic> && args.isNotEmpty) {
-        return route(RegisterServicesScreen(args: args));
-      }
-      return route(const RegisterStep1Screen());
-
+      final mapArgs = _mapOrNull(args);
+      return mapArgs != null
+          ? route(RegisterServicesScreen(args: mapArgs))
+          : route(const RegisterStep1Screen());
     case AppRoutes.registerLocation:
-      if (args is Map<String, dynamic> && args.isNotEmpty) {
-        return route(RegisterLocationScreen(args: args));
-      }
-      return route(const RegisterStep1Screen());
-
+      final mapArgs = _mapOrNull(args);
+      return mapArgs != null
+          ? route(RegisterLocationScreen(args: mapArgs))
+          : route(const RegisterStep1Screen());
     case AppRoutes.registerStep2:
       return route(RegisterStep2Screen(draftId: _getDraftArgument(args)));
     case AppRoutes.registerStep3:
@@ -289,45 +263,47 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(RegisterStep4Screen(draftId: _getDraftArgument(args)));
     case AppRoutes.registerStep5:
       return route(RegisterStep5Screen(draftId: _getDraftArgument(args)));
-
     case AppRoutes.registerReview:
-      if (args is Map<String, dynamic>) {
-        final id = _getDraftArgument(args);
-        if (id <= 0) return route(const RegisterStep1Screen());
-        return route(RegisterReviewScreen(draftId: id, extra: args));
+      final mapArgs = _mapOrNull(args);
+      if (mapArgs != null) {
+        final id = _getDraftArgument(mapArgs);
+        return id > 0
+            ? route(RegisterReviewScreen(draftId: id, extra: mapArgs))
+            : route(const RegisterStep1Screen());
       }
       if (args is int && args > 0) {
         return route(RegisterReviewScreen(draftId: args));
       }
       return route(const RegisterStep1Screen());
 
-  // ── OTP ───────────────────────────────────────────────
+  // Auth & OTP
     case AppRoutes.otp:
-      if (args is Map<String, dynamic>) {
-        final identifier = (args['identifier'] ??
-            args['phone'] ??
-            args['email'] ??
+      final mapArgs = _mapOrNull(args);
+      if (mapArgs != null) {
+        final identifier = (mapArgs['identifier'] ??
+            mapArgs['phone'] ??
+            mapArgs['email'] ??
             '')
             .toString();
-        return route(OtpVerificationScreen(
-          identifier: identifier,
-          email: args['email']?.toString(),
-          phone: args['phone']?.toString(),
-          redirectToStep2: args['redirectToStep2'] == true,
-          draftId: _nullableInt(args['draftId'] ?? args['technicianId']),
-        ));
+        return route(
+          OtpVerificationScreen(
+            identifier: identifier,
+            email: mapArgs['email']?.toString(),
+            phone: mapArgs['phone']?.toString(),
+            redirectToStep2: mapArgs['redirectToStep2'] == true,
+            draftId: _nullableInt(mapArgs['draftId'] ?? mapArgs['technicianId']),
+          ),
+        );
       }
-      return route(OtpVerificationScreen(
-        identifier: args?.toString() ?? '',
-      ));
-
+      return route(OtpVerificationScreen(identifier: args?.toString() ?? ''));
     case AppRoutes.forgot:
       return route(const ForgotPasswordScreen());
     case AppRoutes.reset:
       return route(ResetPasswordScreen(email: args?.toString() ?? ''));
 
-  // ── Main fundi screens ────────────────────────────────
+  // Main Fundi screens
     case AppRoutes.home:
+    case AppRoutes.notifications:
       return route(const FundiHomeScreen());
     case AppRoutes.posts:
     case AppRoutes.blog:
@@ -340,8 +316,6 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(const FundiPortfolioScreen());
     case AppRoutes.requests:
       return route(const FundiRequestsScreen());
-    case AppRoutes.notifications:
-      return route(const FundiHomeScreen());
     case AppRoutes.profile:
       return route(const FundiProfileScreen());
     case AppRoutes.editProfile:
@@ -349,33 +323,35 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
     case AppRoutes.settings:
       return route(const FundiSettingsScreen());
 
-  // ── Tickets & Jobs ────────────────────────────────────
+  // Tickets & Jobs
     case AppRoutes.tickets:
       return route(const TicketsScreen());
     case AppRoutes.jobs:
       return route(const JobsScreen());
 
-  // ── Chat Routes (New Fundi Structure) ─────────────────
+  // Chat
     case AppRoutes.chatList:
       return route(const FundiChatListScreen());
     case AppRoutes.chat:
-      if (args is ChatConversation) {
-        return route(FundiChatScreen(conversation: args));
-      }
-      return route(const FundiChatListScreen()); // fallback
+      return args is ChatConversation
+          ? route(FundiChatScreen(conversation: args))
+          : route(const FundiChatListScreen());
 
-  // ── Payment ───────────────────────────────────────────
+  // Payment
     case AppRoutes.payment:
-      if (args is Map<String, dynamic>) {
-        return route(PaymentScreen(
-          reference: args['reference']?.toString() ?? 'UNKNOWN',
-          requestsCount: args['requestsCount'] as int?,
-          customerPhone: args['customerPhone']?.toString(),
-        ));
+      final mapArgs = _mapOrNull(args);
+      if (mapArgs != null) {
+        return route(
+          PaymentScreen(
+            reference: mapArgs['reference']?.toString() ?? 'UNKNOWN',
+            requestsCount: _nullableInt(mapArgs['requestsCount']),
+            customerPhone: mapArgs['customerPhone']?.toString(),
+          ),
+        );
       }
-      return route(const SplashScreen()); // fallback if no args
+      return route(const SplashScreen());
 
-  // ── Static pages ──────────────────────────────────────
+  // Static pages
     case AppRoutes.about:
       return route(const AboutScreen());
     case AppRoutes.terms:
@@ -396,11 +372,18 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
 //  ROUTE ARG HELPERS
 // ============================================================
 
+Map<String, dynamic>? _mapOrNull(Object? args) {
+  if (args is Map<String, dynamic> && args.isNotEmpty) return args;
+  return null;
+}
+
 int _getDraftArgument(Object? args) {
   if (args is int) return args;
   if (args is String) return int.tryParse(args) ?? 0;
-  if (args is Map<String, dynamic>) {
-    final value = args['draftId'] ?? args['technicianId'] ?? args['id'];
+  if (args is num) return args.toInt();
+  final mapArgs = _mapOrNull(args);
+  if (mapArgs != null) {
+    final value = mapArgs['draftId'] ?? mapArgs['technicianId'] ?? mapArgs['id'];
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;
     if (value is num) return value.toInt();
@@ -416,7 +399,7 @@ int? _nullableInt(Object? value) {
 }
 
 // ============================================================
-//  PROVIDER REGISTRY  (legacy access point)
+//  PROVIDER REGISTRY (legacy access point)
 // ============================================================
 
 class ProviderRegistry {

@@ -24,6 +24,10 @@ class AuthProvider extends ChangeNotifier {
   int? _draftId;
   String? _registrationToken;
 
+  // ── OTP delivery info (from Step 1 / resend response) ────
+  String? _otpChannel; // 'sms' | 'email' | 'failed' | 'none'
+  String? _otpSentTo;  // phone or email
+
   // Startup / session-expiry guards
   bool _isInitialized = false;
   bool _isBootstrapping = false;
@@ -45,6 +49,14 @@ class AuthProvider extends ChangeNotifier {
 
   bool get hasRegistrationToken =>
       _registrationToken != null && _registrationToken!.isNotEmpty;
+
+  // ── OTP delivery getters ─────────────────────────────────
+  String? get otpChannel => _otpChannel;
+  String? get otpSentTo => _otpSentTo;
+  bool get otpSentBySms => _otpChannel == 'sms';
+  bool get otpSentByEmail => _otpChannel == 'email';
+  bool get otpDeliveryFailed =>
+      _otpChannel == null || _otpChannel == 'none' || _otpChannel == 'failed';
 
   ApiService get api => _api;
 
@@ -165,7 +177,12 @@ class AuthProvider extends ChangeNotifier {
     );
     if (res.success == true && res.data is Map) {
       final map = Map<String, dynamic>.from(res.data as Map);
-      _registrationToken = map['registration_token']?.toString();
+      final token = map['registration_token']?.toString();
+      if (token != null && token.isNotEmpty) {
+        _registrationToken = token;
+        await StorageService.saveRegistrationToken(token);
+      }
+
       final rawDraftId = map['draft_id'] ?? _draftId;
       _draftId = rawDraftId is int
           ? rawDraftId
@@ -173,9 +190,6 @@ class AuthProvider extends ChangeNotifier {
 
       if (_draftId != null) {
         await StorageService.saveTechnicianId(_draftId!);
-      }
-      if (_registrationToken != null && _registrationToken!.isNotEmpty) {
-        await StorageService.saveRegistrationToken(_registrationToken!);
       }
 
       _setLoading(false);
@@ -193,6 +207,14 @@ class AuthProvider extends ChangeNotifier {
       draftId: _draftId,
     );
     if (res.success == true) {
+      final data = res.data;
+      if (data is Map) {
+        final map = Map<String, dynamic>.from(data);
+        final ch = map['otp_channel']?.toString();
+        final to = map['sent_to']?.toString();
+        if (ch != null && ch.isNotEmpty) _otpChannel = ch;
+        if (to != null && to.isNotEmpty) _otpSentTo = to;
+      }
       _setLoading(false);
       return true;
     }
@@ -335,11 +357,14 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
     await _clearSession();
     _registrationToken = null;
+    _draftId = null;
+    _otpChannel = null;
+    _otpSentTo = null;
     notifyListeners();
   }
 
   // ══════════════════════════════════════════════════════════
-  // 6-STEP DRAFT-BASED REGISTRATION
+  // DRAFT-BASED REGISTRATION
   // ══════════════════════════════════════════════════════════
 
   Future<int?> getRegistrationStep(int id) async {
@@ -356,18 +381,32 @@ class AuthProvider extends ChangeNotifier {
   Future<int?> registerTechnicianStep1(Map<String, dynamic> data) async {
     _setLoading(true);
     final res = await _api.registerTechnicianStep1(data);
+
     if (res.success == true && res.data is Map) {
       final map = Map<String, dynamic>.from(res.data as Map);
+
+      _otpChannel = map['otp_channel']?.toString();
+      _otpSentTo = map['sent_to']?.toString() ?? data['phone']?.toString();
+
       final rawId = map['draft_id'];
       _draftId = rawId is int
           ? rawId
-          : (rawId is num ? rawId.toInt() : null);
+          : (rawId is num ? rawId.toInt() : int.tryParse('$rawId'));
+
+      final token = map['registration_token']?.toString();
+      if (token != null && token.isNotEmpty) {
+        _registrationToken = token;
+        await StorageService.saveRegistrationToken(token);
+      }
+
       if (_draftId != null) {
         await StorageService.saveTechnicianId(_draftId!);
       }
+
       _setLoading(false);
       return _draftId;
     }
+
     _error = res.message;
     _setLoading(false);
     return null;
@@ -462,7 +501,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       fcmToken = await FcmService.getToken();
     } catch (e) {
-      debugPrint('⚠️ FCM token unavailable at step 6: $e');
+      debugPrint('⚠️ FCM token unavailable at final step: $e');
     }
 
     final res = await _api.submitTechnicianRegistration(
@@ -476,13 +515,15 @@ class AuthProvider extends ChangeNotifier {
       if (ok) {
         _registrationToken = null;
         _draftId = null;
+        _otpChannel = null;
+        _otpSentTo = null;
         await StorageService.clearTechnicianData();
       }
       _setLoading(false);
       return ok;
     }
 
-    _error = res.message;
+    _error = _humanizeSubmitError(res.message);
     _setLoading(false);
     return false;
   }
@@ -490,6 +531,8 @@ class AuthProvider extends ChangeNotifier {
   Future<void> abandonDraft() async {
     _registrationToken = null;
     _draftId = null;
+    _otpChannel = null;
+    _otpSentTo = null;
     await StorageService.clearTechnicianData();
     notifyListeners();
   }
@@ -629,6 +672,40 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('⚠️ FCM registration error: $e');
     }
+  }
+
+  String _humanizeSubmitError(String? raw) {
+    final msg = (raw ?? '').trim();
+    final lower = msg.toLowerCase();
+
+    if (lower.contains('phone number is already registered') ||
+        lower.contains('phone number already registered')) {
+      return 'This phone number is already registered. '
+          'Please log in or use a different number. '
+          'If you believe this is a mistake, contact support.';
+    }
+    if (lower.contains('previously deleted account')) {
+      return 'This phone number belongs to a deleted account. '
+          'Please contact support to restore it, or use a different number.';
+    }
+    if (lower.contains('email is already registered') ||
+        lower.contains('email already registered')) {
+      return 'This email is already registered. '
+          'Please log in or use a different email.';
+    }
+    if (lower.contains('id number has already been registered')) {
+      return 'This ID number has already been registered. '
+          'Contact support if you believe this is a mistake.';
+    }
+    if (lower.contains('biometrics incomplete') ||
+        lower.contains('complete all registration steps')) {
+      return 'Some registration steps are incomplete. '
+          'Please go back and complete them before submitting.';
+    }
+
+    return msg.isEmpty
+        ? 'Registration submission failed. Please try again.'
+        : msg;
   }
 
   void _setLoading(bool value) {

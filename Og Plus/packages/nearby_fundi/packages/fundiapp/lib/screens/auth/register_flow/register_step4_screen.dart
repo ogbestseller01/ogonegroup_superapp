@@ -2,9 +2,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -26,13 +29,37 @@ enum _FacePhase { booting, previewing, capturing, review, submitting }
 /// Hints/errors are stored as enums so they re-translate when the language changes.
 enum _Hint { opening, position, confirm, saving, unavailable }
 
-enum _Err { noCamera, openFailed, captureFailed, saveFailed, submitFailed, fallbackFailed }
+enum _Err {
+  noCamera,
+  openFailed,
+  captureFailed,
+  saveFailed,
+  submitFailed,
+  fallbackFailed,
+}
 
 class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
     with WidgetsBindingObserver {
   CameraController? _controller;
 
+  final FaceDetector _faceDetector = FaceDetector(
+    options: FaceDetectorOptions(
+      performanceMode: FaceDetectorMode.fast,
+      enableLandmarks: false,
+      enableContours: false,
+      enableClassification: true, // helpful for eye-open check if desired
+      minFaceSize: 0.25,
+    ),
+  );
+
   bool _booting = false;
+  bool _isStreaming = false;
+  bool _isDetectingFrame = false;
+  bool _autoCaptureEnabled = true;
+  bool _faceAligned = false;
+  DateTime? _alignedSince;
+
+  static const Duration _holdDuration = Duration(milliseconds: 650);
 
   _FacePhase _phase = _FacePhase.booting;
   _Hint _hint = _Hint.opening;
@@ -65,9 +92,13 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _alignedSince = null;
     final c = _controller;
     _controller = null;
-    c?.dispose();
+    _stopImageStreamSafely(c).whenComplete(() {
+      c?.dispose();
+    });
+    _faceDetector.close();
     super.dispose();
   }
 
@@ -107,10 +138,12 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
     }
   }
 
-  // ── Camera ──────────────────────────────────────────────
+  // ── Camera & Face Detection Stream ──────────────────────
   Future<void> _bootstrapCamera() async {
     if (_booting || _capturedFile != null) return;
     _booting = true;
+    _alignedSince = null;
+    _faceAligned = false;
 
     try {
       final cameras = await availableCameras();
@@ -128,7 +161,9 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
         front,
         ResolutionPreset.high, // High resolution for a clear selfie
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
 
       await ctrl.initialize();
@@ -146,6 +181,9 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
         _hint = _Hint.position;
       });
 
+      if (_autoCaptureEnabled) {
+        await _startImageStream(ctrl);
+      }
     } catch (e) {
       _fail(_Err.openFailed, '$e');
     } finally {
@@ -153,10 +191,145 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
     }
   }
 
+  Future<void> _startImageStream(CameraController ctrl) async {
+    if (_isStreaming || !ctrl.value.isInitialized || ctrl.value.isStreamingImages) {
+      return;
+    }
+
+    try {
+      _isStreaming = true;
+      await ctrl.startImageStream((CameraImage image) {
+        if (!_autoCaptureEnabled ||
+            _phase != _FacePhase.previewing ||
+            _isDetectingFrame ||
+            _capturedFile != null) {
+          return;
+        }
+        _processCameraFrame(ctrl, image);
+      });
+    } catch (_) {
+      _isStreaming = false;
+    }
+  }
+
+  Future<void> _stopImageStreamSafely([CameraController? target]) async {
+    final ctrl = target ?? _controller;
+    _isStreaming = false;
+    _isDetectingFrame = false;
+    _alignedSince = null;
+    if (ctrl == null) return;
+    try {
+      if (ctrl.value.isInitialized && ctrl.value.isStreamingImages) {
+        await ctrl.stopImageStream();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _processCameraFrame(
+      CameraController ctrl,
+      CameraImage image,
+      ) async {
+    _isDetectingFrame = true;
+    try {
+      final inputImage = _buildInputImage(image, ctrl.description);
+      if (inputImage == null) return;
+
+      final faces = await _faceDetector.processImage(inputImage);
+      if (!mounted || _phase != _FacePhase.previewing || !_autoCaptureEnabled) {
+        return;
+      }
+
+      // Require exactly one face of reasonable size with moderate head tilt
+      Face? validFace;
+      if (faces.length == 1) {
+        final face = faces.first;
+        final box = face.boundingBox;
+        final imgW = image.width.toDouble();
+        final imgH = image.height.toDouble();
+        final relativeWidth = imgW > 0 ? box.width / imgW : 0.0;
+        final relativeHeight = imgH > 0 ? box.height / imgH : 0.0;
+
+        final yawOk = (face.headEulerAngleY ?? 0).abs() < 22;
+        final rollOk = (face.headEulerAngleZ ?? 0).abs() < 22;
+        final sizeOk =
+            relativeWidth >= 0.16 &&
+                relativeWidth <= 0.85 &&
+                relativeHeight >= 0.16 &&
+                relativeHeight <= 0.85;
+
+        if (yawOk && rollOk && sizeOk) {
+          validFace = face;
+        }
+      }
+
+      if (validFace != null) {
+        final now = DateTime.now();
+        _alignedSince ??= now;
+
+        if (!_faceAligned && mounted) {
+          setState(() => _faceAligned = true);
+        }
+
+        if (now.difference(_alignedSince!) >= _holdDuration) {
+          _alignedSince = null;
+          await _captureAndReview();
+        }
+      } else {
+        _alignedSince = null;
+        if (_faceAligned && mounted) {
+          setState(() => _faceAligned = false);
+        }
+      }
+    } catch (_) {
+      // Ignore transient frame conversion errors without breaking live preview
+    } finally {
+      _isDetectingFrame = false;
+    }
+  }
+
+  InputImage? _buildInputImage(CameraImage image, CameraDescription camera) {
+    final rotation =
+        InputImageRotationValue.fromRawValue(camera.sensorOrientation) ??
+            InputImageRotation.rotation0deg;
+
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (format == null) return null;
+
+    if (Platform.isAndroid && image.planes.length == 1) {
+      return InputImage.fromBytes(
+        bytes: image.planes.first.bytes,
+        metadata: InputImageMetadata(
+          size: Size(image.width.toDouble(), image.height.toDouble()),
+          rotation: rotation,
+          format: format,
+          bytesPerRow: image.planes.first.bytesPerRow,
+        ),
+      );
+    }
+
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final Plane plane in image.planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    final Uint8List bytes = allBytes.done().buffer.asUint8List();
+
+    return InputImage.fromBytes(
+      bytes: bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: format,
+        bytesPerRow: image.planes.first.bytesPerRow,
+      ),
+    );
+  }
+
   Future<void> _releaseCamera() async {
     final c = _controller;
     _controller = null;
     if (c == null) return;
+
+    await _stopImageStreamSafely(c);
 
     try {
       await c.dispose();
@@ -164,6 +337,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
 
     if (mounted && _capturedFile == null) {
       setState(() {
+        _faceAligned = false;
         _phase = _FacePhase.booting;
         _hint = _Hint.opening;
       });
@@ -175,7 +349,12 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
     final ctrl = _controller;
     if (ctrl == null || _phase == _FacePhase.capturing) return;
 
-    setState(() => _phase = _FacePhase.capturing);
+    setState(() {
+      _phase = _FacePhase.capturing;
+      _faceAligned = false;
+    });
+
+    await _stopImageStreamSafely(ctrl);
 
     try {
       final file = await ctrl.takePicture();
@@ -242,6 +421,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
       _capturedFile = null;
       _err = null;
       _serverError = null;
+      _faceAligned = false;
       _phase = _FacePhase.booting;
       _hint = _Hint.opening;
     });
@@ -249,6 +429,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
   }
 
   Future<void> _fallbackSystemCamera() async {
+    await _stopImageStreamSafely();
     try {
       final file = await ImagePicker().pickImage(
         source: ImageSource.camera,
@@ -273,12 +454,35 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
   void _fail(_Err e, [String detail = '']) {
     if (!mounted) return;
     setState(() {
+      _faceAligned = false;
       _phase = _FacePhase.previewing;
       _hint = _Hint.unavailable;
       _err = e;
       _errDetail = detail;
       _cameraFailed = true;
     });
+  }
+
+  Future<void> _toggleAutoCapture() async {
+    final next = !_autoCaptureEnabled;
+    setState(() {
+      _autoCaptureEnabled = next;
+      if (!next) {
+        _faceAligned = false;
+        _alignedSince = null;
+      }
+    });
+
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized || _phase != _FacePhase.previewing) {
+      return;
+    }
+
+    if (next) {
+      await _startImageStream(ctrl);
+    } else {
+      await _stopImageStreamSafely(ctrl);
+    }
   }
 
   // ── UI ──────────────────────────────────────────────────
@@ -327,7 +531,8 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
               Container(
                 color: Colors.black54,
                 child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white)),
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               ),
           ],
         ),
@@ -349,9 +554,11 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
           children: [
             Icon(Icons.videocam_off_rounded, size: 40, color: p.muted),
             const SizedBox(height: 10),
-            Text(_hintText(l10n),
-                textAlign: TextAlign.center,
-                style: TextStyle(color: p.muted)),
+            Text(
+              _hintText(l10n),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: p.muted),
+            ),
           ],
         )
             : const CircularProgressIndicator(),
@@ -359,6 +566,11 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
     }
 
     final size = ctrl.value.previewSize;
+    final statusMessage = _phase == _FacePhase.capturing
+        ? l10n.regFaceCapturing
+        : (_autoCaptureEnabled
+        ? (_faceAligned ? l10n.regFaceCapturing : _hintText(l10n))
+        : _hintText(l10n));
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -377,8 +589,45 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
           else
             CameraPreview(ctrl),
 
-          // Static overlay for manual alignment
-          const _StaticFaceOverlay(),
+          // Face alignment guide that highlights when a face is detected
+          _FaceGuideOverlay(faceDetected: _faceAligned),
+
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Material(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: _phase == _FacePhase.capturing ? null : _toggleAutoCapture,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _autoCaptureEnabled
+                            ? Icons.face_retouching_natural
+                            : Icons.face_unlock_outlined,
+                        size: 16,
+                        color: _autoCaptureEnabled ? Colors.greenAccent : Colors.white70,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _autoCaptureEnabled ? 'AUTO' : 'MANUAL',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           Positioned(
             left: 12,
@@ -391,7 +640,7 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(
-                _hintText(l10n),
+                statusMessage,
                 style: const TextStyle(color: Colors.white),
                 textAlign: TextAlign.center,
               ),
@@ -410,7 +659,8 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
             child: OutlinedButton.icon(
               onPressed: submitting ? null : _retake,
               style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52)),
+                minimumSize: const Size.fromHeight(52),
+              ),
               icon: const Icon(Icons.refresh_rounded),
               label: Text(l10n.regFaceRetake),
             ),
@@ -420,7 +670,8 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
             child: FilledButton.icon(
               onPressed: submitting ? null : _confirmAndSubmit,
               style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52)),
+                minimumSize: const Size.fromHeight(52),
+              ),
               icon: const Icon(Icons.check_rounded),
               label: Text(l10n.regFaceConfirm),
             ),
@@ -442,16 +693,18 @@ class _RegisterStep4ScreenState extends State<RegisterStep4Screen>
       onPressed: _phase != _FacePhase.capturing ? _captureAndReview : null,
       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
       icon: const Icon(Icons.camera_rounded),
-      label: Text(_phase == _FacePhase.capturing
-          ? l10n.regFaceCapturing
-          : l10n.regFaceCaptureNow),
+      label: Text(
+        _phase == _FacePhase.capturing
+            ? l10n.regFaceCapturing
+            : l10n.regFaceCaptureNow,
+      ),
     );
   }
 }
 
-// ── Static Face Overlay (No ML Kit) ─────────────────────────
-class _StaticFaceOverlay extends StatelessWidget {
-  const _StaticFaceOverlay();
+class _FaceGuideOverlay extends StatelessWidget {
+  final bool faceDetected;
+  const _FaceGuideOverlay({required this.faceDetected});
 
   @override
   Widget build(BuildContext context) {
@@ -459,13 +712,15 @@ class _StaticFaceOverlay extends StatelessWidget {
       builder: (context, constraints) {
         final boxSize = constraints.maxWidth * 0.66;
         return Center(
-          child: SizedBox(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
             width: boxSize,
             height: boxSize * 1.25,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(boxSize),
-                border: Border.all(color: Colors.white70, width: 3),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(boxSize),
+              border: Border.all(
+                color: faceDetected ? Colors.greenAccent : Colors.white70,
+                width: faceDetected ? 3.5 : 3,
               ),
             ),
           ),

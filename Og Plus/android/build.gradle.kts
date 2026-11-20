@@ -1,6 +1,7 @@
-plugins {
-    id("com.google.gms.google-services") version "4.4.4" apply false
-}
+import org.gradle.api.Action
+import org.gradle.api.Project
+import org.gradle.api.file.Directory
+import org.gradle.api.tasks.Delete
 
 allprojects {
     repositories {

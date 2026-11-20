@@ -2,6 +2,8 @@
 //
 // Full-screen nearby map with ranked technicians, road routes and
 // horizontal card list.
+//
+// All user-facing strings come from AppLocalizations (en / sw).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -20,13 +22,21 @@ import '../../utils/image_utils.dart';
 import '../../widgets/route_polylines.dart';
 
 // ================================================================
+// LOCALIZATION SHORTCUT
+// ================================================================
+
+extension _NearbyMapL10n on BuildContext {
+  AppLocalizations get t => AppLocalizations.of(this)!;
+}
+
+// ================================================================
 // CONSTANTS / HELPERS
 // ================================================================
 
 const Color _gold = Color(0xFFF2B93B);
 
 // IMPORTANT: use your real package name (not com.example.*)
-const String _userAgentPackageName = 'com.yourcompany.nearbyfundi';
+const String _userAgentPackageName = 'com.ogonegroup.nearbyfundi';
 
 Color _ink(ThemeData theme) =>
     theme.brightness == Brightness.dark ? Colors.white : AppTheme.primary;
@@ -168,6 +178,17 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     _mapController.move(camera.center, newZoom);
   }
 
+  /// fitCamera guarded so a bad bounds/constraint combination can never
+  /// crash the screen.
+  void _safeFit(CameraFit fit) {
+    if (!mounted) return;
+    try {
+      _mapController.fitCamera(fit);
+    } catch (e) {
+      debugPrint('NearbyMapScreen fitCamera failed: $e');
+    }
+  }
+
   void _fitAllMarkers(LatLng? searchPoint, List<Technician> techPoints) {
     final List<LatLng> allPoints = [];
     if (searchPoint != null) allPoints.add(searchPoint);
@@ -181,7 +202,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     }
 
     final bounds = LatLngBounds.fromPoints(allPoints);
-    _mapController.fitCamera(
+    _safeFit(
       CameraFit.bounds(
         bounds: bounds,
         padding: const EdgeInsets.fromLTRB(50, 90, 50, 200),
@@ -213,7 +234,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
         searchPoint,
         LatLng(tech.latitude!, tech.longitude!),
       ]);
-      _mapController.fitCamera(
+      _safeFit(
         CameraFit.bounds(
           bounds: bounds,
           padding: const EdgeInsets.fromLTRB(70, 110, 70, 230),
@@ -242,20 +263,20 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
       );
     }
 
+    // Resolve the message before any await so context is never used
+    // across an async gap.
+    final failMessage = context.t.nearbyCouldNotOpenMaps;
+    final messenger = ScaffoldMessenger.of(context);
+
+    bool launched = false;
     try {
-      final launched =
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-      if (!launched && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open maps app.')),
-        );
-      }
+      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open maps app.')),
-        );
-      }
+      launched = false;
+    }
+
+    if (!launched && mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(failMessage)));
     }
   }
 
@@ -327,7 +348,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: _refresh,
-            tooltip: 'Refresh',
+            tooltip: context.t.nearbyRefresh,
           ),
         ],
       ),
@@ -361,13 +382,13 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                 size: 64, color: theme.hintColor.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
-              'No technicians found',
+              context.t.nearbyNoTechniciansFound,
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
-              'Try another location or a different service',
+              context.t.nearbyTryAnotherLocation,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: theme.hintColor),
@@ -398,8 +419,8 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
     final cardsBottom = 26.0 + safeBottom;
     final controlsBottom = cardsHeight + cardsBottom + 14;
 
-    final radiusKm =
-        (techProvider.searchRadiusKm ?? _fallbackRadiusKm) * 1000.0;
+    final radiusKmValue = techProvider.searchRadiusKm ?? _fallbackRadiusKm;
+    final radiusMeters = radiusKmValue * 1000.0;
 
     return Stack(
       children: [
@@ -432,7 +453,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   circles: [
                     CircleMarker(
                       point: searchPoint,
-                      radius: radiusKm,
+                      radius: radiusMeters,
                       useRadiusInMeter: true,
                       color: AppTheme.primary.withValues(alpha: 0.04),
                       borderColor:
@@ -515,8 +536,10 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   Icon(Icons.location_on_rounded, size: 16, color: ink),
                   const SizedBox(width: 6),
                   Text(
-                    '${sortedTechs.length} technician${sortedTechs.length > 1 ? 's' : ''}'
-                        ' • within ${techProvider.searchRadiusKm ?? _fallbackRadiusKm} km',
+                    context.t.nearbyMapSummary(
+                      sortedTechs.length,
+                      radiusKmValue,
+                    ),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: ink,
@@ -548,19 +571,19 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
             children: [
               _MapControlButton(
                 icon: Icons.add_rounded,
-                tooltip: 'Zoom in',
+                tooltip: context.t.nearbyZoomIn,
                 onPressed: () => _zoomBy(1),
               ),
               const SizedBox(height: 10),
               _MapControlButton(
                 icon: Icons.remove_rounded,
-                tooltip: 'Zoom out',
+                tooltip: context.t.nearbyZoomOut,
                 onPressed: () => _zoomBy(-1),
               ),
               const SizedBox(height: 10),
               _MapControlButton(
                 icon: Icons.center_focus_strong_rounded,
-                tooltip: 'Fit all',
+                tooltip: context.t.nearbyFitAll,
                 onPressed: () => _fitAllMarkers(searchPoint, sortedTechs),
                 highlighted: true,
               ),
@@ -665,9 +688,9 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
               color: AppTheme.error,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'You',
-              style: TextStyle(
+            child: Text(
+              context.t.nearbyYou,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
@@ -756,7 +779,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                   ],
                 ),
                 child: Text(
-                  '${distance.toStringAsFixed(1)} km',
+                  context.t.nearbyKm(distance.toStringAsFixed(1)),
                   style: TextStyle(
                     color: isSelected ? AppTheme.primary : Colors.white,
                     fontSize: 11,
@@ -920,8 +943,9 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                       Expanded(
                         child: Text(
                           tech.completedJobsCount > 0
-                              ? '${tech.completedJobsCount} jobs done'
-                              : (tech.area ?? 'Near you'),
+                              ? context.t.nearbyJobsDone(
+                              tech.completedJobsCount)
+                              : (tech.area ?? context.t.nearbyNearYou),
                           style: TextStyle(
                               fontSize: 11.5, color: theme.hintColor),
                           maxLines: 1,
@@ -935,11 +959,16 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                     spacing: 5,
                     runSpacing: 4,
                     children: [
-                      _miniChip(Icons.directions_car_rounded,
-                          '${distance.toStringAsFixed(1)} km'),
+                      _miniChip(
+                        Icons.directions_car_rounded,
+                        context.t.nearbyKm(distance.toStringAsFixed(1)),
+                      ),
                       if (duration != null)
-                        _miniChip(Icons.access_time_rounded,
-                            '~${duration.toStringAsFixed(0)}m'),
+                        _miniChip(
+                          Icons.access_time_rounded,
+                          context.t.nearbyApproxMinShort(
+                              duration.toStringAsFixed(0)),
+                        ),
                     ],
                   ),
                 ],
@@ -953,7 +982,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Tooltip(
-                  message: 'View profile',
+                  message: context.t.nearbyViewProfile,
                   child: Material(
                     color: AppTheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
@@ -980,7 +1009,7 @@ class _NearbyMapScreenState extends State<NearbyMapScreen>
                 ),
                 const SizedBox(height: 6),
                 Tooltip(
-                  message: 'Get directions',
+                  message: context.t.nearbyDirections,
                   child: Material(
                     color: _gold,
                     borderRadius: BorderRadius.circular(12),

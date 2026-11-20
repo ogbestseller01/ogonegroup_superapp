@@ -1,4 +1,5 @@
 // lib/screens/fundi/profile/fundi_profile_screen.dart
+// Tab 5 = "Settings": profile on top, settings menus below.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,13 +10,15 @@ import '../../../models/service.dart';
 import '../../../models/technician.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/service_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../../providers/technician_provider.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../widgets/app_network_image.dart';
 import '../../../widgets/confirmation_dialog.dart';
 import '../../../widgets/custom_button.dart';
+import '../../notifications/notification_list_screen.dart';
 
 // ─── Shared look helpers ─────────────────────────────────────────────────
-/// Navy is unreadable on the dark background, so gold is used in dark mode.
 Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
 Color _cardBg(bool isDark) => isDark ? AppTheme.darkSurface : Colors.white;
 Color _cardBorder(bool isDark) => isDark
@@ -26,6 +29,13 @@ Color _muted(bool isDark) =>
     isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
 double _hPad(BuildContext context) =>
     MediaQuery.sizeOf(context).width < 360 ? 12.0 : 16.0;
+
+/// Package name of this SDK, so assets resolve inside the host super-app.
+const String _kAssetPackage = 'fundiapp_sdk';
+
+String _flagAsset(String localeCode) => localeCode == 'sw'
+    ? 'assets/images/tzflug.png'
+    : 'assets/images/englishflug.png';
 
 class FundiProfileScreen extends StatefulWidget {
   const FundiProfileScreen({super.key});
@@ -68,6 +78,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
   }
 
   Future<void> _editServices() async {
+    final l10n = AppLocalizations.of(context)!;
     final tech = context.read<TechnicianProvider>();
     final catalog = context.read<ServiceProvider>().services;
 
@@ -88,8 +99,10 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
 
     final ok = await tech.updateServices(selectedIds.toList());
     if (!mounted) return;
-    _snack(ok ? 'Services updated' : (tech.error ?? 'Update failed'),
-        error: !ok);
+    _snack(
+      ok ? l10n.servicesUpdated : (tech.error ?? l10n.updateFailed),
+      error: !ok,
+    );
   }
 
   Future<void> _logout() async {
@@ -114,7 +127,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     if (ok) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
     } else {
-      _snack(auth.errorMessage ?? 'Could not delete account', error: true);
+      _snack(auth.errorMessage ?? l10n.couldNotDeleteAccount, error: true);
     }
   }
 
@@ -123,10 +136,6 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     return '${nida.substring(0, 4)}${'*' * (nida.length - 8)}${nida.substring(nida.length - 4)}';
   }
 
-  /// Category label for a service. Prefers the service's own `categories`
-  /// (present when the catalog is the source); otherwise looks it up from
-  /// the passed-in catalog — because `GET /v19/technicians/profile` only
-  /// eager-loads `services`, not `services.categories`.
   String? _categoryLabel(List<Service> catalog, Service service) {
     if (service.categories.isNotEmpty) {
       return service.categories.map((c) => c.name).join(', ');
@@ -137,6 +146,120 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       }
     }
     return null;
+  }
+
+  // ───────────── LANGUAGE SHEET ─────────────
+
+  void _showLanguageSheet(
+      SettingsProvider settings, AuthProvider auth, AppLocalizations l10n) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.darkBorder : Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                l10n.language,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _ink(isDark),
+                ),
+              ),
+              const SizedBox(height: 18),
+              _langTile(
+                label: 'English',
+                localeCode: 'en',
+                selected: settings.locale == 'en',
+                isDark: isDark,
+                onTap: () async {
+                  await settings.updateLocale('en');
+                  await auth.updateLocale('en');
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 10),
+              _langTile(
+                label: 'Kiswahili',
+                localeCode: 'sw',
+                selected: settings.locale == 'sw',
+                isDark: isDark,
+                onTap: () async {
+                  await settings.updateLocale('sw');
+                  await auth.updateLocale('sw');
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _langTile({
+    required String label,
+    required String localeCode,
+    required bool selected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final activeColor = _accent(isDark);
+
+    return Material(
+      color: selected ? activeColor.withValues(alpha: 0.10) : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? activeColor : _cardBorder(isDark),
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              _FlagPng(asset: _flagAsset(localeCode), height: 22, width: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? activeColor : _ink(isDark),
+                  ),
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle_rounded, color: activeColor, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ───────────── SECTIONS ─────────────
@@ -158,7 +281,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              l10n.profile,
+              l10n.settings,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -171,6 +294,26 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Small label above a group of cards.
+  Widget _sectionLabel(bool isDark, String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            inherit: true,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            color: _muted(isDark),
+          ),
+        ),
       ),
     );
   }
@@ -380,7 +523,6 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  /// Card shell. Uses Material so ink splashes of children stay visible.
   Widget _card(bool isDark, {required Widget child}) {
     return Material(
       color: _cardBg(isDark),
@@ -473,8 +615,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                   : Column(
                 children: [
                   for (final s in services)
-                    _serviceTile(
-                        isDark, s, _categoryLabel(catalog, s)),
+                    _serviceTile(isDark, s, _categoryLabel(catalog, s)),
                 ],
               ),
             ),
@@ -635,39 +776,255 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  Widget _actionButton({
-    required bool isDark,
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    Color? color,
-  }) {
-    final c = color ?? _ink(isDark);
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 19),
-        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: c,
-          minimumSize: const Size(0, 52),
-          backgroundColor: _cardBg(isDark),
-          side: BorderSide(
-            color: color != null
-                ? color.withValues(alpha: 0.5)
-                : _cardBorder(isDark),
+  // ───────────── SETTINGS MENUS ─────────────
+
+  Widget _iconBadge(bool isDark, IconData icon, {Color? color}) {
+    final c = color ?? _accent(isDark);
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Icon(icon, color: c, size: 21),
+    );
+  }
+
+  /// Card that holds several rows separated by dividers.
+  Widget _menuCard(bool isDark, List<Widget> rows) {
+    final children = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      children.add(rows[i]);
+      if (i < rows.length - 1) {
+        children.add(Divider(
+          height: 1,
+          indent: 68,
+          endIndent: 16,
+          color: _cardBorder(isDark),
+        ));
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          textStyle: const TextStyle(
-            inherit: true,
-            fontWeight: FontWeight.w700,
-            fontSize: 14.5,
-          ),
+        ],
+      ),
+      child: _card(isDark, child: Column(children: children)),
+    );
+  }
+
+  Widget _menuTile(
+      bool isDark, {
+        required IconData icon,
+        required String title,
+        String? subtitle,
+        Widget? trailing,
+        Color? color,
+        required VoidCallback onTap,
+      }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            _iconBadge(isDark, icon, color: color),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      inherit: true,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: color ?? _ink(isDark),
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        inherit: true,
+                        fontSize: 12,
+                        color: _muted(isDark),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            trailing ??
+                Icon(Icons.arrow_forward_ios_rounded,
+                    size: 14, color: _muted(isDark)),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _switchTile(
+      bool isDark, {
+        required IconData icon,
+        required String title,
+        String? subtitle,
+        required bool value,
+        required ValueChanged<bool> onChanged,
+      }) {
+    return _menuTile(
+      isDark,
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      onTap: () => onChanged(!value),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeColor: _accent(isDark),
+        activeTrackColor: _accent(isDark).withValues(alpha: 0.45),
+      ),
+    );
+  }
+
+  Widget _settingsMenus(bool isDark, AppLocalizations l10n) {
+    final settings = context.watch<SettingsProvider>();
+    final auth = context.read<AuthProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDarkMode = themeProvider.isDarkMode;
+
+    return Column(
+      children: [
+        // ── Preferences ──
+        _sectionLabel(isDark, l10n.settingsPreferences),
+        _menuCard(isDark, [
+          _switchTile(
+            isDark,
+            icon: Icons.notifications_outlined,
+            title: l10n.pushNotifications,
+            subtitle: l10n.receiveAlerts,
+            value: settings.notificationsEnabled,
+            onChanged: (val) => settings.updateNotificationStatus(val),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.notifications_active_rounded,
+            title: l10n.viewNotifications,
+            subtitle: l10n.seeAllNotifications,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationListScreen(),
+              ),
+            ),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.language_outlined,
+            title: l10n.language,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _FlagPng(
+                    asset: _flagAsset(settings.locale), height: 20, width: 28),
+                const SizedBox(width: 8),
+                Text(
+                  settings.locale == 'sw' ? 'Kiswahili' : 'English',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: _accent(isDark),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: _accent(isDark)),
+              ],
+            ),
+            onTap: () => _showLanguageSheet(settings, auth, l10n),
+          ),
+          _switchTile(
+            isDark,
+            icon: isDarkMode
+                ? Icons.dark_mode_rounded
+                : Icons.light_mode_rounded,
+            title: l10n.settingsDarkMode,
+            subtitle:
+            isDarkMode ? l10n.settingsDarkOn : l10n.settingsLightOn,
+            value: isDarkMode,
+            onChanged: (val) => themeProvider
+                .setThemeMode(val ? ThemeMode.dark : ThemeMode.light),
+          ),
+        ]),
+        const SizedBox(height: 22),
+
+        // ── Information ──
+        _sectionLabel(isDark, l10n.settingsInformation),
+        _menuCard(isDark, [
+          _menuTile(
+            isDark,
+            icon: Icons.info_outline_rounded,
+            title: l10n.aboutUs,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.about),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.help_outline_rounded,
+            title: l10n.faq,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.faq),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.description_outlined,
+            title: l10n.terms,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.terms),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.privacy_tip_rounded,
+            title: l10n.privacyPolicy,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.privacy),
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.contact_mail_outlined,
+            title: l10n.contactUs,
+            onTap: () => Navigator.pushNamed(context, AppRoutes.contactUs),
+          ),
+        ]),
+        const SizedBox(height: 22),
+
+        // ── Account ──
+        _sectionLabel(isDark, l10n.settingsAccount),
+        _menuCard(isDark, [
+          _menuTile(
+            isDark,
+            icon: Icons.logout_rounded,
+            title: l10n.logout,
+            color: AppTheme.error,
+            onTap: _logout,
+          ),
+          _menuTile(
+            isDark,
+            icon: Icons.delete_outline_rounded,
+            title: l10n.deleteAccount,
+            color: AppTheme.error,
+            onTap: _deleteAccount,
+          ),
+        ]),
+      ],
     );
   }
 
@@ -702,41 +1059,20 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                     padding: EdgeInsets.fromLTRB(h, 12, h, 24),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints:
-                        const BoxConstraints(maxWidth: 720),
+                        constraints: const BoxConstraints(maxWidth: 720),
                         child: Column(
                           children: [
+                            // ── Profile (now under Settings) ──
+                            _sectionLabel(isDark, l10n.profile),
                             _header(isDark, auth, t),
                             const SizedBox(height: 18),
                             _servicesCard(isDark, l10n, t, catalog),
                             const SizedBox(height: 18),
                             _detailsCard(isDark, l10n, t),
-                            const SizedBox(height: 22),
-                            _actionButton(
-                              isDark: isDark,
-                              icon: Icons.settings_outlined,
-                              label: l10n.settings,
-                              onPressed: () => Navigator.pushNamed(
-                                  context, AppRoutes.settings),
-                            ),
-                            const SizedBox(height: 12),
-                            _actionButton(
-                              isDark: isDark,
-                              icon: Icons.logout_rounded,
-                              label: l10n.logout,
-                              color: AppTheme.error,
-                              onPressed: _logout,
-                            ),
-                            const SizedBox(height: 10),
-                            TextButton.icon(
-                              onPressed: _deleteAccount,
-                              icon: const Icon(Icons.delete_outline,
-                                  size: 18),
-                              label: Text(l10n.deleteAccount),
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.error,
-                              ),
-                            ),
+                            const SizedBox(height: 26),
+
+                            // ── Settings menus ──
+                            _settingsMenus(isDark, l10n),
                             const SizedBox(height: 12),
                           ],
                         ),
@@ -746,6 +1082,47 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════ FLAG IMAGE ═════════════════════════════════════════════
+
+class _FlagPng extends StatelessWidget {
+  final String asset;
+  final double height;
+  final double width;
+
+  const _FlagPng({
+    required this.asset,
+    this.height = 20,
+    this.width = 28,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: Image.asset(
+        asset,
+        package: _kAssetPackage,
+        height: height,
+        width: width,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => Container(
+          height: height,
+          width: width,
+          alignment: Alignment.center,
+          color: theme.colorScheme.primary.withValues(alpha: 0.10),
+          child: Icon(
+            Icons.flag_rounded,
+            size: height * 0.7,
+            color: theme.colorScheme.primary,
           ),
         ),
       ),
@@ -811,7 +1188,7 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Edit services',
+                  l10n.editServices,
                   style: TextStyle(
                     inherit: true,
                     fontSize: 20,
@@ -826,7 +1203,7 @@ class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
               child: widget.catalog.isEmpty
                   ? Center(
                 child: Text(
-                  'No services available.',
+                  l10n.noServicesAvailable,
                   style: TextStyle(color: _muted(isDark)),
                 ),
               )

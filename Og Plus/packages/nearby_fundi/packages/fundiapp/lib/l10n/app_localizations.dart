@@ -191,6 +191,30 @@ abstract class AppLocalizations {
   /// **'Quick Actions'**
   String get quickActions;
 
+  /// No description provided for @regStep1Failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create your account. Please check your details and try again.'**
+  String get regStep1Failed;
+
+  /// No description provided for @regOtpDeliveryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created, but we could not send the code right now. Tap Resend on the next screen.'**
+  String get regOtpDeliveryFailed;
+
+  /// No description provided for @regOtpSentSms.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit verification code via SMS to {recipient}'**
+  String regOtpSentSms(String recipient);
+
+  /// No description provided for @regOtpSentEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit verification code to your email {recipient}'**
+  String regOtpSentEmail(String recipient);
+
   /// No description provided for @welcomeBack.
   ///
   /// In en, this message translates to:
@@ -602,7 +626,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteMessage.
   ///
   /// In en, this message translates to:
-  /// **'Delete Message'**
+  /// **'Delete message?'**
   String get deleteMessage;
 
   /// No description provided for @reply.
@@ -794,7 +818,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPost.
   ///
   /// In en, this message translates to:
-  /// **'Create Post'**
+  /// **'Create your first post'**
   String get createPost;
 
   /// No description provided for @createPostTitle.
@@ -1394,7 +1418,7 @@ abstract class AppLocalizations {
   /// No description provided for @servicesUpdated.
   ///
   /// In en, this message translates to:
-  /// **'Services updated successfully'**
+  /// **'Services updated'**
   String get servicesUpdated;
 
   /// No description provided for @profileUpdated.
@@ -1508,331 +1532,331 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptions.
   ///
   /// In en, this message translates to:
-  /// **'Subscriptions'**
+  /// **'Usajili'**
   String get subscriptions;
 
   /// No description provided for @mySubscriptions.
   ///
   /// In en, this message translates to:
-  /// **'My Subscriptions'**
+  /// **'Usajili Wangu'**
   String get mySubscriptions;
 
   /// No description provided for @subscriptionStatus.
   ///
   /// In en, this message translates to:
-  /// **'Subscription Status'**
+  /// **'Hali ya Usajili'**
   String get subscriptionStatus;
 
   /// No description provided for @choosePlan.
   ///
   /// In en, this message translates to:
-  /// **'Choose Your Plan'**
+  /// **'Chagua Mpango Wako'**
   String get choosePlan;
 
   /// No description provided for @selectPlan.
   ///
   /// In en, this message translates to:
-  /// **'Select a subscription plan that works for you'**
+  /// **'Chagua mpango wa usajili unaokufaa'**
   String get selectPlan;
 
   /// No description provided for @continueToPayment.
   ///
   /// In en, this message translates to:
-  /// **'Continue to Payment'**
+  /// **'Endelea na Malipo'**
   String get continueToPayment;
 
   /// No description provided for @paymentMethods.
   ///
   /// In en, this message translates to:
-  /// **'Payment Methods'**
+  /// **'Njia za Malipo'**
   String get paymentMethods;
 
   /// No description provided for @choosePaymentMethod.
   ///
   /// In en, this message translates to:
-  /// **'Choose Payment Method'**
+  /// **'Chagua Njia ya Malipo'**
   String get choosePaymentMethod;
 
   /// No description provided for @selectedPlan.
   ///
   /// In en, this message translates to:
-  /// **'Selected Plan'**
+  /// **'Mpango Uliyochagua'**
   String get selectedPlan;
 
   /// No description provided for @paymentReference.
   ///
   /// In en, this message translates to:
-  /// **'Payment Reference'**
+  /// **'Kumbukumbu ya Malipo'**
   String get paymentReference;
 
   /// No description provided for @paymentReferenceHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g., MPESA-123456'**
+  /// **'mf., MPESA-123456'**
   String get paymentReferenceHint;
 
   /// No description provided for @notes.
   ///
   /// In en, this message translates to:
-  /// **'Notes'**
+  /// **'Maelezo'**
   String get notes;
 
   /// No description provided for @notesHint.
   ///
   /// In en, this message translates to:
-  /// **'Any additional information...'**
+  /// **'Taarifa yoyote ya ziada...'**
   String get notesHint;
 
   /// No description provided for @uploadPaymentProof.
   ///
   /// In en, this message translates to:
-  /// **'Upload Payment Proof'**
+  /// **'Pakia Uthibitisho wa Malipo'**
   String get uploadPaymentProof;
 
   /// No description provided for @tapToUpload.
   ///
   /// In en, this message translates to:
-  /// **'Tap to upload payment proof'**
+  /// **'Gusa kupakia uthibitisho wa malipo'**
   String get tapToUpload;
 
   /// No description provided for @paymentProofFormats.
   ///
   /// In en, this message translates to:
-  /// **'JPG, PNG, or PDF'**
+  /// **'JPG, PNG, au PDF'**
   String get paymentProofFormats;
 
   /// No description provided for @paymentInstructions.
   ///
   /// In en, this message translates to:
-  /// **'Payment Instructions'**
+  /// **'Maelekezo ya Malipo'**
   String get paymentInstructions;
 
   /// No description provided for @sendAmountTo.
   ///
   /// In en, this message translates to:
-  /// **'Send {amount} to:'**
+  /// **'Tuma {amount} kwa:'**
   String sendAmountTo(String amount);
 
   /// No description provided for @account.
   ///
   /// In en, this message translates to:
-  /// **'Account'**
+  /// **'Akaunti'**
   String get account;
 
   /// No description provided for @submitSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Submit Subscription'**
+  /// **'Wasilisha Usajili'**
   String get submitSubscription;
 
   /// No description provided for @subscriptionCreated.
   ///
   /// In en, this message translates to:
-  /// **'Subscription Created!'**
+  /// **'Usajili Umeundwa!'**
   String get subscriptionCreated;
 
   /// No description provided for @subscriptionCreatedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Your subscription request has been created successfully.'**
+  /// **'Ombi lako la usajili limeundwa kwa mafanikio.'**
   String get subscriptionCreatedMessage;
 
   /// No description provided for @waitForApproval.
   ///
   /// In en, this message translates to:
-  /// **'Please wait for admin approval. You will receive a notification once your subscription is approved.'**
+  /// **'Tafadhali subiri idhini ya msimamizi. Utapokea taarifa mara usajili wako utakapoidhinishwa.'**
   String get waitForApproval;
 
   /// No description provided for @goToDashboard.
   ///
   /// In en, this message translates to:
-  /// **'Go to Dashboard'**
+  /// **'Nenda kwenye Dashibodi'**
   String get goToDashboard;
 
   /// No description provided for @renewNow.
   ///
   /// In en, this message translates to:
-  /// **'Renew Now'**
+  /// **'Sasisha Sasa'**
   String get renewNow;
 
   /// No description provided for @subscribeNow.
   ///
   /// In en, this message translates to:
-  /// **'Subscribe Now'**
+  /// **'Jisajili Sasa'**
   String get subscribeNow;
 
   /// No description provided for @subscriptionExpired.
   ///
   /// In en, this message translates to:
-  /// **'Subscription Expired'**
+  /// **'Usajili Umeisha'**
   String get subscriptionExpired;
 
   /// No description provided for @subscriptionPending.
   ///
   /// In en, this message translates to:
-  /// **'Pending Approval'**
+  /// **'Inasubiri Idhini'**
   String get subscriptionPending;
 
   /// No description provided for @subscriptionActive.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
+  /// **'Hai'**
   String get subscriptionActive;
 
   /// No description provided for @subscriptionInactive.
   ///
   /// In en, this message translates to:
-  /// **'Inactive'**
+  /// **'Haifanyi Kazi'**
   String get subscriptionInactive;
 
   /// No description provided for @daysRemaining.
   ///
   /// In en, this message translates to:
-  /// **'{days} days remaining'**
+  /// **'Siku {days} zimebaki'**
   String daysRemaining(int days);
 
   /// No description provided for @expiresOn.
   ///
   /// In en, this message translates to:
-  /// **'Expires: {date}'**
+  /// **'Inaisha: {date}'**
   String expiresOn(String date);
 
   /// No description provided for @validUntil.
   ///
   /// In en, this message translates to:
-  /// **'Valid until: {date}'**
+  /// **'Ni halali hadi: {date}'**
   String validUntil(String date);
 
   /// No description provided for @noSubscriptions.
   ///
   /// In en, this message translates to:
-  /// **'No subscriptions yet'**
+  /// **'Hakuna usajili bado'**
   String get noSubscriptions;
 
   /// No description provided for @noInvoices.
   ///
   /// In en, this message translates to:
-  /// **'No invoices available'**
+  /// **'Hakuna ankara zinazopatikana'**
   String get noInvoices;
 
   /// No description provided for @invoiceNumber.
   ///
   /// In en, this message translates to:
-  /// **'Invoice #{number}'**
+  /// **'Ankara #{number}'**
   String invoiceNumber(String number);
 
   /// No description provided for @invoiceStatus.
   ///
   /// In en, this message translates to:
-  /// **'Status'**
+  /// **'Hali'**
   String get invoiceStatus;
 
   /// No description provided for @viewInvoice.
   ///
   /// In en, this message translates to:
-  /// **'View Invoice'**
+  /// **'Tazama Ankara'**
   String get viewInvoice;
 
   /// No description provided for @downloadPdf.
   ///
   /// In en, this message translates to:
-  /// **'Download PDF'**
+  /// **'Pakua PDF'**
   String get downloadPdf;
 
   /// No description provided for @subscriptionHistory.
   ///
   /// In en, this message translates to:
-  /// **'Subscription History'**
+  /// **'Historia ya Usajili'**
   String get subscriptionHistory;
 
   /// No description provided for @paid.
   ///
   /// In en, this message translates to:
-  /// **'Paid'**
+  /// **'Imelipwa'**
   String get paid;
 
   /// No description provided for @unpaid.
   ///
   /// In en, this message translates to:
-  /// **'Unpaid'**
+  /// **'Haijalipwa'**
   String get unpaid;
 
   /// No description provided for @yourSubscriptionHasExpired.
   ///
   /// In en, this message translates to:
-  /// **'Your subscription has expired. Please renew to continue.'**
+  /// **'Usajili wako umeisha. Tafadhali sasisha ili kuendelea.'**
   String get yourSubscriptionHasExpired;
 
   /// No description provided for @subscriptionPendingApproval.
   ///
   /// In en, this message translates to:
-  /// **'Your subscription is pending approval. Please wait.'**
+  /// **'Usajili wako unasubiri idhini. Tafadhali subiri.'**
   String get subscriptionPendingApproval;
 
   /// No description provided for @subscribeToUnlock.
   ///
   /// In en, this message translates to:
-  /// **'Subscribe to unlock all Fundi features.'**
+  /// **'Jisajili ili kufungua vipengele vyote vya Fundi.'**
   String get subscribeToUnlock;
 
   /// No description provided for @rateCards.
   ///
   /// In en, this message translates to:
-  /// **'Rate Cards'**
+  /// **'Kadi za Viwango'**
   String get rateCards;
 
   /// No description provided for @subscriptionDetails.
   ///
   /// In en, this message translates to:
-  /// **'Subscription Details'**
+  /// **'Maelezo ya Usajili'**
   String get subscriptionDetails;
 
   /// No description provided for @invoiceDetails.
   ///
   /// In en, this message translates to:
-  /// **'Invoice Details'**
+  /// **'Maelezo ya Ankara'**
   String get invoiceDetails;
 
   /// No description provided for @activePlan.
   ///
   /// In en, this message translates to:
-  /// **'Active Plan'**
+  /// **'Mpango Hai'**
   String get activePlan;
 
   /// No description provided for @amountPaid.
   ///
   /// In en, this message translates to:
-  /// **'Amount Paid'**
+  /// **'Kiasi Kilicholipwa'**
   String get amountPaid;
 
   /// No description provided for @paymentMethod.
   ///
   /// In en, this message translates to:
-  /// **'Payment Method'**
+  /// **'Njia ya Malipo'**
   String get paymentMethod;
 
   /// No description provided for @paymentReferenceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Payment Reference'**
+  /// **'Kumbukumbu ya Malipo'**
   String get paymentReferenceLabel;
 
   /// No description provided for @approvedAt.
   ///
   /// In en, this message translates to:
-  /// **'Approved At'**
+  /// **'Imeidhinishwa Tarehe'**
   String get approvedAt;
 
   /// No description provided for @approvedBy.
   ///
   /// In en, this message translates to:
-  /// **'Approved By'**
+  /// **'Imeidhinishwa Na'**
   String get approvedBy;
 
   /// No description provided for @adminNotes.
   ///
   /// In en, this message translates to:
-  /// **'Admin Notes'**
+  /// **'Maelezo ya Msimamizi'**
   String get adminNotes;
 
   /// No description provided for @noNotifications.
@@ -2582,7 +2606,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscription.
   ///
   /// In en, this message translates to:
-  /// **'Subscription'**
+  /// **'Usajili'**
   String get subscription;
 
   /// No description provided for @viewAll.
@@ -2633,22 +2657,34 @@ abstract class AppLocalizations {
   /// **'No jobs found'**
   String get noJobsFound;
 
+  /// No description provided for @noTicketsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No tickets found'**
+  String get noTicketsFound;
+
   /// No description provided for @searchJobsHint.
   ///
   /// In en, this message translates to:
   /// **'Search job number, customer, service...'**
   String get searchJobsHint;
 
+  /// No description provided for @searchTicketsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search ticket, job, customer, service...'**
+  String get searchTicketsHint;
+
   /// No description provided for @subscriptionComingSoonTitle.
   ///
   /// In en, this message translates to:
-  /// **'Subscription'**
+  /// **'Usajili'**
   String get subscriptionComingSoonTitle;
 
   /// No description provided for @subscriptionComingSoonBody.
   ///
   /// In en, this message translates to:
-  /// **'Premium version — Coming soon 🚀\nUnlock more features and grow your business.'**
+  /// **'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua vipengele zaidi na kukuza biashara yako.'**
   String get subscriptionComingSoonBody;
 
   /// No description provided for @pendingStatus.
@@ -2668,18 +2704,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'COMPLETED'**
   String get completedStatus;
-
-  /// No description provided for @noTicketsFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No tickets found'**
-  String get noTicketsFound;
-
-  /// No description provided for @searchTicketsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search ticket, job, customer, service...'**
-  String get searchTicketsHint;
 
   /// No description provided for @jobDetails.
   ///
@@ -2806,6 +2830,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get filterCompleted;
+
+  /// No description provided for @settingsPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferences;
+
+  /// No description provided for @settingsInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get settingsInformation;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsDarkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get settingsDarkMode;
+
+  /// No description provided for @settingsDarkOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark theme enabled'**
+  String get settingsDarkOn;
+
+  /// No description provided for @settingsLightOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Light theme enabled'**
+  String get settingsLightOn;
+
+  /// No description provided for @editServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit services'**
+  String get editServices;
+
+  /// No description provided for @noServicesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No services available.'**
+  String get noServicesAvailable;
+
+  /// No description provided for @couldNotDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete account'**
+  String get couldNotDeleteAccount;
 
   /// No description provided for @payments.
   ///

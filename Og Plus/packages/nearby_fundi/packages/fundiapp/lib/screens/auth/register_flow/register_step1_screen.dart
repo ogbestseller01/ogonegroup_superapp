@@ -14,8 +14,8 @@ import '../../../services/storage_service.dart';
 import '../../../widgets/register_shell.dart';
 
 class RegisterStep1Screen extends StatefulWidget {
-  /// When the user backs out of Services, this carries the account data
-  /// back here so the fields re-populate instead of starting blank.
+  /// Carries account data back when the user navigates back from Services
+  /// so fields re-populate instead of starting blank.
   final Map<String, dynamic>? initialData;
 
   const RegisterStep1Screen({super.key, this.initialData});
@@ -26,6 +26,7 @@ class RegisterStep1Screen extends StatefulWidget {
 
 class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  static final _tzPhoneRe = RegExp(r'^[67]\d{8}$');
 
   final _formKey = GlobalKey<FormState>();
   final _nameC = TextEditingController();
@@ -80,9 +81,14 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       );
     }
 
-    final photoPath = d['profile_photo']?.toString();
+    // profile_photo is always a String path
+    final rawPhoto = d['profile_photo'];
+    final photoPath = rawPhoto is File ? rawPhoto.path : rawPhoto?.toString();
     if (photoPath != null && photoPath.isNotEmpty) {
-      _photo = File(photoPath);
+      final file = File(photoPath);
+      if (file.existsSync()) {
+        _photo = file;
+      }
     }
   }
 
@@ -114,13 +120,13 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       return;
     }
 
-    final route = step <= 1
-        ? AppRoutes.registerStep2
-        : step == 2
-        ? AppRoutes.registerStep3
-        : step == 3
-        ? AppRoutes.registerStep4
-        : AppRoutes.registerStep5;
+    final route = switch (step) {
+      <= 1 => AppRoutes.registerStep2,
+      2 => AppRoutes.registerStep3,
+      3 => AppRoutes.registerStep4,
+      _ => AppRoutes.registerStep5,
+    };
+
     Navigator.pushReplacementNamed(context, route, arguments: storedId);
   }
 
@@ -134,7 +140,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     if (raw.isEmpty) return l10n.regPhoneRequired;
     final d = raw.replaceFirst(RegExp(r'^0+'), '');
     if (_country.dialCode == '+255') {
-      return RegExp(r'^[67]\d{8}$').hasMatch(d) ? null : l10n.regPhoneInvalidTz;
+      return _tzPhoneRe.hasMatch(d) ? null : l10n.regPhoneInvalidTz;
     }
     return (d.length >= 7 && d.length <= 12) ? null : l10n.regPhoneInvalid;
   }
@@ -160,12 +166,15 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       maxHeight: 800,
       imageQuality: 80,
     );
-    if (picked != null && mounted) setState(() => _photo = File(picked.path));
+    if (picked != null && mounted) {
+      setState(() => _photo = File(picked.path));
+    }
   }
 
   void _photoSheet() {
     final l10n = AppLocalizations.of(context)!;
     final p = RegPalette.of(context);
+
     showModalBottomSheet(
       context: context,
       backgroundColor: p.card,
@@ -179,8 +188,10 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             const SizedBox(height: 8),
             ListTile(
               leading: Icon(Icons.photo_library_rounded, color: p.link),
-              title: Text(l10n.regChooseGallery,
-                  style: TextStyle(color: p.text)),
+              title: Text(
+                l10n.regChooseGallery,
+                style: TextStyle(color: p.text),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickPhoto(ImageSource.gallery);
@@ -188,8 +199,10 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             ),
             ListTile(
               leading: Icon(Icons.camera_alt_rounded, color: p.link),
-              title:
-              Text(l10n.regTakePhoto, style: TextStyle(color: p.text)),
+              title: Text(
+                l10n.regTakePhoto,
+                style: TextStyle(color: p.text),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickPhoto(ImageSource.camera);
@@ -197,10 +210,14 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             ),
             if (_photo != null)
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded,
-                    color: Colors.redAccent),
-                title: Text(l10n.regRemovePhoto,
-                    style: TextStyle(color: p.text)),
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.redAccent,
+                ),
+                title: Text(
+                  l10n.regRemovePhoto,
+                  style: TextStyle(color: p.text),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() => _photo = null);
@@ -221,7 +238,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     }
   }
 
-  // ── Next → Services ─────────────────────────────────────────
+  // ── Next → Services (API is called later, from the Location screen) ──
   void _next() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -233,13 +250,14 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       AppRoutes.registerServices,
       arguments: <String, dynamic>{
         'name': _nameC.text.trim(),
-        'email': email,
-        'phone_local_raw': _phoneC.text,
+        'phone': fullPhone,
+        'phone_full': fullPhone, // Location screen reads this key
         'phone_country_code': _country.dialCode,
-        'phone_full': fullPhone,
+        'phone_local_raw': _phoneC.text.trim(),
+        if (email.isNotEmpty) 'email': email,
         'password': _passC.text,
         'password_confirmation': _confirmC.text,
-        if (_photo != null) 'profile_photo': _photo!.path,
+        if (_photo != null) 'profile_photo': _photo!.path, // String path
       },
     );
   }
@@ -248,10 +266,9 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final auth = context.watch<AuthProvider>();
+    final busy = context.select<AuthProvider, bool>((a) => a.isLoading);
     final theme = Theme.of(context);
     final p = RegPalette.of(context);
-    final busy = auth.isLoading;
 
     return RegisterShell(
       step: 1,
@@ -268,7 +285,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Photo
+            // Profile photo
             Center(
               child: GestureDetector(
                 onTap: busy ? null : _photoSheet,
@@ -280,8 +297,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                       backgroundImage:
                       _photo != null ? FileImage(_photo!) : null,
                       child: _photo == null
-                          ? Icon(Icons.person_outline_rounded,
-                          size: 44, color: theme.hintColor)
+                          ? Icon(
+                        Icons.person_outline_rounded,
+                        size: 44,
+                        color: theme.hintColor,
+                      )
                           : null,
                     ),
                     Positioned(
@@ -289,9 +309,12 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                       right: 0,
                       child: CircleAvatar(
                         radius: 15,
-                        backgroundColor: AppThemeAccent.of(context),
-                        child: const Icon(Icons.camera_alt_rounded,
-                            size: 16, color: Colors.white),
+                        backgroundColor: p.link,
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -300,27 +323,32 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             ),
             const SizedBox(height: 6),
             Center(
-              child: Text(l10n.regPhotoOptional,
-                  style: theme.textTheme.bodySmall?.copyWith(color: p.muted)),
+              child: Text(
+                l10n.regPhotoOptional,
+                style: theme.textTheme.bodySmall?.copyWith(color: p.muted),
+              ),
             ),
             const SizedBox(height: 20),
 
-            // Name
+            // Full name
             TextFormField(
               controller: _nameC,
               enabled: !busy,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
               style: TextStyle(fontSize: 15, color: p.text),
-              decoration: regInputDecoration(context,
-                  hint: l10n.regFullName, icon: Icons.person_outline_rounded),
+              decoration: regInputDecoration(
+                context,
+                hint: l10n.regFullName,
+                icon: Icons.person_outline_rounded,
+              ),
               validator: (v) => (v == null || v.trim().length < 2)
                   ? l10n.regNameRequired
                   : null,
             ),
             const SizedBox(height: 14),
 
-            // Phone + country
+            // Phone + country picker
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -338,11 +366,14 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                         children: [
                           regFlag(_country.name, _country.flag, 20),
                           const SizedBox(width: 6),
-                          Text(_country.dialCode,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14.5,
-                                  color: p.text)),
+                          Text(
+                            _country.dialCode,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.5,
+                              color: p.text,
+                            ),
+                          ),
                           Icon(Icons.arrow_drop_down, color: p.muted),
                         ],
                       ),
@@ -357,8 +388,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
                     style: TextStyle(fontSize: 15, color: p.text),
-                    decoration: regInputDecoration(context,
-                        hint: l10n.regPhoneHint, icon: Icons.phone_outlined),
+                    decoration: regInputDecoration(
+                      context,
+                      hint: l10n.regPhoneHint,
+                      icon: Icons.phone_outlined,
+                    ),
                     validator: (v) => _validatePhone(v, l10n),
                   ),
                 ),
@@ -373,8 +407,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               style: TextStyle(fontSize: 15, color: p.text),
-              decoration: regInputDecoration(context,
-                  hint: l10n.regEmailOptional, icon: Icons.email_outlined),
+              decoration: regInputDecoration(
+                context,
+                hint: l10n.regEmailOptional,
+                icon: Icons.email_outlined,
+              ),
               validator: (v) => _validateEmail(v, l10n),
             ),
             const SizedBox(height: 14),
@@ -412,9 +449,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
               enabled: !busy,
               obscureText: _obscure,
               style: TextStyle(fontSize: 15, color: p.text),
-              decoration: regInputDecoration(context,
-                  hint: l10n.regConfirmPasswordHint,
-                  icon: Icons.lock_outline_rounded),
+              decoration: regInputDecoration(
+                context,
+                hint: l10n.regConfirmPasswordHint,
+                icon: Icons.lock_outline_rounded,
+              ),
               validator: (v) =>
               v == _passC.text ? null : l10n.regPasswordMismatch,
             ),
@@ -423,8 +462,4 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       ),
     );
   }
-}
-
-class AppThemeAccent {
-  static Color of(BuildContext context) => RegPalette.of(context).link;
 }

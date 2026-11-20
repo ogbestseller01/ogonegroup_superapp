@@ -785,6 +785,720 @@ abstract class AppLocalizations {
   /// **'Continue with Google'**
   String get continueWithGoogle;
 
+  /// No description provided for @yourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Account'**
+  String get yourAccount;
+
+  /// No description provided for @managePersonalAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your personal account'**
+  String get managePersonalAccount;
+
+  /// No description provided for @updatePersonalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Update your personal information'**
+  String get updatePersonalInfo;
+
+  /// No description provided for @manageAppPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your app preferences'**
+  String get manageAppPreferences;
+
+  /// No description provided for @yourNearbyFundiAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Your NearbyFundi account'**
+  String get yourNearbyFundiAccount;
+
+  /// No description provided for @accountActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Account active'**
+  String get accountActive;
+
+  /// No description provided for @accountReadyToUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is ready to use.'**
+  String get accountReadyToUse;
+
+  /// No description provided for @dangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get dangerZone;
+
+  /// No description provided for @irreversibleActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Irreversible account actions'**
+  String get irreversibleActions;
+
+  /// No description provided for @deleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently remove your account and data'**
+  String get deleteAccountSubtitle;
+
+  /// No description provided for @deleteAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account?'**
+  String get deleteAccountTitle;
+
+  /// No description provided for @deleteAccountWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be signed out of this app immediately. You can sign in again at any time.'**
+  String get deleteAccountWarning;
+
+  /// No description provided for @manageSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your settings'**
+  String get manageSettings;
+
+  /// No description provided for @personalizeExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize your NearbyFundi experience.'**
+  String get personalizeExperience;
+
+  /// No description provided for @lightAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Light appearance'**
+  String get lightAppearance;
+
+  /// No description provided for @darkAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark appearance'**
+  String get darkAppearance;
+
+  /// No description provided for @followDeviceSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow device settings'**
+  String get followDeviceSettings;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get preferences;
+
+  /// No description provided for @information.
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get information;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @manageYourAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your account'**
+  String get manageYourAccount;
+
+  /// No description provided for @refreshProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh profile'**
+  String get refreshProfile;
+
+  /// No description provided for @trustedConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Your trusted connection to local technicians.'**
+  String get trustedConnection;
+
+  /// No description provided for @findTrustedNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Find trusted technicians near you.'**
+  String get findTrustedNearby;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequired;
+
+  /// No description provided for @enterValidName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid name'**
+  String get enterValidName;
+
+  /// No description provided for @enterFullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get enterFullName;
+
+  /// No description provided for @enterPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your phone number'**
+  String get enterPhoneNumber;
+
+  /// No description provided for @personalInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal information'**
+  String get personalInformation;
+
+  /// No description provided for @editNameAndContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit your name and contact details.'**
+  String get editNameAndContact;
+
+  /// No description provided for @keepInfoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your personal information up to date.'**
+  String get keepInfoUpdated;
+
+  /// No description provided for @profileHeaderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your account details'**
+  String get profileHeaderSubtitle;
+
+  /// No description provided for @cancelActionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelActionLabel;
+
+  /// No description provided for @activeStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeStatus;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @minAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min ago'**
+  String minAgo(int count);
+
+  /// No description provided for @hrAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} hr ago'**
+  String hrAgo(int count);
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String daysAgo(int count);
+
+  /// No description provided for @nearbyRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get nearbyRefresh;
+
+  /// No description provided for @nearbyFitAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit all'**
+  String get nearbyFitAll;
+
+  /// No description provided for @nearbyNoTechniciansFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No technicians found'**
+  String get nearbyNoTechniciansFound;
+
+  /// No description provided for @nearbyTryAnotherLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another location or a different service'**
+  String get nearbyTryAnotherLocation;
+
+  /// No description provided for @nearbyNearYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Near you'**
+  String get nearbyNearYou;
+
+  /// No description provided for @nearbyApproxMinShort.
+  ///
+  /// In en, this message translates to:
+  /// **'~{value}m'**
+  String nearbyApproxMinShort(String value);
+
+  /// No description provided for @nearbyMapSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 technician} other{{count} technicians}} • within {radius} km'**
+  String nearbyMapSummary(int count, int radius);
+
+  /// No description provided for @techMapLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location not available for this technician.'**
+  String get techMapLocationUnavailable;
+
+  /// No description provided for @techMapRefreshRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh route'**
+  String get techMapRefreshRoute;
+
+  /// No description provided for @techMapCalculatingRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating route…'**
+  String get techMapCalculatingRoute;
+
+  /// No description provided for @techMapRecenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Recenter'**
+  String get techMapRecenter;
+
+  /// No description provided for @techMapMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Maps'**
+  String get techMapMaps;
+
+  /// No description provided for @techMapOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get techMapOnline;
+
+  /// No description provided for @techMapOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get techMapOffline;
+
+  /// No description provided for @pickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick location'**
+  String get pickerTitle;
+
+  /// No description provided for @pickerOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get pickerOk;
+
+  /// No description provided for @pickerSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get pickerSettings;
+
+  /// No description provided for @pickerEnableLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable location services.'**
+  String get pickerEnableLocation;
+
+  /// No description provided for @pickerPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission denied.'**
+  String get pickerPermissionDenied;
+
+  /// No description provided for @pickerPermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission permanently denied.'**
+  String get pickerPermissionDeniedForever;
+
+  /// No description provided for @pickerOutsideTanzania.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location is outside Tanzania.'**
+  String get pickerOutsideTanzania;
+
+  /// No description provided for @pickerLocationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your location. Please try again.'**
+  String get pickerLocationFailed;
+
+  /// No description provided for @pickerPickInsideTanzania.
+  ///
+  /// In en, this message translates to:
+  /// **'Please pick a location inside Tanzania.'**
+  String get pickerPickInsideTanzania;
+
+  /// No description provided for @pickerMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'My current location'**
+  String get pickerMyLocation;
+
+  /// No description provided for @pickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a place in Tanzania…'**
+  String get pickerSearchHint;
+
+  /// No description provided for @pickerRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get pickerRecent;
+
+  /// No description provided for @pickerClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get pickerClearAll;
+
+  /// No description provided for @pickerRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get pickerRemove;
+
+  /// No description provided for @pickerGettingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting address…'**
+  String get pickerGettingAddress;
+
+  /// No description provided for @pickerTapMapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map or search for a place'**
+  String get pickerTapMapHint;
+
+  /// No description provided for @pickerUseLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location'**
+  String get pickerUseLocation;
+
+  /// No description provided for @nearbyFindFundiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a fundi near you'**
+  String get nearbyFindFundiTitle;
+
+  /// No description provided for @nearbySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get nearbySearch;
+
+  /// No description provided for @nearbyShowSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Show search'**
+  String get nearbyShowSearch;
+
+  /// No description provided for @nearbyHideSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide search'**
+  String get nearbyHideSearch;
+
+  /// No description provided for @nearbyClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get nearbyClearSearch;
+
+  /// No description provided for @nearbyFilterByService.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by service...'**
+  String get nearbyFilterByService;
+
+  /// No description provided for @nearbyChooseOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose location on map'**
+  String get nearbyChooseOnMap;
+
+  /// No description provided for @nearbyRecommendedReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Top ranked near you: rating, jobs and requests'**
+  String get nearbyRecommendedReason;
+
+  /// No description provided for @nearbyRecentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get nearbyRecentSearches;
+
+  /// No description provided for @nearbyClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get nearbyClear;
+
+  /// No description provided for @nearbyClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get nearbyClearFilters;
+
+  /// No description provided for @nearbyFindingRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding best routes...'**
+  String get nearbyFindingRoutes;
+
+  /// No description provided for @nearbySearchForTechnicians.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for technicians'**
+  String get nearbySearchForTechnicians;
+
+  /// No description provided for @nearbyNoTechniciansNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'No technicians found nearby'**
+  String get nearbyNoTechniciansNearby;
+
+  /// No description provided for @nearbyYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get nearbyYou;
+
+  /// No description provided for @nearbyZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get nearbyZoomIn;
+
+  /// No description provided for @nearbyZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get nearbyZoomOut;
+
+  /// No description provided for @nearbyFitTechnicians.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit technicians'**
+  String get nearbyFitTechnicians;
+
+  /// No description provided for @nearbyShowList.
+  ///
+  /// In en, this message translates to:
+  /// **'Show technician list'**
+  String get nearbyShowList;
+
+  /// No description provided for @nearbyShowFullMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full-screen map'**
+  String get nearbyShowFullMap;
+
+  /// No description provided for @nearbyViewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View Profile'**
+  String get nearbyViewProfile;
+
+  /// No description provided for @nearbyDirections.
+  ///
+  /// In en, this message translates to:
+  /// **'Get directions'**
+  String get nearbyDirections;
+
+  /// No description provided for @nearbyCouldNotOpenMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open maps app.'**
+  String get nearbyCouldNotOpenMaps;
+
+  /// No description provided for @nearbyTopPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Top pick'**
+  String get nearbyTopPick;
+
+  /// No description provided for @nearbyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get nearbyAll;
+
+  /// No description provided for @nearbySearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please check your connection and try again.'**
+  String get nearbySearchFailed;
+
+  /// No description provided for @nearbyInvalidLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid location selected. Please try again.'**
+  String get nearbyInvalidLocation;
+
+  /// No description provided for @nearbySearchLoginMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to search for fundis near you.'**
+  String get nearbySearchLoginMessage;
+
+  /// No description provided for @nearbyFilterLoginMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in or create an account to filter fundis by service.'**
+  String get nearbyFilterLoginMessage;
+
+  /// No description provided for @nearbySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a place or pick one on the map.'**
+  String get nearbySearchHint;
+
+  /// No description provided for @nearbyStatDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get nearbyStatDistance;
+
+  /// No description provided for @nearbyStatDriveTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive time'**
+  String get nearbyStatDriveTime;
+
+  /// No description provided for @nearbyStatRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get nearbyStatRating;
+
+  /// No description provided for @nearbyStatJobsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs done'**
+  String get nearbyStatJobsDone;
+
+  /// No description provided for @nearbyStatRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get nearbyStatRequests;
+
+  /// No description provided for @nearbyStatReviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get nearbyStatReviews;
+
+  /// No description provided for @nearbyKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} km'**
+  String nearbyKm(String value);
+
+  /// No description provided for @nearbyApproxMin.
+  ///
+  /// In en, this message translates to:
+  /// **'~{value} min'**
+  String nearbyApproxMin(String value);
+
+  /// No description provided for @nearbyFoundWithRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} found • {radius} km'**
+  String nearbyFoundWithRadius(int count, int radius);
+
+  /// No description provided for @nearbyExpandedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'No fundis very close, so we searched up to {radius} km.'**
+  String nearbyExpandedNotice(int radius);
+
+  /// No description provided for @nearbyNoneWithinMax.
+  ///
+  /// In en, this message translates to:
+  /// **'No fundis within {radius} km of this location. Try another place or service.'**
+  String nearbyNoneWithinMax(int radius);
+
+  /// No description provided for @nearbyNoneWithin.
+  ///
+  /// In en, this message translates to:
+  /// **'No fundis within {radius} km of this location.'**
+  String nearbyNoneWithin(int radius);
+
+  /// No description provided for @nearbySearchWiderUpTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Search wider (up to {radius} km)'**
+  String nearbySearchWiderUpTo(int radius);
+
+  /// No description provided for @nearbyJobsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} jobs'**
+  String nearbyJobsCount(int count);
+
+  /// No description provided for @nearbyRequestsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} requests'**
+  String nearbyRequestsCount(int count);
+
+  /// No description provided for @nearbyJobsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} jobs done'**
+  String nearbyJobsDone(int count);
+
   /// No description provided for @today.
   ///
   /// In en, this message translates to:
@@ -1384,12 +2098,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type a message...'**
   String get typeAMessage;
-
-  /// No description provided for @justNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Just now'**
-  String get justNow;
 
   /// No description provided for @copy.
   ///

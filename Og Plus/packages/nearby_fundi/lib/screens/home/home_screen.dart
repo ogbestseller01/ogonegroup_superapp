@@ -756,9 +756,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         label: Text(l10n.jobs),
       ),
       NavigationRailDestination(
-        icon: const Icon(Icons.person_outline),
-        selectedIcon: const Icon(Icons.person_rounded),
-        label: Text(l10n.profile),
+        icon: const Icon(Icons.settings_outlined),
+        selectedIcon: const Icon(Icons.settings_rounded),
+        label: Text(l10n.settings),
       ),
     ];
   }
@@ -837,7 +837,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             final unread = context.watch<ChatProvider>().totalUnread;
             return _BarButton(
               size: buttonSize,
-              tooltip: 'Menu',
+              tooltip: l10n.menu,
               onTap: () => Scaffold.of(barContext).openDrawer(),
               child: Badge(
                 isLabelVisible: unread > 0,
@@ -1117,9 +1117,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 label: l10n.jobs,
               ),
               NavigationDestination(
-                icon: const Icon(Icons.person_outline),
-                selectedIcon: const Icon(Icons.person_rounded, color: _gold),
-                label: l10n.profile,
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings_rounded, color: _gold),
+                label: l10n.settings,
               ),
             ],
           ),
@@ -1390,32 +1390,22 @@ class _NotificationTile extends StatelessWidget {
   }
 
   /// Relative time, localized for English and Swahili.
-  String _getRelativeTime(dynamic value) {
+  String _getRelativeTime(dynamic value, AppLocalizations l10n) {
     if (value == null) return '';
-    final sw = locale == 'sw';
     try {
       DateTime dateTime = DateTime.parse(value.toString());
       if (dateTime.isUtc) dateTime = dateTime.toLocal();
 
       final diff = DateTime.now().difference(dateTime);
 
-      if (diff.inSeconds < 30) return sw ? 'Sasa hivi' : 'Just now';
-      if (diff.inMinutes < 60) {
-        return sw
-            ? 'Dakika ${diff.inMinutes} zilizopita'
-            : '${diff.inMinutes} min ago';
+      if (diff.inSeconds < 30) return l10n.justNow;
+      if (diff.inMinutes < 60) return l10n.minAgo(diff.inMinutes);
+      if (diff.inHours < 24) return l10n.hrAgo(diff.inHours);
+      if (diff.inDays == 1) {
+        // Keep existing localized “Yesterday / Jana” behavior
+        return locale == 'sw' ? 'Jana' : 'Yesterday';
       }
-      if (diff.inHours < 24) {
-        return sw
-            ? 'Saa ${diff.inHours} zilizopita'
-            : '${diff.inHours} hr ago';
-      }
-      if (diff.inDays == 1) return sw ? 'Jana' : 'Yesterday';
-      if (diff.inDays < 7) {
-        return sw
-            ? 'Siku ${diff.inDays} zilizopita'
-            : '${diff.inDays} days ago';
-      }
+      if (diff.inDays < 7) return l10n.daysAgo(diff.inDays);
       return _formatCreatedAt(value);
     } catch (_) {
       return '';
@@ -1434,7 +1424,7 @@ class _NotificationTile extends StatelessWidget {
     final title = notification['title']?.toString() ?? l10n.notificationLabel;
     final body = notification['body']?.toString() ?? '';
     final type = notification['type']?.toString() ?? '';
-    final relativeTime = _getRelativeTime(notification['created_at']);
+    final relativeTime = _getRelativeTime(notification['created_at'], l10n);
     final iconColor = _getIconColor(type, theme);
 
     final unreadBg = isDark
