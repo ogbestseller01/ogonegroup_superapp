@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Google\Client as GoogleClient;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
@@ -30,8 +31,16 @@ class AuthController extends BaseApiController
     // REGISTRATION
     // ──────────────────────────────────────────────
 
+    /**
+     * Customer registration.
+     * An earlier UNVERIFIED customer sign-up with the same email/phone is
+     * reused (details updated, fresh OTP sent) so users are never locked out
+     * of their own email/phone after an abandoned attempt.
+     */
     public function register(Request $request, OtpDeliveryService $otpDelivery)
     {
+        $this->ensureNotRateLimited('register:' . $request->ip(), 10, 60);
+
         // Normalise BEFORE validating so "0712…", "+255712…" and "255712…"
         // are all stored (and later matched) as "255712…".
         $request->merge([
@@ -44,8 +53,16 @@ class AuthController extends BaseApiController
             return $this->errorResponse($msg, 422);
         }
 
+        $role = $request->input('role') ?: 'CUSTOMER';
+
+        $abandoned = $role === 'CUSTOMER'
+            ? $this->findAbandonedCustomer($request->input('email'), $request->input('phone'))
+            : null;
+
         // Same number typed in another format.
-        if ($request->filled('phone') && $this->findUserByIdentifier((string) $request->input('phone'))) {
+        if (!$abandoned
+            && $request->filled('phone')
+            && $this->findUserByIdentifier((string) $request->input('phone'))) {
             return $this->errorResponse(
                 'This phone number is already registered. Please log in or use a different number.',
                 422
@@ -54,25 +71,37 @@ class AuthController extends BaseApiController
 
         $data = $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($abandoned?->id)],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()],
-            'phone'    => ['required', 'string', 'max:20', 'regex:/^\d{9,15}$/', 'unique:users,phone'],
+            'phone'    => ['required', 'string', 'max:20', 'regex:/^\d{9,15}$/',
+                           Rule::unique('users', 'phone')->ignore($abandoned?->id)],
             'role'     => 'nullable|string|in:CUSTOMER,FUNDI',
         ]);
 
         DB::beginTransaction();
         try {
-            $user = User::create([
-                'name'              => $data['name'],
-                'email'             => $data['email'],
-                'phone'             => $data['phone'],
-                'password'          => Hash::make($data['password']),
-                'status'            => 'pending',
-                'is_active'         => false,
-                'email_verified_at' => null,
-            ]);
+            if ($abandoned) {
+                $abandoned->forceFill([
+                    'name'     => $data['name'],
+                    'email'    => $data['email'],
+                    'phone'    => $data['phone'],
+                    'password' => Hash::make($data['password']),
+                ])->save();
 
-            $user->assignRole($data['role'] ?? 'CUSTOMER');
+                $user = $abandoned;
+            } else {
+                $user = User::create([
+                    'name'              => $data['name'],
+                    'email'             => $data['email'],
+                    'phone'             => $data['phone'],
+                    'password'          => Hash::make($data['password']),
+                    'status'            => 'pending',
+                    'is_active'         => false,
+                    'email_verified_at' => null,
+                ]);
+
+                $user->assignRole($data['role'] ?? 'CUSTOMER');
+            }
 
             DB::commit();
         } catch (\Throwable $e) {
@@ -353,7 +382,7 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-    // LOGIN  (UPDATED: clear message for Google-linked accounts)
+    // LOGIN  (clear message for Google-linked accounts)
     // ──────────────────────────────────────────────
 
     public function login(Request $request)
@@ -824,7 +853,7 @@ class AuthController extends BaseApiController
     }
 
     // ──────────────────────────────────────────────
-    // GOOGLE SIGN-IN (mobile ID-token flow)  ← REFINED
+    // GOOGLE SIGN-IN (mobile ID-token flow)
     // ──────────────────────────────────────────────
 
     public function googleLogin(Request $request)
@@ -1039,6 +1068,46 @@ class AuthController extends BaseApiController
         }
 
         return User::whereIn('phone', $this->phoneVariants($identifier))->first();
+    }
+
+    /**
+     * The single customer account matching this email/phone that was never
+     * verified (no email/phone verification, no Google link, still pending).
+     * Null if nothing matches, if email and phone belong to DIFFERENT users,
+     * or if the matching account is real/active.
+     */
+    private function findAbandonedCustomer(?string $email, ?string $phone): ?User
+    {
+        $matches = collect();
+
+        if ($email) {
+            $u = User::whereRaw('LOWER(email) = ?', [strtolower($email)])->first();
+            if ($u) {
+                $matches->push($u);
+            }
+        }
+
+        if ($phone) {
+            $u = User::whereIn('phone', $this->phoneVariants($phone))->first();
+            if ($u) {
+                $matches->push($u);
+            }
+        }
+
+        $unique = $matches->unique('id');
+        if ($unique->count() !== 1) {
+            return null;
+        }
+
+        $u = $unique->first();
+
+        $abandoned = is_null($u->email_verified_at)
+            && is_null($u->phone_verified_at)
+            && empty($u->google_id)
+            && $u->status === 'pending'
+            && $u->hasRole('CUSTOMER');
+
+        return $abandoned ? $u : null;
     }
 
     /** Message when the email/phone belongs to a soft-deleted account. */
