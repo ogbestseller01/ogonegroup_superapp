@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:fundiapp_sdk/screens/fundi/profile/pick_map_location_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +13,6 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/technician_provider.dart';
 import '../../../widgets/app_network_image.dart';
 import '../../../widgets/custom_button.dart';
-import 'pick_map_location_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});

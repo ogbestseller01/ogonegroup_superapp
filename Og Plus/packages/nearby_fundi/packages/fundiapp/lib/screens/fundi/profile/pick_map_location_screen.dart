@@ -1,5 +1,6 @@
 // lib/screens/fundi/profile/pick_map_location_screen.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -22,9 +23,17 @@ class PickMapLocationScreen extends StatefulWidget {
 
 class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
   final MapController _mapController = MapController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
   LatLng? _selectedPoint;
   String? _placeName;
   bool _isReverseGeocoding = false;
+
+  // Search & suggestion state (history-free)
+  Timer? _debounceTimer;
+  bool _isSearching = false;
+  List<_PlaceSuggestion> _suggestions = [];
 
   static const _defaultCenter = LatLng(-6.7924, 39.2083); // Dar es Salaam
   static const double _minZoom = 4.0;
@@ -38,6 +47,146 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
     if (_selectedPoint != null && (_placeName == null || _placeName!.isEmpty)) {
       _reverseGeocode(_selectedPoint!);
     }
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    _debounceTimer?.cancel();
+
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _suggestions = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    _debounceTimer = Timer(const Duration(milliseconds: 450), () {
+      _searchPlaces(trimmed);
+    });
+  }
+
+  Future<void> _searchPlaces(String query) async {
+    try {
+      final center = _mapController.camera.center;
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search'
+            '?q=${Uri.encodeQueryComponent(query)}'
+            '&format=json&addressdetails=1&limit=6'
+            '&viewbox=${center.longitude - 0.35},${center.latitude + 0.35},${center.longitude + 0.35},${center.latitude - 0.35}',
+      );
+
+      final response = await http
+          .get(url, headers: {'User-Agent': 'ogonegroup-fundi-app/1.0'})
+          .timeout(const Duration(seconds: 8));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final parsed = <_PlaceSuggestion>[];
+
+        for (final item in data) {
+          final lat = double.tryParse(item['lat']?.toString() ?? '');
+          final lon = double.tryParse(item['lon']?.toString() ?? '');
+          if (lat == null || lon == null) continue;
+
+          final address = item['address'] as Map<String, dynamic>?;
+          final title = _buildSuggestionTitle(
+            address,
+            item['display_name']?.toString() ?? query,
+          );
+          final subtitle = item['display_name']?.toString() ?? '';
+
+          parsed.add(
+            _PlaceSuggestion(
+              title: title,
+              subtitle: subtitle,
+              point: LatLng(lat, lon),
+            ),
+          );
+        }
+
+        setState(() {
+          _suggestions = parsed;
+          _isSearching = false;
+        });
+      } else {
+        setState(() => _isSearching = false);
+      }
+    } catch (e) {
+      debugPrint('Place search error: $e');
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  String _buildSuggestionTitle(
+      Map<String, dynamic>? address,
+      String fallbackDisplay,
+      ) {
+    if (address != null) {
+      final primary = address['amenity'] ??
+          address['building'] ??
+          address['road'] ??
+          address['suburb'] ??
+          address['neighbourhood'] ??
+          address['residential'] ??
+          address['quarter'] ??
+          address['city_district'] ??
+          address['village'] ??
+          address['town'] ??
+          address['city'];
+
+      if (primary != null && primary.toString().trim().isNotEmpty) {
+        final city = address['city'] ?? address['town'] ?? address['state'];
+        if (city != null &&
+            city.toString().trim().isNotEmpty &&
+            city.toString() != primary.toString()) {
+          return '${primary.toString().trim()}, ${city.toString().trim()}';
+        }
+        return primary.toString().trim();
+      }
+    }
+
+    final parts = fallbackDisplay.split(',');
+    return parts.take(2).join(',').trim();
+  }
+
+  void _selectSuggestion(_PlaceSuggestion suggestion) {
+    _debounceTimer?.cancel();
+    _searchFocusNode.unfocus();
+
+    setState(() {
+      _selectedPoint = suggestion.point;
+      _placeName = suggestion.title;
+      _suggestions = [];
+      _isSearching = false;
+      _searchController.text = suggestion.title;
+    });
+
+    final currentZoom = _mapController.camera.zoom.clamp(14.0, _maxZoom);
+    _mapController.move(suggestion.point, currentZoom);
+  }
+
+  void _clearSearch() {
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    setState(() {
+      _suggestions = [];
+      _isSearching = false;
+    });
   }
 
   Future<void> _reverseGeocode(LatLng point) async {
@@ -103,6 +252,12 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
+    if (_searchFocusNode.hasFocus) {
+      _searchFocusNode.unfocus();
+    }
+    if (_suggestions.isNotEmpty) {
+      setState(() => _suggestions = []);
+    }
     setState(() => _selectedPoint = point);
     _reverseGeocode(point);
   }
@@ -177,6 +332,108 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
                   ],
                 ),
             ],
+          ),
+
+          // Search bar + suggestion list overlay
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Material(
+                  elevation: 6,
+                  borderRadius: BorderRadius.circular(14),
+                  color: theme.colorScheme.surface,
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    textInputAction: TextInputAction.search,
+                    onChanged: _onSearchChanged,
+                    onSubmitted: (value) {
+                      final trimmed = value.trim();
+                      if (trimmed.isNotEmpty) {
+                        _debounceTimer?.cancel();
+                        _searchPlaces(trimmed);
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search area, street, or landmark…',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _isSearching
+                          ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      )
+                          : _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                      )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                if (_suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(14),
+                    color: theme.colorScheme.surface,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 240),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: _suggestions.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final item = _suggestions[index];
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(
+                              Icons.location_on_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
+                            title: Text(
+                              item.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              item.subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onTap: () => _selectSuggestion(item),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
 
           // Zoom controls
@@ -262,6 +519,18 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
       ),
     );
   }
+}
+
+class _PlaceSuggestion {
+  final String title;
+  final String subtitle;
+  final LatLng point;
+
+  const _PlaceSuggestion({
+    required this.title,
+    required this.subtitle,
+    required this.point,
+  });
 }
 
 class _ZoomButton extends StatelessWidget {
