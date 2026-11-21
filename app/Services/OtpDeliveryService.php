@@ -202,6 +202,13 @@ class OtpDeliveryService
     // Email
     // ────────────────────────────────────────────────────────
 
+    /**
+     * Sends the OTP code by email.
+     *
+     * NOTE: $verificationUrl is still accepted so existing callers keep
+     * working, but the "verify via link" line is intentionally no longer
+     * included in the email body: the email now contains the code only.
+     */
     protected function tryEmail(User $user, Otp $otp, ?string $verificationUrl = null): bool
     {
         if (empty($user->email)) {
@@ -214,8 +221,7 @@ class OtpDeliveryService
 
             Mail::raw(
                 "Your Nearby Fundi verification code is: {$code}\n\n"
-                . "This code expires in {$minutes} minutes.\n"
-                . ($verificationUrl ? "Or verify via link: {$verificationUrl}\n\n" : '')
+                . "This code expires in {$minutes} minutes.\n\n"
                 . "If you didn't request it, please ignore this email.",
                 function ($message) use ($user) {
                     $message->to($user->email)
