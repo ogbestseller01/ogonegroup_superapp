@@ -54,6 +54,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get becomeFundi => 'Become a Fundi';
 
   @override
+  String get registerNameTooShort => 'Name is too short';
+
+  @override
+  String get registerEmailRequired => 'Email is required';
+
+  @override
+  String get registerPhoneRequired => 'Phone number is required';
+
+  @override
+  String get registerValidTanzaniaPhone => 'Enter a valid Tanzanian number, e.g. 0712 345 678';
+
+  @override
+  String get registerValidPhone => 'Enter a valid phone number';
+
+  @override
+  String get registerPasswordRequired => 'Password is required';
+
+  @override
+  String get registerPasswordMinLength => 'Password must be at least 8 characters';
+
+  @override
+  String get registerPasswordStrength => 'Use uppercase, lowercase and a number';
+
+  @override
+  String get registerConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get registerPasswordsMismatch => 'Passwords do not match';
+
+  @override
+  String get registerFailedRetry => 'Registration failed. Please try again.';
+
+  @override
+  String get registerOtpSendFailed => 'Account created, but we could not send the code. Please try again.';
+
+  @override
+  String get registerPasswordHint => 'Min 8 chars, upper + lower + number';
+
+  @override
+  String get registerRepeatPassword => 'Repeat your password';
+
+  @override
+  String get registerRuleLength => '8+ characters';
+
+  @override
+  String get registerRuleUppercase => 'Uppercase';
+
+  @override
+  String get registerRuleLowercase => 'Lowercase';
+
+  @override
+  String get registerRuleNumber => 'Number';
+
+  @override
+  String get registerAlreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get registerSearchCountry => 'Search country...';
+
+  @override
+  String get registerNoCountryFound => 'No country found';
+
+  @override
   String get findFundi => 'Find Fundi';
 
   @override

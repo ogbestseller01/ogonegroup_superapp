@@ -13,7 +13,6 @@ class Technician {
   final String? idDocumentType;
   final String? idDocumentImage;
   final String? profilePhoto;
-  final double? hourlyRate;
   final int experience;
 
   // Registration + verification state
@@ -47,7 +46,6 @@ class Technician {
     this.idDocumentType,
     this.idDocumentImage,
     this.profilePhoto,
-    this.hourlyRate,
     this.experience = 0,
     this.verified = false,
     this.verificationStatus,
@@ -97,7 +95,6 @@ class Technician {
     String? idDocumentType,
     String? idDocumentImage,
     String? profilePhoto,
-    double? hourlyRate,
     int? experience,
     bool? verified,
     String? verificationStatus,
@@ -123,7 +120,6 @@ class Technician {
       idDocumentType: idDocumentType ?? this.idDocumentType,
       idDocumentImage: idDocumentImage ?? this.idDocumentImage,
       profilePhoto: profilePhoto ?? this.profilePhoto,
-      hourlyRate: hourlyRate ?? this.hourlyRate,
       experience: experience ?? this.experience,
       verified: verified ?? this.verified,
       verificationStatus: verificationStatus ?? this.verificationStatus,
@@ -165,7 +161,6 @@ class Technician {
       idDocumentType: _asString(json['id_document_type']),
       idDocumentImage: _asString(json['id_document_image']),
       profilePhoto: _asString(json['profile_photo']),
-      hourlyRate: _toDouble(json['hourly_rate']),
       experience: _toInt(json['experience']),
       verified: _toBool(json['verified']),
       verificationStatus: _asString(json['verification_status']),
@@ -193,7 +188,6 @@ class Technician {
     'id_document_type': idDocumentType,
     'id_document_image': idDocumentImage,
     'profile_photo': profilePhoto,
-    'hourly_rate': hourlyRate,
     'experience': experience,
     'verified': verified,
     'verification_status': verificationStatus,

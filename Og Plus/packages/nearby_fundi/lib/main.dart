@@ -34,6 +34,7 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/otp_verification_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/registration_success_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 
 import 'screens/chat/chat_list_screen.dart';
@@ -231,7 +232,10 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
     case AppRoutes.register:
       return route(const RegisterScreen());
     case AppRoutes.otp:
-      return route(OtpVerificationScreen(email: _stringArg(args)));
+    // arguments: String email  OR  {email, sentTo, channel, otpSent}
+      return route(_otpPage(args));
+    case AppRoutes.registrationSuccess:
+      return route(const RegistrationSuccessScreen());
     case AppRoutes.forgot:
       return route(const ForgotPasswordScreen());
     case AppRoutes.reset:
@@ -283,6 +287,19 @@ Route<dynamic> generateNearbyFundiRoute(RouteSettings routeSettings) {
     default:
       return route(const SplashScreen());
   }
+}
+
+/// Builds the OTP screen from route arguments (plain email or a map).
+Widget _otpPage(Object? args) {
+  if (args is Map) {
+    return OtpVerificationScreen(
+      email: args['email']?.toString() ?? '',
+      sentTo: args['sentTo']?.toString(),
+      channel: args['channel']?.toString(),
+      otpSent: args['otpSent'] != false,
+    );
+  }
+  return OtpVerificationScreen(email: _stringArg(args));
 }
 
 // ============================================================

@@ -16,6 +16,29 @@ import '../services/storage_service.dart';
 
 enum GoogleLoginOutcome { success, cancelled, failed }
 
+/// Result of POST /v1/auth/register.
+class RegisterResult {
+  final bool success;
+  final String message;
+
+  /// true when the backend managed to deliver the OTP (SMS or email).
+  final bool otpSent;
+
+  /// 'sms' | 'email' | 'none'
+  final String? channel;
+
+  /// The phone / email the code was sent to.
+  final String? sentTo;
+
+  const RegisterResult({
+    required this.success,
+    this.message = '',
+    this.otpSent = false,
+    this.channel,
+    this.sentTo,
+  });
+}
+
 class AuthProvider extends ChangeNotifier {
   final ApiService _api = ApiService();
   final GlobalKey<NavigatorState>? _navigatorKey;
@@ -60,10 +83,26 @@ class AuthProvider extends ChangeNotifier {
     _safeNotify();
   }
 
-  // ─── Register ────────────────────────────────────────────────
-  Future<bool> register(String name, String email, String password,
-      String confirmPassword,
-      {String? phone}) async {
+  /// FCM token that can NEVER hang or throw. A stuck push-token request must
+  /// not freeze registration / OTP verification / login.
+  Future<String?> _fcmTokenSafe() async {
+    try {
+      return await FcmService.getToken().timeout(const Duration(seconds: 3));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ─── Register (customer) ─────────────────────────────────────
+  /// Returns a [RegisterResult] so the UI knows whether (and where) the OTP
+  /// was delivered. Use `.success` if you only need a bool.
+  Future<RegisterResult> register(
+      String name,
+      String email,
+      String password,
+      String confirmPassword, {
+        String? phone,
+      }) async {
     _setLoading(true);
     try {
       final res = await _api.register({
@@ -73,8 +112,28 @@ class AuthProvider extends ChangeNotifier {
         'password_confirmation': confirmPassword,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
       });
-      _error = res.success ? null : res.message;
-      return res.success;
+
+      if (!res.success) {
+        _error = res.message;
+        return RegisterResult(success: false, message: res.message);
+      }
+
+      _error = null;
+      final d = res.data is Map
+          ? Map<String, dynamic>.from(res.data as Map)
+          : <String, dynamic>{};
+
+      return RegisterResult(
+        success: true,
+        message: res.message,
+        otpSent: d['otp_sent'] == true,
+        channel: d['otp_channel']?.toString(),
+        sentTo: d['sent_to']?.toString(),
+      );
+    } catch (e) {
+      debugPrint('register error: $e');
+      _error = 'Registration failed. Please try again.';
+      return RegisterResult(success: false, message: _error!);
     } finally {
       _setLoading(false);
     }
@@ -146,14 +205,9 @@ class AuthProvider extends ChangeNotifier {
         return GoogleLoginOutcome.failed;
       }
 
-      // 2) Optional push token.
-      String? fcmToken;
-      try {
-        fcmToken = await FcmService.getToken();
-        debugPrint('[GOOGLE] FCM token: ${fcmToken != null ? "received" : "null"}');
-      } catch (e) {
-        debugPrint('[GOOGLE] FCM error (ignored): $e');
-      }
+      // 2) Optional push token (never blocks sign-in).
+      final String? fcmToken = await _fcmTokenSafe();
+      debugPrint('[GOOGLE] FCM token: ${fcmToken != null ? "received" : "null"}');
 
       // 3) Exchange the ID token with the server.
       debugPrint('[GOOGLE] Sending ID token to backend...');
@@ -211,7 +265,7 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     try {
-      final fcmToken = await FcmService.getToken().catchError((_) => null);
+      final fcmToken = await _fcmTokenSafe();
       final res = await _api.loginWithApple(
         identityToken: identityToken,
         nonce: nonce,
@@ -235,10 +289,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ─── OTP / password flows ────────────────────────────────────
+  /// Verifies the registration OTP. On success the backend returns a token,
+  /// which is saved here, so the user is logged in afterwards.
   Future<bool> verifyOtp(String email, String otp) async {
     _setLoading(true);
     try {
-      final fcmToken = await FcmService.getToken().catchError((_) => null);
+      final fcmToken = await _fcmTokenSafe();
       final res = await _api.verifyOtp(email, otp, fcmToken: fcmToken);
       if (res.success && res.data != null) {
         await _saveSession(Map<String, dynamic>.from(res.data as Map));
@@ -246,6 +302,10 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
       _error = res.message;
+      return false;
+    } catch (e) {
+      debugPrint('verifyOtp error: $e');
+      _error = 'Verification failed. Please try again.';
       return false;
     } finally {
       _setLoading(false);
@@ -542,7 +602,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _registerFcmQuietly() async {
     final epoch = _sessionEpoch;
     try {
-      final fcmToken = await FcmService.getToken();
+      final fcmToken = await _fcmTokenSafe();
       if (fcmToken == null || epoch != _sessionEpoch) return;
       final res = await _api.updateDeviceToken(fcmToken);
       if (!res.success) debugPrint('FCM push failed: ${res.message}');

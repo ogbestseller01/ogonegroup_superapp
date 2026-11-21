@@ -185,6 +185,132 @@ abstract class AppLocalizations {
   /// **'Become a Fundi'**
   String get becomeFundi;
 
+  /// No description provided for @registerNameTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is too short'**
+  String get registerNameTooShort;
+
+  /// No description provided for @registerEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get registerEmailRequired;
+
+  /// No description provided for @registerPhoneRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number is required'**
+  String get registerPhoneRequired;
+
+  /// No description provided for @registerValidTanzaniaPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Tanzanian number, e.g. 0712 345 678'**
+  String get registerValidTanzaniaPhone;
+
+  /// No description provided for @registerValidPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get registerValidPhone;
+
+  /// No description provided for @registerPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get registerPasswordRequired;
+
+  /// No description provided for @registerPasswordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get registerPasswordMinLength;
+
+  /// No description provided for @registerPasswordStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'Use uppercase, lowercase and a number'**
+  String get registerPasswordStrength;
+
+  /// No description provided for @registerConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get registerConfirmPasswordRequired;
+
+  /// No description provided for @registerPasswordsMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get registerPasswordsMismatch;
+
+  /// No description provided for @registerFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed. Please try again.'**
+  String get registerFailedRetry;
+
+  /// No description provided for @registerOtpSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created, but we could not send the code. Please try again.'**
+  String get registerOtpSendFailed;
+
+  /// No description provided for @registerPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Min 8 chars, upper + lower + number'**
+  String get registerPasswordHint;
+
+  /// No description provided for @registerRepeatPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat your password'**
+  String get registerRepeatPassword;
+
+  /// No description provided for @registerRuleLength.
+  ///
+  /// In en, this message translates to:
+  /// **'8+ characters'**
+  String get registerRuleLength;
+
+  /// No description provided for @registerRuleUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Uppercase'**
+  String get registerRuleUppercase;
+
+  /// No description provided for @registerRuleLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Lowercase'**
+  String get registerRuleLowercase;
+
+  /// No description provided for @registerRuleNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get registerRuleNumber;
+
+  /// No description provided for @registerAlreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get registerAlreadyHaveAccount;
+
+  /// No description provided for @registerSearchCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country...'**
+  String get registerSearchCountry;
+
+  /// No description provided for @registerNoCountryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No country found'**
+  String get registerNoCountryFound;
+
   /// No description provided for @findFundi.
   ///
   /// In en, this message translates to:

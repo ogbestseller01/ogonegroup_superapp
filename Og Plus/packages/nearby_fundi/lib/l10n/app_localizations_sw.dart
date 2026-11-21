@@ -54,6 +54,69 @@ class AppLocalizationsSw extends AppLocalizations {
   String get becomeFundi => 'Kuwa Fundi';
 
   @override
+  String get registerNameTooShort => 'Jina ni fupi sana';
+
+  @override
+  String get registerEmailRequired => 'Barua pepe inahitajika';
+
+  @override
+  String get registerPhoneRequired => 'Namba ya simu inahitajika';
+
+  @override
+  String get registerValidTanzaniaPhone => 'Weka namba sahihi ya Tanzania, mfano 0712 345 678';
+
+  @override
+  String get registerValidPhone => 'Weka namba sahihi ya simu';
+
+  @override
+  String get registerPasswordRequired => 'Nenosiri linahitajika';
+
+  @override
+  String get registerPasswordMinLength => 'Nenosiri lazima liwe na angalau herufi 8';
+
+  @override
+  String get registerPasswordStrength => 'Tumia herufi kubwa, herufi ndogo na namba';
+
+  @override
+  String get registerConfirmPasswordRequired => 'Tafadhali thibitisha nenosiri lako';
+
+  @override
+  String get registerPasswordsMismatch => 'Manenosiri hayafanani';
+
+  @override
+  String get registerFailedRetry => 'Usajili umeshindwa. Tafadhali jaribu tena.';
+
+  @override
+  String get registerOtpSendFailed => 'Akaunti imeundwa, lakini hatukuweza kutuma msimbo. Tafadhali jaribu tena.';
+
+  @override
+  String get registerPasswordHint => 'Herufi 8+, kubwa + ndogo + namba';
+
+  @override
+  String get registerRepeatPassword => 'Rudia nenosiri lako';
+
+  @override
+  String get registerRuleLength => 'Herufi 8+';
+
+  @override
+  String get registerRuleUppercase => 'Herufi kubwa';
+
+  @override
+  String get registerRuleLowercase => 'Herufi ndogo';
+
+  @override
+  String get registerRuleNumber => 'Namba';
+
+  @override
+  String get registerAlreadyHaveAccount => 'Tayari una akaunti?';
+
+  @override
+  String get registerSearchCountry => 'Tafuta nchi...';
+
+  @override
+  String get registerNoCountryFound => 'Hakuna nchi iliyopatikana';
+
+  @override
   String get findFundi => 'Tafuta Fundi';
 
   @override

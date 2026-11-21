@@ -3,17 +3,18 @@ class AppRoutes {
   AppRoutes._();
 
   // Auth / onboarding
-  static const String splash     = '/';
-  static const String onboarding = '/onboarding';
-  static const String login      = '/login';
-  static const String register   = '/register';
-  static const String otp        = '/otp';
-  static const String forgot     = '/forgot-password';
-  static const String reset      = '/reset-password';
+  static const String splash              = '/';
+  static const String onboarding          = '/onboarding';
+  static const String login               = '/login';
+  static const String register            = '/register';
+  static const String otp                 = '/otp';
+  static const String registrationSuccess = '/registration-success';
+  static const String forgot              = '/forgot-password';
+  static const String reset               = '/reset-password';
 
   // Main
   static const String home             = '/home';
-  static const String blogs            = '/blogs'; // <-- Added for the feed
+  static const String blogs            = '/blogs';
   static const String technicianDetail = '/technician-detail';
   static const String postDetail       = '/post-detail';
   static const String myRequests       = '/my-requests';

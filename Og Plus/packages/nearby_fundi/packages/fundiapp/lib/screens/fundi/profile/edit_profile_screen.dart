@@ -27,7 +27,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneC = TextEditingController();
   final _nidaC = TextEditingController();
   final _bioC = TextEditingController();
-  final _hourlyC = TextEditingController();
   final _areaC = TextEditingController();
 
   File? _photo;
@@ -52,13 +51,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nidaC.text = nida.length > 8
         ? '${nida.substring(0, 4)}${'*' * (nida.length - 8)}${nida.substring(nida.length - 4)}'
         : nida;
-
-    final rate = tech?.hourlyRate;
-    if (rate != null && rate > 0) {
-      _hourlyC.text = rate == rate.roundToDouble()
-          ? rate.toStringAsFixed(0)
-          : rate.toString();
-    }
   }
 
   @override
@@ -67,7 +59,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneC.dispose();
     _nidaC.dispose();
     _bioC.dispose();
-    _hourlyC.dispose();
     _areaC.dispose();
     super.dispose();
   }
@@ -130,11 +121,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!userOk) return _fail(auth.errorMessage ?? l10n.updateFailed);
 
     // 2) technician details — typed area is geocoded server-side
-    final hourly = double.tryParse(_hourlyC.text.trim());
     final area = _areaC.text.trim();
     final techOk = await tech.updateProfile({
       'bio': _bioC.text.trim(),
-      if (hourly != null) 'hourly_rate': hourly,
       if (area.isNotEmpty) 'area': area,
       if (area.isNotEmpty && _lat != null && _lng != null) ...{
         'latitude': _lat,
@@ -275,17 +264,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   labelText: l10n.bio,
                   alignLabelWithHint: true,
                   prefixIcon: const Icon(Icons.description_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _hourlyC,
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: l10n.hourlyRate,
-                  prefixText: 'TZS ',
-                  prefixIcon: const Icon(Icons.attach_money_rounded),
                 ),
               ),
               const SizedBox(height: 16),

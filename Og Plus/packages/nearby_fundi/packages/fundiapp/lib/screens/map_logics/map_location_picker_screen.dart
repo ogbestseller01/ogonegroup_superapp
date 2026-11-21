@@ -1,4 +1,5 @@
 // map_logics/map_location_picker_screen.dart
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,18 @@ class MapLocationPickerScreen extends StatefulWidget {
 class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   final MapController _mapController = MapController();
 
+  // ── SEARCH ADDITIONS (new state only) ───────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  final http.Client _searchHttp = http.Client();
+
+  List<_Place> _suggestions = const [];
+  bool _isSearching = false;
+  bool _showSuggestions = false;
+  Timer? _searchDebounce;
+  int _searchRequestId = 0;
+  // ────────────────────────────────────────────────────────────
+
   LatLng? _selectedPoint;
   String? _placeName;
   bool _isReverseGeocoding = false;
@@ -35,6 +48,14 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   static const double _minZoom = 5.0;
   static const double _maxZoom = 18.0;
 
+  // ── SEARCH CONSTANTS (new) ──────────────────────────────────
+  static const Duration _searchDebounceDur = Duration(milliseconds: 350);
+  static const Duration _searchTimeout = Duration(seconds: 6);
+  static const Map<String, String> _nominatimHeaders = {
+    'User-Agent': 'NearbyFundi/1.0 (contact@yourdomain.com)',
+  };
+  // ────────────────────────────────────────────────────────────
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +63,19 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     if (widget.initialCenter != null) {
       _reverseGeocode(widget.initialCenter!);
     }
+  }
+
+  @override
+  void dispose() {
+    // ── SEARCH CLEANUP (new) ──
+    _searchRequestId++;
+    _searchDebounce?.cancel();
+    _searchHttp.close();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    // ──────────────────────────
+    _mapController.dispose();
+    super.dispose();
   }
 
   Future<void> _reverseGeocode(LatLng point) async {
@@ -93,6 +127,13 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
+    // ── SEARCH ADDITIONS ──
+    _searchFocusNode.unfocus();
+    setState(() {
+      _suggestions = const [];
+      _showSuggestions = false;
+    });
+    // ──────────────────────
     setState(() => _selectedPoint = point);
     _reverseGeocode(point);
   }
@@ -114,11 +155,111 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
     });
   }
 
+  // ── SEARCH HANDLERS (new) ───────────────────────────────────
+  void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    final q = query.trim();
+
+    if (q.length < 2) {
+      _searchRequestId++;
+      setState(() {
+        _suggestions = const [];
+        _isSearching = false;
+        _showSuggestions = false;
+      });
+      return;
+    }
+
+    setState(() => _showSuggestions = true);
+    _searchDebounce = Timer(_searchDebounceDur, () => _searchPlaces(q));
+  }
+
+  Future<void> _searchPlaces(String query) async {
+    if (!mounted) return;
+
+    final requestId = ++_searchRequestId;
+    setState(() => _isSearching = true);
+
+    try {
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search'
+            '?q=${Uri.encodeComponent(query)}'
+            '&format=json'
+            '&countrycodes=tz'
+            '&limit=6'
+            '&addressdetails=1',
+      );
+
+      final response = await _searchHttp
+          .get(url, headers: _nominatimHeaders)
+          .timeout(_searchTimeout);
+
+      if (!mounted || requestId != _searchRequestId) return;
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final places = <_Place>[];
+
+        if (decoded is List) {
+          for (final item in decoded) {
+            if (item is! Map) continue;
+            final lat = double.tryParse(item['lat']?.toString() ?? '');
+            final lon = double.tryParse(item['lon']?.toString() ?? '');
+            if (lat == null || lon == null) continue;
+
+            final display = item['display_name']?.toString() ?? '';
+            places.add(_Place(
+              name: display.split(',').take(2).join(',').trim(),
+              full: display,
+              lat: lat,
+              lng: lon,
+            ));
+          }
+        }
+
+        setState(() {
+          _suggestions = places;
+          _showSuggestions = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('searchPlaces error: $e');
+    } finally {
+      if (mounted && requestId == _searchRequestId) {
+        setState(() => _isSearching = false);
+      }
+    }
+  }
+
+  void _selectSuggestion(_Place place) {
+    _searchDebounce?.cancel();
+    _searchRequestId++;
+
+    _searchController.text = place.name;
+    _searchFocusNode.unfocus();
+
+    setState(() {
+      _selectedPoint = LatLng(place.lat, place.lng);
+      _placeName = place.name;
+      _suggestions = const [];
+      _showSuggestions = false;
+      _isSearching = false;
+      _isReverseGeocoding = false;
+    });
+
+    _mapController.move(
+      LatLng(place.lat, place.lng),
+      14,
+    );
+  }
+  // ────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Pick location on map'),
         centerTitle: true,
@@ -162,6 +303,15 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
                 ),
             ],
           ),
+
+          // ── SEARCH OVERLAY (new) ─────────────────────────────
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: _buildSearchOverlay(theme),
+          ),
+          // ────────────────────────────────────────────────────
 
           Positioned(
             right: 16,
@@ -237,7 +387,108 @@ class _MapLocationPickerScreenState extends State<MapLocationPickerScreen> {
       ),
     );
   }
+
+  // ── SEARCH UI BUILDERS (new) ────────────────────────────────
+  Widget _buildSearchOverlay(ThemeData theme) {
+    return Column(
+      children: [
+        Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(12),
+          color: theme.cardColor,
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            onChanged: _onSearchChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search a place in Tanzania…',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                tooltip: 'Clear',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  _searchDebounce?.cancel();
+                  _searchRequestId++;
+                  _searchController.clear();
+                  setState(() {
+                    _suggestions = const [];
+                    _isSearching = false;
+                    _showSuggestions = false;
+                  });
+                },
+              )
+                  : null,
+              border: InputBorder.none,
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        if (_isSearching)
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+        if (_showSuggestions && _suggestions.isNotEmpty)
+          _buildSuggestionList(theme),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionList(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Material(
+        color: theme.cardColor,
+        elevation: 6,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: ListView.separated(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            itemCount: _suggestions.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, index) {
+              final p = _suggestions[index];
+              return ListTile(
+                dense: true,
+                leading: const Icon(Icons.location_on_rounded, size: 20),
+                title: Text(
+                  p.full,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13),
+                ),
+                onTap: () => _selectSuggestion(p),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+// ────────────────────────────────────────────────────────────
 }
+
+// ── SEARCH VALUE TYPE (new) ─────────────────────────────────
+class _Place {
+  final String name;
+  final String full;
+  final double lat;
+  final double lng;
+
+  const _Place({
+    required this.name,
+    required this.full,
+    required this.lat,
+    required this.lng,
+  });
+}
+// ────────────────────────────────────────────────────────────
 
 class _ZoomButton extends StatelessWidget {
   final IconData icon;

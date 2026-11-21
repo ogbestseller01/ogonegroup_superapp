@@ -298,7 +298,6 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  /// Small label above a group of cards.
   Widget _sectionLabel(bool isDark, String text) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -673,10 +672,6 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       if (t.experience > 0) {
         rows.add(MapEntry(l10n.experience, '${t.experience} ${l10n.years}'));
       }
-      if ((t.hourlyRate ?? 0) > 0) {
-        rows.add(MapEntry(l10n.hourlyRate,
-            '${l10n.tzs} ${t.hourlyRate!.toStringAsFixed(0)}'));
-      }
       if ((t.area ?? '').isNotEmpty) rows.add(MapEntry(l10n.area, t.area!));
       if ((t.nida ?? '').isNotEmpty) {
         rows.add(MapEntry('NIDA', _maskNida(t.nida!)));
@@ -776,7 +771,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  // ───────────── SETTINGS MENUS ─────────────
+  // ───────────── SETTINGS MENUS (unchanged) ─────────────
 
   Widget _iconBadge(bool isDark, IconData icon, {Color? color}) {
     final c = color ?? _accent(isDark);
@@ -791,7 +786,6 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  /// Card that holds several rows separated by dividers.
   Widget _menuCard(bool isDark, List<Widget> rows) {
     final children = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
