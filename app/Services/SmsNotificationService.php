@@ -34,42 +34,6 @@ class SmsNotificationService
         ]);
     }
 
-    /**
-     * Notify every active ADMINISTRATOR (with a phone) that a fundi
-     * has submitted a registration for approval.
-     */
-    public function notifyAdminsNewFundiRegistration(string $fundiName, ?string $fundiContact, int $technicianId): array
-    {
-        $admins = User::role('ADMINISTRATOR', 'web')
-            ->where('is_active', true)
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->get()
-            ->unique('phone');
-
-        if ($admins->isEmpty()) {
-            Log::warning('No active administrators with a phone number to notify', [
-                'technician_id' => $technicianId,
-            ]);
-            return [];
-        }
-
-        $contact = $fundiContact ?: 'N/A';
-        $message = "Nearbyfundi: New fundi {$fundiName} ({$contact}) is waiting for approval. "
-                 . "Open the admin panel to review.";
-
-        $results = [];
-        foreach ($admins as $admin) {
-            $results[] = $this->sendSms($admin, $message, 'admin_new_fundi_registration', [
-                'technician_id' => $technicianId,
-                'admin_id'      => $admin->id,
-                'fundi_name'    => $fundiName,
-            ]);
-        }
-
-        return $results;
-    }
-
     /** Tell a fundi their account is approved. */
     public function notifyFundiApproved(User $user, int $trialDays = 1): array
     {

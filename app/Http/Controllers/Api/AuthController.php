@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\User;
 use App\Models\Otp;
 use App\Models\FailedLoginAttempt;
+use App\Models\RegistrationDraft;
 use App\Models\UserSession;
 use App\Models\Technician;
 use App\Models\UserDeviceToken;
@@ -31,34 +32,77 @@ class AuthController extends BaseApiController
 
     public function register(Request $request, OtpDeliveryService $otpDelivery)
     {
+        // Normalise BEFORE validating so "0712…", "+255712…" and "255712…"
+        // are all stored (and later matched) as "255712…".
+        $request->merge([
+            'email' => strtolower(trim((string) $request->input('email', ''))),
+            'phone' => $this->normalizePhone($request->input('phone')),
+        ]);
+
+        // Clear message for soft-deleted accounts (unique rule still counts them).
+        if ($msg = $this->deletedAccountConflict($request->input('email'), $request->input('phone'))) {
+            return $this->errorResponse($msg, 422);
+        }
+
+        // Same number typed in another format.
+        if ($request->filled('phone') && $this->findUserByIdentifier((string) $request->input('phone'))) {
+            return $this->errorResponse(
+                'This phone number is already registered. Please log in or use a different number.',
+                422
+            );
+        }
+
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()],
-            'phone'    => 'required|string|unique:users,phone|max:20',
+            'phone'    => ['required', 'string', 'max:20', 'regex:/^\d{9,15}$/', 'unique:users,phone'],
             'role'     => 'nullable|string|in:CUSTOMER,FUNDI',
         ]);
 
-        $user = User::create([
-            'name'              => $data['name'],
-            'email'             => $data['email'],
-            'phone'             => $data['phone'],
-            'password'          => Hash::make($data['password']),
-            'status'            => 'pending',
-            'is_active'         => false,
-            'email_verified_at' => null,
-        ]);
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'name'              => $data['name'],
+                'email'             => $data['email'],
+                'phone'             => $data['phone'],
+                'password'          => Hash::make($data['password']),
+                'status'            => 'pending',
+                'is_active'         => false,
+                'email_verified_at' => null,
+            ]);
 
-        $role = $data['role'] ?? 'CUSTOMER';
-        $user->assignRole($role);
+            $user->assignRole($data['role'] ?? 'CUSTOMER');
 
-        $delivery = $this->issueVerificationOtp($user, $request, $otpDelivery);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Register failed', ['error' => $e->getMessage()]);
+            return $this->serverError('Registration failed. Please try again.');
+        }
+
+        // OTP delivery must never break or hang the registration.
+        try {
+            $delivery = $this->issueVerificationOtp($user, $request, $otpDelivery);
+        } catch (\Throwable $e) {
+            Log::error('Register OTP delivery failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+            $delivery = ['channel' => 'failed', 'success' => false];
+        }
+
+        $channel = $delivery['channel'] ?? 'failed';
+        $sent    = $channel !== 'failed' && ($delivery['success'] ?? true) !== false;
 
         return $this->created([
             'user'        => $user->only(['id', 'name', 'email', 'phone']),
-            'otp_channel' => $delivery['channel'] ?? 'email',
-            'sent_to'     => ($delivery['channel'] ?? 'email') === 'sms' ? $user->phone : $user->email,
-        ], 'Registration successful. Please enter the OTP sent to verify your account.');
+            'otp_sent'    => $sent,
+            'otp_channel' => $sent ? $channel : 'none',
+            'sent_to'     => $sent ? ($channel === 'sms' ? $user->phone : $user->email) : null,
+        ], $sent
+            ? 'Registration successful. Please enter the OTP sent to verify your account.'
+            : 'Account created, but we could not send the code. Tap "Resend code".');
     }
 
     public function registerFundi(Request $request, GeocodingService $geocoder, OtpDeliveryService $otpDelivery)
@@ -147,7 +191,7 @@ class AuthController extends BaseApiController
 
     public function resendOtp(Request $request, OtpDeliveryService $otpDelivery)
     {
-        $this->ensureNotRateLimited('resend-otp:' . $request->ip(), 3, 60);
+        $this->ensureNotRateLimited('resend-otp:' . $request->ip() . ':' . $this->rateKey($request), 3, 60);
 
         $request->validate([
             'identifier' => 'required_without:email|string',
@@ -155,7 +199,7 @@ class AuthController extends BaseApiController
         ]);
 
         $identifier = $request->input('identifier', $request->input('email'));
-        $user = User::where('email', $identifier)->orWhere('phone', $identifier)->first();
+        $user = $this->findUserByIdentifier((string) $identifier);
 
         // Same response whether or not the user exists (no account enumeration)
         if (!$user) {
@@ -186,7 +230,7 @@ class AuthController extends BaseApiController
 
     public function verifyOtp(Request $request)
     {
-        $this->ensureNotRateLimited('verify-otp:' . $request->ip(), 10, 60);
+        $this->ensureNotRateLimited('verify-otp:' . $request->ip() . ':' . $this->rateKey($request), 10, 60);
 
         $request->validate([
             'identifier' => 'required_without:email|string',
@@ -197,7 +241,7 @@ class AuthController extends BaseApiController
 
         $identifier = $request->input('identifier', $request->input('email'));
 
-        $user = User::where('email', $identifier)->orWhere('phone', $identifier)->first();
+        $user = $this->findUserByIdentifier((string) $identifier);
         if (!$user) {
             return $this->errorResponse('Invalid or expired OTP code.', 422);
         }
@@ -314,7 +358,9 @@ class AuthController extends BaseApiController
 
     public function login(Request $request)
     {
-        $this->ensureNotRateLimited('login:' . $request->ip(), 10, 60);
+        // Broad per-IP ceiling (shared mobile-carrier IPs) + strict per IP+account limit.
+        $this->ensureNotRateLimited('login-ip:' . $request->ip(), 120, 60);
+        $this->ensureNotRateLimited('login:' . $request->ip() . ':' . $this->rateKey($request), 10, 60);
 
         $request->validate([
             'email'    => 'required|string',
@@ -322,8 +368,7 @@ class AuthController extends BaseApiController
         ]);
 
         $login = trim($request->email);
-        $user  = User::where('email', $login)->first()
-              ?? User::where('phone', $login)->first();
+        $user  = $this->findUserByIdentifier($login);
 
         if ($user && $user->locked_until && $user->locked_until->isFuture()) {
             $minutes = now()->diffInMinutes($user->locked_until) + 1;
@@ -331,6 +376,17 @@ class AuthController extends BaseApiController
         }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+
+            // Fundi who verified the phone but never finished the 6-step
+            // registration has no user row yet: say so instead of
+            // "Invalid credentials".
+            if (!$user && $this->pendingDraftFor($login, (string) $request->password)) {
+                return $this->errorResponse(
+                    'Your fundi registration is not finished yet. Please continue the registration steps, '
+                    . 'or start again with the same phone number.',
+                    422
+                );
+            }
 
             // Google-linked account: the password may never have been set.
             // Give a helpful message instead of a generic "Invalid credentials".
@@ -922,6 +978,117 @@ class AuthController extends BaseApiController
     private function issueToken(User $user): string
     {
         return $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+    }
+
+    /**
+     * Normalise a phone to digits-only international form (Tanzania default):
+     *   0712345678 / +255712345678 / 255712345678 / 2550712345678 -> 255712345678
+     */
+    private function normalizePhone(?string $raw): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $raw) ?? '';
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
+        }
+        // "255" + leading 0 typed by mistake (Tanzanian mobiles never start 2550…)
+        if (str_starts_with($digits, '2550')) {
+            return '255' . substr($digits, 4);
+        }
+        if (str_starts_with($digits, '0')) {
+            return '255' . substr($digits, 1);
+        }
+
+        return $digits;
+    }
+
+    /** Every format a phone may already be stored in (incl. legacy broken rows). */
+    private function phoneVariants(string $raw): array
+    {
+        $raw = trim($raw);
+        $n   = $this->normalizePhone($raw) ?? '';
+
+        $variants = [$n, '+' . $n, $raw];
+
+        if (str_starts_with($n, '255')) {
+            $variants[] = '0' . substr($n, 3);      // 0712…
+            $variants[] = '2550' . substr($n, 3);   // legacy broken rows
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map('trim', $variants),
+            fn ($v) => $v !== ''
+        )));
+    }
+
+    /** Find a user by email (case-insensitive) or by phone in ANY format. */
+    private function findUserByIdentifier(string $identifier): ?User
+    {
+        $identifier = trim($identifier);
+
+        if ($identifier === '') {
+            return null;
+        }
+
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return User::whereRaw('LOWER(email) = ?', [strtolower($identifier)])->first();
+        }
+
+        return User::whereIn('phone', $this->phoneVariants($identifier))->first();
+    }
+
+    /** Message when the email/phone belongs to a soft-deleted account. */
+    private function deletedAccountConflict(?string $email, ?string $phone): ?string
+    {
+        if ($email && User::onlyTrashed()->whereRaw('LOWER(email) = ?', [strtolower($email)])->exists()) {
+            return 'This email belongs to a previously deleted account. '
+                 . 'Please contact support to restore it, or use a different email.';
+        }
+
+        if ($phone && User::onlyTrashed()->whereIn('phone', $this->phoneVariants($phone))->exists()) {
+            return 'This phone number belongs to a previously deleted account. '
+                 . 'Please contact support to restore it, or use a different number.';
+        }
+
+        return null;
+    }
+
+    /**
+     * A fundi who verified their phone but has not finished step 6 only exists
+     * as a draft. Reveal it only when the password matches (no enumeration).
+     */
+    private function pendingDraftFor(string $login, string $password): ?RegistrationDraft
+    {
+        try {
+            $query = RegistrationDraft::query();
+
+            if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+                $query->where('email', strtolower($login));
+            } else {
+                $query->whereIn('phone', $this->phoneVariants($login));
+            }
+
+            $draft = $query->latest('id')->first();
+
+            return ($draft && $draft->canProceed() && Hash::check($password, (string) $draft->password))
+                ? $draft
+                : null;
+        } catch (\Throwable $e) {
+            Log::warning('pendingDraftFor failed', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /** Per-account part of a rate-limit key (shared carrier IPs must not block everyone). */
+    private function rateKey(Request $request): string
+    {
+        return strtolower(trim((string) (
+            $request->input('identifier') ?? $request->input('email') ?? ''
+        )));
     }
 
     /**

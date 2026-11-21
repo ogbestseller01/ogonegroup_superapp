@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Jobs\SendAdminNotificationJob;
 use App\Models\Otp;
 use App\Models\RegistrationDraft;
 use App\Models\ServiceRequest;
@@ -355,7 +354,7 @@ class TechnicianController extends BaseApiController
 
     // ═══════════════════════════════════════════════════════
     // STEP 6 — Creates User + Technician + services atomically
-    //          then emails every ADMINISTRATOR
+    //          then emails every ADMINISTRATOR (EMAIL ONLY)
     // ═══════════════════════════════════════════════════════
     public function registerStep6(Request $request)
     {
@@ -474,16 +473,12 @@ class TechnicianController extends BaseApiController
         }
 
         try {
-            SendAdminNotificationJob::dispatch(
-                $user->name ?? 'Unknown',
-                $user->email ?: $user->phone,
-                $technician->id
-            );
             $this->logAudit('register_step6', 'technician', $technician->id, 'Registration submitted for admin approval');
         } catch (\Throwable $e) {
-            Log::warning('Post-registration side effects failed', ['error' => $e->getMessage()]);
+            Log::warning('Post-registration audit failed', ['error' => $e->getMessage()]);
         }
 
+        // Admin notification: EMAIL ONLY (never throws)
         FundiRegistrationNotifier::notifyAdministrators($technician);
 
         return $this->successResponse([
