@@ -9,7 +9,6 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../config/app_routes.dart';
 import '../../widgets/app_network_image.dart';
-import '../../widgets/post_video_player.dart';
 import '../modals.dart';
 
 const double _maxCardWidth = 640;
@@ -557,16 +556,6 @@ class _PostCardState extends State<_PostCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(theme, post),
-
-          // Video (plays inline, iOS + Android safe)
-          if (post.hasVideo)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: PostVideoPlayer(videoUrl: post.video!),
-              ),
-            ),
 
           // Images
           if (post.hasImages)

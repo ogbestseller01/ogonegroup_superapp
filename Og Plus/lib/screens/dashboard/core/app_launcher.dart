@@ -1,6 +1,8 @@
+// lib/screens/dashboard/core/app_launcher.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nearbyfundi_sdk/nearby_fundi_mini.dart';
+import 'package:nearbyfundi_sdk/nearby_fundi_gate.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_strings.dart';
@@ -12,13 +14,22 @@ import 'app_usage_provider.dart';
 
 /// Opens mini apps and the QR scanner for every tab.
 ///
-/// Both mini apps share one global navigatorKey, so opening one twice would
-/// throw "Multiple widgets used the same GlobalKey". [_busy] blocks a second
-/// tap while a mini app (or the scanner) is opening / closing.
+/// [_busy] blocks a second tap while a mini app, the wall dialog or the
+/// scanner is opening or closing, so two routes can never start at once.
 class AppLauncher {
   AppLauncher._();
 
   static bool _busy = false;
+
+  /// Slug -> launcher. A launcher returns true when an app was actually
+  /// opened, and false when the user backed out (e.g. tapped "Go Home").
+  static final Map<String, Future<bool> Function(BuildContext)> _launchers = {
+    'nearbyfundi': NearbyFundiGate.open,
+  };
+
+  // ----------------------------------------------------------
+  // Snack bar
+  // ----------------------------------------------------------
 
   static void snack(BuildContext context, String message) {
     if (!context.mounted) return;
@@ -29,17 +40,24 @@ class AppLauncher {
           content: Text(
             message,
             style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600),
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           backgroundColor: AppTheme.primary,
           behavior: SnackBarBehavior.floating,
           elevation: 6,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         ),
       );
   }
+
+  // ----------------------------------------------------------
+  // Open a mini app
+  // ----------------------------------------------------------
 
   static Future<void> open(BuildContext context, MiniApp app) async {
     final t = context.t;
@@ -47,28 +65,31 @@ class AppLauncher {
 
     if (app.isComingSoon) return snack(context, t.comingSoonMessage);
 
-    final Widget? page = switch (app.slug) {
-      'nearbyfundi' => const NearbyFundiMiniApp(),
-      _ => null,
-    };
-
-    if (page == null) {
+    final launch = _launchers[app.slug];
+    if (launch == null) {
       return snack(context, t.opening(t.serviceTitle(app.slug)));
     }
+
     if (_busy) return;
     _busy = true;
 
-    final navigator = Navigator.of(context);
-    context.read<AppUsageProvider>().markOpened(app.slug);
-
     try {
-      await navigator.push(MaterialPageRoute(builder: (_) => page));
-      // Let the pop animation finish so the shared navigatorKey is released.
+      final opened = await launch(context);
+      if (!opened) return;
+
+      if (context.mounted) {
+        context.read<AppUsageProvider>().markOpened(app.slug);
+      }
+      // Let the pop animation finish so the next route starts cleanly.
       await Future<void>.delayed(const Duration(milliseconds: 450));
     } finally {
       _busy = false;
     }
   }
+
+  // ----------------------------------------------------------
+  // QR scanner
+  // ----------------------------------------------------------
 
   /// Opens the scanner, then opens the mini app whose QR code was scanned.
   static Future<void> scan(BuildContext context) async {
@@ -92,18 +113,25 @@ class AppLauncher {
       snack(context, context.t.comingSoonMessage);
       return;
     }
+
     // Give the scanner's pop animation time to release the camera/route.
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!context.mounted) return;
     await open(context, app);
   }
 
+  // ----------------------------------------------------------
+  // Favourites
+  // ----------------------------------------------------------
+
   static Future<void> toggleFavorite(BuildContext context, MiniApp app) async {
     final usage = context.read<AppUsageProvider>();
     final t = context.t;
+
     HapticFeedback.mediumImpact();
-    final nowFav = await usage.toggleFavorite(app.slug);
+    final nowFavorite = await usage.toggleFavorite(app.slug);
     if (!context.mounted) return;
-    snack(context, nowFav ? t.addedFavorite : t.removedFavorite);
+
+    snack(context, nowFavorite ? t.addedFavorite : t.removedFavorite);
   }
 }

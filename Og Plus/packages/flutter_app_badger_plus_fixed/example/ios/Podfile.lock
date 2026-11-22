@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_app_badger_plus (1.3.0):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_app_badger_plus (from `.symlinks/plugins/flutter_app_badger_plus/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_app_badger_plus:
+    :path: ".symlinks/plugins/flutter_app_badger_plus/ios"
+
+SPEC CHECKSUMS:
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_app_badger_plus: c307df889ef0c7f4edcdcac2baf20d35b06d3397
+
+PODFILE CHECKSUM: 53026eaf67b63baa2e316e457f9701dbdf33f41a
+
+COCOAPODS: 1.16.2

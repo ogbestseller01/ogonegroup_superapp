@@ -1,10 +1,8 @@
 // FILE: lib/screens/blog/post_detail_screen.dart
-// Post = media only (images + optional video) by a fundi, with likes and
-// comments. No title / content / YouTube any more (matches the backend).
+// Post = images by a fundi, with likes and comments.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 import '../../providers/post_provider.dart';
 import '../../models/post.dart';
@@ -103,18 +101,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (mounted) _loadPost();
   }
 
-  Future<void> _openVideo(String url) async {
-    try {
-      final ok = await launchUrl(
-        Uri.parse(ImageUtils.getFullImageUrl(url)),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!ok) _snack('Could not open video.');
-    } catch (_) {
-      _snack('Could not open video.');
-    }
-  }
-
   // ==============================================================
   // BUILD
   // ==============================================================
@@ -187,11 +173,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
                       if (post.hasImages) ...[
                         _buildImageGallery(theme, post, imageHeight),
-                        const SizedBox(height: 16),
-                      ],
-
-                      if (post.hasVideo) ...[
-                        _buildVideoTile(theme, post),
                         const SizedBox(height: 16),
                       ],
 
@@ -417,48 +398,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoTile(ThemeData theme, Post post) {
-    return Material(
-      color: theme.primaryColor.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () => _openVideo(post.video!),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: theme.primaryColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  color: theme.colorScheme.onPrimary,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Watch video',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Icon(Icons.open_in_new_rounded, color: theme.hintColor, size: 20),
-            ],
-          ),
         ),
       ),
     );

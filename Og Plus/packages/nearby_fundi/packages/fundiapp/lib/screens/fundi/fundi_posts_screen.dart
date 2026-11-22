@@ -10,12 +10,10 @@ import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/post.dart';
 import '../../providers/post_provider.dart';
-import '../../widgets/post_video_player.dart';
 import '../../widgets/app_network_image.dart';
 import '../../widgets/custom_button.dart';
 
 const int _maxImages = 10;
-const int _maxVideoBytes = 20 * 1024 * 1024; // must match server limit (20480 KB)
 const double _maxCardWidth = 640;
 const Color _gold = Color(0xFFF2B93B);
 
@@ -289,7 +287,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Share your work with photos and videos to build your portfolio.',
+              'Share your work with photos to build your portfolio.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -381,14 +379,10 @@ class _PostFormSheetState extends State<_PostFormSheet> {
   late final List<String> _kept = List<String>.of(widget.post?.images ?? const []);
   final List<String> _new = [];
 
-  String? _videoPath;
-  bool _removeVideo = false;
   bool _saving = false;
 
   bool get _isEdit => widget.post != null;
   int get _total => _kept.length + _new.length;
-  bool get _hasExistingVideo => widget.post?.hasVideo == true && !_removeVideo;
-  bool get _hasVideo => _videoPath != null || _hasExistingVideo;
 
   void _warn(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -408,29 +402,9 @@ class _PostFormSheetState extends State<_PostFormSheet> {
     setState(() => _new.addAll(files.take(room).map((f) => f.path)));
   }
 
-  Future<void> _pickVideo() async {
-    final file = await _picker.pickVideo(
-      source: ImageSource.gallery,
-      maxDuration: const Duration(minutes: 2),
-    );
-    if (file == null || !mounted) return;
-
-    final size = await File(file.path).length();
-    if (!mounted) return;
-    if (size > _maxVideoBytes) {
-      _warn('Video is too large. Maximum size is 20 MB.');
-      return;
-    }
-
-    setState(() {
-      _videoPath = file.path;
-      _removeVideo = false;
-    });
-  }
-
   Future<void> _save() async {
-    if (_total == 0 && !_hasVideo) {
-      _warn('Add at least one photo or a video.');
+    if (_total == 0) {
+      _warn('Add at least one photo.');
       return;
     }
 
@@ -441,8 +415,6 @@ class _PostFormSheetState extends State<_PostFormSheet> {
     final data = <String, dynamic>{
       if (_new.isNotEmpty) 'images': List<String>.of(_new),
       if (_isEdit) 'keep_images': List<String>.of(_kept),
-      if (_videoPath != null) 'video': _videoPath,
-      if (_removeVideo) 'remove_video': true,
     };
 
     final ok = _isEdit
@@ -507,65 +479,6 @@ class _PostFormSheetState extends State<_PostFormSheet> {
     return Wrap(spacing: 10, runSpacing: 10, children: tiles);
   }
 
-  Widget _videoSection(ThemeData theme) {
-    if (!_hasVideo) {
-      return InkWell(
-        onTap: _pickVideo,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: AppTheme.primary.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.video_call_rounded, color: AppTheme.primary),
-              SizedBox(width: 8),
-              Text(
-                'Attach a short video clip (max 20 MB)',
-                style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.play_circle_fill_rounded, color: AppTheme.primary, size: 32),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _videoPath != null ? _videoPath!.split('/').last : 'Existing Video Attached',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () {
-              setState(() {
-                _videoPath = null;
-                if (widget.post?.hasVideo == true) _removeVideo = true;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -582,12 +495,6 @@ class _PostFormSheetState extends State<_PostFormSheet> {
               _isEdit ? l10n.editPostTitle : l10n.createPostTitle,
               style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 18),
-
-            Text('Video Clip', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 10),
-            _videoSection(theme),
-
             const SizedBox(height: 18),
 
             Row(
@@ -678,16 +585,6 @@ class _PostCardState extends State<_PostCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _PostHeader(post: post, onEdit: widget.onEdit, onDelete: widget.onDelete),
-
-          // Video (iOS + Android safe)
-          if (post.hasVideo)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: PostVideoPlayer(videoUrl: post.videoUrl!),
-              ),
-            ),
 
           // Images
           if (post.hasImages)

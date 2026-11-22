@@ -1,6 +1,6 @@
-// ============================================================
-//  FundiApp — Login screen (refined UI – NearbyFundi style)
-// ============================================================
+// packages/nearby_fundi/packages/fundiapp/lib/screens/auth/login_screen.dart
+//
+// FundiApp (technician) login screen.
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -19,16 +19,18 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/flag_icon.dart';
 import '../../widgets/loading_overlay.dart';
 
-/// Package name of this SDK (must match `name:` in pubspec.yaml).
+/// Must match `name:` in pubspec.yaml.
 const String _kAssetPackage = 'fundiapp_sdk';
 
-/// Faint brand tint used behind form fields in light mode.
 const Color _kFieldTint = Color(0xFFF1F5FB);
 
+final RegExp _nonDigits = RegExp(r'[^0-9]');
+
 // ============================================================
-//  FLAG HELPERS
+// FLAG HELPERS
 // ============================================================
-String? _getFlagAssetPath(String countryName) {
+
+String? _flagAssetFor(String countryName) {
   switch (countryName.toLowerCase()) {
     case 'tanzania':
       return 'assets/images/tzflug.png';
@@ -41,24 +43,58 @@ String? _getFlagAssetPath(String countryName) {
 }
 
 Widget _buildFlag(String name, String emoji, double height) {
-  final assetPath = _getFlagAssetPath(name);
-  if (assetPath != null) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(3),
-      child: Image.asset(
-        assetPath,
-        package: _kAssetPackage,
-        height: height,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) {
-          return FlagIcon(emoji: emoji, height: height);
-        },
-      ),
+  final asset = _flagAssetFor(name);
+  if (asset == null) return FlagIcon(emoji: emoji, height: height);
+
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(3),
+    child: Image.asset(
+      asset,
+      package: _kAssetPackage,
+      height: height,
+      fit: BoxFit.cover,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (_, __, ___) => FlagIcon(emoji: emoji, height: height),
+    ),
+  );
+}
+
+// ============================================================
+// PALETTE
+// ============================================================
+
+class _Palette {
+  const _Palette._({
+    required this.isDark,
+    required this.card,
+    required this.muted,
+    required this.text,
+    required this.link,
+  });
+
+  factory _Palette.of(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return _Palette._(
+      isDark: isDark,
+      card: isDark ? AppTheme.darkSurface : Colors.white,
+      muted: isDark ? AppTheme.darkTextSecondary : AppTheme.greyText,
+      text: isDark ? Colors.white : AppTheme.primary,
+      link: isDark ? AppTheme.secondary : AppTheme.primary,
     );
   }
-  return FlagIcon(emoji: emoji, height: height);
+
+  final bool isDark;
+  final Color card;
+  final Color muted;
+  final Color text;
+  final Color link;
+
+  Color get field => isDark ? Colors.white.withOpacity(0.05) : _kFieldTint;
 }
+
+// ============================================================
+// SCREEN
+// ============================================================
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -73,18 +109,16 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  final List<Country> _countries = CountryCodes.all;
+  late Country _selectedCountry;
+
   bool _obscurePassword = true;
   bool _termsAccepted = false;
-  bool _rememberMe = false;
   bool _isEmailLogin = true;
-
-  late final List<Country> _countries;
-  late Country _selectedCountry;
 
   @override
   void initState() {
     super.initState();
-    _countries = CountryCodes.all;
     _selectedCountry = _countries.firstWhere(
           (c) => c.dialCode == '+255',
       orElse: () => _countries.first,
@@ -99,10 +133,12 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────
+  // ----------------------------------------------------------
   // Helpers
-  // ─────────────────────────────────────────────
+  // ----------------------------------------------------------
+
   void _snack(String message, {bool error = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -111,17 +147,44 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor:
           error ? Theme.of(context).colorScheme.error : AppTheme.warning,
           behavior: SnackBarBehavior.floating,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
   }
 
-  // ─────────────────────────────────────────────
+  String _composedPhone() {
+    final digits = _phoneController.text.trim().replaceAll(_nonDigits, '');
+    final dialCode = _selectedCountry.dialCode.replaceAll('+', '');
+    return '$dialCode$digits';
+  }
+
+  /// Back goes to the previous Fundi screen; if there is none,
+  /// it leaves FundiApp and returns to the host app.
+  Future<void> _goBack() async {
+    final local = Navigator.of(context);
+    if (local.canPop()) {
+      local.pop();
+      return;
+    }
+    await Navigator.of(context, rootNavigator: true).maybePop();
+  }
+
+  /// Leaves FundiApp entirely and lands on the host app's first screen.
+  void _goHost() {
+    Navigator.of(context, rootNavigator: true)
+        .popUntil((route) => route.isFirst);
+  }
+
+  // ----------------------------------------------------------
   // Login
-  // ─────────────────────────────────────────────
+  // ----------------------------------------------------------
+
   Future<void> _handleLogin() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (!_termsAccepted) {
@@ -132,12 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final identifier =
     _isEmailLogin ? _emailController.text.trim() : _composedPhone();
 
-    final auth = context.read<AuthProvider>();
     auth.clearError();
-
     final success =
     await auth.login(identifier, _passwordController.text.trim());
-
     if (!mounted) return;
 
     if (success) {
@@ -147,74 +207,68 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  String _composedPhone() {
-    final digits =
-    _phoneController.text.trim().replaceAll(RegExp(r'[^0-9]'), '');
-    final dialCode = _selectedCountry.dialCode.replaceAll('+', '');
-    return '$dialCode$digits';
-  }
+  // ----------------------------------------------------------
+  // Sign-up: resume an unfinished registration or start a new one
+  // ----------------------------------------------------------
 
-  // ─────────────────────────────────────────────
-  // Sign-up navigation → RegisterStep1Screen
-  // ─────────────────────────────────────────────
   Future<void> _handleSignUp() async {
+    final auth = context.read<AuthProvider>();
     final storedId = await StorageService.getTechnicianId();
     if (!mounted) return;
 
     if (storedId != null) {
-      final auth = context.read<AuthProvider>();
       final step = await auth.getRegistrationStep(storedId);
       if (!mounted) return;
 
       if (step != null) {
-        if (step < 1) {
-          Navigator.pushNamed(context, AppRoutes.registerStep1);
-          return;
-        } else if (step < 2) {
-          Navigator.pushNamed(context, AppRoutes.registerStep2,
-              arguments: storedId);
-          return;
-        } else if (step < 3) {
-          Navigator.pushNamed(context, AppRoutes.registerStep3,
-              arguments: storedId);
-          return;
-        } else if (step < 4) {
-          Navigator.pushNamed(context, AppRoutes.registerStep4,
-              arguments: storedId);
-          return;
-        } else if (step < 5) {
-          Navigator.pushNamed(context, AppRoutes.registerStep5,
-              arguments: storedId);
-          return;
-        } else {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.registerReview,
-            arguments: {'technicianId': storedId},
-          );
-          return;
-        }
+        _resumeRegistration(storedId, step);
+        return;
       }
 
       await StorageService.clearTechnicianData();
       if (!mounted) return;
     }
 
-    // No draft → go to Step 1 (RegisterStep1Screen)
     Navigator.pushNamed(context, AppRoutes.registerStep1);
   }
 
-  // ─────────────────────────────────────────────
-  // Country picker
-  // ─────────────────────────────────────────────
+  void _resumeRegistration(int technicianId, int step) {
+    if (step < 1) {
+      Navigator.pushNamed(context, AppRoutes.registerStep1);
+      return;
+    }
+
+    if (step >= 5) {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.registerReview,
+        arguments: {'technicianId': technicianId},
+      );
+      return;
+    }
+
+    // step 1 → Step 2 screen, step 2 → Step 3 screen, ... step 4 → Step 5.
+    final routes = [
+      AppRoutes.registerStep2,
+      AppRoutes.registerStep3,
+      AppRoutes.registerStep4,
+      AppRoutes.registerStep5,
+    ];
+    Navigator.pushNamed(context, routes[step - 1], arguments: technicianId);
+  }
+
+  // ----------------------------------------------------------
+  // Country / language / theme
+  // ----------------------------------------------------------
+
   Future<void> _openCountrySheet() async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final p = _Palette.of(context);
 
     final picked = await showModalBottomSheet<Country>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      backgroundColor: p.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -229,81 +283,65 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // Bottom sheets
-  // ─────────────────────────────────────────────
-  void _showLanguageSheet(SettingsProvider settings, AppLocalizations l10n) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  void _showLanguageSheet() {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = context.read<SettingsProvider>();
+
+    Widget tile(String code, String title, String country, String emoji) =>
+        _SheetTile(
+          title: title,
+          leading: _buildFlag(country, emoji, 18),
+          selected: settings.locale == code,
+          onTap: () async {
+            await settings.updateLocale(code);
+            if (mounted) Navigator.pop(context);
+          },
+        );
 
     _showAppSheet(
       title: l10n.language,
-      isDark: isDark,
       children: [
-        _SheetTile(
-          title: 'English',
-          leading: _buildFlag('English', '🇬🇧', 18),
-          selected: settings.locale == 'en',
-          onTap: () async {
-            await settings.updateLocale('en');
-            if (mounted) Navigator.pop(context);
-          },
-        ),
-        const SizedBox(height: 10),
-        _SheetTile(
-          title: 'Kiswahili',
-          leading: _buildFlag('Tanzania', '🇹🇿', 18),
-          selected: settings.locale == 'sw',
-          onTap: () async {
-            await settings.updateLocale('sw');
-            if (mounted) Navigator.pop(context);
-          },
-        ),
+        tile('en', 'English', 'English', '🇬🇧'),
+        tile('sw', 'Kiswahili', 'Tanzania', '🇹🇿'),
       ],
     );
   }
 
-  void _showThemeSheet(ThemeProvider themeProvider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  void _showThemeSheet() {
+    final themeProvider = context.read<ThemeProvider>();
+
+    Widget tile(ThemeMode mode, String title, IconData icon, bool selected) =>
+        _SheetTile(
+          title: title,
+          leading: Icon(icon),
+          selected: selected,
+          onTap: () {
+            themeProvider.setThemeMode(mode);
+            Navigator.pop(context);
+          },
+        );
 
     _showAppSheet(
       title: 'Theme',
-      isDark: isDark,
       children: [
-        _SheetTile(
-          title: 'Light',
-          leading: const Icon(Icons.light_mode_rounded),
-          selected: !themeProvider.isDarkMode,
-          onTap: () {
-            themeProvider.setThemeMode(ThemeMode.light);
-            Navigator.pop(context);
-          },
-        ),
-        const SizedBox(height: 10),
-        _SheetTile(
-          title: 'Dark',
-          leading: const Icon(Icons.dark_mode_rounded),
-          selected: themeProvider.isDarkMode,
-          onTap: () {
-            themeProvider.setThemeMode(ThemeMode.dark);
-            Navigator.pop(context);
-          },
-        ),
+        tile(ThemeMode.light, 'Light', Icons.light_mode_rounded,
+            !themeProvider.isDarkMode),
+        tile(ThemeMode.dark, 'Dark', Icons.dark_mode_rounded,
+            themeProvider.isDarkMode),
       ],
     );
   }
 
-  void _showAppSheet({
-    required String title,
-    required bool isDark,
-    required List<Widget> children,
-  }) {
-    showModalBottomSheet(
+  void _showAppSheet({required String title, required List<Widget> children}) {
+    final p = _Palette.of(context);
+
+    showModalBottomSheet<void>(
       context: context,
-      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+      backgroundColor: p.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
+      builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           child: Column(
@@ -313,7 +351,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkBorder : Colors.grey.shade400,
+                  color: p.isDark ? AppTheme.darkBorder : Colors.grey.shade400,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -321,14 +359,16 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 title,
                 style: TextStyle(
-                  inherit: true,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppTheme.primary,
+                  color: p.text,
                 ),
               ),
               const SizedBox(height: 18),
-              ...children,
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                children[i],
+              ],
             ],
           ),
         ),
@@ -336,36 +376,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────
+  // ----------------------------------------------------------
   // Build
-  // ─────────────────────────────────────────────
+  // ----------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final settings = context.watch<SettingsProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
+    final p = _Palette.of(context);
     final auth = context.watch<AuthProvider>();
-
-    final isDark = theme.brightness == Brightness.dark;
     final isSmall = MediaQuery.sizeOf(context).width < 380;
     final topInset = MediaQuery.paddingOf(context).top;
-
-    final isEmbedded = Navigator.of(context, rootNavigator: true).canPop();
-
-    final cardColor = isDark ? AppTheme.darkSurface : Colors.white;
-    final mutedText = isDark ? AppTheme.darkTextSecondary : AppTheme.greyText;
-    final primaryText = isDark ? Colors.white : AppTheme.primary;
-    final linkColor = isDark ? AppTheme.secondary : AppTheme.primary;
+    final sidePad = isSmall ? 16.0 : 20.0;
 
     return Scaffold(
       backgroundColor:
-      isDark ? AppTheme.darkBackground : AppTheme.scaffoldLight,
+      p.isDark ? AppTheme.darkBackground : AppTheme.scaffoldLight,
       body: LoadingOverlay(
         isLoading: auth.isLoading,
         child: Stack(
           children: [
-            // ── Hero gradient ──
             Positioned(
               top: 0,
               left: 0,
@@ -373,347 +402,20 @@ class _LoginScreenState extends State<LoginScreen> {
               height: topInset + 250,
               child: const _HeroBackground(),
             ),
-
-            // ── Scrolling content ──
             SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    isSmall ? 16 : 20,
-                    12,
-                    isSmall ? 16 : 20,
-                    24,
-                  ),
+                  padding: EdgeInsets.fromLTRB(sidePad, 12, sidePad, 24),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 440),
                     child: Column(
                       children: [
-                        // ── Top bar ──
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (isEmbedded)
-                              Row(
-                                children: [
-                                  _GlassIconButton(
-                                    icon: Icons.arrow_back_rounded,
-                                    tooltip: 'Back',
-                                    onTap: () => Navigator.of(context,
-                                        rootNavigator: true)
-                                        .maybePop(),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _HomePillButton(
-                                    onTap: () {
-                                      Navigator.of(context, rootNavigator: true)
-                                          .popUntil((route) => route.isFirst);
-                                    },
-                                  ),
-                                ],
-                              )
-                            else
-                              const SizedBox(width: 44, height: 44),
-
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _GlassIconButton(
-                                  icon: Icons.language_rounded,
-                                  tooltip: l10n.language,
-                                  onTap: () =>
-                                      _showLanguageSheet(settings, l10n),
-                                ),
-                                const SizedBox(width: 8),
-                                _GlassIconButton(
-                                  icon: themeProvider.isDarkMode
-                                      ? Icons.dark_mode_rounded
-                                      : Icons.light_mode_rounded,
-                                  tooltip: 'Theme',
-                                  onTap: () =>
-                                      _showThemeSheet(themeProvider),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
+                        _topBar(),
                         const SizedBox(height: 14),
-
-                        // ── Brand Header (app_icon.png) ──
                         const _BrandHeader(),
-
                         const SizedBox(height: 26),
-
-                        // ── Form card ──
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(
-                            isSmall ? 20 : 24,
-                            26,
-                            isSmall ? 20 : 24,
-                            22,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black
-                                    .withOpacity(isDark ? 0.4 : 0.10),
-                                blurRadius: 40,
-                                offset: const Offset(0, 18),
-                                spreadRadius: -6,
-                              ),
-                            ],
-                          ),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Text(
-                                  l10n.welcomeBack,
-                                  style: TextStyle(
-                                    fontSize: isSmall ? 24 : 26,
-                                    fontWeight: FontWeight.w800,
-                                    color: primaryText,
-                                    letterSpacing: -0.6,
-                                    height: 1.15,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.signInManage,
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    color: mutedText,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 22),
-
-                                // Email / Phone toggle
-                                _LoginToggle(
-                                  isEmailLogin: _isEmailLogin,
-                                  isDark: isDark,
-                                  mutedText: mutedText,
-                                  enabled: !auth.isLoading,
-                                  onChanged: (isEmail) => setState(() {
-                                    _isEmailLogin = isEmail;
-                                  }),
-                                ),
-
-                                const SizedBox(height: 18),
-
-                                // Identifier
-                                if (_isEmailLogin)
-                                  TextFormField(
-                                    controller: _emailController,
-                                    enabled: !auth.isLoading,
-                                    keyboardType: TextInputType.emailAddress,
-                                    textInputAction: TextInputAction.next,
-                                    style: TextStyle(
-                                        fontSize: 15, color: primaryText),
-                                    decoration: _modernInputDecoration(
-                                      context,
-                                      hint: 'you@example.com',
-                                      icon: Icons.email_outlined,
-                                    ),
-                                    validator: (v) =>
-                                    v != null && v.contains('@')
-                                        ? null
-                                        : 'Enter a valid email',
-                                  )
-                                else
-                                  Row(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      _CountryButton(
-                                        country: _selectedCountry,
-                                        isDark: isDark,
-                                        mutedText: mutedText,
-                                        enabled: !auth.isLoading,
-                                        onTap: _openCountrySheet,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: TextFormField(
-                                          controller: _phoneController,
-                                          enabled: !auth.isLoading,
-                                          keyboardType: TextInputType.phone,
-                                          textInputAction:
-                                          TextInputAction.next,
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              color: primaryText),
-                                          decoration: _modernInputDecoration(
-                                            context,
-                                            hint: '712345678',
-                                            icon: Icons.phone_outlined,
-                                          ),
-                                          validator: (v) {
-                                            if (v == null ||
-                                                v.trim().isEmpty) {
-                                              return 'Enter phone number';
-                                            }
-                                            final digits = v
-                                                .trim()
-                                                .replaceAll(
-                                                RegExp(r'[^0-9]'), '');
-                                            if (digits.length < 7 ||
-                                                digits.length > 15) {
-                                              return '7–15 digits required';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                const SizedBox(height: 16),
-
-                                // Password
-                                TextFormField(
-                                  controller: _passwordController,
-                                  enabled: !auth.isLoading,
-                                  obscureText: _obscurePassword,
-                                  style: TextStyle(
-                                      fontSize: 15, color: primaryText),
-                                  decoration: _modernInputDecoration(
-                                    context,
-                                    hint: l10n.password,
-                                    icon: Icons.lock_outline_rounded,
-                                    suffix: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off_rounded
-                                            : Icons.visibility_rounded,
-                                        size: 20,
-                                        color: mutedText,
-                                      ),
-                                      onPressed: () => setState(() =>
-                                      _obscurePassword =
-                                      !_obscurePassword),
-                                    ),
-                                  ),
-                                  validator: (v) =>
-                                  v != null && v.length >= 6
-                                      ? null
-                                      : 'Min 6 characters',
-                                ),
-
-                                const SizedBox(height: 10),
-
-                                // Remember + Forgot
-                                Row(
-                                  children: [
-                                    _CompactCheckbox(
-                                      value: _rememberMe,
-                                      onChanged: auth.isLoading
-                                          ? null
-                                          : (v) => setState(
-                                              () => _rememberMe = v ?? false),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Remember me',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        color: primaryText.withOpacity(0.75),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    TextButton(
-                                      onPressed: auth.isLoading
-                                          ? null
-                                          : () => Navigator.pushNamed(
-                                        context,
-                                        AppRoutes.forgot,
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 4, vertical: 4),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        l10n.forgotPassword,
-                                        style: TextStyle(
-                                          color: linkColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                // Terms
-                                _TermsRow(
-                                  value: _termsAccepted,
-                                  enabled: !auth.isLoading,
-                                  isDark: isDark,
-                                  textColor: primaryText,
-                                  onChanged: (v) => setState(
-                                          () => _termsAccepted = v ?? false),
-                                ),
-
-                                const SizedBox(height: 22),
-
-                                // Sign In
-                                CustomButton(
-                                  text: l10n.signIn,
-                                  onPressed:
-                                  auth.isLoading ? null : _handleLogin,
-                                  isLoading: auth.isLoading,
-                                ),
-
-                                const SizedBox(height: 20),
-
-                                // Sign up → goes to RegisterStep1Screen
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      l10n.dontHaveAccount,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: mutedText,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: auth.isLoading
-                                          ? null
-                                          : _handleSignUp,
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        l10n.signUp,
-                                        style: TextStyle(
-                                          color: linkColor,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _formCard(p, isSmall, busy: auth.isLoading),
                       ],
                     ),
                   ),
@@ -726,57 +428,301 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _modernInputDecoration(
-      BuildContext context, {
-        required String hint,
-        required IconData icon,
-        Widget? suffix,
-      }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+  Widget _topBar() {
+    final l10n = AppLocalizations.of(context)!;
+    final themeProvider = context.watch<ThemeProvider>();
+    context.watch<SettingsProvider>(); // rebuild on locale change
 
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        color: theme.hintColor.withOpacity(0.65),
-        fontSize: 14.5,
+    final embedded = Navigator.of(context, rootNavigator: true).canPop();
+    final canGoBack = embedded || Navigator.of(context).canPop();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (canGoBack)
+          Row(
+            children: [
+              _GlassIconButton(
+                icon: Icons.arrow_back_rounded,
+                tooltip: 'Back',
+                onTap: _goBack,
+              ),
+              if (embedded) ...[
+                const SizedBox(width: 8),
+                _HomePillButton(onTap: _goHost),
+              ],
+            ],
+          )
+        else
+          const SizedBox(width: 44, height: 44),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _GlassIconButton(
+              icon: Icons.language_rounded,
+              tooltip: l10n.language,
+              onTap: _showLanguageSheet,
+            ),
+            const SizedBox(width: 8),
+            _GlassIconButton(
+              icon: themeProvider.isDarkMode
+                  ? Icons.dark_mode_rounded
+                  : Icons.light_mode_rounded,
+              tooltip: 'Theme',
+              onTap: _showThemeSheet,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _formCard(_Palette p, bool isSmall, {required bool busy}) {
+    final l10n = AppLocalizations.of(context)!;
+    final padH = isSmall ? 20.0 : 24.0;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(padH, 26, padH, 22),
+      decoration: BoxDecoration(
+        color: p.card,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(p.isDark ? 0.4 : 0.10),
+            blurRadius: 40,
+            offset: const Offset(0, 18),
+            spreadRadius: -6,
+          ),
+        ],
       ),
-      prefixIcon: Icon(icon, size: 20, color: theme.hintColor),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
-      contentPadding:
-      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: isDark ? AppTheme.secondary : AppTheme.primary,
-          width: 1.8,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.welcomeBack,
+              style: TextStyle(
+                fontSize: isSmall ? 24 : 26,
+                fontWeight: FontWeight.w800,
+                color: p.text,
+                letterSpacing: -0.6,
+                height: 1.15,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.signInManage,
+              style: TextStyle(fontSize: 14.5, color: p.muted),
+            ),
+            const SizedBox(height: 22),
+            _LoginToggle(
+              isEmailLogin: _isEmailLogin,
+              palette: p,
+              enabled: !busy,
+              onChanged: (isEmail) => setState(() => _isEmailLogin = isEmail),
+            ),
+            const SizedBox(height: 18),
+            _isEmailLogin ? _emailField(p, busy) : _phoneRow(p, busy),
+            const SizedBox(height: 16),
+            _passwordField(p, l10n, busy),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: busy
+                    ? null
+                    : () => Navigator.pushNamed(context, AppRoutes.forgot),
+                style: TextButton.styleFrom(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  l10n.forgotPassword,
+                  style: TextStyle(
+                    color: p.link,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _TermsRow(
+              value: _termsAccepted,
+              enabled: !busy,
+              palette: p,
+              onChanged: (v) => setState(() => _termsAccepted = v ?? false),
+            ),
+            const SizedBox(height: 22),
+            CustomButton(
+              text: l10n.signIn,
+              onPressed: busy ? null : _handleLogin,
+              isLoading: busy,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.dontHaveAccount,
+                  style: TextStyle(fontSize: 14, color: p.muted),
+                ),
+                TextButton(
+                  onPressed: busy ? null : _handleSignUp,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    l10n.signUp,
+                    style: TextStyle(
+                      color: p.link,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.4),
+    );
+  }
+
+  Widget _emailField(_Palette p, bool busy) {
+    return TextFormField(
+      controller: _emailController,
+      enabled: !busy,
+      keyboardType: TextInputType.emailAddress,
+      textInputAction: TextInputAction.next,
+      style: TextStyle(fontSize: 15, color: p.text),
+      decoration: _inputDecoration(
+        context,
+        hint: 'you@example.com',
+        icon: Icons.email_outlined,
       ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.8),
+      validator: (v) {
+        final email = v?.trim() ?? '';
+        return email.contains('@') && email.contains('.')
+            ? null
+            : 'Enter a valid email';
+      },
+    );
+  }
+
+  Widget _phoneRow(_Palette p, bool busy) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CountryButton(
+          country: _selectedCountry,
+          palette: p,
+          enabled: !busy,
+          onTap: _openCountrySheet,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextFormField(
+            controller: _phoneController,
+            enabled: !busy,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            style: TextStyle(fontSize: 15, color: p.text),
+            decoration: _inputDecoration(
+              context,
+              hint: '712345678',
+              icon: Icons.phone_outlined,
+            ),
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Enter phone number';
+              final length = v.trim().replaceAll(_nonDigits, '').length;
+              return length < 7 || length > 15 ? '7–15 digits required' : null;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _passwordField(_Palette p, AppLocalizations l10n, bool busy) {
+    return TextFormField(
+      controller: _passwordController,
+      enabled: !busy,
+      obscureText: _obscurePassword,
+      textInputAction: TextInputAction.done,
+      onFieldSubmitted: (_) => _handleLogin(),
+      style: TextStyle(fontSize: 15, color: p.text),
+      decoration: _inputDecoration(
+        context,
+        hint: l10n.password,
+        icon: Icons.lock_outline_rounded,
+        suffix: IconButton(
+          icon: Icon(
+            _obscurePassword
+                ? Icons.visibility_off_rounded
+                : Icons.visibility_rounded,
+            size: 20,
+            color: p.muted,
+          ),
+          onPressed: () =>
+              setState(() => _obscurePassword = !_obscurePassword),
+        ),
       ),
+      validator: (v) =>
+      v != null && v.length >= 6 ? null : 'Min 6 characters',
     );
   }
 }
 
 // ============================================================
-//  HERO BACKGROUND
+// INPUT DECORATION
 // ============================================================
+
+InputDecoration _inputDecoration(
+    BuildContext context, {
+      required String hint,
+      required IconData icon,
+      Widget? suffix,
+    }) {
+  final theme = Theme.of(context);
+  final p = _Palette.of(context);
+
+  OutlineInputBorder border([BorderSide side = BorderSide.none]) =>
+      OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: side,
+      );
+
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: TextStyle(
+      color: theme.hintColor.withOpacity(0.65),
+      fontSize: 14.5,
+    ),
+    prefixIcon: Icon(icon, size: 20, color: theme.hintColor),
+    suffixIcon: suffix,
+    filled: true,
+    fillColor: p.field,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: border(),
+    enabledBorder: border(),
+    focusedBorder: border(BorderSide(color: p.link, width: 1.8)),
+    errorBorder: border(const BorderSide(color: Colors.redAccent, width: 1.4)),
+    focusedErrorBorder:
+    border(const BorderSide(color: Colors.redAccent, width: 1.8)),
+  );
+}
+
+// ============================================================
+// HERO + BRAND
+// ============================================================
+
 class _HeroBackground extends StatelessWidget {
   const _HeroBackground();
 
@@ -811,9 +757,20 @@ class _HeroBackground extends StatelessWidget {
   }
 }
 
-// ============================================================
-//  BRAND HEADER  (uses assets/icons/app_icon.png)
-// ============================================================
+class _Blob extends StatelessWidget {
+  const _Blob({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+  );
+}
+
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 
@@ -857,7 +814,6 @@ class _BrandHeader extends StatelessWidget {
               const Text(
                 'FundiApp',
                 style: TextStyle(
-                  inherit: true,
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.6,
@@ -868,7 +824,6 @@ class _BrandHeader extends StatelessWidget {
               Text(
                 'Hire. Manage. Get it done.',
                 style: TextStyle(
-                  inherit: true,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.3,
@@ -884,40 +839,113 @@ class _BrandHeader extends StatelessWidget {
 }
 
 // ============================================================
-//  EMAIL / PHONE TOGGLE
+// TOP-BAR BUTTONS
 // ============================================================
-class _LoginToggle extends StatelessWidget {
-  final bool isEmailLogin;
-  final bool isDark;
-  final Color mutedText;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
 
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, size: 22, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomePillButton extends StatelessWidget {
+  const _HomePillButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withOpacity(0.16),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.home_rounded, size: 20, color: Colors.white),
+              SizedBox(width: 6),
+              Text(
+                'Home',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// EMAIL / PHONE TOGGLE
+// ============================================================
+
+class _LoginToggle extends StatelessWidget {
   const _LoginToggle({
     required this.isEmailLogin,
-    required this.isDark,
-    required this.mutedText,
+    required this.palette,
     required this.enabled,
     required this.onChanged,
   });
+
+  final bool isEmailLogin;
+  final _Palette palette;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.06) : _kFieldTint,
+        color: palette.isDark ? Colors.white.withOpacity(0.06) : _kFieldTint,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          _seg(
+          _segment(
             label: 'Email',
             icon: Icons.email_outlined,
             active: isEmailLogin,
             onTap: enabled ? () => onChanged(true) : null,
           ),
-          _seg(
+          _segment(
             label: 'Phone',
             icon: Icons.phone_outlined,
             active: !isEmailLogin,
@@ -928,13 +956,14 @@ class _LoginToggle extends StatelessWidget {
     );
   }
 
-  Widget _seg({
+  Widget _segment({
     required String label,
     required IconData icon,
     required bool active,
     required VoidCallback? onTap,
   }) {
-    final color = active ? Colors.white : mutedText;
+    final color = active ? Colors.white : palette.muted;
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -978,27 +1007,26 @@ class _LoginToggle extends StatelessWidget {
 }
 
 // ============================================================
-//  COUNTRY BUTTON
+// COUNTRY BUTTON + SHEET
 // ============================================================
-class _CountryButton extends StatelessWidget {
-  final Country country;
-  final bool isDark;
-  final Color mutedText;
-  final bool enabled;
-  final VoidCallback onTap;
 
+class _CountryButton extends StatelessWidget {
   const _CountryButton({
     required this.country,
-    required this.isDark,
-    required this.mutedText,
+    required this.palette,
     required this.enabled,
     required this.onTap,
   });
 
+  final Country country;
+  final _Palette palette;
+  final bool enabled;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
+      color: palette.field,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -1018,7 +1046,7 @@ class _CountryButton extends StatelessWidget {
                   fontSize: 14.5,
                 ),
               ),
-              Icon(Icons.arrow_drop_down, color: mutedText, size: 22),
+              Icon(Icons.arrow_drop_down, color: palette.muted, size: 22),
             ],
           ),
         ),
@@ -1027,265 +1055,11 @@ class _CountryButton extends StatelessWidget {
   }
 }
 
-// ============================================================
-//  TERMS ROW
-// ============================================================
-class _TermsRow extends StatelessWidget {
-  final bool value;
-  final bool enabled;
-  final bool isDark;
-  final Color textColor;
-  final ValueChanged<bool?> onChanged;
-
-  const _TermsRow({
-    required this.value,
-    required this.enabled,
-    required this.isDark,
-    required this.textColor,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final linkColor = isDark ? AppTheme.secondary : AppTheme.primary;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _CompactCheckbox(
-          value: value,
-          onChanged: enabled ? onChanged : null,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: textColor.withOpacity(0.7),
-              ),
-              children: [
-                const TextSpan(text: 'I agree to the '),
-                TextSpan(
-                  text: 'Terms & Conditions',
-                  style: TextStyle(
-                    color: linkColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap =
-                        () => Navigator.pushNamed(context, AppRoutes.terms),
-                ),
-                const TextSpan(text: ' and '),
-                TextSpan(
-                  text: 'Privacy Policy',
-                  style: TextStyle(
-                    color: linkColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  recognizer: TapGestureRecognizer()
-                    ..onTap = () =>
-                        Navigator.pushNamed(context, AppRoutes.privacy),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CompactCheckbox extends StatelessWidget {
-  final bool value;
-  final ValueChanged<bool?>? onChanged;
-
-  const _CompactCheckbox({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: Checkbox(
-        value: value,
-        onChanged: onChanged,
-        activeColor: AppTheme.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(5),
-        ),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
-  }
-}
-
-// ============================================================
-//  SHARED PRIMITIVES
-// ============================================================
-
-class _HomePillButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _HomePillButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withOpacity(0.16),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          alignment: Alignment.center,
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.home_rounded, size: 20, color: Colors.white),
-              SizedBox(width: 6),
-              Text(
-                'Home',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  const _GlassIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.white.withOpacity(0.16),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, size: 22, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetTile extends StatelessWidget {
-  final String title;
-  final Widget? leading;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _SheetTile({
-    required this.title,
-    required this.selected,
-    required this.onTap,
-    this.leading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? AppTheme.secondary : AppTheme.primary;
-    final textColor = Theme.of(context).colorScheme.onSurface;
-
-    return Material(
-      color: selected ? activeColor.withOpacity(0.1) : Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: selected
-                  ? activeColor
-                  : Theme.of(context).dividerColor.withOpacity(0.35),
-              width: selected ? 1.6 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              if (selected) ...[
-                Icon(Icons.check_circle_rounded, color: activeColor, size: 20),
-                const SizedBox(width: 12),
-              ],
-              if (leading != null) ...[
-                IconTheme(
-                  data: IconThemeData(
-                    color: selected ? activeColor : textColor,
-                    size: 20,
-                  ),
-                  child: leading!,
-                ),
-                const SizedBox(width: 12),
-              ],
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? activeColor : textColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Blob extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _Blob({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-  );
-}
-
-// ============================================================
-//  COUNTRY SHEET
-// ============================================================
 class _CountrySheet extends StatefulWidget {
+  const _CountrySheet({required this.countries, required this.selected});
+
   final List<Country> countries;
   final Country selected;
-
-  const _CountrySheet({required this.countries, required this.selected});
 
   @override
   State<_CountrySheet> createState() => _CountrySheetState();
@@ -1293,13 +1067,7 @@ class _CountrySheet extends StatefulWidget {
 
 class _CountrySheetState extends State<_CountrySheet> {
   final _searchController = TextEditingController();
-  late List<Country> _filtered;
-
-  @override
-  void initState() {
-    super.initState();
-    _filtered = widget.countries;
-  }
+  late List<Country> _filtered = widget.countries;
 
   @override
   void dispose() {
@@ -1322,12 +1090,10 @@ class _CountrySheetState extends State<_CountrySheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final activeColor = isDark ? AppTheme.secondary : AppTheme.primary;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final p = _Palette.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.85,
         child: Column(
@@ -1350,8 +1116,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                   hintText: 'Search country...',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor:
-                  isDark ? Colors.white.withOpacity(0.05) : _kFieldTint,
+                  fillColor: p.field,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide.none,
@@ -1374,6 +1139,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                   final c = _filtered[i];
                   final isSelected = c.name == widget.selected.name &&
                       c.dialCode == widget.selected.dialCode;
+
                   return ListTile(
                     leading: _buildFlag(c.name, c.flag, 24),
                     title: Text(
@@ -1383,7 +1149,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                             ? FontWeight.w700
                             : FontWeight.w500,
                         color: isSelected
-                            ? activeColor
+                            ? p.link
                             : theme.colorScheme.onSurface,
                       ),
                     ),
@@ -1397,7 +1163,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                         if (isSelected) ...[
                           const SizedBox(width: 8),
                           Icon(Icons.check_circle_rounded,
-                              size: 18, color: activeColor),
+                              size: 18, color: p.link),
                         ],
                       ],
                     ),
@@ -1407,6 +1173,150 @@ class _CountrySheetState extends State<_CountrySheet> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// TERMS + SHEET TILE
+// ============================================================
+
+class _TermsRow extends StatelessWidget {
+  const _TermsRow({
+    required this.value,
+    required this.enabled,
+    required this.palette,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool enabled;
+  final _Palette palette;
+  final ValueChanged<bool?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final linkStyle = TextStyle(
+      color: palette.link,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 22,
+          height: 22,
+          child: Checkbox(
+            value: value,
+            onChanged: enabled ? onChanged : null,
+            activeColor: AppTheme.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: palette.text.withOpacity(0.7),
+              ),
+              children: [
+                const TextSpan(text: 'I agree to the '),
+                TextSpan(
+                  text: 'Terms & Conditions',
+                  style: linkStyle,
+                  recognizer: TapGestureRecognizer()
+                    ..onTap =
+                        () => Navigator.pushNamed(context, AppRoutes.terms),
+                ),
+                const TextSpan(text: ' and '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: linkStyle,
+                  recognizer: TapGestureRecognizer()
+                    ..onTap =
+                        () => Navigator.pushNamed(context, AppRoutes.privacy),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetTile extends StatelessWidget {
+  const _SheetTile({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.leading,
+  });
+
+  final String title;
+  final Widget? leading;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _Palette.of(context);
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final active = p.link;
+
+    return Material(
+      color: selected ? active.withOpacity(0.1) : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? active
+                  : Theme.of(context).dividerColor.withOpacity(0.35),
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              if (selected) ...[
+                Icon(Icons.check_circle_rounded, color: active, size: 20),
+                const SizedBox(width: 12),
+              ],
+              if (leading != null) ...[
+                IconTheme(
+                  data: IconThemeData(
+                    color: selected ? active : textColor,
+                    size: 20,
+                  ),
+                  child: leading!,
+                ),
+                const SizedBox(width: 12),
+              ],
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? active : textColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,7 +3,6 @@ import 'comment.dart';
 class Post {
   final int id;
   final List<String> images;
-  final String? videoUrl;
   int likesCount;
   int commentsCount;
   final String technicianName;
@@ -15,7 +14,6 @@ class Post {
   Post({
     required this.id,
     this.images = const [],
-    this.videoUrl,
     required this.likesCount,
     required this.commentsCount,
     required this.technicianName,
@@ -26,7 +24,6 @@ class Post {
   });
 
   bool get hasImages => images.isNotEmpty;
-  bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
 
   factory Post.fromJson(Map<String, dynamic> json) {
     final commentsList = (json['comments'] as List? ?? [])
@@ -55,13 +52,9 @@ class Post {
           .toList();
     }
 
-    // Prefer the Range-capable streaming URL (needed on iOS), fall back to the old one.
-    final String? video = (json['video_stream_url'] ?? json['video_url'])?.toString();
-
     return Post(
       id: json['id'],
       images: imagesList,
-      videoUrl: (video != null && video.isNotEmpty) ? video : null,
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
       technicianName: techName,

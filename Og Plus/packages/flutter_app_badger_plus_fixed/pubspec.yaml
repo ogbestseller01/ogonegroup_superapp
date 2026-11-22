@@ -1,0 +1,29 @@
+name: flutter_app_badger_plus
+description: Flutter 升级3.35.7之后，对flutter_app_badger插件的升级（After Flutter upgrade 3.35.7, the upgrade of flutter_app_badger plugins.）。
+version: 1.0.1
+homepage: https://github.com/HanQiGod/flutter_app_badger_plus
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: fr.g123k.flutterappbadgerplus
+        pluginClass: FlutterAppBadgerPlusPlugin
+      ios:
+        pluginClass: FlutterAppBadgerPlusPlugin
+      macos:
+        pluginClass: FlutterAppBadgerPlusPlugin
+
+
+environment:
+  sdk: '>=2.17.0 <4.0.0'
+  flutter: ">=1.10.0"

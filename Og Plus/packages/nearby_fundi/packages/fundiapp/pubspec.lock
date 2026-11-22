@@ -497,10 +497,9 @@ packages:
   flutter_app_badger_plus:
     dependency: "direct main"
     description:
-      name: flutter_app_badger_plus
-      sha256: c1967553742ad3dbbda5686c8dc24b157147a0ab06ef445ac08f24fe753f488b
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../../flutter_app_badger_plus_fixed"
+      relative: true
+    source: path
     version: "1.0.1"
   flutter_cache_manager:
     dependency: "direct main"

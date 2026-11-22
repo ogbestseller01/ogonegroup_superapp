@@ -1,0 +1,42 @@
+group 'fr.g123k.flutterappbadgerplus'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.1.0'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        minSdkVersion 16
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+    if (project.android.hasProperty('namespace')) {
+        namespace 'fr.g123k.flutterappbadgerplus'
+    }
+}
+
+dependencies {
+    //noinspection GradleDependency
+    implementation "me.leolin:ShortcutBadger:1.1.22@aar"
+}

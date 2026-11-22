@@ -1,4 +1,10 @@
 // lib/screens/home/home_screen.dart
+//
+// NearbyFundi customer dashboard.
+//
+// Sign-in is handled by the wall dialog in the Og Plus app plus the login
+// screen, so this screen has NO in-app login dialog. If it is ever opened
+// without a session, it sends the user straight to the login screen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +25,6 @@ import '../../providers/settings_provider.dart';
 
 import '../../models/chat_user.dart';
 import '../../l10n/app_localizations.dart';
-import '../../utils/auth_guard.dart';
 import '../../mini_apps/nf_mini_app_launcher.dart';
 import '../../mini_apps/nf_mini_apps.dart';
 
@@ -49,17 +54,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String _currentLocale = 'en';
 
-  // Changed from late final to late to allow swapping providers on session change
+  // Not final: swapped when the session (and its providers) changes.
   late NotificationProvider _notif;
   late ChatProvider _chat;
   bool _pollingActive = false;
+  bool _redirecting = false;
 
   static const double _tabletBreakpoint = 700;
   static const double _desktopBreakpoint = 1100;
 
+  /// Tabs that draw their own app bar.
   static const Set<int> _selfContainedTabs = {2, 3};
-  static const Set<int> _guardedTabs = {1, 2, 3, 4};
-  static const Set<int> _privateTabs = {2, 3, 4};
+
+  bool get _loggedIn => context.read<AuthProvider>().isLoggedIn;
 
   // ================================================================
   // INIT / DISPOSE / LIFECYCLE
@@ -75,15 +82,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      final settings = context.read<SettingsProvider>();
-      _currentLocale = settings.locale;
-
+      _currentLocale = context.read<SettingsProvider>().locale;
       context.read<ServiceProvider>().fetchServices(locale: _currentLocale);
 
-      if (AuthGuard.isLoggedIn(context)) {
-        _loadNotifications();
-        // Chat is initialised by build() when the logged-in state is first seen.
-      }
+      // Chat is initialised by build() when the logged-in state is first seen.
+      if (_loggedIn) _loadNotifications();
     });
   }
 
@@ -99,7 +102,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// background and resume them on return.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted || !AuthGuard.isLoggedIn(context)) return;
+    if (!mounted || !_loggedIn) return;
+
     if (state == AppLifecycleState.resumed) {
       _notif.loadNotifications(silent: true);
       _notif.startPolling();
@@ -111,20 +115,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  List<Widget> _buildScreens(bool loggedIn) {
-    Widget tab(int index, Widget child) =>
-        (!loggedIn && _privateTabs.contains(index))
-            ? const SizedBox.shrink()
-            : child;
+  /// No session: go straight to the login screen (no dialog).
+  void _redirectToLogin() {
+    if (_redirecting) return;
+    _redirecting = true;
 
-    return [
-      const NearbyScreen(), // 0
-      const BlogsScreen(), // 1
-      tab(2, const MyRequestsScreen()), // 2
-      tab(3, const JobsScreen()), // 3
-      tab(4, const ProfileScreen()), // 4
-    ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    });
   }
+
+  List<Widget> _buildScreens() => const [
+    NearbyScreen(), // 0
+    BlogsScreen(), // 1
+    MyRequestsScreen(), // 2
+    JobsScreen(), // 3
+    ProfileScreen(), // 4
+  ];
 
   /// Also refreshes conversations so totalUnread is available on Home.
   Future<void> _initializeChat() async {
@@ -165,32 +173,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   // ================================================================
-  // TAB SELECTION (with login check)
+  // TAB SELECTION
   // ================================================================
-
-  String _tabMessage(int index, AppLocalizations l10n) {
-    switch (index) {
-      case 1:
-        return l10n.signInToReadBlog;
-      case 2:
-        return l10n.signInToRequests;
-      case 3:
-        return l10n.signInToJobs;
-      case 4:
-        return l10n.signInToProfile;
-      default:
-        return l10n.signInToContinue;
-    }
-  }
 
   void _selectTab(int index) {
     if (_currentIndex == index) return;
-
-    final l10n = AppLocalizations.of(context)!;
-    if (_guardedTabs.contains(index) &&
-        !AuthGuard.ensure(context, message: _tabMessage(index, l10n))) {
-      return;
-    }
 
     HapticFeedback.selectionClick();
     setState(() => _currentIndex = index);
@@ -201,9 +188,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ================================================================
 
   void _openChat() {
-    final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(context, message: l10n.signInToChat)) return;
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -212,12 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _openTickets() {
-    final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(context, message: l10n.signInToTickets)) return;
-
-    Navigator.pushNamed(context, AppRoutes.tickets);
-  }
+  void _openTickets() => Navigator.pushNamed(context, AppRoutes.tickets);
 
   void _showComingSoon(String feature) {
     final l10n = AppLocalizations.of(context)!;
@@ -277,14 +256,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // REFRESH
   // ================================================================
 
-  void _onRefreshTap() {
-    final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(context, message: l10n.signInToRefresh)) return;
-    _refreshCurrentScreen();
-  }
-
   Future<void> _refreshCurrentScreen() async {
-    if (!AuthGuard.isLoggedIn(context)) return;
+    if (!_loggedIn) return;
 
     final l10n = AppLocalizations.of(context)!;
 
@@ -310,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       await _notif.loadNotifications(silent: true);
 
-      // Also refresh chat unread count
+      // Also refresh chat unread count.
       if (!mounted) return;
       try {
         await context.read<ChatProvider>().refreshConversations();
@@ -367,10 +340,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _showNotifications() {
     final l10n = AppLocalizations.of(context)!;
-    if (!AuthGuard.ensure(context, message: l10n.signInToNotifications)) {
-      return;
-    }
-
     final theme = Theme.of(context);
     final ink = _ink(theme);
 
@@ -907,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _BarButton(
           size: buttonSize,
           tooltip: l10n.refresh,
-          onTap: _onRefreshTap,
+          onTap: _refreshCurrentScreen,
           child:
           Icon(Icons.refresh_rounded, color: Colors.white, size: iconSize),
         ),
@@ -974,12 +943,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     }
 
-    if (!loggedIn && _currentIndex != 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _currentIndex = 0);
-      });
-    }
-
     if (_currentLocale != settings.locale) {
       _currentLocale = settings.locale;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -988,7 +951,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     }
 
-    final screens = _buildScreens(loggedIn);
+    // No session (never signed in, or signed out): straight to login.
+    if (!loggedIn) {
+      _redirectToLogin();
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
+    final screens = _buildScreens();
 
     return LayoutBuilder(
       builder: (context, constraints) {

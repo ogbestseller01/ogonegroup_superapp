@@ -1,11 +1,10 @@
 // FILE: modals.dart (same location and import paths as before)
-// PostModal: bottom sheet for a media-only post (images + optional video),
+// PostModal: bottom sheet for a media-only post (images),
 // with likes and comments. No title / content any more.
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../models/post.dart';
 import '../../providers/post_provider.dart';
 import '../../services/api_service.dart';
@@ -107,18 +106,6 @@ class _PostModalState extends State<PostModal> {
         _post.likedByUser = !_post.likedByUser;
       }
     });
-  }
-
-  Future<void> _openVideo(String url) async {
-    try {
-      final ok = await launchUrl(
-        Uri.parse(ImageUtils.getFullImageUrl(url)),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!ok) _snack('Could not open video.');
-    } catch (_) {
-      _snack('Could not open video.');
-    }
   }
 
   // ==============================================================
@@ -311,48 +298,6 @@ class _PostModalState extends State<PostModal> {
                   ),
                 ],
               ],
-            ),
-          ),
-        if (_post.hasVideo)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Material(
-              color: theme.primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => _openVideo(_post.video!),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: theme.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.play_arrow_rounded,
-                          color: theme.colorScheme.onPrimary,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Watch video',
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      Icon(Icons.open_in_new_rounded,
-                          color: theme.hintColor, size: 20),
-                    ],
-                  ),
-                ),
-              ),
             ),
           ),
       ],

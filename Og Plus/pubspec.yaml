@@ -1,7 +1,7 @@
 name: og_plus
 description: Og Plus - OG ONE GROUP Super App
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+5
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -9,29 +9,28 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   flutter_localizations:
     sdk: flutter
 
+  # Core
   intl: any
-  google_fonts: ^6.3.3
   provider: ^6.1.1
   shared_preferences: ^2.2.2
+  google_fonts: ^6.3.3
+  timeago: ^3.7.1
+  path_provider: ^2.1.6
+  package_info_plus: ^8.0.0
 
-  # HTTP client
+  # Networking
   dio: ^5.7.0
 
   # External links, email, phone and WhatsApp
   url_launcher: ^6.3.0
 
-  # Firebase
+  # Firebase and notifications
   firebase_core: ^4.15.0
   firebase_messaging: ^16.3.0
   flutter_local_notifications: ^19.4.1
-  package_info_plus: ^8.0.0
-
-  # Utilities
-  timeago: ^3.7.1
 
   # QR codes
   qr_flutter: ^4.1.0
@@ -40,12 +39,10 @@ dependencies:
   # NearbyFundi SDK
   nearbyfundi_sdk:
     path: packages/nearby_fundi
-  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
 
@@ -53,6 +50,8 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
   image_path: assets/images/app_icon_foreground.png
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: assets/images/app_icon_foreground.png

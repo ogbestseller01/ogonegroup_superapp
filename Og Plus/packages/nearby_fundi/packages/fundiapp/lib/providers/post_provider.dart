@@ -154,11 +154,10 @@ class PostProvider extends ChangeNotifier {
       final post = _posts[index];
       final newLikesCount = post.likedByUser ? post.likesCount - 1 : post.likesCount + 1;
 
-      // ✅ Reconstruct Post with new media-only logic
+      // Reconstruct Post (images-only)
       _posts[index] = Post(
         id: post.id,
         images: post.images,
-        videoUrl: post.videoUrl,
         likesCount: newLikesCount,
         commentsCount: post.commentsCount,
         technicianName: post.technicianName,

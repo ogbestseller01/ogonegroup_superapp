@@ -83,8 +83,9 @@ dependencies:
   firebase_messaging: ^16.3.0
   flutter_local_notifications: ^19.4.1
 
-  # App Badge
-  flutter_app_badger_plus: ^1.0.0
+  # App Badge (local copy with fixed privacy manifest)
+  flutter_app_badger_plus:
+    path: ../flutter_app_badger_plus_fixed
 
   # Chat
   socket_io_client: ^3.1.6

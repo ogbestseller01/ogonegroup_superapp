@@ -1,5 +1,5 @@
 // FILE: post_card.dart (same location and import paths as before)
-// Compact post card: first image (+N more / video badge), the fundi, and
+// Compact post card: first image (+N more), the fundi, and
 // like / comment counts. Tapping opens the post detail screen.
 
 import 'package:flutter/material.dart';
@@ -123,38 +123,21 @@ class PostCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (post.hasImages)
-              Image.network(
-                ImageUtils.getFullImageUrl(post.image!),
-                fit: BoxFit.cover,
-                cacheWidth: (width * dpr).round(),
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child:
-                  Icon(Icons.broken_image, size: 60, color: theme.hintColor),
-                ),
-              )
-            else
-              Container(
-                color: Colors.grey.shade900,
-                alignment: Alignment.center,
-                child: const Icon(Icons.play_circle_fill_rounded,
-                    color: Colors.white70, size: 64),
+            Image.network(
+              ImageUtils.getFullImageUrl(post.image!),
+              fit: BoxFit.cover,
+              cacheWidth: (width * dpr).round(),
+              errorBuilder: (_, __, ___) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child:
+                Icon(Icons.broken_image, size: 60, color: theme.hintColor),
               ),
+            ),
             if (extraImages > 0)
               Positioned(
                 top: 12,
                 right: 12,
                 child: _Badge(label: '+$extraImages'),
-              ),
-            if (post.hasVideo && post.hasImages)
-              const Positioned(
-                top: 12,
-                left: 12,
-                child: _Badge(
-                  label: 'Video',
-                  icon: Icons.play_circle_fill_rounded,
-                ),
               ),
           ],
         ),
