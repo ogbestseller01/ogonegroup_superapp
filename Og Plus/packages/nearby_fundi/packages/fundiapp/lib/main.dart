@@ -98,6 +98,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 // ============================================================
 //  MAIN
 // ============================================================
+//
+// REVIEW BUILD (screen capture ALLOWED, for App Review / demo video):
+//   flutter build ipa --dart-define=REVIEW_BUILD=true
+// NORMAL BUILD (screen capture BLOCKED, as before):
+//   flutter build ipa
+// The flag lives in SecurityService.reviewBuild (security_service.dart).
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,10 +115,15 @@ Future<void> main() async {
   try {
     await AppSecurityMiddleware.initialize();
   } catch (_) {
-    try {
-      await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-    } catch (_) {}
-    return;
+    // In a review build, never stop here: keep going so the app opens
+    // instead of staying on a blank screen (SystemNavigator.pop does
+    // nothing on iOS).
+    if (!SecurityService.reviewBuild) {
+      try {
+        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      } catch (_) {}
+      return;
+    }
   }
 
   // 1/5 Firebase
@@ -125,10 +136,12 @@ Future<void> main() async {
   }
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // 2/5 Secure screen
-  try {
-    await SecurityService.enableSecureScreen();
-  } catch (_) {}
+  // 2/5 Secure screen (ON in normal builds, OFF in review builds)
+  if (!SecurityService.reviewBuild) {
+    try {
+      await SecurityService.enableSecureScreen();
+    } catch (_) {}
+  }
 
   // 3/5 System UI
   try {

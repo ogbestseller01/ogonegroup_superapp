@@ -33,7 +33,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get deleteAccount => 'Futa Akaunti';
 
   @override
-  String get profile => 'Profaili';
+  String get profile => 'Wasifu';
 
   @override
   String get notifications => 'Arifa';
@@ -42,7 +42,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get aiAssistant => 'Msaidizi wa AI';
 
   @override
-  String get chat => 'Mazungumzo';
+  String get chat => 'Gumzo';
 
   @override
   String get blog => 'Blogu';
@@ -51,25 +51,25 @@ class AppLocalizationsSw extends AppLocalizations {
   String get more => 'Zaidi';
 
   @override
-  String get comingSoon => 'inakuja hivi karibuni!';
+  String get comingSoon => 'Inakuja hivi karibuni!';
 
   @override
   String get quickActions => 'Vitendo vya Haraka';
 
   @override
-  String get regStep1Failed => 'Imeshindwa kufungua akaunti. Tafadhali hakiki taarifa zako na ujaribu tena.';
+  String get regStep1Failed => 'Imeshindwa kufungua akaunti yako. Tafadhali angalia taarifa zako na ujaribu tena.';
 
   @override
-  String get regOtpDeliveryFailed => 'Akaunti imefunguliwa, lakini tumeshindwa kutuma msimbo sasa hivi. Bonyeza Tuma Tena kwenye ukurasa unaofuata.';
+  String get regOtpDeliveryFailed => 'Akaunti imefunguliwa, lakini hatukuweza kutuma msimbo sasa. Bonyeza Tuma Tena kwenye skrini inayofuata.';
 
   @override
   String regOtpSentSms(String recipient) {
-    return 'Tumetuma msimbo wa uthibitisho wa tarakimu 6 kwa SMS kwenda $recipient';
+    return 'Tumetuma msimbo wa tarakimu 6 kwa SMS kwenda $recipient';
   }
 
   @override
   String regOtpSentEmail(String recipient) {
-    return 'Tumetuma msimbo wa uthibitisho wa tarakimu 6 kwenye barua pepe $recipient';
+    return 'Tumetuma msimbo wa tarakimu 6 kwenye barua pepe yako $recipient';
   }
 
   @override
@@ -79,7 +79,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get signInManage => 'Ingia ili kusimamia huduma zako';
 
   @override
-  String get emailAddress => 'Barua pepe';
+  String get emailAddress => 'Barua Pepe';
 
   @override
   String get password => 'Nenosiri';
@@ -106,7 +106,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get fundiRegistration => 'Usajili wa Fundi';
 
   @override
-  String get fillDetails => 'Jaza maelezo yako ili kuanza kuhudumia wateja';
+  String get fillDetails => 'Jaza taarifa zako ili uanze kuhudumia wateja';
 
   @override
   String get phoneNumber => 'Namba ya Simu';
@@ -127,34 +127,34 @@ class AppLocalizationsSw extends AppLocalizations {
   String get alreadyHaveAccount => 'Tayari una akaunti?';
 
   @override
-  String get verificationCode => 'Msimbo wa Uthibitishaji';
+  String get verificationCode => 'Msimbo wa Uthibitisho';
 
   @override
-  String get enterCodeSent => 'Ingiza msimbo uliotumwa kwa';
+  String get enterCodeSent => 'Weka msimbo uliotumwa kwa';
 
   @override
-  String get enterOtp => 'Ingiza OTP';
+  String get enterOtp => 'Weka OTP';
 
   @override
-  String get otpSent => 'Msimbo wa tarakimu 6 umetumwa kwa barua pepe yako';
+  String get otpSent => 'Msimbo wa tarakimu 6 umetumwa kwenye barua pepe yako';
 
   @override
   String get verifyOtp => 'Thibitisha OTP';
 
   @override
-  String get backToSignIn => 'Rudi kwenye Kuingia';
+  String get backToSignIn => 'Rudi Kuingia';
 
   @override
-  String get noWorries => 'Usijali — tutakutumia msimbo wa kuweka upya';
+  String get noWorries => 'Usijali — tutakutumia msimbo wa kubadilisha';
 
   @override
-  String get resetPassword => 'Weka upya Nenosiri';
+  String get resetPassword => 'Weka Upya Nenosiri';
 
   @override
-  String get enterEmailReset => 'Ingiza barua pepe yako ili kupokea msimbo wa uthibitishaji';
+  String get enterEmailReset => 'Weka barua pepe yako ili upokee msimbo wa uthibitisho';
 
   @override
-  String get sendResetCode => 'Tuma Msimbo wa Kuweka upya';
+  String get sendResetCode => 'Tuma Msimbo wa Kubadilisha';
 
   @override
   String get setNewPassword => 'Weka Nenosiri Jipya';
@@ -169,16 +169,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get newPassword => 'Nenosiri Jipya';
 
   @override
-  String get resetPasswordButton => 'Weka upya Nenosiri';
+  String get resetPasswordButton => 'Weka Upya Nenosiri';
 
   @override
   String get myProfile => 'Profaili ';
 
   @override
-  String get editProfile => 'Hariri Profaili';
+  String get editProfile => 'Hariri Wasifu';
 
   @override
-  String get profileDetails => 'Maelezo ya Profaili';
+  String get profileDetails => 'Maelezo ya Wasifu';
 
   @override
   String get updateInfo => 'Sasisha Taarifa Zako';
@@ -190,10 +190,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get phone => 'Simu';
 
   @override
-  String get bio => 'Maelezo mafupi';
+  String get bio => 'Maelezo Mafupi';
 
   @override
-  String get hourlyRate => 'Kiwango cha Saa (TZS)';
+  String get hourlyRate => 'Gharama kwa Saa (TZS)';
 
   @override
   String get area => 'Eneo la Huduma';
@@ -211,10 +211,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get accountStatus => 'Hali ya Akaunti';
 
   @override
-  String get active => 'Inatumika';
+  String get active => 'Hai';
 
   @override
-  String get onlineStatus => 'Hali ya Mtandao';
+  String get onlineStatus => 'Hali ya Mtandaoni';
 
   @override
   String get servicesIOffer => 'Huduma Ninazotoa';
@@ -226,7 +226,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get saveChanges => 'Hifadhi Mabadiliko';
 
   @override
-  String get updateFailed => 'Kusasisha kumeshindwa';
+  String get updateFailed => 'Imeshindwa kusasisha';
 
   @override
   String get retry => 'Jaribu Tena';
@@ -238,40 +238,40 @@ class AppLocalizationsSw extends AppLocalizations {
   String get searchCustomers => 'Tafuta wateja';
 
   @override
-  String get noCustomersYet => 'Bado hakuna wateja';
+  String get noCustomersYet => 'Hakuna wateja bado';
 
   @override
   String get customersWillAppear => 'Wateja wataonekana hapa watakapokutumia ujumbe';
 
   @override
-  String get deleteChat => 'Futa mazungumzo';
+  String get deleteChat => 'Futa gumzo';
 
   @override
-  String get deleteChatConfirmation => 'Ujumbe na faili zote zitaondolewa kwa wote wawili.';
+  String get deleteChatConfirmation => 'Ujumbe na faili zote zitaondolewa kwa nyote wawili.';
 
   @override
-  String get chatDeleted => 'Mazungumzo yamefutwa';
+  String get chatDeleted => 'Gumzo limefutwa';
 
   @override
-  String get failedToDeleteChat => 'Imeshindwa kufuta mazungumzo';
+  String get failedToDeleteChat => 'Imeshindwa kufuta gumzo';
 
   @override
-  String get archiveChat => 'Weka kwenye kumbukumbu';
+  String get archiveChat => 'Hifadhi gumzo';
 
   @override
-  String get unarchiveChat => 'Ondoa kwenye kumbukumbu';
+  String get unarchiveChat => 'Toa gumzo kwenye hifadhi';
 
   @override
-  String get pinChat => 'Bandika mazungumzo';
+  String get pinChat => 'Bandika gumzo';
 
   @override
-  String get unpinChat => 'Ondoa mazungumzo';
+  String get unpinChat => 'Ondoa gumzo lililobandikwa';
 
   @override
-  String get chatArchived => 'Mazungumzo yamehifadhiwa';
+  String get chatArchived => 'Gumzo limehifadhiwa';
 
   @override
-  String get chatUnarchived => 'Mazungumzo yamerejeshwa';
+  String get chatUnarchived => 'Gumzo limetolewa kwenye hifadhi';
 
   @override
   String get copy => 'Nakili';
@@ -283,7 +283,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get reply => 'Jibu';
 
   @override
-  String get forward => 'Tuma kwa mwingine';
+  String get forward => 'Sambaza';
 
   @override
   String get star => 'Weka nyota';
@@ -295,7 +295,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get pin => 'Bandika';
 
   @override
-  String get unpin => 'Ondoa';
+  String get unpin => 'Ondoa kibandiko';
 
   @override
   String get info => 'Maelezo';
@@ -304,10 +304,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get select => 'Chagua';
 
   @override
-  String get savedToGallery => 'Imehifadhiwa kwenye picha';
+  String get savedToGallery => 'Imehifadhiwa kwenye ghala lako';
 
   @override
-  String get noAppToOpen => 'Hakuna programu inayoweza kufungua faili hii.';
+  String get noAppToOpen => 'Hakuna programu iliyosakinishwa inayoweza kufungua aina hii ya faili.';
 
   @override
   String get photo => '📷 Picha';
@@ -322,7 +322,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get online => 'Mtandaoni';
 
   @override
-  String get offline => 'Nje ya Mtandao';
+  String get offline => 'Nje ya mtandao';
 
   @override
   String get youAreOnline => 'Uko mtandaoni';
@@ -340,40 +340,40 @@ class AppLocalizationsSw extends AppLocalizations {
   String get welcomeFundi => 'Karibu Fundi';
 
   @override
-  String get manageServicesPosts => 'Simamia huduma, machapisho, na maombi yako yote mahali pamoja.';
+  String get manageServicesPosts => 'Simamia huduma, machapisho na maombi yako yote mahali pamoja.';
 
   @override
-  String get stayConnected => 'Kaa Ukiunganishwa';
+  String get stayConnected => 'Endelea Kuunganishwa';
 
   @override
-  String get getNotifications => 'Pokea arifa za wakati halisi kwa maombi mapya na sasisho.';
+  String get getNotifications => 'Pokea arifa za papo hapo za maombi mapya na masasisho.';
 
   @override
   String get getStarted => 'Anza';
 
   @override
-  String get next => 'Inayofuata';
+  String get next => 'Endelea';
 
   @override
   String get skip => 'Ruka';
 
   @override
-  String get totalRequests => 'Maombi Yote';
+  String get totalRequests => 'Jumla ya Maombi';
 
   @override
-  String get pending => 'Inasubiri';
+  String get pending => 'Yanayosubiri';
 
   @override
-  String get completed => 'Imekamilika';
+  String get completed => 'Yaliyokamilika';
 
   @override
   String get myPosts => 'Machapisho ';
 
   @override
-  String get noPosts => 'Bado hakuna machapisho.';
+  String get noPosts => 'Hakuna machapisho bado.';
 
   @override
-  String get createPost => 'Unda Chapisho';
+  String get createPost => 'Unda chapisho lako la kwanza';
 
   @override
   String get createPostTitle => 'Unda Chapisho';
@@ -397,31 +397,31 @@ class AppLocalizationsSw extends AppLocalizations {
   String get filterByTitleContent => 'Chuja kwa kichwa au maudhui...';
 
   @override
-  String get portfolio => 'Kwingineko';
+  String get portfolio => 'Kazi Zangu';
 
   @override
-  String get noPortfolio => 'Hakuna vitu kwenye kwingineko.';
+  String get noPortfolio => 'Hakuna kazi zilizowekwa.';
 
   @override
-  String get addPortfolio => 'Ongeza kitu chako cha kwanza';
+  String get addPortfolio => 'Ongeza kazi yako ya kwanza';
 
   @override
-  String get addPortfolioItem => 'Ongeza Kitu kwenye Kwingineko';
+  String get addPortfolioItem => 'Ongeza Kazi';
 
   @override
-  String get editPortfolioItem => 'Hariri Kitu kwenye Kwingineko';
+  String get editPortfolioItem => 'Hariri Kazi';
 
   @override
-  String get itemAdded => 'Kitu kimeongezwa';
+  String get itemAdded => 'Kazi imeongezwa';
 
   @override
-  String get itemUpdated => 'Kitu kimesasishwa';
+  String get itemUpdated => 'Kazi imesasishwa';
 
   @override
-  String get itemDeleted => 'Kitu kimefutwa';
+  String get itemDeleted => 'Kazi imefutwa';
 
   @override
-  String get deletePortfolioItem => 'Futa Kitu kwenye Kwingineko';
+  String get deletePortfolioItem => 'Futa Kazi';
 
   @override
   String get filterByDescription => 'Chuja kwa maelezo...';
@@ -430,7 +430,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get requests => 'Maombi';
 
   @override
-  String get noRequests => 'Bado hakuna maombi.';
+  String get noRequests => 'Hakuna maombi bado.';
 
   @override
   String get accept => 'Kubali';
@@ -469,22 +469,22 @@ class AppLocalizationsSw extends AppLocalizations {
   String get aboutFundiApp => 'Kuhusu NETSAF FUNDI APP';
 
   @override
-  String get terms => 'Masharti na Sheria';
+  String get terms => 'Vigezo na Masharti';
 
   @override
-  String get faq => 'Maswali Yanayoulizwa Sana';
+  String get faq => 'Maswali Yanayoulizwa Mara kwa Mara';
 
   @override
   String get contactUs => 'Wasiliana Nasi';
 
   @override
-  String get noContent => 'Hakuna maudhui.';
+  String get noContent => 'Hakuna maudhui yanayopatikana.';
 
   @override
   String get getInTouch => 'Wasiliana Nasi';
 
   @override
-  String get email => 'Barua pepe';
+  String get email => 'Barua Pepe';
 
   @override
   String get website => 'Tovuti';
@@ -493,13 +493,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get phoneNumbers => 'Namba za Simu';
 
   @override
-  String get noFaqs => 'Hakuna Maswali Yanayoulizwa Sana.';
+  String get noFaqs => 'Hakuna maswali yanayopatikana.';
 
   @override
-  String get pushNotifications => 'Arifa za Kusukuma';
+  String get pushNotifications => 'Arifa za Papo Hapo';
 
   @override
-  String get receiveAlerts => 'Pokea arifa kuhusu maombi';
+  String get receiveAlerts => 'Pokea tahadhari kuhusu maombi';
 
   @override
   String get noNotificationsYet => 'Hakuna arifa bado';
@@ -514,13 +514,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get notification => 'Arifa';
 
   @override
-  String get markAllAsRead => 'Weka zote kama zimesomwa';
+  String get markAllAsRead => 'Weka zote kuwa zimesomwa';
 
   @override
   String get noMessagesYet => 'Hakuna ujumbe bado';
 
   @override
-  String get sayHelloToStart => 'Sema hello kuanza mazungumzo!';
+  String get sayHelloToStart => 'Sema habari ili uanze kuzungumza!';
 
   @override
   String get typeAMessage => 'Andika ujumbe...';
@@ -568,22 +568,22 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noConversationsYet => 'Hakuna mazungumzo bado';
 
   @override
-  String get startChattingWithFundis => 'Anza mazungumzo na wateja karibu yako';
+  String get startChattingWithFundis => 'Anza kuzungumza na wateja walio karibu nawe';
 
   @override
-  String get viewProfile => 'Tazama Profaili';
+  String get viewProfile => 'Tazama Wasifu';
 
   @override
-  String get clearChat => 'Futa Mazungumzo';
+  String get clearChat => 'Futa Gumzo Lote';
 
   @override
-  String get blockUser => 'Zuia Mtumiaji';
+  String get blockUser => 'Mzuie Mtumiaji';
 
   @override
   String get camera => 'Kamera';
 
   @override
-  String get gallery => 'Picha';
+  String get gallery => 'Ghala';
 
   @override
   String get document => 'Hati';
@@ -592,7 +592,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get recordVoice => 'Rekodi sauti';
 
   @override
-  String get stopRecording => 'Simamisha rekodi';
+  String get stopRecording => 'Acha kurekodi';
 
   @override
   String get downloadFile => 'Pakua Faili';
@@ -604,7 +604,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get deleteConversation => 'Futa Mazungumzo';
 
   @override
-  String get deleteConversationConfirmation => 'Una uhakika unataka kufuta mazungumzo yote? Kitendo hiki hakiwezi kurejeshwa.';
+  String get deleteConversationConfirmation => 'Una uhakika unataka kufuta mazungumzo yote? Kitendo hiki hakiwezi kutenduliwa.';
 
   @override
   String get conversationDeleted => 'Mazungumzo yamefutwa';
@@ -625,16 +625,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get permissionDenied => 'Ruhusa imekataliwa';
 
   @override
-  String get storagePermissionDenied => 'Ruhusa ya kuhifadhi imekataliwa';
+  String get storagePermissionDenied => 'Ruhusa ya hifadhi imekataliwa';
 
   @override
   String get photosPermissionDenied => 'Ruhusa ya picha imekataliwa';
 
   @override
-  String get filterTiles => 'Chuja vifurushi...';
+  String get filterTiles => 'Chuja vipengele...';
 
   @override
-  String get noMatchingTiles => 'Hakuna vifurushi vinavyolingana';
+  String get noMatchingTiles => 'Hakuna vipengele vinavyolingana';
 
   @override
   String get noMatchingItems => 'Hakuna vitu vinavyolingana';
@@ -649,13 +649,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get update => 'Sasisha';
 
   @override
-  String get create => 'Tengeneza';
+  String get create => 'Unda';
 
   @override
   String get delete => 'Futa';
 
   @override
-  String get call => 'Piga';
+  String get call => 'Piga Simu';
 
   @override
   String get areYouSure => 'Una uhakika?';
@@ -676,7 +676,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get servicesUpdated => 'Huduma zimesasishwa';
 
   @override
-  String get profileUpdated => 'Profaili imesasishwa kwa mafanikio';
+  String get profileUpdated => 'Wasifu umesasishwa kwa mafanikio';
 
   @override
   String get open => 'Fungua';
@@ -688,7 +688,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get inProgress => 'Inaendelea';
 
   @override
-  String get markComplete => 'Weka kama Imekamilika';
+  String get markComplete => 'Weka Kuwa Imekamilika';
 
   @override
   String get requestCompleted => 'Ombi limekamilika';
@@ -697,7 +697,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get completeRequest => 'Kamilisha Ombi';
 
   @override
-  String get completeConfirmation => 'Una uhakika unataka kuweka ombi hili kama limekamilika?';
+  String get completeConfirmation => 'Una uhakika unataka kuweka ombi hili kuwa limekamilika?';
 
   @override
   String get completedSuccess => 'Ombi limekamilika kwa mafanikio!';
@@ -712,19 +712,19 @@ class AppLocalizationsSw extends AppLocalizations {
   String get requestInProgress => 'Ombi linaendelea';
 
   @override
-  String get accepted => 'Imekubaliwa';
+  String get accepted => 'Limekubaliwa';
 
   @override
-  String get rejected => 'Imekataliwa';
+  String get rejected => 'Limekataliwa';
 
   @override
-  String get cancelled => 'Imefutwa';
+  String get cancelled => 'Limeghairiwa';
 
   @override
   String get filterByStatus => 'Chuja kwa hali';
 
   @override
-  String get all => 'Zote';
+  String get all => 'Yote';
 
   @override
   String get noRequestsMatchFilter => 'Hakuna maombi yanayolingana na kichujio';
@@ -745,7 +745,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get selectPlan => 'Chagua mpango wa usajili unaokufaa';
 
   @override
-  String get continueToPayment => 'Endelea kwa Malipo';
+  String get continueToPayment => 'Endelea kwenye Malipo';
 
   @override
   String get paymentMethods => 'Njia za Malipo';
@@ -754,25 +754,25 @@ class AppLocalizationsSw extends AppLocalizations {
   String get choosePaymentMethod => 'Chagua Njia ya Malipo';
 
   @override
-  String get selectedPlan => 'Mpango Uliyochagua';
+  String get selectedPlan => 'Mpango Uliochaguliwa';
 
   @override
-  String get paymentReference => 'Rejea ya Malipo';
+  String get paymentReference => 'Kumbukumbu ya Malipo';
 
   @override
-  String get paymentReferenceHint => 'mfano, MPESA-123456';
+  String get paymentReferenceHint => 'mf., MPESA-123456';
 
   @override
   String get notes => 'Maelezo';
 
   @override
-  String get notesHint => 'Maelezo yoyote ya ziada...';
+  String get notesHint => 'Taarifa nyingine yoyote...';
 
   @override
   String get uploadPaymentProof => 'Pakia Uthibitisho wa Malipo';
 
   @override
-  String get tapToUpload => 'Gonga kupakia uthibitisho wa malipo';
+  String get tapToUpload => 'Gusa kupakia uthibitisho wa malipo';
 
   @override
   String get paymentProofFormats => 'JPG, PNG, au PDF';
@@ -798,13 +798,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscriptionCreatedMessage => 'Ombi lako la usajili limeundwa kwa mafanikio.';
 
   @override
-  String get waitForApproval => 'Tafadhali subiri idhini ya msimamizi. Utapokea arifa mara tu usajili wako utakapoidhinishwa.';
+  String get waitForApproval => 'Tafadhali subiri idhini ya msimamizi. Utaarifiwa usajili wako utakapoidhinishwa.';
 
   @override
   String get goToDashboard => 'Nenda kwenye Dashibodi';
 
   @override
-  String get renewNow => 'Sasisha Sasa';
+  String get renewNow => 'Huisha Sasa';
 
   @override
   String get subscribeNow => 'Jisajili Sasa';
@@ -816,14 +816,14 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscriptionPending => 'Inasubiri Idhini';
 
   @override
-  String get subscriptionActive => 'Inatumika';
+  String get subscriptionActive => 'Hai';
 
   @override
-  String get subscriptionInactive => 'Haijatumika';
+  String get subscriptionInactive => 'Haifanyi kazi';
 
   @override
   String daysRemaining(int days) {
-    return '$days siku zimesalia';
+    return 'Siku $days zimebaki';
   }
 
   @override
@@ -837,7 +837,7 @@ class AppLocalizationsSw extends AppLocalizations {
   }
 
   @override
-  String get noSubscriptions => 'Bado hakuna usajili';
+  String get noSubscriptions => 'Hakuna usajili bado';
 
   @override
   String get noInvoices => 'Hakuna ankara zinazopatikana';
@@ -866,7 +866,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get unpaid => 'Haijalipwa';
 
   @override
-  String get yourSubscriptionHasExpired => 'Usajili wako umeisha. Tafadhali sasisha ili kuendelea.';
+  String get yourSubscriptionHasExpired => 'Usajili wako umeisha. Tafadhali huisha ili kuendelea.';
 
   @override
   String get subscriptionPendingApproval => 'Usajili wako unasubiri idhini. Tafadhali subiri.';
@@ -875,7 +875,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscribeToUnlock => 'Jisajili ili kufungua huduma zote za Fundi.';
 
   @override
-  String get rateCards => 'Viwango vya Usajili';
+  String get rateCards => 'Kadi za Bei';
 
   @override
   String get subscriptionDetails => 'Maelezo ya Usajili';
@@ -893,10 +893,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get paymentMethod => 'Njia ya Malipo';
 
   @override
-  String get paymentReferenceLabel => 'Rejea ya Malipo';
+  String get paymentReferenceLabel => 'Kumbukumbu ya Malipo';
 
   @override
-  String get approvedAt => 'Ilioidhinishwa Tarehe';
+  String get approvedAt => 'Iliidhinishwa Tarehe';
 
   @override
   String get approvedBy => 'Iliidhinishwa Na';
@@ -908,25 +908,25 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noNotifications => 'Hakuna Arifa';
 
   @override
-  String get allCaughtUp => 'Hakuna arifa mpya!';
+  String get allCaughtUp => 'Umemaliza zote!';
 
   @override
-  String get refresh => 'Fresha';
+  String get refresh => 'Onyesha Upya';
 
   @override
   String get viewNotifications => 'Tazama Arifa';
 
   @override
-  String get seeAllNotifications => 'Angalia arifa zako zote';
+  String get seeAllNotifications => 'Tazama arifa zako zote zinazoingia';
 
   @override
-  String get markAllRead => 'Weka Zote kama Zimesomwa';
+  String get markAllRead => 'Weka Zote Zimesomwa';
 
   @override
   String get loadingNotifications => 'Inapakia arifa...';
 
   @override
-  String get viewAllNotifications => 'View All Notifications';
+  String get viewAllNotifications => 'Tazama Arifa Zote';
 
   @override
   String get notificationSettings => 'Mipangilio ya Arifa';
@@ -939,27 +939,27 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String approvedOn(String date) {
-    return 'Ilioidhinishwa tarehe $date';
+    return 'Iliidhinishwa tarehe $date';
   }
 
   @override
   String startedOn(String date) {
-    return 'Imeanza: $date';
+    return 'Ilianza: $date';
   }
 
   @override
   String createdOn(String date) {
-    return 'Imeundwa: $date';
+    return 'Iliundwa: $date';
   }
 
   @override
   String paidOn(String date) {
-    return 'Imelipwa: $date';
+    return 'Ililipwa: $date';
   }
 
   @override
   String dueOn(String date) {
-    return 'Inatarajiwa: $date';
+    return 'Inapaswa kulipwa: $date';
   }
 
   @override
@@ -986,7 +986,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get privacyPolicy => 'Sera ya Faragha';
 
   @override
-  String get tapToChangePhoto => 'Gonga kamera kubadilisha picha';
+  String get tapToChangePhoto => 'Gusa kamera kubadilisha picha';
 
   @override
   String get nidaNumber => 'Namba ya NIDA';
@@ -1001,13 +1001,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get typeAreaOrPickOnMap => 'Andika eneo au chagua kwenye ramani';
 
   @override
-  String get oops => 'Samahani!';
+  String get oops => 'Lo!';
 
   @override
   String get themeLabel => 'Mandhari';
 
   @override
-  String get themeLight => 'Angavu';
+  String get themeLight => 'Mwanga';
 
   @override
   String get themeDark => 'Giza';
@@ -1023,14 +1023,14 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String regStepOf(int current, int total) {
-    return 'Hatua $current kati ya $total';
+    return 'Hatua $current ya $total';
   }
 
   @override
   String get regCreateAccountTitle => 'Fungua akaunti yako';
 
   @override
-  String get regCreateAccountSubtitle => 'Tutakutumia msimbo kwenye simu yako ili kuthibitisha.';
+  String get regCreateAccountSubtitle => 'Tutatuma msimbo kwenye simu yako ili kuithibitisha.';
 
   @override
   String get regFullName => 'Jina kamili';
@@ -1051,7 +1051,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regPhotoOptional => 'Picha (si lazima)';
 
   @override
-  String get regChooseGallery => 'Chagua kutoka kwenye picha';
+  String get regChooseGallery => 'Chagua kutoka ghala';
 
   @override
   String get regTakePhoto => 'Piga picha';
@@ -1084,7 +1084,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regPasswordMin => 'Angalau herufi 8';
 
   @override
-  String get regPasswordMismatch => 'Nenosiri hazifanani';
+  String get regPasswordMismatch => 'Manenosiri hayalingani';
 
   @override
   String get regIdentityTitle => 'Thibitisha utambulisho wako';
@@ -1099,13 +1099,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regIdLicense => 'Leseni ya udereva';
 
   @override
-  String get regIdVoter => 'Kitambulisho cha mpiga kura (KURA)';
+  String get regIdVoter => 'Kitambulisho cha Mpiga Kura (KURA)';
 
   @override
   String get regNidaHint => 'Namba ya NIDA (tarakimu 20)';
 
   @override
-  String get regVoterHint => 'Namba ya kura (tarakimu 12)';
+  String get regVoterHint => 'Namba ya Mpiga Kura (tarakimu 12)';
 
   @override
   String get regLicenseHint => 'Namba ya leseni (angalau tarakimu 10)';
@@ -1117,16 +1117,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regNidaLen => 'NIDA lazima iwe tarakimu 20 kamili';
 
   @override
-  String get regVoterLen => 'Namba ya kura lazima iwe tarakimu 12 kamili';
+  String get regVoterLen => 'Namba ya Mpiga Kura lazima iwe tarakimu 12 kamili';
 
   @override
-  String get regLicenseLen => 'Leseni lazima iwe na angalau tarakimu 10';
+  String get regLicenseLen => 'Leseni lazima iwe angalau tarakimu 10';
 
   @override
-  String get regAddIdPhoto => 'Gusa kuongeza picha ya kitambulisho (si lazima)';
+  String get regAddIdPhoto => 'Gusa kuongeza picha ya kitambulisho chako (si lazima)';
 
   @override
-  String get regFingerprintTitle => 'Kiganja cha wino';
+  String get regFingerprintTitle => 'Alama ya kidole kwa wino';
 
   @override
   String get regFingerprintHeadIdle => 'Weka kidole chako';
@@ -1135,10 +1135,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regFingerprintHeadDone => 'Alama ya kidole imechukuliwa';
 
   @override
-  String get regFingerprintDescIdle => 'Gusa na ubonyeze eneo lililo hapa chini kupiga muhuri wa wino.';
+  String get regFingerprintDescIdle => 'Gusa na bonyeza eneo lililo hapa chini kupiga alama ya kidole chako.';
 
   @override
-  String get regFingerprintDescDone => 'Alama yako ya wino imechukuliwa. Bonyeza kitufe hapa chini kuendelea.';
+  String get regFingerprintDescDone => 'Alama ya kidole chako imechukuliwa. Gusa kitufe kilicho hapa chini kuendelea.';
 
   @override
   String get regFingerprintChipIdle => 'Gusa hapa';
@@ -1147,7 +1147,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regFingerprintChipDone => 'Tayari';
 
   @override
-  String get regFingerprintStamp => 'Gusa kupiga muhuri';
+  String get regFingerprintStamp => 'Gusa kupiga alama';
 
   @override
   String get regFingerprintScanning => 'Inachukua…';
@@ -1162,7 +1162,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regFingerprintSaveFailed => 'Imeshindwa kuhifadhi alama ya kidole.';
 
   @override
-  String get regFaceTitle => 'Picha ya uso';
+  String get regFaceTitle => 'Kupiga picha ya uso';
 
   @override
   String get regFaceOpening => 'Inafungua kamera…';
@@ -1209,7 +1209,7 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String regFaceSubmitFailed(String error) {
-    return 'Imeshindwa kuwasilisha: $error';
+    return 'Uwasilishaji umeshindwa: $error';
   }
 
   @override
@@ -1221,7 +1221,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regFaceCapturing => 'Inapiga picha…';
 
   @override
-  String get regFaceCaptureNow => 'Piga picha sasa';
+  String get regFaceCaptureNow => 'Piga sasa';
 
   @override
   String get regFaceRetake => 'Piga tena';
@@ -1230,7 +1230,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regFaceConfirm => 'Thibitisha';
 
   @override
-  String get regFaceSystemCamera => 'Tumia kamera ya simu';
+  String get regFaceSystemCamera => 'Tumia kamera ya mfumo';
 
   @override
   String get regKinTitle => 'Mtu wa dharura';
@@ -1239,22 +1239,22 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regKinSubtitle => 'Tuwasiliane na nani wakati wa dharura?';
 
   @override
-  String get regKinRelationship => 'Uhusiano (mf. Mke/Mume, Mzazi, Ndugu)';
+  String get regKinRelationship => 'Uhusiano (mf. Mwenzi, Mzazi, Ndugu)';
 
   @override
   String get regKinRelationRequired => 'Uhusiano unahitajika';
 
   @override
-  String get regReviewTitle => 'Hakiki na Wasilisha';
+  String get regReviewTitle => 'Kagua na Wasilisha';
 
   @override
-  String get regReviewHeading => 'Tafadhali hakiki taarifa zako za usajili';
+  String get regReviewHeading => 'Tafadhali kagua taarifa za usajili wako';
 
   @override
   String get regCompletedSteps => 'Hatua zilizokamilika';
 
   @override
-  String get regAccountCreated => 'Akaunti imeundwa';
+  String get regAccountCreated => 'Akaunti imefunguliwa';
 
   @override
   String get regIdentityVerified => 'Utambulisho umehifadhiwa';
@@ -1281,13 +1281,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get regSubmittedTitle => 'Usajili umewasilishwa!';
 
   @override
-  String get regSubmittedBody => 'Akaunti yako inasubiri uthibitisho wa msimamizi. Utapokea SMS ukishaidhinishwa.';
+  String get regSubmittedBody => 'Akaunti yako inasubiri uthibitisho wa msimamizi. Utapokea SMS itakapoidhinishwa.';
 
   @override
-  String get regSubmitFailed => 'Imeshindwa kuwasilisha. Tafadhali jaribu tena.';
+  String get regSubmitFailed => 'Uwasilishaji umeshindwa. Tafadhali jaribu tena.';
 
   @override
-  String get regSessionExpired => 'Muda wa usajili umeisha. Tafadhali anza upya.';
+  String get regSessionExpired => 'Kipindi cha usajili kimeisha. Tafadhali anza upya.';
 
   @override
   String get jobs => 'Kazi';
@@ -1302,10 +1302,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscription => 'Usajili';
 
   @override
-  String get viewAll => 'Angalia Zote';
+  String get viewAll => 'Tazama Zote';
 
   @override
-  String get viewAllShort => 'Angalia zote';
+  String get viewAllShort => 'Tazama zote';
 
   @override
   String get latestRequests => 'Maombi ya Hivi Karibuni';
@@ -1338,7 +1338,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get subscriptionComingSoonTitle => 'Usajili';
 
   @override
-  String get subscriptionComingSoonBody => 'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua vipengele zaidi na kukuza biashara yako.';
+  String get subscriptionComingSoonBody => 'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua huduma zaidi na ukuze biashara yako.';
 
   @override
   String get pendingStatus => 'INASUBIRI';
@@ -1364,7 +1364,7 @@ class AppLocalizationsSw extends AppLocalizations {
   }
 
   @override
-  String get noTicketsForJob => 'Hakuna tiketi kwa kazi hii';
+  String get noTicketsForJob => 'Hakuna tiketi za kazi hii';
 
   @override
   String get downloadTicket => 'Pakua Tiketi';
@@ -1390,7 +1390,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get requestDescription => 'Maelezo ya ombi';
 
   @override
-  String get started => 'Imeanza';
+  String get started => 'Ilianza';
 
   @override
   String get completedLabel => 'Imekamilika';
@@ -1402,19 +1402,19 @@ class AppLocalizationsSw extends AppLocalizations {
   String get ticketStatus => 'Hali ya tiketi';
 
   @override
-  String get created => 'Imeundwa';
+  String get created => 'Iliundwa';
 
   @override
   String get areYouSureDeleteMessage => 'Una uhakika unataka kufuta ujumbe huu?';
 
   @override
-  String get filterAll => 'Zote';
+  String get filterAll => 'Yote';
 
   @override
-  String get filterOnProgress => 'Zinaendelea';
+  String get filterOnProgress => 'Inaendelea';
 
   @override
-  String get filterCompleted => 'Zilizokamilika';
+  String get filterCompleted => 'Imekamilika';
 
   @override
   String get settingsPreferences => 'Mapendeleo';
@@ -1438,7 +1438,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get editServices => 'Hariri huduma';
 
   @override
-  String get noServicesAvailable => 'Hakuna huduma zilizopo.';
+  String get noServicesAvailable => 'Hakuna huduma zinazopatikana.';
 
   @override
   String get couldNotDeleteAccount => 'Imeshindwa kufuta akaunti';
@@ -1447,19 +1447,19 @@ class AppLocalizationsSw extends AppLocalizations {
   String get payments => 'Malipo';
 
   @override
-  String get myPortfolio => 'Kwingineko Yangu';
+  String get myPortfolio => 'Kazi Zangu';
 
   @override
-  String get noPostsYet => 'Bado Hakuna Machapisho';
+  String get noPostsYet => 'Hakuna Machapisho Bado';
 
   @override
-  String get uploadPhotosToShowcase => 'Pakia picha za kazi yako kuonyesha ujuzi wako.';
+  String get uploadPhotosToShowcase => 'Pakia picha za kazi zako kuonyesha ujuzi wako.';
 
   @override
-  String get newPortfolioPost => 'Chapisho Jipya la Kwingineko';
+  String get newPortfolioPost => 'Chapisho Jipya la Kazi';
 
   @override
-  String get tapToSelectImages => 'Gonga kuchagua picha';
+  String get tapToSelectImages => 'Gusa kuchagua picha';
 
   @override
   String get editPost => 'Hariri Chapisho';
@@ -1495,16 +1495,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get recentTickets => 'Tiketi za Hivi Karibuni';
 
   @override
-  String get noJobsYet => 'Bado hakuna kazi';
+  String get noJobsYet => 'Hakuna kazi bado';
 
   @override
-  String get noTicketsYet => 'Bado hakuna tiketi';
+  String get noTicketsYet => 'Hakuna tiketi bado';
 
   @override
   String get comingSoonTitle => 'Inakuja Hivi Karibuni';
 
   @override
-  String get comingSoonBody => 'Kipengele hiki kinakuja hivi karibuni 🚀\nEndelea kufuatilia.';
+  String get comingSoonBody => 'Huduma hii inakuja hivi karibuni 🚀\nEndelea kufuatilia masasisho.';
 
   @override
   String get goodMorning => 'Habari za asubuhi';
@@ -1517,15 +1517,15 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String pendingCount(int count) {
-    return '$count Zinazosubiri';
+    return '$count Yanasubiri';
   }
 
   @override
-  String get acceptedStatus => 'IMEKUBALIWA';
+  String get acceptedStatus => 'LIMEKUBALIWA';
 
   @override
-  String get rejectedStatus => 'IMEKATALIWA';
+  String get rejectedStatus => 'LIMEKATALIWA';
 
   @override
-  String get cancelledStatus => 'IMEFUTWA';
+  String get cancelledStatus => 'LIMEGHAIRIWA';
 }

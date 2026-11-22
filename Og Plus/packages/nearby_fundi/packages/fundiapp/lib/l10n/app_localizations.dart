@@ -182,7 +182,7 @@ abstract class AppLocalizations {
   /// No description provided for @comingSoon.
   ///
   /// In en, this message translates to:
-  /// **'coming soon!'**
+  /// **'Coming soon!'**
   String get comingSoon;
 
   /// No description provided for @quickActions.
@@ -1532,331 +1532,331 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptions.
   ///
   /// In en, this message translates to:
-  /// **'Usajili'**
+  /// **'Subscriptions'**
   String get subscriptions;
 
   /// No description provided for @mySubscriptions.
   ///
   /// In en, this message translates to:
-  /// **'Usajili Wangu'**
+  /// **'My Subscriptions'**
   String get mySubscriptions;
 
   /// No description provided for @subscriptionStatus.
   ///
   /// In en, this message translates to:
-  /// **'Hali ya Usajili'**
+  /// **'Subscription Status'**
   String get subscriptionStatus;
 
   /// No description provided for @choosePlan.
   ///
   /// In en, this message translates to:
-  /// **'Chagua Mpango Wako'**
+  /// **'Choose Your Plan'**
   String get choosePlan;
 
   /// No description provided for @selectPlan.
   ///
   /// In en, this message translates to:
-  /// **'Chagua mpango wa usajili unaokufaa'**
+  /// **'Select the subscription plan that suits you'**
   String get selectPlan;
 
   /// No description provided for @continueToPayment.
   ///
   /// In en, this message translates to:
-  /// **'Endelea na Malipo'**
+  /// **'Continue to Payment'**
   String get continueToPayment;
 
   /// No description provided for @paymentMethods.
   ///
   /// In en, this message translates to:
-  /// **'Njia za Malipo'**
+  /// **'Payment Methods'**
   String get paymentMethods;
 
   /// No description provided for @choosePaymentMethod.
   ///
   /// In en, this message translates to:
-  /// **'Chagua Njia ya Malipo'**
+  /// **'Choose Payment Method'**
   String get choosePaymentMethod;
 
   /// No description provided for @selectedPlan.
   ///
   /// In en, this message translates to:
-  /// **'Mpango Uliyochagua'**
+  /// **'Selected Plan'**
   String get selectedPlan;
 
   /// No description provided for @paymentReference.
   ///
   /// In en, this message translates to:
-  /// **'Kumbukumbu ya Malipo'**
+  /// **'Payment Reference'**
   String get paymentReference;
 
   /// No description provided for @paymentReferenceHint.
   ///
   /// In en, this message translates to:
-  /// **'mf., MPESA-123456'**
+  /// **'e.g., MPESA-123456'**
   String get paymentReferenceHint;
 
   /// No description provided for @notes.
   ///
   /// In en, this message translates to:
-  /// **'Maelezo'**
+  /// **'Notes'**
   String get notes;
 
   /// No description provided for @notesHint.
   ///
   /// In en, this message translates to:
-  /// **'Taarifa yoyote ya ziada...'**
+  /// **'Any additional information...'**
   String get notesHint;
 
   /// No description provided for @uploadPaymentProof.
   ///
   /// In en, this message translates to:
-  /// **'Pakia Uthibitisho wa Malipo'**
+  /// **'Upload Payment Proof'**
   String get uploadPaymentProof;
 
   /// No description provided for @tapToUpload.
   ///
   /// In en, this message translates to:
-  /// **'Gusa kupakia uthibitisho wa malipo'**
+  /// **'Tap to upload payment proof'**
   String get tapToUpload;
 
   /// No description provided for @paymentProofFormats.
   ///
   /// In en, this message translates to:
-  /// **'JPG, PNG, au PDF'**
+  /// **'JPG, PNG, or PDF'**
   String get paymentProofFormats;
 
   /// No description provided for @paymentInstructions.
   ///
   /// In en, this message translates to:
-  /// **'Maelekezo ya Malipo'**
+  /// **'Payment Instructions'**
   String get paymentInstructions;
 
   /// No description provided for @sendAmountTo.
   ///
   /// In en, this message translates to:
-  /// **'Tuma {amount} kwa:'**
+  /// **'Send {amount} to:'**
   String sendAmountTo(String amount);
 
   /// No description provided for @account.
   ///
   /// In en, this message translates to:
-  /// **'Akaunti'**
+  /// **'Account'**
   String get account;
 
   /// No description provided for @submitSubscription.
   ///
   /// In en, this message translates to:
-  /// **'Wasilisha Usajili'**
+  /// **'Submit Subscription'**
   String get submitSubscription;
 
   /// No description provided for @subscriptionCreated.
   ///
   /// In en, this message translates to:
-  /// **'Usajili Umeundwa!'**
+  /// **'Subscription Created!'**
   String get subscriptionCreated;
 
   /// No description provided for @subscriptionCreatedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Ombi lako la usajili limeundwa kwa mafanikio.'**
+  /// **'Your subscription request was created successfully.'**
   String get subscriptionCreatedMessage;
 
   /// No description provided for @waitForApproval.
   ///
   /// In en, this message translates to:
-  /// **'Tafadhali subiri idhini ya msimamizi. Utapokea taarifa mara usajili wako utakapoidhinishwa.'**
+  /// **'Please wait for admin approval. You will be notified once your subscription is approved.'**
   String get waitForApproval;
 
   /// No description provided for @goToDashboard.
   ///
   /// In en, this message translates to:
-  /// **'Nenda kwenye Dashibodi'**
+  /// **'Go to Dashboard'**
   String get goToDashboard;
 
   /// No description provided for @renewNow.
   ///
   /// In en, this message translates to:
-  /// **'Sasisha Sasa'**
+  /// **'Renew Now'**
   String get renewNow;
 
   /// No description provided for @subscribeNow.
   ///
   /// In en, this message translates to:
-  /// **'Jisajili Sasa'**
+  /// **'Subscribe Now'**
   String get subscribeNow;
 
   /// No description provided for @subscriptionExpired.
   ///
   /// In en, this message translates to:
-  /// **'Usajili Umeisha'**
+  /// **'Subscription Expired'**
   String get subscriptionExpired;
 
   /// No description provided for @subscriptionPending.
   ///
   /// In en, this message translates to:
-  /// **'Inasubiri Idhini'**
+  /// **'Pending Approval'**
   String get subscriptionPending;
 
   /// No description provided for @subscriptionActive.
   ///
   /// In en, this message translates to:
-  /// **'Hai'**
+  /// **'Active'**
   String get subscriptionActive;
 
   /// No description provided for @subscriptionInactive.
   ///
   /// In en, this message translates to:
-  /// **'Haifanyi Kazi'**
+  /// **'Inactive'**
   String get subscriptionInactive;
 
   /// No description provided for @daysRemaining.
   ///
   /// In en, this message translates to:
-  /// **'Siku {days} zimebaki'**
+  /// **'{days} days remaining'**
   String daysRemaining(int days);
 
   /// No description provided for @expiresOn.
   ///
   /// In en, this message translates to:
-  /// **'Inaisha: {date}'**
+  /// **'Expires: {date}'**
   String expiresOn(String date);
 
   /// No description provided for @validUntil.
   ///
   /// In en, this message translates to:
-  /// **'Ni halali hadi: {date}'**
+  /// **'Valid until: {date}'**
   String validUntil(String date);
 
   /// No description provided for @noSubscriptions.
   ///
   /// In en, this message translates to:
-  /// **'Hakuna usajili bado'**
+  /// **'No subscriptions yet'**
   String get noSubscriptions;
 
   /// No description provided for @noInvoices.
   ///
   /// In en, this message translates to:
-  /// **'Hakuna ankara zinazopatikana'**
+  /// **'No invoices available'**
   String get noInvoices;
 
   /// No description provided for @invoiceNumber.
   ///
   /// In en, this message translates to:
-  /// **'Ankara #{number}'**
+  /// **'Invoice #{number}'**
   String invoiceNumber(String number);
 
   /// No description provided for @invoiceStatus.
   ///
   /// In en, this message translates to:
-  /// **'Hali'**
+  /// **'Status'**
   String get invoiceStatus;
 
   /// No description provided for @viewInvoice.
   ///
   /// In en, this message translates to:
-  /// **'Tazama Ankara'**
+  /// **'View Invoice'**
   String get viewInvoice;
 
   /// No description provided for @downloadPdf.
   ///
   /// In en, this message translates to:
-  /// **'Pakua PDF'**
+  /// **'Download PDF'**
   String get downloadPdf;
 
   /// No description provided for @subscriptionHistory.
   ///
   /// In en, this message translates to:
-  /// **'Historia ya Usajili'**
+  /// **'Subscription History'**
   String get subscriptionHistory;
 
   /// No description provided for @paid.
   ///
   /// In en, this message translates to:
-  /// **'Imelipwa'**
+  /// **'Paid'**
   String get paid;
 
   /// No description provided for @unpaid.
   ///
   /// In en, this message translates to:
-  /// **'Haijalipwa'**
+  /// **'Unpaid'**
   String get unpaid;
 
   /// No description provided for @yourSubscriptionHasExpired.
   ///
   /// In en, this message translates to:
-  /// **'Usajili wako umeisha. Tafadhali sasisha ili kuendelea.'**
+  /// **'Your subscription has expired. Please renew to continue.'**
   String get yourSubscriptionHasExpired;
 
   /// No description provided for @subscriptionPendingApproval.
   ///
   /// In en, this message translates to:
-  /// **'Usajili wako unasubiri idhini. Tafadhali subiri.'**
+  /// **'Your subscription is pending approval. Please wait.'**
   String get subscriptionPendingApproval;
 
   /// No description provided for @subscribeToUnlock.
   ///
   /// In en, this message translates to:
-  /// **'Jisajili ili kufungua vipengele vyote vya Fundi.'**
+  /// **'Subscribe to unlock all Fundi features.'**
   String get subscribeToUnlock;
 
   /// No description provided for @rateCards.
   ///
   /// In en, this message translates to:
-  /// **'Kadi za Viwango'**
+  /// **'Rate Cards'**
   String get rateCards;
 
   /// No description provided for @subscriptionDetails.
   ///
   /// In en, this message translates to:
-  /// **'Maelezo ya Usajili'**
+  /// **'Subscription Details'**
   String get subscriptionDetails;
 
   /// No description provided for @invoiceDetails.
   ///
   /// In en, this message translates to:
-  /// **'Maelezo ya Ankara'**
+  /// **'Invoice Details'**
   String get invoiceDetails;
 
   /// No description provided for @activePlan.
   ///
   /// In en, this message translates to:
-  /// **'Mpango Hai'**
+  /// **'Active Plan'**
   String get activePlan;
 
   /// No description provided for @amountPaid.
   ///
   /// In en, this message translates to:
-  /// **'Kiasi Kilicholipwa'**
+  /// **'Amount Paid'**
   String get amountPaid;
 
   /// No description provided for @paymentMethod.
   ///
   /// In en, this message translates to:
-  /// **'Njia ya Malipo'**
+  /// **'Payment Method'**
   String get paymentMethod;
 
   /// No description provided for @paymentReferenceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Kumbukumbu ya Malipo'**
+  /// **'Payment Reference'**
   String get paymentReferenceLabel;
 
   /// No description provided for @approvedAt.
   ///
   /// In en, this message translates to:
-  /// **'Imeidhinishwa Tarehe'**
+  /// **'Approved At'**
   String get approvedAt;
 
   /// No description provided for @approvedBy.
   ///
   /// In en, this message translates to:
-  /// **'Imeidhinishwa Na'**
+  /// **'Approved By'**
   String get approvedBy;
 
   /// No description provided for @adminNotes.
   ///
   /// In en, this message translates to:
-  /// **'Maelezo ya Msimamizi'**
+  /// **'Admin Notes'**
   String get adminNotes;
 
   /// No description provided for @noNotifications.
@@ -2606,7 +2606,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscription.
   ///
   /// In en, this message translates to:
-  /// **'Usajili'**
+  /// **'Subscription'**
   String get subscription;
 
   /// No description provided for @viewAll.
@@ -2678,13 +2678,13 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionComingSoonTitle.
   ///
   /// In en, this message translates to:
-  /// **'Usajili'**
+  /// **'Subscription'**
   String get subscriptionComingSoonTitle;
 
   /// No description provided for @subscriptionComingSoonBody.
   ///
   /// In en, this message translates to:
-  /// **'Toleo la Premium — Linakuja hivi karibuni 🚀\nFungua vipengele zaidi na kukuza biashara yako.'**
+  /// **'Premium version — Coming soon 🚀\nUnlock more features and grow your business.'**
   String get subscriptionComingSoonBody;
 
   /// No description provided for @pendingStatus.
