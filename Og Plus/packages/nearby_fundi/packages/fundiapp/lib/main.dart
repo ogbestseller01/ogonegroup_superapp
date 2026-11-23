@@ -99,11 +99,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 //  MAIN
 // ============================================================
 //
+// SECURITY POSTPONED: SecurityService.securityEnabled = false
+// (screen capture ALLOWED). Set it to true in security_service.dart
+// to bring protection back.
+//
 // REVIEW BUILD (screen capture ALLOWED, for App Review / demo video):
 //   flutter build ipa --dart-define=REVIEW_BUILD=true
-// NORMAL BUILD (screen capture BLOCKED, as before):
-//   flutter build ipa
-// The flag lives in SecurityService.reviewBuild (security_service.dart).
+// SecurityService.reviewBuild is true when security is postponed
+// OR when REVIEW_BUILD is set.
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -115,9 +118,9 @@ Future<void> main() async {
   try {
     await AppSecurityMiddleware.initialize();
   } catch (_) {
-    // In a review build, never stop here: keep going so the app opens
-    // instead of staying on a blank screen (SystemNavigator.pop does
-    // nothing on iOS).
+    // Security postponed / review build: never stop here, keep going so
+    // the app opens instead of staying on a blank screen
+    // (SystemNavigator.pop does nothing on iOS).
     if (!SecurityService.reviewBuild) {
       try {
         await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
@@ -136,7 +139,7 @@ Future<void> main() async {
   }
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // 2/5 Secure screen (ON in normal builds, OFF in review builds)
+  // 2/5 Secure screen (skipped while security is postponed / review build)
   if (!SecurityService.reviewBuild) {
     try {
       await SecurityService.enableSecureScreen();

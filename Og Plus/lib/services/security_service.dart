@@ -3,18 +3,23 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// Security layer for Android & iOS
-/// - Android: blocks screenshots + detects USB Debugging / Developer Options
-/// - iOS: detects debugger attachment
-/// - While developing (kDebugMode) the alert is disabled so the emulator works
 class SecurityService {
   SecurityService._();
   static final SecurityService instance = SecurityService._();
 
   static const _channel = MethodChannel('og.one.security');
 
+  /// MASTER SWITCH: false = security postponed, true = all protection ON.
+  static const bool securityEnabled = false;
+
+  static const bool _reviewFlag = bool.fromEnvironment('REVIEW_BUILD');
+
+  /// True when protection must be skipped (postponed or review build).
+  static bool get reviewBuild => !securityEnabled || _reviewFlag;
+
   Future<void> init() async {
-    if (kIsWeb) return;
+    if (kIsWeb || reviewBuild) return;
+
     try {
       if (Platform.isAndroid) {
         await _channel.invokeMethod('enableSecureFlag');
@@ -22,13 +27,8 @@ class SecurityService {
     } catch (_) {}
   }
 
-  /// Returns true only when the device is in debug/developer mode
-  /// AND we are running a release build.
   Future<bool> isDebugModeEnabled() async {
-    if (kIsWeb) return false;
-
-    // Allow normal use while developing (emulator / flutter run)
-    if (kDebugMode) return false;
+    if (kIsWeb || reviewBuild || kDebugMode) return false;
 
     try {
       final result = await _channel.invokeMethod<bool>('isDeveloperMode');

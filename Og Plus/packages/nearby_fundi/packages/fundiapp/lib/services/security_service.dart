@@ -6,20 +6,27 @@ class SecurityService {
   // Must match MainActivity SECURITY_CHANNEL
   static const MethodChannel _channel = MethodChannel('com.fundapp.security');
 
+  /// MASTER SWITCH
+  /// ------------------------------------------------------------
+  /// false = security POSTPONED (screenshots / screen recording ALLOWED)
+  /// true  = all protection ON
+  ///
+  /// TODO: set to true when the security logic is ready to come back.
+  static const bool securityEnabled = false;
+
   /// REVIEW BUILD SWITCH
   /// ------------------------------------------------------------
   /// App Review / demo video (screenshots and recording ALLOWED):
   ///   flutter build ipa --dart-define=REVIEW_BUILD=true
-  ///
-  /// Normal production build (screenshots and recording BLOCKED):
-  ///   flutter build ipa
-  ///
-  /// Default (no flag) = protection ON, exactly as before.
-  static const bool reviewBuild = bool.fromEnvironment('REVIEW_BUILD');
+  static const bool _reviewFlag = bool.fromEnvironment('REVIEW_BUILD');
+
+  /// True when protection must be skipped (security postponed OR review build).
+  /// main.dart already uses this name, so no change is needed there.
+  static const bool reviewBuild = !securityEnabled || _reviewFlag;
 
   /// Prevent screenshots / screen recording (Android FLAG_SECURE)
   static Future<void> enableSecureScreen() async {
-    // Review build: never enable, and make sure it is off.
+    // Postponed / review build: never enable, and make sure it is off.
     if (reviewBuild) {
       await disableSecureScreen();
       return;
@@ -43,7 +50,7 @@ class SecurityService {
 
   /// Whether FLAG_SECURE is currently set
   static Future<bool> isSecureScreenEnabled() async {
-    // Review build: report as disabled.
+    // Postponed / review build: report as disabled.
     if (reviewBuild) return false;
 
     try {

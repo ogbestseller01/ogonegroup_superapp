@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:developer' as dev;
 import 'dart:ui' show PlatformDispatcher;
@@ -30,8 +29,20 @@ import 'widgets/developer_mode_gate.dart';
 final GlobalKey<NavigatorState> rootNavigatorKey =
 GlobalKey<NavigatorState>();
 
-const bool _kEnforceSecurityGate = true;
+// Follows the master switch in SecurityService.securityEnabled.
+// (false = security postponed, true = gate enforced)
+const bool _kEnforceSecurityGate = SecurityService.securityEnabled;
 const String _kApiHealthUrl = String.fromEnvironment('API_HEALTH_URL');
+
+// SECURITY POSTPONED: SecurityService.securityEnabled = false
+// (screen capture ALLOWED, developer-mode check OFF).
+// To turn protection back on, set securityEnabled = true in
+// security_service.dart.
+//
+// REVIEW BUILD (screen capture ALLOWED, developer-mode check OFF):
+//   flutter build ipa --dart-define=REVIEW_BUILD=true
+// NORMAL BUILD (all protection ON when securityEnabled = true):
+//   flutter build ipa
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
@@ -54,11 +65,16 @@ Future<void> _bootstrap() async {
   } catch (e, st) {
     _reportError(e, st, context: 'Security middleware violation');
 
-    try {
-      await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-    } catch (_) {}
+    // Security postponed / review build: never stop here, keep going so
+    // the app opens instead of staying on a blank screen
+    // (SystemNavigator.pop does nothing on iOS).
+    if (!SecurityService.reviewBuild) {
+      try {
+        await SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      } catch (_) {}
 
-    return;
+      return;
+    }
   }
 
   FlutterError.onError = (details) {
@@ -71,6 +87,8 @@ Future<void> _bootstrap() async {
     return true;
   };
 
+  // Screen-capture protection: skipped while security is postponed
+  // (the check is inside SecurityService.init()).
   await _safeInit(
     'SecurityService',
         () => SecurityService.instance.init(),

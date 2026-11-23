@@ -70,6 +70,21 @@ import 'services/fcm_service.dart';
 import 'services/security_service.dart';
 
 // ============================================================
+// SECURITY SWITCH
+// ============================================================
+//
+// SECURITY POSTPONED: SecurityService.securityEnabled = false
+// (screenshots / screen recording ALLOWED).
+// To turn protection back on, set securityEnabled = true in
+// lib/services/security_service.dart.
+//
+// App Review / demo-video build (screen capture ALLOWED):
+//   flutter build ipa --dart-define=REVIEW_BUILD=true
+//
+// kReviewBuild is true when security is postponed OR REVIEW_BUILD is set.
+const bool kReviewBuild = SecurityService.reviewBuild;
+
+// ============================================================
 // ERROR LOGGING
 // ============================================================
 
@@ -111,8 +126,13 @@ Future<void> main() async {
     await AppSecurityMiddleware.initialize();
   } catch (error, stack) {
     _logError('AppSecurityMiddleware', error, stack);
-    SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-    return;
+    // Security postponed / review build: never stop here, keep going so
+    // the app opens instead of staying on a blank screen
+    // (SystemNavigator.pop does nothing on iOS).
+    if (!kReviewBuild) {
+      SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+      return;
+    }
   }
 
   try {
@@ -125,10 +145,14 @@ Future<void> main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  try {
-    await SecurityService.enableSecureScreen();
-  } catch (error, stack) {
-    _logError('Secure screen', error, stack);
+  // Screen-capture protection: skipped while security is postponed
+  // (and in review builds).
+  if (!kReviewBuild) {
+    try {
+      await SecurityService.enableSecureScreen();
+    } catch (error, stack) {
+      _logError('Secure screen', error, stack);
+    }
   }
 
   try {
