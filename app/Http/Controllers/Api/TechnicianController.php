@@ -440,8 +440,8 @@ class TechnicianController extends BaseApiController
 
             $technician->services()->sync($draft->service_ids);
 
-            $authToken = $user->createToken('mobile')->plainTextToken;
-
+            // Do NOT issue a full session token for a pending Fundi.
+            // The app should show the "waiting for approval" screen instead of treating the user as logged in.
             $draft->tokens()->delete();
             $draft->forceDelete();
 
@@ -484,7 +484,7 @@ class TechnicianController extends BaseApiController
         return $this->successResponse([
             'user'           => $user->only(['id', 'name', 'email', 'phone', 'status']),
             'technician_id'  => $technician->id,
-            'token'          => $authToken,
+            // 'token'       => removed on purpose
             'status'         => 'pending_verification',
             'phone_verified' => true,
             'fcm_registered' => !empty($fcmToken),

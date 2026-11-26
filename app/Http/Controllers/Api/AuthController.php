@@ -596,6 +596,8 @@ class AuthController extends BaseApiController
 
     public function logout(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate(['fcm_token' => 'nullable|string|max:255']);
 
         $user  = $request->user();
@@ -621,6 +623,8 @@ class AuthController extends BaseApiController
 
     public function logoutAll(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $user = $request->user();
 
         $user->tokens()->delete();
@@ -641,6 +645,8 @@ class AuthController extends BaseApiController
 
     public function me(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $user = $request->user()->load('technician.services');
 
         if ($user->technician) {
@@ -660,6 +666,8 @@ class AuthController extends BaseApiController
 
     public function updateProfile(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate([
             'name'   => 'sometimes|string|max:255',
             'phone'  => 'nullable|string|max:20|unique:users,phone,' . $request->user()->id,
@@ -764,6 +772,8 @@ class AuthController extends BaseApiController
 
     public function changePassword(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate([
             'current_password' => 'required|string',
             'password'         => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()],
@@ -795,6 +805,8 @@ class AuthController extends BaseApiController
 
     public function updateLocale(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate(['locale' => 'required|in:en,sw']);
 
         $user = $request->user();
@@ -814,6 +826,8 @@ class AuthController extends BaseApiController
 
     public function updateDeviceToken(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate([
             'token'    => 'required|string|min:10',
             'app'      => 'nullable|string|in:og_one_super,fundi,nearby',
@@ -853,6 +867,8 @@ class AuthController extends BaseApiController
 
     public function getDeviceToken(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $user = $request->user();
 
         return $this->successResponse([
@@ -863,6 +879,8 @@ class AuthController extends BaseApiController
 
     public function deleteDeviceToken(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $request->validate([
             'app' => 'nullable|string|in:og_one_super,fundi,nearby',
         ]);
@@ -894,6 +912,8 @@ class AuthController extends BaseApiController
 
     public function deleteAccount(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         $user = $request->user();
 
         DB::beginTransaction();
@@ -948,6 +968,8 @@ class AuthController extends BaseApiController
 
     public function myPermissions(Request $request)
     {
+        $this->rejectRememberToken($request);
+
         return $this->successResponse([
             'permissions' => $request->user()->getAllPermissions()->pluck('name'),
         ]);
@@ -1106,6 +1128,18 @@ class AuthController extends BaseApiController
     // ──────────────────────────────────────────────
     // PRIVATE HELPERS
     // ──────────────────────────────────────────────
+
+    /**
+     * Reject a remember_token on any endpoint that is not quick-login / forget.
+     * Remember tokens must only be exchangeable at /auth/quick-login.
+     */
+    private function rejectRememberToken(Request $request): void
+    {
+        $current = $request->user()?->currentAccessToken();
+        if ($current && $current->name === 'remember_token') {
+            abort(401, 'Saved login token cannot be used here. Please complete sign-in first.');
+        }
+    }
 
     /** Sanctum token with a real expiry (matches UserSession expires_at). */
     private function issueToken(User $user): string
