@@ -10,7 +10,6 @@ class Post extends Model
     protected $fillable = [
         'technician_id',
         'images',
-        'video',
     ];
 
     protected $casts = [
@@ -26,12 +25,6 @@ class Post extends Model
         return array_map(fn($path) => $path ? url('storage/' . $path) : null, $this->images);
     }
 
-    // Full public URL for the video
-    public function getVideoUrlAttribute(): ?string
-    {
-        return $this->video ? url('storage/' . $this->video) : null;
-    }
-
     // Delete physical files when post is deleted
     protected static function booted()
     {
@@ -42,9 +35,6 @@ class Post extends Model
                         Storage::disk('public')->delete($path);
                     }
                 }
-            }
-            if ($post->video && Storage::disk('public')->exists($post->video)) {
-                Storage::disk('public')->delete($post->video);
             }
         });
     }

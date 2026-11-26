@@ -23,6 +23,7 @@ class User extends Authenticatable
         'is_active',
         'created_by',
         'last_login_ip',
+        'last_login_device',
         'last_login_at',
         'locale',
         'email_verified_at',
@@ -74,6 +75,18 @@ class User extends Authenticatable
     public function likes()               { return $this->hasMany(Like::class); }
     public function sessions()            { return $this->hasMany(UserSession::class); }
     public function auditTrails()         { return $this->hasMany(AuditTrail::class); }
+
+    /** Every successful sign-in (see login_histories table). */
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class)->orderByDesc('created_at');
+    }
+
+    /** "Remember me" tokens (only usable at /v1/auth/quick-login). */
+    public function rememberTokens()
+    {
+        return $this->tokens()->where('name', 'remember_token');
+    }
 
     public function conversationsAsCustomer() { return $this->hasMany(Conversation::class, 'customer_id'); }
     public function conversationsAsFundi()    { return $this->hasMany(Conversation::class, 'fundi_id'); }

@@ -48,20 +48,14 @@ class PostController extends BaseApiController
         $request->validate([
             'images'   => 'nullable|array|max:' . self::MAX_IMAGES,
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
-            'video'    => 'nullable|file|mimes:mp4,mov,avi,webm|max:20480',
         ]);
 
-        if (!$request->hasFile('video') && !$request->hasFile('images')) {
-            return $this->errorResponse('Add at least one photo or a video.', 422);
+        if (!$request->hasFile('images')) {
+            return $this->errorResponse('Add at least one photo.', 422);
         }
 
         $post = new Post();
         $post->technician_id = $technician->id;
-
-        if ($request->hasFile('video')) {
-            $post->video = $request->file('video')->store('posts', 'public');
-        }
-
         $post->images = $this->storeImages($request);
         $post->save();
 
@@ -87,18 +81,7 @@ class PostController extends BaseApiController
             'keep_images'    => 'nullable|array',
             'keep_images.*'  => 'string',
             'images_managed' => 'nullable|boolean',
-            'video'          => 'nullable|file|mimes:mp4,mov,avi,webm|max:20480',
-            'remove_video'   => 'nullable|boolean',
         ]);
-
-        // ── Video ──────────────────────────────────────────────
-        if ($request->boolean('remove_video') && $post->video) {
-            $this->deleteFile($post->video);
-            $post->video = null;
-        } elseif ($request->hasFile('video')) {
-            $this->deleteFile($post->video);
-            $post->video = $request->file('video')->store('posts', 'public');
-        }
 
         // ── Images ─────────────────────────────────────────────
         $current    = is_array($post->images) ? $post->images : [];
@@ -127,10 +110,9 @@ class PostController extends BaseApiController
             $post->images = array_merge($keep, $newPaths);
         }
 
-        // A post must keep at least one piece of media
-        $hasImages = !empty($post->images);
-        if (!$hasImages && !$post->video) {
-            return $this->errorResponse('A post needs at least one photo or a video.', 422);
+        // A post must keep at least one photo
+        if (empty($post->images)) {
+            return $this->errorResponse('A post needs at least one photo.', 422);
         }
 
         $post->save();
@@ -153,7 +135,6 @@ class PostController extends BaseApiController
         }
 
         // Clean up files from storage
-        $this->deleteFile($post->video);
         foreach ((is_array($post->images) ? $post->images : []) as $path) {
             $this->deleteFile($path);
         }
@@ -203,14 +184,6 @@ class PostController extends BaseApiController
     private function withUrls(Post $post): Post
     {
         $post->image_urls = $post->image_urls;
-        $post->video_url  = $post->video_url;
-
-        // Range-capable streaming URL (required by iOS AVPlayer)
-        $post->setAttribute(
-            'video_stream_url',
-            $post->video ? url('/api/media/' . ltrim($post->video, '/')) : null
-        );
-
         return $post;
     }
 

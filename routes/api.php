@@ -98,6 +98,11 @@ Route::prefix('v1')->group(function () {
             Route::post('locale', [AuthController::class, 'updateLocale']);
             Route::delete('account', [AuthController::class, 'deleteAccount']);
 
+            // NEW: Remember me / one-tap login (Bearer = remember token)
+            Route::post('quick-login', [AuthController::class, 'quickLogin'])
+                ->middleware('throttle:30,1');
+            Route::post('quick-login/forget', [AuthController::class, 'forgetRemembered']);
+
             Route::post('device-token', [AuthController::class, 'updateDeviceToken']);
             Route::get('device-token', [AuthController::class, 'getDeviceToken']);
             Route::delete('device-token', [AuthController::class, 'deleteDeviceToken']);

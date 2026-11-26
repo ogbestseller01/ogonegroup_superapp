@@ -12,6 +12,7 @@ use App\Models\UserDeviceToken;
 use App\Traits\Auditable;
 use App\Services\OtpDeliveryService;
 use App\Services\GeocodingService;
+use App\Services\LoginNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,9 @@ use Spatie\Permission\Models\Role;
 class AuthController extends BaseApiController
 {
     use Auditable;
+
+    /** Lifetime of the "remember me" token used for one-tap login. */
+    private const REMEMBER_DAYS = 30;
 
     // ──────────────────────────────────────────────
     // REGISTRATION
@@ -320,6 +324,9 @@ class AuthController extends BaseApiController
         if (!$isFundi) {
             $token = $this->issueToken($user);
             $this->createSession($user, $request, $token);
+
+            // Login detection: verification signs the customer in
+            LoginNotificationService::dispatch($user, $request, 'otp');
         }
 
         return $this->successResponse([
@@ -392,8 +399,9 @@ class AuthController extends BaseApiController
         $this->ensureNotRateLimited('login:' . $request->ip() . ':' . $this->rateKey($request), 10, 60);
 
         $request->validate([
-            'email'    => 'required|string',
-            'password' => 'required|string',
+            'email'       => 'required|string',
+            'password'    => 'required|string',
+            'remember_me' => 'nullable|boolean',
         ]);
 
         $login = trim($request->email);
@@ -475,8 +483,9 @@ class AuthController extends BaseApiController
         $this->createSession($user, $request, $token);
 
         $user->update([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
+            'last_login_at'     => now(),
+            'last_login_ip'     => $request->ip(),
+            'last_login_device' => LoginNotificationService::deviceFrom($request),
         ]);
 
         if ($request->filled('fcm_token')) {
@@ -485,11 +494,100 @@ class AuthController extends BaseApiController
 
         $this->logAudit('login', 'auth', $user->id, 'User logged in: ' . ($user->email ?? $user->phone));
 
-        return $this->successResponse([
+        $payload = [
             'user'  => $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']),
             'roles' => $user->getRoleNames(),
             'token' => $token,
+        ];
+
+        // "Remember me": separate long-lived token used ONLY for one-tap login
+        if ($request->boolean('remember_me')) {
+            $payload['remember_token'] = $this->issueRememberToken($user);
+        }
+
+        // Login detection: history row + email (after the response is sent)
+        LoginNotificationService::dispatch($user, $request, 'password');
+
+        return $this->successResponse($payload, 'Login successful.');
+    }
+
+    // ──────────────────────────────────────────────
+    // REMEMBER ME / ONE-TAP LOGIN
+    // ──────────────────────────────────────────────
+
+    /**
+     * POST /v1/auth/quick-login   (Authorization: Bearer <remember_token>)
+     * Exchanges the remembered token for a fresh session token.
+     * The remember token is rotated (sliding 30 days).
+     */
+    public function quickLogin(Request $request)
+    {
+        $this->ensureNotRateLimited('quick-login:' . $request->ip(), 30, 60);
+
+        $request->validate(['fcm_token' => 'nullable|string|max:255']);
+
+        $user    = $request->user();
+        $current = $user?->currentAccessToken();
+
+        // Only a token minted by "remember me" may be used here.
+        if (!$user || !$current || $current->name !== 'remember_token' || !$current->can('quick-login')) {
+            return $this->unauthorized('Saved login is no longer valid. Please sign in again.');
+        }
+
+        if ($user->locked_until && $user->locked_until->isFuture()) {
+            return $this->errorResponse('Account temporarily locked. Try again later.', 429);
+        }
+
+        if (!$user->is_active || $user->status !== 'active') {
+            return $this->forbidden('Account is not active.');
+        }
+
+        if ($user->hasRole('FUNDI')) {
+            $technician = Technician::where('user_id', $user->id)->first();
+            if (!$technician || !$technician->verified || $technician->verification_status !== 'approved') {
+                return $this->forbidden('Your technician account is not verified. Please wait for admin approval.');
+            }
+        }
+
+        // Rotate: old remember token out, new one in
+        $current->delete();
+        $rememberToken = $this->issueRememberToken($user);
+
+        $token = $this->issueToken($user);
+        $this->createSession($user, $request, $token);
+
+        $user->update([
+            'last_login_at'     => now(),
+            'last_login_ip'     => $request->ip(),
+            'last_login_device' => LoginNotificationService::deviceFrom($request),
+        ]);
+
+        if ($request->filled('fcm_token')) {
+            $this->storeFcmToken($user, $request->fcm_token);
+        }
+
+        $this->logAudit('quick_login', 'auth', $user->id, 'One-tap login: ' . ($user->email ?? $user->phone));
+
+        LoginNotificationService::dispatch($user, $request, 'quick-login');
+
+        return $this->successResponse([
+            'user'           => $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']),
+            'roles'          => $user->getRoleNames(),
+            'token'          => $token,
+            'remember_token' => $rememberToken,
         ], 'Login successful.');
+    }
+
+    /** POST /v1/auth/quick-login/forget  ("Switch account": revoke the remember token). */
+    public function forgetRemembered(Request $request)
+    {
+        $current = $request->user()?->currentAccessToken();
+
+        if ($current && $current->name === 'remember_token') {
+            $current->delete();
+        }
+
+        return $this->successResponse(null, 'Saved login removed.');
     }
 
     // ──────────────────────────────────────────────
@@ -512,6 +610,8 @@ class AuthController extends BaseApiController
             $this->releaseDeviceToken($request->fcm_token);
         }
 
+        // Only the session token is deleted: the remember token (saved
+        // account for one-tap login) is kept on a normal logout.
         $token->delete();
 
         $this->logAudit('logout', 'auth', $user->id, 'User logged out: ' . ($user->email ?? $user->phone));
@@ -653,6 +753,7 @@ class AuthController extends BaseApiController
 
         $otp->update(['is_used' => true]);
 
+        // Also revokes remember tokens: a new password invalidates saved logins.
         $user->tokens()->delete();
         UserSession::where('user_id', $user->id)->update(['is_active' => false]);
 
@@ -972,9 +1073,10 @@ class AuthController extends BaseApiController
         $this->createSession($user, $request, $token);
 
         $user->update([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-            'locked_until'  => null,
+            'last_login_at'     => now(),
+            'last_login_ip'     => $request->ip(),
+            'last_login_device' => LoginNotificationService::deviceFrom($request),
+            'locked_until'      => null,
         ]);
 
         if ($request->filled('fcm_token')) {
@@ -987,6 +1089,8 @@ class AuthController extends BaseApiController
             $user->id,
             'Google sign-in: ' . $user->email
         );
+
+        LoginNotificationService::dispatch($user, $request, 'google');
 
         $userData = $user->only(['id', 'name', 'email', 'phone', 'locale', 'fcm_device_token']);
         $userData['profile_photo'] = $user->google_avatar;
@@ -1007,6 +1111,12 @@ class AuthController extends BaseApiController
     private function issueToken(User $user): string
     {
         return $user->createToken('auth_token', ['*'], now()->addDays(30))->plainTextToken;
+    }
+
+    /** Long-lived token that can ONLY be exchanged at /auth/quick-login. */
+    private function issueRememberToken(User $user): string
+    {
+        return $user->createToken('remember_token', ['quick-login'], now()->addDays(self::REMEMBER_DAYS))->plainTextToken;
     }
 
     /**
