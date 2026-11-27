@@ -8,7 +8,7 @@ use Illuminate\Mail\Mailable;
 class LoginNotificationMail extends Mailable
 {
     /**
-     * @param array{when:string,device:string,ip:string,location:string,method:string} $details
+     * @param array{app?:string,when:string,device:string,ip:string,location:string,method:string} $details
      */
     public function __construct(public string $userName, public array $details)
     {
@@ -16,7 +16,9 @@ class LoginNotificationMail extends Mailable
 
     public function build()
     {
-        return $this->subject('New sign-in to your Nearby Fundi account')
+        $app = $this->details['app'] ?? 'Nearby Fundi';
+
+        return $this->subject("New sign-in to your {$app} account")
             ->view('emails.login-notification')
             ->with([
                 'userName' => $this->userName,
