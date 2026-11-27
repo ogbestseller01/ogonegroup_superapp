@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/chat_message.dart';
 import '../../../../providers/chat_provider.dart';
 
@@ -21,8 +22,7 @@ class FundiMessageInfoSheet extends StatefulWidget {
   const FundiMessageInfoSheet({super.key, required this.message});
 
   @override
-  State<FundiMessageInfoSheet> createState() =>
-      _FundiMessageInfoSheetState();
+  State<FundiMessageInfoSheet> createState() => _FundiMessageInfoSheetState();
 }
 
 class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
@@ -31,11 +31,11 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
   @override
   void initState() {
     super.initState();
-    _future =
-        context.read<ChatProvider>().fetchInfo(widget.message.id);
+    _future = context.read<ChatProvider>().fetchInfo(widget.message.id);
   }
 
   String _formatDate(DateTime t) {
+    final l10n = AppLocalizations.of(context)!;
     final now = DateTime.now();
     final local = t.toLocal();
     final timeStr =
@@ -50,7 +50,7 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
     if (local.year == y.year &&
         local.month == y.month &&
         local.day == y.day) {
-      return 'Yesterday $timeStr';
+      return '${l10n.yesterday} $timeStr';
     }
     return '${local.day}/${local.month}/${local.year} $timeStr';
   }
@@ -62,31 +62,31 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
       title: Text(label),
       trailing: Text(
         t == null ? '—' : _formatDate(t),
-        style: TextStyle(
-            color: Theme.of(context).hintColor, fontSize: 13),
+        style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final me = context.read<ChatProvider>().currentUser?.id;
     final theme = Theme.of(context);
     final m = widget.message;
 
     return SafeArea(
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.75),
+        constraints:
+        BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text('Message info',
-                    style: TextStyle(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(l10n.messageInfo,
+                    style: const TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w600)),
               ),
               Container(
@@ -114,9 +114,8 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
                       padding: const EdgeInsets.all(24),
                       child: Center(
                         child: Text(
-                            '${snap.error ?? 'Could not load info'}',
-                            style:
-                            TextStyle(color: theme.hintColor)),
+                            '${snap.error ?? l10n.couldNotLoadInfo}',
+                            style: TextStyle(color: theme.hintColor)),
                       ),
                     );
                   }
@@ -126,11 +125,11 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
                     children: [
                       if (info.isMine) ...[
                         _row(Icons.done_all_rounded, Colors.lightBlue,
-                            'Read', info.readAt),
+                            l10n.read, info.readAt),
                         _row(Icons.done_all_rounded, Colors.grey,
-                            'Delivered', info.deliveredAt),
+                            l10n.delivered, info.deliveredAt),
                       ],
-                      _row(Icons.send_rounded, Colors.grey, 'Sent',
+                      _row(Icons.send_rounded, Colors.grey, l10n.sent,
                           info.sentAt),
                       if (info.reactions.isNotEmpty) ...[
                         const Divider(),
@@ -138,7 +137,7 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
                           padding:
                           const EdgeInsets.fromLTRB(16, 4, 16, 4),
                           child: Text(
-                              'Reactions · ${info.reactions.length}',
+                              l10n.reactionsCount(info.reactions.length),
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -153,7 +152,8 @@ class _FundiMessageInfoSheetState extends State<FundiMessageInfoSheet> {
                                   ? r.name[0].toUpperCase()
                                   : '?'),
                             ),
-                            title: Text(r.userId == me ? 'You' : r.name),
+                            title:
+                            Text(r.userId == me ? l10n.you : r.name),
                             trailing: Text(r.emoji,
                                 style: const TextStyle(fontSize: 24)),
                           ),

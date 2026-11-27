@@ -14,6 +14,7 @@ import 'tabs/updates_tab.dart';
 
 class ChatListScreen extends StatefulWidget {
   final VoidCallback? onBack;
+
   const ChatListScreen({super.key, this.onBack});
 
   @override
@@ -34,8 +35,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Future<void> _init() async {
     final auth = context.read<AuthProvider>();
     final chat = context.read<ChatProvider>();
-    final user = auth.user, token = auth.token;
+    final user = auth.user;
+    final token = auth.token;
     if (user == null || token == null) return;
+
     chat.initialize(
       token: token,
       currentUser: ChatUser(
@@ -86,8 +89,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
           elevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.light,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 20, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
             onPressed: _handleBack,
           ),
           title: Text(
@@ -104,11 +110,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
             ),
           ],
         ),
-        body: IndexedStack(index: _tab, children: [
-          ConversationsTab(onFindTechnicians: _goHome),
-          ConversationsTab(archived: true, onFindTechnicians: _goHome),
-          const UpdatesTab(),
-        ]),
+        body: IndexedStack(
+          index: _tab,
+          children: [
+            ConversationsTab(onFindTechnicians: _goHome),
+            ConversationsTab(archived: true, onFindTechnicians: _goHome),
+            const UpdatesTab(),
+          ],
+        ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
           height: isCompact ? 58 : 64,

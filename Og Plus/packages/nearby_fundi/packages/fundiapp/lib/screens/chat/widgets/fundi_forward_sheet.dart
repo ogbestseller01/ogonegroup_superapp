@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../providers/chat_provider.dart';
 
 Future<bool> showFundiForwardSheet(
@@ -52,6 +53,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final chat = context.watch<ChatProvider>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -72,8 +74,8 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
                 Expanded(
                   child: Text(
                     widget.messageIds.length == 1
-                        ? 'Forward message to…'
-                        : 'Forward ${widget.messageIds.length} messages to…',
+                        ? l10n.forwardMessageTo
+                        : l10n.forwardMessagesTo(widget.messageIds.length),
                     style: const TextStyle(
                         fontSize: 17, fontWeight: FontWeight.w600),
                   ),
@@ -88,7 +90,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
               child: TextField(
                 onChanged: (v) => setState(() => _q = v.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Search',
+                  hintText: l10n.search,
                   prefixIcon: const Icon(Icons.search_rounded),
                   isDense: true,
                   filled: true,
@@ -105,7 +107,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
             Expanded(
               child: list.isEmpty
                   ? Center(
-                child: Text('No chats to forward to',
+                child: Text(l10n.noChatsToForwardTo,
                     style: TextStyle(color: theme.hintColor)),
               )
                   : ListView.builder(
@@ -122,9 +124,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
                       backgroundColor:
                       AppTheme.primary.withValues(alpha: 0.15),
                       child: Text(
-                        name.isNotEmpty
-                            ? name[0].toUpperCase()
-                            : '?',
+                        name.isNotEmpty ? name[0].toUpperCase() : '?',
                         style: TextStyle(
                             color: isDark
                                 ? Colors.white
@@ -133,8 +133,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
                       ),
                     ),
                     title: Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
                     onChanged: (v) {
                       setState(() {
                         if (v == true) {
@@ -161,8 +160,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24)),
                   ),
-                  onPressed:
-                  _picked.isEmpty || _sending ? null : _send,
+                  onPressed: _picked.isEmpty || _sending ? null : _send,
                   icon: _sending
                       ? const SizedBox(
                       width: 18,
@@ -170,7 +168,7 @@ class _FundiForwardSheetState extends State<_FundiForwardSheet> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.send_rounded, size: 20),
-                  label: Text(_sending ? 'Sending…' : 'Send'),
+                  label: Text(_sending ? l10n.sendingShort : l10n.send),
                 ),
               ),
             ),

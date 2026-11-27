@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 import '../../../providers/chat_provider.dart';
 
@@ -83,15 +84,16 @@ Future<void> openChatFile(BuildContext context, ChatMessage message) async {
       break;
   }
 
+  final l10n = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
   try {
     final local = await _localCopy(context, message);
     final result = await OpenFile.open(local.path, type: file.openMime);
     if (result.type == ResultType.noAppToOpen) {
-      _toast(messenger, 'No app installed that can open this file type.', error: true);
+      _toast(messenger, l10n.noAppToOpen, error: true);
     } else if (result.type != ResultType.done) {
       _toast(messenger,
-          result.message.isNotEmpty ? result.message : 'Could not open this file.',
+          result.message.isNotEmpty ? result.message : l10n.couldNotOpenFile,
           error: true);
     }
   } catch (e) {
@@ -102,6 +104,7 @@ Future<void> openChatFile(BuildContext context, ChatMessage message) async {
 Future<void> saveChatFile(BuildContext context, ChatMessage message) async {
   final file = message.file;
   if (file == null) return;
+  final l10n = AppLocalizations.of(context)!;
   final messenger = ScaffoldMessenger.of(context);
   final kind = file.kind;
 
@@ -117,7 +120,7 @@ Future<void> saveChatFile(BuildContext context, ChatMessage message) async {
     try {
       if (!await Gal.hasAccess()) {
         if (!await Gal.requestAccess()) {
-          _toast(messenger, 'Allow gallery access to save this file.', error: true);
+          _toast(messenger, l10n.allowGalleryAccess, error: true);
           return;
         }
       }
@@ -126,13 +129,12 @@ Future<void> saveChatFile(BuildContext context, ChatMessage message) async {
       } else {
         await Gal.putVideo(local.path);
       }
-      _toast(messenger, 'Saved to your gallery');
+      _toast(messenger, l10n.savedToGallery);
       return;
     } on MissingPluginException {
-      _toast(messenger,
-          'Gallery plugin not installed in this build. Opening share sheet instead.');
+      _toast(messenger, l10n.galleryPluginMissing);
     } on GalException {
-      _toast(messenger, 'Could not save to the gallery.', error: true);
+      _toast(messenger, l10n.couldNotSaveToGallery, error: true);
       return;
     } catch (e) {
       _toast(messenger, '$e', error: true);
@@ -195,6 +197,7 @@ class _ChatImageViewerState extends State<ChatImageViewer> {
   }
 
   Widget _image() {
+    final l10n = AppLocalizations.of(context)!;
     final f = widget.message.file!;
     final headers = context.read<ChatProvider>().authHeaders;
 
@@ -204,26 +207,29 @@ class _ChatImageViewerState extends State<ChatImageViewer> {
       cacheKey: 'chat_${widget.message.id}',
       fit: BoxFit.contain,
       placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
-      errorWidget: (_, __, ___) => const Column(
+      errorWidget: (_, __, ___) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.broken_image, size: 60, color: Colors.white54),
-          SizedBox(height: 8),
-          Text('Image not available', style: TextStyle(color: Colors.white54)),
+          const Icon(Icons.broken_image, size: 60, color: Colors.white54),
+          const SizedBox(height: 8),
+          Text(l10n.imageNotAvailable,
+              style: const TextStyle(color: Colors.white54)),
         ],
       ),
     );
 
     final lp = f.localPath;
     if (lp != null) {
-      return Image.file(File(lp), fit: BoxFit.contain, errorBuilder: (_, __, ___) => net);
+      return Image.file(File(lp),
+          fit: BoxFit.contain, errorBuilder: (_, __, ___) => net);
     }
     return net;
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.message.file?.name ?? 'Photo';
+    final l10n = AppLocalizations.of(context)!;
+    final name = widget.message.file?.name ?? l10n.photo;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -264,7 +270,8 @@ class _ChatImageViewerState extends State<ChatImageViewer> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.close_rounded, color: Colors.white),
+                          icon: const Icon(Icons.close_rounded,
+                              color: Colors.white),
                           onPressed: () => Navigator.pop(context),
                         ),
                         Expanded(
@@ -272,18 +279,21 @@ class _ChatImageViewerState extends State<ChatImageViewer> {
                             name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 15),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 15),
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Save to gallery',
-                          icon: const Icon(Icons.download_rounded, color: Colors.white),
+                          tooltip: l10n.saveToGallery,
+                          icon: const Icon(Icons.download_rounded,
+                              color: Colors.white),
                           onPressed: () => saveChatFile(context, widget.message),
                         ),
                         Builder(
                           builder: (ctx) => IconButton(
-                            tooltip: 'Share',
-                            icon: const Icon(Icons.share_rounded, color: Colors.white),
+                            tooltip: l10n.share,
+                            icon: const Icon(Icons.share_rounded,
+                                color: Colors.white),
                             onPressed: () => shareChatFile(ctx, widget.message),
                           ),
                         ),
@@ -352,9 +362,10 @@ class _ChatVideoViewerState extends State<ChatVideoViewer> {
         }
       } catch (_) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           setState(() {
             _loading = false;
-            _error = 'Could not play this video.';
+            _error = l10n.couldNotPlayVideo;
           });
         }
         return;
@@ -381,6 +392,7 @@ class _ChatVideoViewerState extends State<ChatVideoViewer> {
   @override
   Widget build(BuildContext context) {
     final c = _controller;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -388,19 +400,19 @@ class _ChatVideoViewerState extends State<ChatVideoViewer> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         title: Text(
-          widget.message.file?.name ?? 'Video',
+          widget.message.file?.name ?? l10n.video,
           style: const TextStyle(fontSize: 15),
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            tooltip: 'Save to gallery',
+            tooltip: l10n.saveToGallery,
             icon: const Icon(Icons.download_rounded),
             onPressed: () => saveChatFile(context, widget.message),
           ),
           Builder(
             builder: (ctx) => IconButton(
-              tooltip: 'Share',
+              tooltip: l10n.share,
               icon: const Icon(Icons.share_rounded),
               onPressed: () => shareChatFile(ctx, widget.message),
             ),
@@ -411,14 +423,15 @@ class _ChatVideoViewerState extends State<ChatVideoViewer> {
         child: _loading
             ? const CircularProgressIndicator(color: Colors.white)
             : _error != null || c == null
-            ? Text(_error ?? 'Could not play this video.',
+            ? Text(_error ?? l10n.couldNotPlayVideo,
             style: const TextStyle(color: Colors.white70))
             : GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => c.value.isPlaying ? c.pause() : c.play(),
           child: AspectRatio(
-            aspectRatio:
-            c.value.aspectRatio > 0 ? c.value.aspectRatio : 16 / 9,
+            aspectRatio: c.value.aspectRatio > 0
+                ? c.value.aspectRatio
+                : 16 / 9,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -427,14 +440,17 @@ class _ChatVideoViewerState extends State<ChatVideoViewer> {
                   valueListenable: c,
                   builder: (_, v, __) => v.isPlaying
                       ? const SizedBox.shrink()
-                      : const Icon(Icons.play_circle_fill_rounded,
-                      size: 72, color: Colors.white70),
+                      : const Icon(
+                      Icons.play_circle_fill_rounded,
+                      size: 72,
+                      color: Colors.white70),
                 ),
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: VideoProgressIndicator(c, allowScrubbing: true),
+                  child:
+                  VideoProgressIndicator(c, allowScrubbing: true),
                 ),
               ],
             ),

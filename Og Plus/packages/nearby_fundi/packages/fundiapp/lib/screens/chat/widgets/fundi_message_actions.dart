@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/chat_message.dart';
 
 const List<String> kFundiQuickReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -40,6 +41,7 @@ Future<void> showFundiMessageMenu(
       required ChatMessage message,
       required FundiMessageMenuActions actions,
     }) async {
+  final l10n = AppLocalizations.of(context)!;
   final media = MediaQuery.of(context);
   final size = media.size;
   final insets = media.viewPadding;
@@ -54,7 +56,11 @@ Future<void> showFundiMessageMenu(
   final clampedY = anchor.dy.clamp(safeTop, size.height - safeBottom);
 
   PopupMenuItem<String> item(
-      String v, IconData icon, String label, {Color? color}) =>
+      String v,
+      IconData icon,
+      String label, {
+        Color? color,
+      }) =>
       PopupMenuItem<String>(
         value: v,
         height: 44,
@@ -102,32 +108,32 @@ Future<void> showFundiMessageMenu(
         ),
       ),
       const PopupMenuDivider(height: 1),
-      item('reply', Icons.reply_rounded, 'Reply'),
+      item('reply', Icons.reply_rounded, l10n.reply),
       item(
         'pin',
-        message.isPinned
-            ? Icons.push_pin_rounded
-            : Icons.push_pin_outlined,
-        message.isPinned ? 'Unpin' : 'Pin',
+        message.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+        message.isPinned ? l10n.unpin : l10n.pin,
       ),
-      if (hasText) item('copy', Icons.content_copy_outlined, 'Copy'),
-      item('forward', Icons.forward_rounded, 'Forward'),
+      if (hasText) item('copy', Icons.content_copy_outlined, l10n.copy),
+      item('forward', Icons.forward_rounded, l10n.forward),
       item(
         'star',
         message.isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-        message.isStarred ? 'Unstar' : 'Star',
+        message.isStarred ? l10n.unstar : l10n.star,
       ),
-      if (hasFile) item('save', Icons.download_rounded, 'Save'),
-      item('info', Icons.info_outline_rounded, 'Info'),
-      item('select', Icons.check_circle_outline_rounded, 'Select'),
+      if (hasFile) item('save', Icons.download_rounded, l10n.save),
+      item('info', Icons.info_outline_rounded, l10n.info),
+      item('select', Icons.check_circle_outline_rounded, l10n.select),
       const PopupMenuDivider(height: 1),
-      item('delete', Icons.delete_outline_rounded, 'Delete',
+      item('delete', Icons.delete_outline_rounded, l10n.delete,
           color: AppTheme.error),
     ],
   );
 
   if (choice == null) return;
-  if (choice.startsWith('react:')) return actions.onReact(choice.substring(6));
+  if (choice.startsWith('react:')) {
+    return actions.onReact(choice.substring(6));
+  }
 
   switch (choice) {
     case more:

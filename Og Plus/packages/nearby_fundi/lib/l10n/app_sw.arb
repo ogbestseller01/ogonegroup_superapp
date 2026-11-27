@@ -17,6 +17,18 @@
   "soon": "Hivi karibuni",
   "becomeFundi": "Kuwa Fundi",
 
+  "secureChatTitle": "Karibu kwenye mawasiliano salama ya kazi",
+    "secureChatDescription": "Jadili huduma, jadiliana kuhusu bei na kubaliana kuhusu kazi kabla ya kufanya malipo.",
+    "secureChatBargain": "Jadiliana bei moja kwa moja na fundi wako.",
+    "secureChatAgreePrice": "Kubalianeni kuhusu gharama yote ya kazi.",
+    "secureChatDeposit": "Lipa amana inayohitajika kwa usalama.",
+    "secureChatHoldDeposit": "OG ONE-GROUP itahifadhi amana hadi kazi itakapokamilika.",
+    "secureChatWarning": "Usitume malipo moja kwa moja kwa fundi nje ya mfumo wa OG ONE-GROUP.",
+    "secureChatCancel": "Ghairi",
+    "secureChatGotIt": "Sawa, nimeelewa",
+    "secureChatSafety": "Usalama wa malipo yako ni muhimu",
+    "secureChatDepositInfo": "Amana yako inalindwa kupitia mfumo wetu.",
+
 
     "cancel": "Ghairi",
     "sendSmsCode": "Tuma Nambari ya SMS",

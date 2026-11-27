@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/chat_message.dart';
 import '../widgets/swipe_to_reply.dart';
 import 'fundi_message_bubble.dart';
@@ -81,8 +82,7 @@ class FundiChatMessageRow extends StatelessWidget {
                 radius: 18,
                 onTap: () {
                   final box = ctx.findRenderObject() as RenderBox;
-                  onOpenMenu(
-                      box.localToGlobal(Offset(0, box.size.height)));
+                  onOpenMenu(box.localToGlobal(Offset(0, box.size.height)));
                 },
                 child: Container(
                   width: 28,
@@ -113,11 +113,11 @@ class FundiChatMessageRow extends StatelessWidget {
 
     return InkWell(
       onTap: selecting ? onToggleSelect : null,
-      onLongPress:
-      (m.isPending || selecting) ? null : onToggleSelect,
+      onLongPress: (m.isPending || selecting) ? null : onToggleSelect,
       child: Container(
-        color:
-        selected ? AppTheme.primary.withValues(alpha: 0.16) : Colors.transparent,
+        color: selected
+            ? AppTheme.primary.withValues(alpha: 0.16)
+            : Colors.transparent,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -129,15 +129,11 @@ class FundiChatMessageRow extends StatelessWidget {
                   shape: const CircleBorder(),
                   activeColor: AppTheme.primary,
                   visualDensity: VisualDensity.compact,
-                  onChanged:
-                  m.isPending ? null : (_) => onToggleSelect(),
+                  onChanged: m.isPending ? null : (_) => onToggleSelect(),
                 ),
               ),
             Expanded(
-              child: IgnorePointer(
-                ignoring: selecting,
-                child: bubble,
-              ),
+              child: IgnorePointer(ignoring: selecting, child: bubble),
             ),
           ],
         ),
@@ -157,6 +153,7 @@ class _Tombstone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final fg = dark ? Colors.white54 : Colors.black45;
     final screenW = MediaQuery.of(context).size.width;
     final maxW = screenW * 0.72;
@@ -172,9 +169,8 @@ class _Tombstone extends StatelessWidget {
         ),
         padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
         decoration: BoxDecoration(
-          color: dark
-              ? Colors.white10
-              : Colors.black.withValues(alpha: 0.05),
+          color:
+          dark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -184,11 +180,9 @@ class _Tombstone extends StatelessWidget {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                'This message was deleted',
+                l10n.messageDeleted,
                 style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: fg,
-                    fontSize: 14),
+                    fontStyle: FontStyle.italic, color: fg, fontSize: 14),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

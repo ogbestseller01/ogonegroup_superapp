@@ -185,6 +185,72 @@ abstract class AppLocalizations {
   /// **'Become a Fundi'**
   String get becomeFundi;
 
+  /// No description provided for @secureChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to secure job communication'**
+  String get secureChatTitle;
+
+  /// No description provided for @secureChatDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Discuss the service, negotiate the price and agree on the work before making a payment.'**
+  String get secureChatDescription;
+
+  /// No description provided for @secureChatBargain.
+  ///
+  /// In en, this message translates to:
+  /// **'Bargain directly with your fundi.'**
+  String get secureChatBargain;
+
+  /// No description provided for @secureChatAgreePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Agree on the total job cost.'**
+  String get secureChatAgreePrice;
+
+  /// No description provided for @secureChatDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay the required deposit securely.'**
+  String get secureChatDeposit;
+
+  /// No description provided for @secureChatHoldDeposit.
+  ///
+  /// In en, this message translates to:
+  /// **'OG ONE-GROUP holds the deposit until job completion.'**
+  String get secureChatHoldDeposit;
+
+  /// No description provided for @secureChatWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Never send payment directly to a fundi outside the platform.'**
+  String get secureChatWarning;
+
+  /// No description provided for @secureChatCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get secureChatCancel;
+
+  /// No description provided for @secureChatGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get secureChatGotIt;
+
+  /// No description provided for @secureChatSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Your payment safety matters'**
+  String get secureChatSafety;
+
+  /// No description provided for @secureChatDepositInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Your deposit is protected through the platform.'**
+  String get secureChatDepositInfo;
+
   /// No description provided for @otpDigitRequired.
   ///
   /// In en, this message translates to:

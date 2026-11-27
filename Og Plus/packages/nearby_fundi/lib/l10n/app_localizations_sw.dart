@@ -54,6 +54,39 @@ class AppLocalizationsSw extends AppLocalizations {
   String get becomeFundi => 'Kuwa Fundi';
 
   @override
+  String get secureChatTitle => 'Karibu kwenye mawasiliano salama ya kazi';
+
+  @override
+  String get secureChatDescription => 'Jadili huduma, jadiliana kuhusu bei na kubaliana kuhusu kazi kabla ya kufanya malipo.';
+
+  @override
+  String get secureChatBargain => 'Jadiliana bei moja kwa moja na fundi wako.';
+
+  @override
+  String get secureChatAgreePrice => 'Kubalianeni kuhusu gharama yote ya kazi.';
+
+  @override
+  String get secureChatDeposit => 'Lipa amana inayohitajika kwa usalama.';
+
+  @override
+  String get secureChatHoldDeposit => 'OG ONE-GROUP itahifadhi amana hadi kazi itakapokamilika.';
+
+  @override
+  String get secureChatWarning => 'Usitume malipo moja kwa moja kwa fundi nje ya mfumo wa OG ONE-GROUP.';
+
+  @override
+  String get secureChatCancel => 'Ghairi';
+
+  @override
+  String get secureChatGotIt => 'Sawa, nimeelewa';
+
+  @override
+  String get secureChatSafety => 'Usalama wa malipo yako ni muhimu';
+
+  @override
+  String get secureChatDepositInfo => 'Amana yako inalindwa kupitia mfumo wetu.';
+
+  @override
   String get otpDigitRequired => 'Weka OTP ya tarakimu 6';
 
   @override

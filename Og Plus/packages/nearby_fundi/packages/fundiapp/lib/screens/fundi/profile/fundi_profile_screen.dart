@@ -185,7 +185,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
               ),
               const SizedBox(height: 18),
               _langTile(
-                label: 'English',
+                label: l10n.languageEnglish,
                 localeCode: 'en',
                 selected: settings.locale == 'en',
                 isDark: isDark,
@@ -197,7 +197,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
               ),
               const SizedBox(height: 10),
               _langTile(
-                label: 'Kiswahili',
+                label: l10n.languageSwahili,
                 localeCode: 'sw',
                 selected: settings.locale == 'sw',
                 isDark: isDark,
@@ -499,8 +499,9 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                         ),
                         child: Text(
                           verified
-                              ? '✓ VERIFIED'
-                              : (t.verificationStatus ?? 'pending')
+                              ? AppLocalizations.of(context)!.verifiedLabel
+                              : (t.verificationStatus ??
+                              AppLocalizations.of(context)!.pending)
                               .toUpperCase(),
                           style: TextStyle(
                             inherit: true,
@@ -674,13 +675,13 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
       }
       if ((t.area ?? '').isNotEmpty) rows.add(MapEntry(l10n.area, t.area!));
       if ((t.nida ?? '').isNotEmpty) {
-        rows.add(MapEntry('NIDA', _maskNida(t.nida!)));
+        rows.add(MapEntry(l10n.nidaNumber, _maskNida(t.nida!)));
       }
       rows.add(MapEntry(
         l10n.accountStatus,
         t.verified
             ? l10n.active
-            : (t.verificationStatus ?? 'pending').toUpperCase(),
+            : (t.verificationStatus ?? l10n.pending).toUpperCase(),
       ));
     }
 
@@ -771,7 +772,7 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     );
   }
 
-  // ───────────── SETTINGS MENUS (unchanged) ─────────────
+  // ───────────── SETTINGS MENUS ─────────────
 
   Widget _iconBadge(bool isDark, IconData icon, {Color? color}) {
     final c = color ?? _accent(isDark);
@@ -937,7 +938,9 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                     asset: _flagAsset(settings.locale), height: 20, width: 28),
                 const SizedBox(width: 8),
                 Text(
-                  settings.locale == 'sw' ? 'Kiswahili' : 'English',
+                  settings.locale == 'sw'
+                      ? l10n.languageSwahili
+                      : l10n.languageEnglish,
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,

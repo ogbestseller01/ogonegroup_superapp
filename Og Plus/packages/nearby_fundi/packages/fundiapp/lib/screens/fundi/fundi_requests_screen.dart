@@ -10,7 +10,7 @@ import '../../providers/job_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../chat/fundi_chat_screen.dart'; // <-- Updated to use FundiChatScreen
+import '../chat/fundi_chat_screen.dart';
 import '../../config/app_theme.dart';
 import 'fundi_home_screen.dart'; // for FundiHomeScreenState
 
@@ -103,16 +103,16 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     }
   }
 
-  String _getStatusLabel(String status) {
+  String _getStatusLabel(String status, AppLocalizations l10n) {
     switch (status) {
       case 'pending':
-        return 'Pending';
+        return l10n.statusPending;
       case 'accepted':
-        return 'Accepted';
+        return l10n.statusAccepted;
       case 'rejected':
-        return 'Rejected';
+        return l10n.statusRejected;
       case 'cancelled':
-        return 'Cancelled';
+        return l10n.statusCancelled;
       default:
         return status.toUpperCase();
     }
@@ -138,8 +138,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   // ─── ACCEPT / REJECT ────────────────────────────────────────────────────
-  // Uses the SCREEN's mounted flag (not the card's context): the card can be
-  // rebuilt while the request is in flight, but the screen stays alive.
   Future<void> _answerRequest(
       ServiceRequest request, {
         required bool accept,
@@ -169,7 +167,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       return;
     }
 
-    // The backend created the Job + Ticket (pending) when the request was accepted.
     if (success && accept) {
       debugPrint('🟢 [ACCEPT] refreshing jobs (job auto-created by the server)');
       await jobs.loadJobs(silent: true);
@@ -180,7 +177,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       context,
       success
           ? (accept ? l10n.requestAccepted : l10n.requestRejected)
-          : (provider.error ?? (accept ? 'Failed to accept' : 'Failed to reject')),
+          : (provider.error ??
+          (accept ? l10n.failedToAccept : l10n.failedToReject)),
       isError: !success,
     );
   }
@@ -190,8 +188,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     debugPrint('🟡 [VIEW JOB] request #${request.id} jobId=${request.jobId} '
         'jobNumber=${request.jobNumber}');
     if (request.jobId == null) return;
-
-    // Opens the fundi Jobs list, where the auto-created job (pending) is listed.
     Navigator.pushNamed(context, AppRoutes.jobs);
   }
 
@@ -210,13 +206,16 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => FundiChatScreen(conversation: conversation), // <-- Updated to FundiChatScreen
+            builder: (context) =>
+                FundiChatScreen(conversation: conversation),
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnack(context, 'Failed to start chat: $e', isError: true);
+        final l10n = AppLocalizations.of(context)!;
+        _showSnack(context, l10n.failedToStartChat(e.toString()),
+            isError: true);
       }
     }
   }
@@ -254,8 +253,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             children: [
               _buildTitleRow(context, provider, l10n, isDark),
               Expanded(
-                // Spinner only on the very first load — never while the list
-                // is on screen, otherwise the tapped card is destroyed.
                 child: provider.isLoading && provider.requests.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : Column(
@@ -282,7 +279,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
     );
   }
 
-  // ─── TITLE ROW (with Back arrow) ────────────────────────────────────────
+  // ─── TITLE ROW ──────────────────────────────────────────────────────────
   Widget _buildTitleRow(
       BuildContext context,
       RequestProvider provider,
@@ -294,20 +291,22 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       padding: EdgeInsets.fromLTRB(h, 12, h, 4),
       child: Row(
         children: [
-          // Back arrow → Home
-          Material(
-            color: _accent(isDark).withOpacity(0.10),
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
+          Tooltip(
+            message: l10n.back,
+            child: Material(
+              color: _accent(isDark).withOpacity(0.10),
               borderRadius: BorderRadius.circular(14),
-              onTap: _goBackToHome,
-              child: SizedBox(
-                width: 42,
-                height: 42,
-                child: Icon(
-                  Icons.arrow_back_rounded,
-                  color: _accent(isDark),
-                  size: 22,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: _goBackToHome,
+                child: SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: _accent(isDark),
+                    size: 22,
+                  ),
                 ),
               ),
             ),
@@ -336,9 +335,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               ),
             ),
           ),
-          // Refresh
           Tooltip(
-            message: 'Refresh',
+            message: l10n.refresh,
             child: Material(
               color: _accent(isDark).withOpacity(0.10),
               borderRadius: BorderRadius.circular(14),
@@ -422,15 +420,19 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _buildFilterChip('All', null, theme, isDark),
+                _buildFilterChip(l10n.filterAll, null, theme, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('Pending', 'pending', theme, isDark),
+                _buildFilterChip(
+                    l10n.statusPending, 'pending', theme, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('Accepted', 'accepted', theme, isDark),
+                _buildFilterChip(
+                    l10n.statusAccepted, 'accepted', theme, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('Rejected', 'rejected', theme, isDark),
+                _buildFilterChip(
+                    l10n.statusRejected, 'rejected', theme, isDark),
                 const SizedBox(width: 8),
-                _buildFilterChip('Cancelled', 'cancelled', theme, isDark),
+                _buildFilterChip(
+                    l10n.statusCancelled, 'cancelled', theme, isDark),
               ],
             ),
           ),
@@ -480,19 +482,21 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   Widget _buildStatsBar(
       BuildContext context, RequestProvider provider, bool isDark) {
     final h = _hPad(context);
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: h, vertical: 8),
       child: Row(
         children: [
-          _buildStatCard('Total', provider.totalCount, _ink(isDark), isDark,
+          _buildStatCard(l10n.statTotal, provider.totalCount, _ink(isDark),
+              isDark,
               icon: Icons.list_alt_rounded),
           const SizedBox(width: 8),
           _buildStatCard(
-              'Pending', provider.pendingCount, AppTheme.warning, isDark,
+              l10n.statPending, provider.pendingCount, AppTheme.warning, isDark,
               icon: Icons.hourglass_empty_rounded),
           const SizedBox(width: 8),
           _buildStatCard(
-              'Accepted', provider.acceptedCount, _accent(isDark), isDark,
+              l10n.statAccepted, provider.acceptedCount, _accent(isDark), isDark,
               icon: Icons.check_circle_outline_rounded),
         ],
       ),
@@ -722,7 +726,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _getStatusLabel(request.status).toUpperCase(),
+                    _getStatusLabel(request.status, l10n).toUpperCase(),
                     style: TextStyle(
                       inherit: true,
                       color: statusColor,
@@ -764,7 +768,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             // Description
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withOpacity(0.04)
@@ -816,8 +821,10 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Job ${request.jobNumber}'
-                          '${request.jobStatus != null ? ' • ${request.jobStatus}' : ''}',
+                      request.jobStatus != null
+                          ? l10n.jobWithStatus(
+                          request.jobNumber!, request.jobStatus!)
+                          : l10n.jobLabel(request.jobNumber!),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -838,7 +845,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             if (isPending) _buildPendingActions(context, request, l10n),
             if (isAccepted) _buildAcceptedActions(context, request, l10n),
             if (isRejectedOrCancelled)
-              _buildRejectedActions(request, theme, isDark),
+              _buildRejectedActions(request, theme, isDark, l10n),
           ],
         ),
       ),
@@ -857,9 +864,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             label: l10n.accept,
             color: AppTheme.primary,
             loading: acting,
-            onPressed: acting
-                ? null
-                : () => _answerRequest(request, accept: true),
+            onPressed:
+            acting ? null : () => _answerRequest(request, accept: true),
           ),
         ),
         const SizedBox(width: 10),
@@ -868,9 +874,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
             label: l10n.reject,
             color: AppTheme.error,
             outlined: true,
-            onPressed: acting
-                ? null
-                : () => _answerRequest(request, accept: false),
+            onPressed:
+            acting ? null : () => _answerRequest(request, accept: false),
           ),
         ),
       ],
@@ -885,7 +890,7 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
           SizedBox(
             width: double.infinity,
             child: _PrimaryButton(
-              label: 'View Job',
+              label: l10n.viewJob,
               color: AppTheme.primary,
               outlined: true,
               icon: Icons.work_outline_rounded,
@@ -908,7 +913,8 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   Widget _buildRejectedActions(
-      ServiceRequest request, ThemeData theme, bool isDark) {
+      ServiceRequest request, ThemeData theme, bool isDark,
+      AppLocalizations l10n) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 13),
@@ -919,7 +925,9 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
       ),
       child: Center(
         child: Text(
-          request.isRejected ? 'Request Rejected' : 'Request Cancelled',
+          request.isRejected
+              ? l10n.requestRejectedBanner
+              : l10n.requestCancelledBanner,
           style: TextStyle(
             inherit: true,
             fontSize: 12.5,
@@ -956,7 +964,8 @@ class _PrimaryButton extends StatelessWidget {
 
     final base =
     (color == AppTheme.primary && isDark) ? AppTheme.secondary : color;
-    final onBase = base == AppTheme.secondary ? AppTheme.primary : Colors.white;
+    final onBase =
+    base == AppTheme.secondary ? AppTheme.primary : Colors.white;
 
     final Widget child;
     if (loading) {

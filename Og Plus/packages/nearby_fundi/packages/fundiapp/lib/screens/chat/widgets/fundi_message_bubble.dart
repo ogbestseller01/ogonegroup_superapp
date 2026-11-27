@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 
 import '../../../../config/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../models/chat_message.dart';
 
 class _C {
@@ -51,20 +53,18 @@ class FundiMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
 
-    final bubble = isMine
-        ? AppTheme.primary
-        : (dark ? scheme.surfaceContainerHigh : Colors.white);
+    final bubble =
+    isMine ? AppTheme.primary : (dark ? scheme.surfaceContainerHigh : Colors.white);
 
     final c = _C(
       bubble,
       isMine ? Colors.white : scheme.onSurface,
-      isMine
-          ? Colors.white70
-          : scheme.onSurface.withValues(alpha: 0.55),
+      isMine ? Colors.white70 : scheme.onSurface.withValues(alpha: 0.55),
       isMine ? Colors.white : AppTheme.primary,
       dark,
     );
@@ -74,20 +74,18 @@ class FundiMessageBubble extends StatelessWidget {
 
     Widget inner = Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: reply != null
-          ? CrossAxisAlignment.stretch
-          : CrossAxisAlignment.start,
+      crossAxisAlignment:
+      reply != null ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
       children: [
-        if (message.isForwarded) _forwardedLabel(c),
-        if (reply != null) _quote(reply, c),
+        if (message.isForwarded) _forwardedLabel(c, l10n),
+        if (reply != null) _quote(reply, c, l10n),
         content,
       ],
     );
     if (reply != null) inner = IntrinsicWidth(child: inner);
 
     final shown = highlighted
-        ? Color.alphaBlend(
-        Colors.amber.withValues(alpha: 0.4), bubble)
+        ? Color.alphaBlend(Colors.amber.withValues(alpha: 0.4), bubble)
         : bubble;
 
     final hasReactions = message.reactions.isNotEmpty;
@@ -146,10 +144,10 @@ class FundiMessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 3, right: 2),
                 child: Text(
                   (message.sendError ?? '').isNotEmpty
-                      ? '${message.sendError} · Tap to retry'
-                      : 'Not sent · Tap to retry',
-                  style: const TextStyle(
-                      fontSize: 11.5, color: Colors.redAccent),
+                      ? l10n.errorTapToRetry(message.sendError!)
+                      : l10n.notSentTapToRetry,
+                  style:
+                  const TextStyle(fontSize: 11.5, color: Colors.redAccent),
                 ),
               ),
           ],
@@ -158,7 +156,7 @@ class FundiMessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _forwardedLabel(_C c) => Padding(
+  Widget _forwardedLabel(_C c, AppLocalizations l10n) => Padding(
     padding: EdgeInsets.only(
         bottom: 3, left: _isMedia ? 6 : 0, top: _isMedia ? 3 : 0),
     child: Row(
@@ -167,19 +165,16 @@ class FundiMessageBubble extends StatelessWidget {
         Icon(Icons.forward_rounded, size: 14, color: c.meta),
         const SizedBox(width: 4),
         Text(
-          'Forwarded',
+          l10n.forwarded,
           style: TextStyle(
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-              color: c.meta),
+              fontSize: 12, fontStyle: FontStyle.italic, color: c.meta),
         ),
       ],
     ),
   );
 
   Widget _reactionPill(_C c) {
-    final emojis =
-    message.reactions.map((r) => r.emoji).take(3).join();
+    final emojis = message.reactions.map((r) => r.emoji).take(3).join();
     final total = message.reactionTotal;
     final mine = message.myReaction != null;
 
@@ -197,8 +192,7 @@ class FundiMessageBubble extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 3),
+                color: Colors.black.withValues(alpha: 0.08), blurRadius: 3),
           ],
         ),
         child: Row(
@@ -251,8 +245,7 @@ class FundiMessageBubble extends StatelessWidget {
   }
 
   Widget _textWithMeta(String text, _C c) {
-    final extra =
-        (message.isStarred ? 3 : 0) + (message.isPinned ? 3 : 0);
+    final extra = (message.isStarred ? 3 : 0) + (message.isPinned ? 3 : 0);
     final gap = '\u00A0' * ((isMine ? 17 : 11) + extra);
     return Stack(
       children: [
@@ -260,8 +253,7 @@ class FundiMessageBubble extends StatelessWidget {
           TextSpan(children: [
             TextSpan(
               text: text,
-              style:
-              TextStyle(color: c.text, fontSize: 15.5, height: 1.3),
+              style: TextStyle(color: c.text, fontSize: 15.5, height: 1.3),
             ),
             TextSpan(text: gap, style: const TextStyle(fontSize: 15.5)),
           ]),
@@ -320,11 +312,11 @@ class FundiMessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _quote(ReplyRef r, _C c) {
+  Widget _quote(ReplyRef r, _C c, AppLocalizations l10n) {
     final mine = r.senderId == myId;
     final name = mine
-        ? 'You'
-        : ((r.senderName).isNotEmpty ? r.senderName : peerName);
+        ? l10n.you
+        : (r.senderName.isNotEmpty ? r.senderName : peerName);
     final bar = isMine ? Colors.white : AppTheme.primary;
 
     return Padding(
@@ -408,9 +400,7 @@ class FundiMessageBubble extends StatelessWidget {
     final f = message.file;
     if (f == null) {
       return SizedBox(
-          width: 230,
-          height: 120,
-          child: _placeholder(c, Icons.broken_image));
+          width: 230, height: 120, child: _placeholder(c, Icons.broken_image));
     }
     final net = CachedNetworkImage(
       imageUrl: f.url,
@@ -420,8 +410,7 @@ class FundiMessageBubble extends StatelessWidget {
       fit: BoxFit.cover,
       placeholder: (_, __) => Container(
         color: c.dark ? Colors.black26 : Colors.grey.shade300,
-        child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2)),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       errorWidget: (_, __, ___) => _placeholder(c, Icons.broken_image),
     );
@@ -479,8 +468,8 @@ class FundiMessageBubble extends StatelessWidget {
             child: CircleAvatar(
               radius: 26,
               backgroundColor: Colors.black54,
-              child:
-              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+              child: Icon(Icons.play_arrow_rounded,
+                  color: Colors.white, size: 36),
             ),
           ),
           Positioned(
@@ -492,8 +481,8 @@ class FundiMessageBubble extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 message.file?.formattedSize ?? '',
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 12),
+                style:
+                const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ]),
           ),
@@ -521,6 +510,7 @@ class FundiMessageBubble extends StatelessWidget {
   }
 
   Widget _fileCard(_C c) {
+    final l10n = AppLocalizations.of(context as BuildContext);
     final f = message.file;
     final (icon, color) = _fileStyle(f?.kind ?? ChatFileKind.other);
     final info = [
@@ -557,7 +547,7 @@ class FundiMessageBubble extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      f?.name ?? 'File',
+                      f?.name ?? (l10n?.file ?? ''),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -568,8 +558,7 @@ class FundiMessageBubble extends StatelessWidget {
                     ),
                     if (info.isNotEmpty)
                       Text(info,
-                          style:
-                          TextStyle(color: c.meta, fontSize: 12)),
+                          style: TextStyle(color: c.meta, fontSize: 12)),
                   ]),
             ),
             if (message.isPending)
@@ -580,15 +569,14 @@ class FundiMessageBubble extends StatelessWidget {
                     ? const Icon(Icons.refresh_rounded,
                     color: Colors.redAccent)
                     : CircularProgressIndicator(
-                  value:
-                  message.progress > 0 ? message.progress : null,
+                  value: message.progress > 0 ? message.progress : null,
                   strokeWidth: 2.5,
                   color: c.accent,
                 ),
               )
             else
               IconButton(
-                tooltip: 'Save / share',
+                tooltip: l10n?.saveShare,
                 visualDensity: VisualDensity.compact,
                 icon: Icon(Icons.download_rounded,
                     color: c.text.withValues(alpha: 0.8)),

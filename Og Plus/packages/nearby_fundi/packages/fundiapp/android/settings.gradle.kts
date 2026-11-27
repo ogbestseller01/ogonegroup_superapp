@@ -2,9 +2,9 @@ pluginManagement {
     val flutterSdkPath = run {
         val properties = java.util.Properties()
         file("local.properties").inputStream().use { properties.load(it) }
-        val flutterSdkPath = properties.getProperty("flutter.sdk")
-        require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
-        flutterSdkPath
+        val sdkPath = properties.getProperty("flutter.sdk")
+        require(sdkPath != null) { "flutter.sdk not set in local.properties" }
+        sdkPath
     }
 
     includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
@@ -22,6 +22,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
@@ -32,3 +33,47 @@ plugins {
 }
 
 include(":app")
+
+subprojects {
+    project.beforeEvaluate {
+        if (project.name == "flutter_inappwebview_android") {
+            val buildGradleFile = project.file("build.gradle")
+            if (buildGradleFile.exists()) {
+                val content = buildGradleFile.readText()
+                if (content.contains("proguard-android.txt")) {
+                    val updatedContent = content.replace(
+                        "proguard-android.txt",
+                        "proguard-android-optimize.txt"
+                    )
+                    buildGradleFile.writeText(updatedContent)
+                }
+            }
+        }
+    }
+
+    afterEvaluate {
+        extensions.findByName("android")?.let { android ->
+            val ext = android as com.android.build.gradle.BaseExtension
+            ext.compileSdkVersion(37) // Required by permission_handler 14.x
+        }
+    }
+}
+
+val newBuildDir: Directory =
+    rootProject.layout.buildDirectory
+        .dir("../../build")
+        .get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
+subprojects {
+    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+}

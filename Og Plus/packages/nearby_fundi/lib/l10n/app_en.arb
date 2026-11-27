@@ -17,6 +17,18 @@
   "soon": "Soon",
   "becomeFundi": "Become a Fundi",
 
+  "secureChatTitle": "Welcome to secure job communication",
+    "secureChatDescription": "Discuss the service, negotiate the price and agree on the work before making a payment.",
+    "secureChatBargain": "Bargain directly with your fundi.",
+    "secureChatAgreePrice": "Agree on the total job cost.",
+    "secureChatDeposit": "Pay the required deposit securely.",
+    "secureChatHoldDeposit": "OG ONE-GROUP holds the deposit until job completion.",
+    "secureChatWarning": "Never send payment directly to a fundi outside the platform.",
+    "secureChatCancel": "Cancel",
+    "secureChatGotIt": "Got it",
+    "secureChatSafety": "Your payment safety matters",
+    "secureChatDepositInfo": "Your deposit is protected through the platform.",
+
   "otpDigitRequired": "Enter 6-digit OTP",
   "passwordMinLength": "Password must be at least 8 characters",
   "repeatPassword": "Repeat your password",

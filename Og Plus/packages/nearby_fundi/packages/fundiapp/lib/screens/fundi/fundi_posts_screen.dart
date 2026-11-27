@@ -60,7 +60,7 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
     if (saved) {
       _snack(post != null ? l10n.postUpdated : l10n.postCreated);
     } else {
-      _snack(context.read<PostProvider>().error ?? 'Failed to save post', error: true);
+      _snack(context.read<PostProvider>().error ?? l10n.failedToSavePost, error: true);
     }
   }
 
@@ -88,7 +88,7 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
     if (ok) {
       _snack(l10n.postDeleted);
     } else {
-      _snack(context.read<PostProvider>().error ?? 'Delete failed', error: true);
+      _snack(context.read<PostProvider>().error ?? l10n.deleteFailed, error: true);
     }
   }
 
@@ -126,7 +126,7 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                     children: [
                       _SoftIconButton(
                         icon: Icons.arrow_back_ios_new_rounded,
-                        tooltip: 'Back',
+                        tooltip: l10n.back,
                         onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
                       ),
                       const SizedBox(width: 12),
@@ -147,7 +147,7 @@ class _FundiPostsScreenState extends State<FundiPostsScreen> {
                       ),
                       _SoftIconButton(
                         icon: Icons.refresh_rounded,
-                        tooltip: 'Refresh',
+                        tooltip: l10n.refresh,
                         loading: provider.isLoading,
                         onTap: provider.isLoading ? null : () => provider.fetchMyPosts(),
                       ),
@@ -264,6 +264,8 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -287,7 +289,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Share your work with photos to build your portfolio.',
+              l10n.portfolioEmptySubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -302,7 +304,7 @@ class _EmptyState extends StatelessWidget {
               ),
               onPressed: onCreate,
               icon: const Icon(Icons.add_rounded),
-              label: const Text('New post'),
+              label: Text(l10n.newPost),
             ),
           ],
         ),
@@ -321,6 +323,8 @@ class _FullscreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.black87,
       body: Stack(
@@ -334,12 +338,12 @@ class _FullscreenImageViewer extends StatelessWidget {
                 child: AppNetworkImage(
                   path: imagePath,
                   fit: BoxFit.contain,
-                  fallback: const Column(
+                  fallback: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.broken_image, size: 60, color: Colors.white54),
-                      SizedBox(height: 8),
-                      Text('Image not available', style: TextStyle(color: Colors.white54)),
+                      const Icon(Icons.broken_image, size: 60, color: Colors.white54),
+                      const SizedBox(height: 8),
+                      Text(l10n.imageNotAvailable, style: const TextStyle(color: Colors.white54)),
                     ],
                   ),
                 ),
@@ -403,8 +407,9 @@ class _PostFormSheetState extends State<_PostFormSheet> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_total == 0) {
-      _warn('Add at least one photo.');
+      _warn(l10n.addAtLeastOnePhoto);
       return;
     }
 
@@ -499,7 +504,7 @@ class _PostFormSheetState extends State<_PostFormSheet> {
 
             Row(
               children: [
-                Text('Photos', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text(l10n.photos, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 const SizedBox(width: 8),
                 Text('($_total/$_maxImages)', style: theme.textTheme.bodySmall),
               ],
@@ -740,18 +745,19 @@ class _PostHeader extends StatelessWidget {
     required this.onDelete,
   });
 
-  String _ago(DateTime t) {
+  String _ago(DateTime t, AppLocalizations l10n) {
     final d = DateTime.now().difference(t);
     if (d.inDays > 7) return '${t.day}/${t.month}/${t.year}';
-    if (d.inDays > 0) return '${d.inDays}d ago';
-    if (d.inHours > 0) return '${d.inHours}h ago';
-    if (d.inMinutes > 0) return '${d.inMinutes}m ago';
-    return 'Just now';
+    if (d.inDays > 0) return l10n.daysAgo(d.inDays);
+    if (d.inHours > 0) return l10n.hoursAgo(d.inHours);
+    if (d.inMinutes > 0) return l10n.minutesAgo(d.inMinutes);
+    return l10n.justNow;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final initial = post.technicianName.isNotEmpty ? post.technicianName[0].toUpperCase() : 'F';
     final initialAvatar = Container(
       color: AppTheme.primary.withValues(alpha: 0.1),
@@ -804,7 +810,7 @@ class _PostHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      _ago(post.createdAt),
+                      _ago(post.createdAt, l10n),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
@@ -825,20 +831,20 @@ class _PostHeader extends StatelessWidget {
               child: const Icon(Icons.more_horiz_rounded, size: 20, color: AppTheme.primary),
             ),
             onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'edit',
                 child: ListTile(
-                  leading: Icon(Icons.edit_outlined, color: AppTheme.primary),
-                  title: Text('Edit post'),
+                  leading: const Icon(Icons.edit_outlined, color: AppTheme.primary),
+                  title: Text(l10n.editPost),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
               PopupMenuItem(
                 value: 'delete',
                 child: ListTile(
-                  leading: Icon(Icons.delete_outline_rounded, color: AppTheme.error),
-                  title: Text('Delete post', style: TextStyle(color: AppTheme.error)),
+                  leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+                  title: Text(l10n.deletePostAction, style: const TextStyle(color: AppTheme.error)),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),

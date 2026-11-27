@@ -19,7 +19,8 @@ dependencies:
   google_fonts: ^6.3.3
   timeago: ^3.7.1
   path_provider: ^2.1.6
-  package_info_plus: ^8.0.0
+  package_info_plus: ^10.2.2
+  device_info_plus: ^13.3.0
 
   # Networking
   dio: ^5.7.0
@@ -74,8 +75,8 @@ dependency_overrides:
   google_mlkit_commons: ^0.13.0
 
   # Shared dependencies
-  file_picker: ^10.3.10
-  share_plus: ^11.0.0
+  file_picker: ^12.0.0          # <--- FIXED
+  share_plus: ^13.3.1           # <--- FIXED
   permission_handler: ^12.0.3
   open_file: ^4.0.0
   connectivity_plus: ^7.2.0

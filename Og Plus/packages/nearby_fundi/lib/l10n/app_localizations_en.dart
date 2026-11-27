@@ -54,6 +54,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get becomeFundi => 'Become a Fundi';
 
   @override
+  String get secureChatTitle => 'Welcome to secure job communication';
+
+  @override
+  String get secureChatDescription => 'Discuss the service, negotiate the price and agree on the work before making a payment.';
+
+  @override
+  String get secureChatBargain => 'Bargain directly with your fundi.';
+
+  @override
+  String get secureChatAgreePrice => 'Agree on the total job cost.';
+
+  @override
+  String get secureChatDeposit => 'Pay the required deposit securely.';
+
+  @override
+  String get secureChatHoldDeposit => 'OG ONE-GROUP holds the deposit until job completion.';
+
+  @override
+  String get secureChatWarning => 'Never send payment directly to a fundi outside the platform.';
+
+  @override
+  String get secureChatCancel => 'Cancel';
+
+  @override
+  String get secureChatGotIt => 'Got it';
+
+  @override
+  String get secureChatSafety => 'Your payment safety matters';
+
+  @override
+  String get secureChatDepositInfo => 'Your deposit is protected through the platform.';
+
+  @override
   String get otpDigitRequired => 'Enter 6-digit OTP';
 
   @override

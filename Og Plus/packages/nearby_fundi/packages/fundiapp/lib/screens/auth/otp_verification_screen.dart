@@ -201,6 +201,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
+    // Extract the resend button text to avoid Object type inference in nested ternary
+    final String resendButtonText;
+    if (_isResending) {
+      resendButtonText = l10n.sending as String;
+    } else if (_resendCountdown > 0) {
+      resendButtonText = l10n.wait;
+    } else {
+      resendButtonText = l10n.resend;
+    }
+
     return Scaffold(
       body: Consumer<AuthProvider>(
         builder: (context, auth, _) => LoadingOverlay(
@@ -304,11 +314,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ? null
                             : _resendOtp,
                         child: Text(
-                          _isResending
-                              ? l10n.sending
-                              : _resendCountdown > 0
-                              ? l10n.wait
-                              : l10n.resend,
+                          resendButtonText, // Use the extracted string variable
                           style: TextStyle(
                             color: (_resendCountdown > 0 || _isResending)
                                 ? theme.hintColor

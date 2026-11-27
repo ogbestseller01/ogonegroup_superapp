@@ -58,6 +58,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final _showDown = ValueNotifier<bool>(false);
   late final ChatProvider _chat;
 
+  // Ensure the security dialog is only shown once per session
+  static bool _hasSeenSecurityDialog = false;
+
   bool _firstLoadDone = false;
   ReplyRef? _replyTo;
   int? _highlightId;
@@ -79,7 +82,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _chat.addListener(_onChat);
     _positions.itemPositions.addListener(_onPositions);
     _text.addListener(_onText);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _open());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _open();
+      if (!_hasSeenSecurityDialog) {
+        _showSecurityDialog();
+      }
+    });
   }
 
   @override
@@ -104,6 +113,133 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     if (mounted) setState(() => _firstLoadDone = true);
   }
+
+  // --- NEW: Secure Chat Dialog Implementation ---
+  Future<void> _showSecurityDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: const Color(0xFF121212), // Dark background matching screenshot
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.verified_user, color: Color(0xFF26A69A), size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.secureChatTitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.secureChatDescription,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                _buildBulletPoint(Icons.handshake_outlined, l10n.secureChatBargain),
+                _buildBulletPoint(Icons.check_circle_outline, l10n.secureChatAgreePrice),
+                _buildBulletPoint(Icons.lock_outline, l10n.secureChatDeposit),
+                _buildBulletPoint(Icons.account_balance_outlined, l10n.secureChatHoldDeposit),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C1515), // Dark red warning box
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Important payment warning",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.secureChatWarning,
+                        style: const TextStyle(color: Colors.redAccent, fontSize: 14, height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF26A69A),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(
+                    l10n.secureChatGotIt,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(
+                    l10n.secureChatCancel,
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (result == true) {
+      // User tapped "Got it"
+      _hasSeenSecurityDialog = true;
+    } else {
+      // User tapped "Cancel" or dismissed -> Go back to chat list
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Widget _buildBulletPoint(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF26A69A), size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // --- END NEW ---
 
   void _snack(String m, {bool error = false}) {
     if (!mounted) return;
@@ -258,9 +394,11 @@ class _ChatScreenState extends State<ChatScreen> {
     if (x != null) await _sendFile(File(x.path));
   });
 
+  // file_picker ^12.x: pickFiles returns List<PlatformFile> directly.
   Future<void> _document() => _guard(() async {
-    final r = await FilePicker.platform.pickFiles(allowMultiple: false);
-    final path = r?.files.first.path;
+    final files = await FilePicker.pickFiles(allowMultiple: false);
+    if (files.isEmpty) return;
+    final path = files.first.path;
     if (path != null && path.isNotEmpty) await _sendFile(File(path));
   });
 
@@ -654,14 +792,14 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // ── NEW: Tap to Pay Action ───────────────────────────────────────
+  // Tap to Pay Action
   Future<void> _onTapToPay() async {
     final l10n = AppLocalizations.of(context)!;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.payForJob), // Using existing or 'Pay for Job'
+        title: Text(l10n.payForJob),
         content: Text(l10n.payForJobConfirm),
         actions: [
           TextButton(
@@ -682,7 +820,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  // ── NEW: Persistent Tap to Pay Button (WhatsApp Style) ───────────
+  // Persistent Tap to Pay Button (WhatsApp Style)
   Widget _tapToPayButton(bool dark) {
     final l10n = AppLocalizations.of(context)!;
     final bgColor = dark ? const Color(0xFF1F2C34) : Colors.white;
@@ -711,7 +849,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, color: textColor.withValues(alpha: 0.5), size: 16),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: textColor.withValues(alpha: 0.5), size: 16),
             ],
           ),
         ),
@@ -739,7 +878,8 @@ class _ChatScreenState extends State<ChatScreen> {
         appBar: _selecting ? _selectionBar(dark) : _normalBar(dark),
         body: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
+            constraints:
+            BoxConstraints(maxWidth: isWide ? 900 : double.infinity),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
@@ -766,7 +906,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             foregroundColor: AppTheme.primary,
                             elevation: 2,
                             onPressed: _toBottom,
-                            child: const Icon(Icons.keyboard_arrow_down_rounded,
+                            child: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
                                 size: 28),
                           ),
                         ),
@@ -775,9 +916,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ]),
                 ),
                 if (!_selecting) ...[
-                  // NEW: Tap to Pay button right above the input
                   _tapToPayButton(dark),
-
                   AnimatedSize(
                     duration: const Duration(milliseconds: 160),
                     alignment: Alignment.bottomCenter,
@@ -822,10 +961,12 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Icon(Icons.push_pin_rounded, size: 18, color: AppTheme.primary),
+            const Icon(Icons.push_pin_rounded,
+                size: 18, color: AppTheme.primary),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
                   pins.length > 1
                       ? l10n.pinnedXOfY(i + 1, pins.length)

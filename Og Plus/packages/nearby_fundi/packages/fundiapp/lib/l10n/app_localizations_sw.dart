@@ -57,7 +57,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get quickActions => 'Vitendo vya Haraka';
 
   @override
-  String get registrationSessionLost => 'Kikao cha usajili kimepotea. Tafadhali anza upya.';
+  String get registrationSessionLost => 'Kipindi cha usajili kimepotea. Tafadhali anza tena.';
 
   @override
   String otpResentTo(String identifier) {
@@ -65,24 +65,26 @@ class AppLocalizationsSw extends AppLocalizations {
   }
 
   @override
-  String get failedToResendOtp => 'Imeshindwa kutuma tena OTP';
+  String get failedToResendOtp => 'Imeshindwa kutuma tena OTP.';
 
   @override
   String resendAvailableIn(int seconds) {
-    return 'Inapatikana tena baada ya sekunde $seconds';
+    return 'Tuma tena baada ya sekunde $seconds';
   }
 
   @override
   String get didntReceiveCode => 'Hukupokea msimbo?';
 
   @override
-  String get sending => 'Inatuma...';
+  String sending(String percent) {
+    return 'Inatuma…';
+  }
 
   @override
-  String get wait => 'Subiri...';
+  String get wait => 'Subiri';
 
   @override
-  String get resend => 'Tuma tena';
+  String get resend => 'Tuma Tena';
 
   @override
   String get enter6DigitOtp => 'Weka OTP ya tarakimu 6';
@@ -173,13 +175,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get enterCodeSent => 'Weka msimbo uliotumwa kwa';
 
   @override
-  String get enterOtp => 'Weka OTP';
+  String get enterOtp => 'Weka OTP ya tarakimu 6';
 
   @override
   String get otpSent => 'Msimbo wa tarakimu 6 umetumwa kwenye barua pepe yako';
 
   @override
-  String get verifyOtp => 'Thibitisha OTP';
+  String get verifyOtp => 'Thibitisha';
 
   @override
   String get backToSignIn => 'Rudi Kuingia';
@@ -325,7 +327,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get myProfile => 'Profaili ';
 
   @override
-  String get editProfile => 'Hariri Wasifu';
+  String get editProfile => 'Badilisha Wasifu';
 
   @override
   String get profileDetails => 'Maelezo ya Wasifu';
@@ -334,19 +336,19 @@ class AppLocalizationsSw extends AppLocalizations {
   String get updateInfo => 'Sasisha Taarifa Zako';
 
   @override
-  String get name => 'Jina Kamili';
+  String get name => 'Jina';
 
   @override
   String get phone => 'Simu';
 
   @override
-  String get bio => 'Maelezo Mafupi';
+  String get bio => 'Maelezo binafsi';
 
   @override
   String get hourlyRate => 'Gharama kwa Saa (TZS)';
 
   @override
-  String get area => 'Eneo la Huduma';
+  String get area => 'Eneo';
 
   @override
   String get experience => 'Uzoefu';
@@ -361,13 +363,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get accountStatus => 'Hali ya Akaunti';
 
   @override
-  String get active => 'Hai';
+  String get active => 'Inatumika';
 
   @override
   String get onlineStatus => 'Hali ya Mtandaoni';
 
   @override
-  String get servicesIOffer => 'Huduma Ninazotoa';
+  String get servicesIOffer => 'Huduma ninazotoa';
 
   @override
   String get noServicesSelected => 'Hakuna huduma zilizochaguliwa';
@@ -376,25 +378,387 @@ class AppLocalizationsSw extends AppLocalizations {
   String get saveChanges => 'Hifadhi Mabadiliko';
 
   @override
-  String get updateFailed => 'Imeshindwa kusasisha';
+  String get updateFailed => 'Usasishaji umeshindikana. Tafadhali jaribu tena.';
 
   @override
   String get retry => 'Jaribu Tena';
 
   @override
+  String get back => 'Rudi';
+
+  @override
+  String get refresh => 'Onyesha Upya';
+
+  @override
+  String get newPost => 'Chapisho Jipya';
+
+  @override
+  String get photos => 'Picha';
+
+  @override
+  String get addAtLeastOnePhoto => 'Ongeza angalau picha moja.';
+
+  @override
+  String get failedToSavePost => 'Imeshindwa kuhifadhi chapisho';
+
+  @override
+  String get deleteFailed => 'Imeshindwa kufuta faili';
+
+  @override
+  String get imageNotAvailable => 'Picha haipatikani';
+
+  @override
+  String get portfolioEmptySubtitle => 'Shiriki kazi yako na picha ili kujenga kwingineko yako.';
+
+  @override
+  String get justNow => 'Sasa hivi';
+
+  @override
+  String minutesAgo(int minutes) {
+    return 'Dakika $minutes zilizopita';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return 'Saa $hours zilizopita';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return 'Siku $days zilizopita';
+  }
+
+  @override
+  String get editPost => 'Hariri Chapisho';
+
+  @override
+  String get deletePostAction => 'Futa Chapisho';
+
+  @override
+  String get addPost => 'Ongeza Chapisho';
+
+  @override
+  String get portfolioFailedToLoad => 'Imeshindwa kupakia kwingineko';
+
+  @override
+  String get portfolioUpdateFailed => 'Imeshindwa kusasisha kwingineko';
+
+  @override
+  String get portfolioDeleteFailed => 'Imeshindwa kufuta chapisho';
+
+  @override
+  String get requests => 'Maombi';
+
+  @override
+  String get filterByCustomerService => 'Chuja kwa mteja au huduma...';
+
+  @override
+  String get noRequests => 'Hakuna maombi bado.';
+
+  @override
+  String get noMatchingRequests => 'Hakuna maombi yanayolingana';
+
+  @override
+  String get accept => 'Kubali';
+
+  @override
+  String get reject => 'Kataa';
+
+  @override
+  String get requestAccepted => 'Ombi limekubaliwa';
+
+  @override
+  String get requestRejected => 'Ombi limekataliwa';
+
+  @override
+  String get failedToAccept => 'Imeshindwa kukubali';
+
+  @override
+  String get failedToReject => 'Imeshindwa kukataa';
+
+  @override
+  String get viewJob => 'Tazama Kazi';
+
+  @override
+  String get chatWithCustomer => 'Ongea na Mteja';
+
+  @override
+  String jobLabel(String number) {
+    return 'Kazi $number';
+  }
+
+  @override
+  String jobWithStatus(String number, String status) {
+    return 'Kazi $number • $status';
+  }
+
+  @override
+  String get requestRejectedBanner => 'Ombi Limekataliwa';
+
+  @override
+  String get requestCancelledBanner => 'Ombi Limeghairiwa';
+
+  @override
+  String failedToStartChat(String error) {
+    return 'Imeshindwa kuanzisha soga: $error';
+  }
+
+  @override
+  String get statusPending => 'Inasubiri';
+
+  @override
+  String get statusAccepted => 'Imekubaliwa';
+
+  @override
+  String get statusRejected => 'Imekataliwa';
+
+  @override
+  String get statusCancelled => 'Imeghairiwa';
+
+  @override
+  String get filterAll => 'Yote';
+
+  @override
+  String get statTotal => 'Jumla';
+
+  @override
+  String get statPending => 'Inasubiri';
+
+  @override
+  String get statAccepted => 'Imekubaliwa';
+
+  @override
+  String get typing => 'Anaandika...';
+
+  @override
+  String get sayHelloToStart => 'Sema habari ili uanze kuzungumza!';
+
+  @override
+  String get replyEllipsis => 'Jibu…';
+
+  @override
+  String get message => 'Ujumbe';
+
+  @override
+  String get attach => 'Ambatisha';
+
+  @override
+  String get send => 'Tuma';
+
+  @override
+  String get copy => 'Nakili';
+
+  @override
+  String get copied => 'Imenakiliwa';
+
+  @override
+  String get delete => 'Futa';
+
+  @override
+  String get cancel => 'Ghairi';
+
+  @override
+  String get forwarded => 'Imetumwa';
+
+  @override
+  String get deleted => 'Imefutwa';
+
+  @override
+  String get starred => 'Imewekwa nyota';
+
+  @override
+  String get removedFromStarred => 'Imeondolewa kwenye nyota';
+
+  @override
+  String get messagePinned => 'Ujumbe umebandikwa';
+
+  @override
+  String get messageUnpinned => 'Ujumbe umebanduliwa';
+
+  @override
+  String get deleteMessage => 'Futa ujumbe?';
+
+  @override
+  String deleteMessages(int count) {
+    return 'Futa jumbe $count?';
+  }
+
+  @override
+  String get deleteForEveryone => 'Futa kwa wote';
+
+  @override
+  String get deleteForEveryoneSubtitle => 'Itaondolewa kwa nyote wawili';
+
+  @override
+  String get deleteForMe => 'Futa kwangu';
+
+  @override
+  String get deleteForMeSubtitle => 'Itaondolewa kwenye simu hii tu';
+
+  @override
+  String deleteEveryoneFailed(int count) {
+    return 'Jumbe $count hazikuweza kufutwa kwa wote.';
+  }
+
+  @override
+  String get originalMessageUnavailable => 'Ujumbe halisi haupatikani tena.';
+
+  @override
+  String get fileTypeNotAllowed => 'Aina hii ya faili hairuhusiwi.';
+
+  @override
+  String fileTooLarge(int limit) {
+    return 'Faili ni kubwa mno. Kiwango cha juu ni $limit MB kwa aina hii.';
+  }
+
+  @override
+  String get attachCamera => 'Kamera';
+
+  @override
+  String get attachPhotos => 'Picha';
+
+  @override
+  String get attachVideo => 'Video';
+
+  @override
+  String get attachDocument => 'Nyaraka';
+
+  @override
+  String get attachSizeHint => 'Picha 5 MB · Video 20 MB · Faili 15 MB';
+
+  @override
+  String get pinnedMessage => 'Ujumbe uliobandikwa';
+
+  @override
+  String pinnedXofY(int i, int n) {
+    return 'Umebandikwa $i kati ya $n';
+  }
+
+  @override
+  String get you => 'Wewe';
+
+  @override
+  String get mediaLinksDocs => 'Midia, viungo na nyaraka';
+
+  @override
+  String get starredMessages => 'Jumbe zenye nyota';
+
+  @override
+  String get mediaTab => 'Midia';
+
+  @override
+  String get docsTab => 'Nyaraka';
+
+  @override
+  String get linksTab => 'Viungo';
+
+  @override
+  String get noMedia => 'Hakuna midia';
+
+  @override
+  String get noDocuments => 'Hakuna nyaraka';
+
+  @override
+  String get noLinks => 'Hakuna viungo';
+
+  @override
+  String get noStarredMessages => 'Hakuna jumbe zenye nyota';
+
+  @override
+  String get file => 'Faili';
+
+  @override
   String get customers => 'Wateja';
 
   @override
+  String get archivedChats => 'Mazungumzo Yaliyohifadhiwa';
+
+  @override
+  String get viewActiveChats => 'Ona mazungumzo hai';
+
+  @override
+  String get viewArchivedChats => 'Ona mazungumzo yaliyohifadhiwa';
+
+  @override
   String get searchCustomers => 'Tafuta wateja';
+
+  @override
+  String get filterUnread => 'Zisizosomwa';
+
+  @override
+  String filterUnreadCount(int count) {
+    return 'Zisizosomwa $count';
+  }
+
+  @override
+  String get filterPinned => 'Zilizobandikwa';
+
+  @override
+  String get pinChat => 'Bandika gumzo';
+
+  @override
+  String get unpinChat => 'Ondoa gumzo lililobandikwa';
+
+  @override
+  String get archiveChat => 'Hifadhi gumzo';
+
+  @override
+  String get unarchiveChat => 'Toa gumzo kwenye hifadhi';
+
+  @override
+  String get deleteChat => 'Futa gumzo';
+
+  @override
+  String deleteChatWith(String name) {
+    return 'Futa mazungumzo na $name?';
+  }
+
+  @override
+  String get deleteChatWarning => 'Jumbe na faili zote zitaondolewa kwa nyote wawili.';
+
+  @override
+  String get noMatchingConversations => 'Hakuna mazungumzo yanayolingana';
+
+  @override
+  String get noArchivedChats => 'Hakuna mazungumzo yaliyohifadhiwa';
+
+  @override
+  String get reply => 'Jibu';
+
+  @override
+  String get noConversationsYet => 'Hakuna mazungumzo bado';
+
+  @override
+  String get customersWillAppearHere => 'Wateja wataonekana hapa watakapokutumia ujumbe';
+
+  @override
+  String get today => 'Leo';
+
+  @override
+  String get yesterday => 'Jana';
+
+  @override
+  String get photoEmoji => '📷 Picha';
+
+  @override
+  String get fileEmoji => '📁 Faili';
+
+  @override
+  String replyChip(String sender, String text) {
+    return '↩ $sender: $text';
+  }
+
+  @override
+  String get backTooltip => 'Rudi';
+
+  @override
+  String get refreshTooltip => 'Onyesha Upya';
 
   @override
   String get noCustomersYet => 'Hakuna wateja bado';
 
   @override
   String get customersWillAppear => 'Wateja wataonekana hapa watakapokutumia ujumbe';
-
-  @override
-  String get deleteChat => 'Futa gumzo';
 
   @override
   String get deleteChatConfirmation => 'Ujumbe na faili zote zitaondolewa kwa nyote wawili.';
@@ -406,31 +770,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get failedToDeleteChat => 'Imeshindwa kufuta gumzo';
 
   @override
-  String get archiveChat => 'Hifadhi gumzo';
-
-  @override
-  String get unarchiveChat => 'Toa gumzo kwenye hifadhi';
-
-  @override
-  String get pinChat => 'Bandika gumzo';
-
-  @override
-  String get unpinChat => 'Ondoa gumzo lililobandikwa';
-
-  @override
   String get chatArchived => 'Gumzo limehifadhiwa';
 
   @override
   String get chatUnarchived => 'Gumzo limetolewa kwenye hifadhi';
-
-  @override
-  String get copy => 'Nakili';
-
-  @override
-  String get deleteMessage => 'Futa ujumbe?';
-
-  @override
-  String get reply => 'Jibu';
 
   @override
   String get forward => 'Sambaza';
@@ -467,6 +810,87 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get attachment => '📎 Kiambatisho';
+
+  @override
+  String get forwardedLower => 'imetumwa';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get couldNotOpenFile => 'Imeshindwa kufungua faili hii.';
+
+  @override
+  String get allowGalleryAccess => 'Ruhusu ufikiaji wa ghala kuhifadhi faili hii.';
+
+  @override
+  String get galleryPluginMissing => 'Programu-jalizi ya ghala haijasakinishwa kwenye toleo hili. Inafungua dirisha la kushiriki badala yake.';
+
+  @override
+  String get couldNotSaveToGallery => 'Imeshindwa kuhifadhi kwenye ghala.';
+
+  @override
+  String get couldNotPlayVideo => 'Imeshindwa kucheza video hii.';
+
+  @override
+  String get saveToGallery => 'Hifadhi kwenye ghala';
+
+  @override
+  String get share => 'Shiriki';
+
+  @override
+  String get messageDeleted => 'Ujumbe umefutwa';
+
+  @override
+  String get notSentTapToRetry => 'Hautumwa · Gusa kujaribu tena';
+
+  @override
+  String errorTapToRetry(String error) {
+    return '$error · Gusa kujaribu tena';
+  }
+
+  @override
+  String get saveShare => 'Hifadhi / shiriki';
+
+  @override
+  String get save => 'Hifadhi';
+
+  @override
+  String get forwardMessageTo => 'Tuma ujumbe kwa…';
+
+  @override
+  String forwardMessagesTo(int count) {
+    return 'Tuma jumbe $count kwa…';
+  }
+
+  @override
+  String get search => 'Tafuta';
+
+  @override
+  String get noChatsToForwardTo => 'Hakuna mazungumzo ya kutumia';
+
+  @override
+  String get sendingShort => 'Inatuma…';
+
+  @override
+  String get messageInfo => 'Maelezo ya ujumbe';
+
+  @override
+  String get couldNotLoadInfo => 'Imeshindwa kupakia maelezo';
+
+  @override
+  String get read => 'Imesomwa';
+
+  @override
+  String get delivered => 'Imefikishwa';
+
+  @override
+  String get sent => 'Imetumwa';
+
+  @override
+  String reactionsCount(int count) {
+    return 'Miitikio · $count';
+  }
 
   @override
   String get online => 'Mtandaoni';
@@ -577,18 +1001,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get filterByDescription => 'Chuja kwa maelezo...';
 
   @override
-  String get requests => 'Maombi';
-
-  @override
-  String get noRequests => 'Hakuna maombi bado.';
-
-  @override
-  String get accept => 'Kubali';
-
-  @override
-  String get reject => 'Kataa';
-
-  @override
   String get customer => 'Mteja';
 
   @override
@@ -596,21 +1008,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get description => 'Maelezo';
-
-  @override
-  String get filterByCustomerService => 'Chuja kwa mteja au huduma...';
-
-  @override
-  String get noMatchingRequests => 'Hakuna maombi yanayolingana';
-
-  @override
-  String get requestAccepted => 'Ombi limekubaliwa';
-
-  @override
-  String get requestRejected => 'Ombi limekataliwa';
-
-  @override
-  String get chatWithCustomer => 'Ongea na Mteja';
 
   @override
   String get aboutUs => 'Kuhusu Sisi';
@@ -646,10 +1043,132 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noFaqs => 'Hakuna maswali yanayopatikana.';
 
   @override
+  String get settingsPreferences => 'Mapendeleo';
+
+  @override
+  String get settingsInformation => 'Taarifa';
+
+  @override
+  String get settingsAccount => 'Akaunti';
+
+  @override
+  String get settingsDarkMode => 'Hali ya Giza';
+
+  @override
+  String get settingsDarkOn => 'Mandhari ya giza imewashwa';
+
+  @override
+  String get settingsLightOn => 'Mandhari ya mwanga imewashwa';
+
+  @override
   String get pushNotifications => 'Arifa za Papo Hapo';
 
   @override
   String get receiveAlerts => 'Pokea tahadhari kuhusu maombi';
+
+  @override
+  String get viewNotifications => 'Tazama Arifa';
+
+  @override
+  String get seeAllNotifications => 'Tazama arifa zako zote zinazoingia';
+
+  @override
+  String get languageEnglish => 'Kiingereza';
+
+  @override
+  String get languageSwahili => 'Kiswahili';
+
+  @override
+  String get logoutConfirmation => 'Una uhakika unataka kutoka?';
+
+  @override
+  String get logoutConfirmTitle => 'Toka?';
+
+  @override
+  String get logoutConfirmMessage => 'Utahitaji kuingia tena ili kufikia akaunti yako.';
+
+  @override
+  String logoutFailed(Object error) {
+    return 'Kosa la kutoka: $error';
+  }
+
+  @override
+  String get loggingOut => 'Inatoka…';
+
+  @override
+  String get deleteAccountConfirmation => 'Kitendo hiki ni cha kudumu. Data yako yote itapotea. Una uhakika?';
+
+  @override
+  String get couldNotDeleteAccount => 'Imeshindwa kufuta akaunti';
+
+  @override
+  String get profileUpdated => 'Wasifu umesasishwa kwa mafanikio';
+
+  @override
+  String get tapToChangePhoto => 'Gusa kamera kubadilisha picha';
+
+  @override
+  String get nameRequired => 'Jina linahitajika';
+
+  @override
+  String get nidaNumber => 'Namba ya NIDA';
+
+  @override
+  String get nidaHelperText => 'Imewekwa wakati wa usajili. Wasiliana na msaada kubadilisha.';
+
+  @override
+  String get verifiedLabel => '✓ IMETHIBITISHWA';
+
+  @override
+  String get selectAtLeastOneService => 'Chagua angalau huduma moja';
+
+  @override
+  String get editServices => 'Hariri huduma';
+
+  @override
+  String get noServicesAvailable => 'Hakuna huduma zinazopatikana.';
+
+  @override
+  String get servicesUpdated => 'Huduma zimesasishwa';
+
+  @override
+  String get typeAreaOrPickOnMap => 'Andika eneo au chagua kwenye ramani';
+
+  @override
+  String get pickOnMap => 'Chagua kwenye ramani';
+
+  @override
+  String get locationSetOnMap => 'Mahali pamewekwa kwenye ramani';
+
+  @override
+  String get privacyPolicy => 'Sera ya Faragha';
+
+  @override
+  String get ok => 'Sawa';
+
+  @override
+  String get pickLocationOnMap => 'Chagua mahali kwenye ramani';
+
+  @override
+  String get searchAreaHint => 'Tafuta eneo, mtaa, au alama…';
+
+  @override
+  String get gettingAddress => 'Inapata anwani…';
+
+  @override
+  String get tapMapToSelectLocation => 'Gusa ramani kuchagua mahali';
+
+  @override
+  String get useThisLocation => 'Tumia mahali hapa';
+
+  @override
+  String get selectedLocation => 'Mahali palipochaguliwa';
+
+  @override
+  String get zoomIn => 'Kuza';
+
+  @override
+  String get zoomOut => 'Punguza';
 
   @override
   String get noNotificationsYet => 'Hakuna arifa bado';
@@ -670,16 +1189,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noMessagesYet => 'Hakuna ujumbe bado';
 
   @override
-  String get sayHelloToStart => 'Sema habari ili uanze kuzungumza!';
-
-  @override
   String get typeAMessage => 'Andika ujumbe...';
-
-  @override
-  String get typing => 'Anaandika...';
-
-  @override
-  String get messageDeleted => 'Ujumbe umefutwa';
 
   @override
   String get messageCopied => 'Ujumbe umenakiliwa';
@@ -703,19 +1213,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get image => 'Picha';
 
   @override
-  String get file => 'Faili';
-
-  @override
   String get voiceMessage => 'Ujumbe wa sauti';
-
-  @override
-  String get video => 'Video';
-
-  @override
-  String get justNow => 'Sasa hivi';
-
-  @override
-  String get noConversationsYet => 'Hakuna mazungumzo bado';
 
   @override
   String get startChattingWithFundis => 'Anza kuzungumza na wateja walio karibu nawe';
@@ -769,9 +1267,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get downloadFailed => 'Imeshindwa kupakua faili';
 
   @override
-  String get deleteFailed => 'Imeshindwa kufuta faili';
-
-  @override
   String get permissionDenied => 'Ruhusa imekataliwa';
 
   @override
@@ -790,9 +1285,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get noMatchingItems => 'Hakuna vitu vinavyolingana';
 
   @override
-  String get cancel => 'Ghairi';
-
-  @override
   String get add => 'Ongeza';
 
   @override
@@ -802,31 +1294,13 @@ class AppLocalizationsSw extends AppLocalizations {
   String get create => 'Unda';
 
   @override
-  String get delete => 'Futa';
-
-  @override
   String get call => 'Piga Simu';
 
   @override
   String get areYouSure => 'Una uhakika?';
 
   @override
-  String get logoutConfirmation => 'Una uhakika unataka kutoka?';
-
-  @override
-  String get deleteAccountConfirmation => 'Kitendo hiki ni cha kudumu. Data yako yote itapotea. Una uhakika?';
-
-  @override
   String get selectServicesDialogTitle => 'Chagua Huduma';
-
-  @override
-  String get selectAtLeastOneService => 'Chagua angalau huduma moja';
-
-  @override
-  String get servicesUpdated => 'Huduma zimesasishwa';
-
-  @override
-  String get profileUpdated => 'Wasifu umesasishwa kwa mafanikio';
 
   @override
   String get open => 'Fungua';
@@ -1061,15 +1535,6 @@ class AppLocalizationsSw extends AppLocalizations {
   String get allCaughtUp => 'Umemaliza zote!';
 
   @override
-  String get refresh => 'Onyesha Upya';
-
-  @override
-  String get viewNotifications => 'Tazama Arifa';
-
-  @override
-  String get seeAllNotifications => 'Tazama arifa zako zote zinazoingia';
-
-  @override
   String get markAllRead => 'Weka Zote Zimesomwa';
 
   @override
@@ -1127,28 +1592,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get download => 'Pakua';
 
   @override
-  String get share => 'Shiriki';
-
-  @override
   String get openPdf => 'Fungua PDF';
 
   @override
-  String get privacyPolicy => 'Sera ya Faragha';
-
-  @override
-  String get tapToChangePhoto => 'Gusa kamera kubadilisha picha';
-
-  @override
-  String get nidaNumber => 'Namba ya NIDA';
-
-  @override
   String get typeArea => 'Andika eneo';
-
-  @override
-  String get pickOnMap => 'Chagua kwenye ramani';
-
-  @override
-  String get typeAreaOrPickOnMap => 'Andika eneo au chagua kwenye ramani';
 
   @override
   String get oops => 'Lo!';
@@ -1558,40 +2005,10 @@ class AppLocalizationsSw extends AppLocalizations {
   String get areYouSureDeleteMessage => 'Una uhakika unataka kufuta ujumbe huu?';
 
   @override
-  String get filterAll => 'Yote';
-
-  @override
   String get filterOnProgress => 'Inaendelea';
 
   @override
   String get filterCompleted => 'Imekamilika';
-
-  @override
-  String get settingsPreferences => 'Mapendeleo';
-
-  @override
-  String get settingsInformation => 'Taarifa';
-
-  @override
-  String get settingsAccount => 'Akaunti';
-
-  @override
-  String get settingsDarkMode => 'Hali ya Giza';
-
-  @override
-  String get settingsDarkOn => 'Mandhari ya giza imewashwa';
-
-  @override
-  String get settingsLightOn => 'Mandhari ya mwanga imewashwa';
-
-  @override
-  String get editServices => 'Hariri huduma';
-
-  @override
-  String get noServicesAvailable => 'Hakuna huduma zinazopatikana.';
-
-  @override
-  String get couldNotDeleteAccount => 'Imeshindwa kufuta akaunti';
 
   @override
   String get payments => 'Malipo';
@@ -1610,9 +2027,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get tapToSelectImages => 'Gusa kuchagua picha';
-
-  @override
-  String get editPost => 'Hariri Chapisho';
 
   @override
   String get addMoreImages => 'Ongeza picha zaidi';

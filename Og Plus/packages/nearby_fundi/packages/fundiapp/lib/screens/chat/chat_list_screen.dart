@@ -5,6 +5,7 @@ import 'package:fundiapp_sdk/screens/chat/widgets/user_avatar.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/chat_conversation.dart';
 import '../../models/chat_user.dart';
 import '../../providers/auth_provider.dart';
@@ -69,15 +70,15 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
   Future<void> _open(ChatConversation c) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => FundiChatScreen(conversation: c),
-      ),
+      MaterialPageRoute(builder: (_) => FundiChatScreen(conversation: c)),
     );
     if (mounted) await context.read<ChatProvider>().refreshConversations();
   }
 
   Future<void> _longPress(ChatConversation c) async {
+    final l10n = AppLocalizations.of(context)!;
     final chat = context.read<ChatProvider>();
+
     final act = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -88,20 +89,21 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
             leading: Icon(c.isPinned
                 ? Icons.push_pin_outlined
                 : Icons.push_pin_rounded),
-            title: Text(c.isPinned ? 'Unpin chat' : 'Pin chat'),
+            title: Text(c.isPinned ? l10n.unpinChat : l10n.pinChat),
             onTap: () => Navigator.pop(s, 'pin'),
           ),
           ListTile(
             leading: Icon(c.isArchived
                 ? Icons.unarchive_outlined
                 : Icons.archive_outlined),
-            title: Text(c.isArchived ? 'Unarchive chat' : 'Archive chat'),
+            title: Text(c.isArchived ? l10n.unarchiveChat : l10n.archiveChat),
             onTap: () => Navigator.pop(s, 'archive'),
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
-            title: const Text('Delete chat',
-                style: TextStyle(color: AppTheme.error)),
+            leading: const Icon(Icons.delete_outline_rounded,
+                color: AppTheme.error),
+            title: Text(l10n.deleteChat,
+                style: const TextStyle(color: AppTheme.error)),
             onTap: () => Navigator.pop(s, 'delete'),
           ),
         ]),
@@ -118,16 +120,16 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
         final ok = await showDialog<bool>(
           context: context,
           builder: (d) => AlertDialog(
-            title: Text('Delete chat with ${c.otherParty.name}?'),
-            content: const Text(
-                'All messages and files will be removed for both of you.'),
+            title: Text(l10n.deleteChatWith(c.otherParty.name)),
+            content: Text(l10n.deleteChatWarning),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(d, false),
-                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () => Navigator.pop(d, false),
+                  child: Text(l10n.cancel)),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: AppTheme.error),
                 onPressed: () => Navigator.pop(d, true),
-                child: const Text('Delete'),
+                child: Text(l10n.delete),
               ),
             ],
           ),
@@ -145,17 +147,17 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final chat = context.watch<ChatProvider>();
 
     var list = _showArchived ? chat.archivedChats : chat.activeChats;
 
-    // Apply Search Query
     final q = _q.toLowerCase();
     if (q.isNotEmpty) {
-      list = list.where((c) => c.otherParty.name.toLowerCase().contains(q)).toList();
+      list =
+          list.where((c) => c.otherParty.name.toLowerCase().contains(q)).toList();
     }
 
-    // Apply Filter (All, Unread, Pinned)
     if (_filter == 'unread') {
       list = list.where((c) => c.unreadCount > 0).toList();
     } else if (_filter == 'pinned') {
@@ -163,7 +165,8 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: dark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+      backgroundColor:
+      dark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: dark ? const Color(0xFF1F2C34) : AppTheme.primary,
@@ -171,12 +174,14 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
+          tooltip: l10n.backTooltip,
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: Colors.white),
           onPressed: _handleBack,
         ),
         title: Text(
-            _showArchived ? 'Archived Chats' : 'Customers',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 20)
+          _showArchived ? l10n.archivedChats : l10n.customers,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
         ),
         actions: [
           PopupMenuButton<String>(
@@ -191,15 +196,20 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
                 value: 'archive',
                 child: Row(
                   children: [
-                    Icon(_showArchived ? Icons.chat_bubble_outline_rounded : Icons.archive_outlined),
+                    Icon(_showArchived
+                        ? Icons.chat_bubble_outline_rounded
+                        : Icons.archive_outlined),
                     const SizedBox(width: 10),
-                    Text(_showArchived ? 'View Active Chats' : 'View Archived Chats'),
+                    Text(_showArchived
+                        ? l10n.viewActiveChats
+                        : l10n.viewArchivedChats),
                   ],
                 ),
               ),
             ],
           ),
           IconButton(
+            tooltip: l10n.refreshTooltip,
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),
             onPressed: chat.refreshConversations,
           ),
@@ -207,7 +217,7 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
       ),
       body: Column(
         children: [
-          // ── SEARCH & FILTERS (From Screenshot) ──
+          // SEARCH & FILTERS
           Container(
             color: dark ? const Color(0xFF1F2C34) : Colors.white,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
@@ -216,15 +226,18 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
                 Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    color: dark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
+                    color: dark
+                        ? const Color(0xFF2A3942)
+                        : const Color(0xFFF0F2F5),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: TextField(
                     controller: _search,
                     onChanged: (v) => setState(() => _q = v.trim()),
                     decoration: InputDecoration(
-                      hintText: 'Search customers',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                      hintText: l10n.searchCustomers,
+                      prefixIcon:
+                      const Icon(Icons.search_rounded, size: 22),
                       suffixIcon: _q.isEmpty
                           ? null
                           : IconButton(
@@ -236,7 +249,8 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
                       ),
                       border: InputBorder.none,
                       filled: false,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                      contentPadding:
+                      const EdgeInsets.symmetric(vertical: 9),
                     ),
                   ),
                 ),
@@ -247,21 +261,23 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
                   child: Row(
                     children: [
                       _FilterChip(
-                        label: 'All',
+                        label: l10n.filterAll,
                         isSelected: _filter == 'all',
                         onTap: () => setState(() => _filter = 'all'),
                         isDark: dark,
                       ),
                       const SizedBox(width: 8),
                       _FilterChip(
-                        label: chat.unreadChats > 0 ? 'Unread ${chat.unreadChats}' : 'Unread',
+                        label: chat.unreadChats > 0
+                            ? l10n.filterUnreadCount(chat.unreadChats)
+                            : l10n.filterUnread,
                         isSelected: _filter == 'unread',
                         onTap: () => setState(() => _filter = 'unread'),
                         isDark: dark,
                       ),
                       const SizedBox(width: 8),
                       _FilterChip(
-                        label: 'Pinned',
+                        label: l10n.filterPinned,
                         isSelected: _filter == 'pinned',
                         onTap: () => setState(() => _filter = 'pinned'),
                         isDark: dark,
@@ -273,13 +289,14 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
             ),
           ),
 
-          // ── CHAT LIST ──
+          // CHAT LIST
           Expanded(
             child: RefreshIndicator(
               color: AppTheme.primary,
               onRefresh: chat.refreshConversations,
               child: (chat.isLoading && chat.conversations.isEmpty)
-                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                  ? const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary))
                   : list.isEmpty
                   ? _Empty(
                 isArchived: _showArchived,
@@ -292,7 +309,9 @@ class _FundiChatListScreenState extends State<FundiChatListScreen> {
                   height: 1,
                   thickness: 0.5,
                   indent: 78,
-                  color: dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.18),
+                  color: dark
+                      ? Colors.white10
+                      : Colors.grey.withValues(alpha: 0.18),
                 ),
                 itemBuilder: (_, i) {
                   final c = list[i];
@@ -333,7 +352,9 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppTheme.secondary.withOpacity(0.2) : const Color(0xFFE8F0FE))
+              ? (isDark
+              ? AppTheme.secondary.withOpacity(0.2)
+              : const Color(0xFFE8F0FE))
               : (isDark ? const Color(0xFF2A3942) : Colors.white),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
@@ -382,20 +403,18 @@ class _Tile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(children: [
-          // ── USER AVATAR (Using the widget from your question) ──
           UserAvatar(
             name: c.otherParty.name,
             url: c.otherParty.avatar,
             radius: 26,
-            hasStatus: c.hasNewPost, // Gold ring if there's a new status
-            showOnline: c.otherParty.isOnline, // Green dot if online
+            hasStatus: c.hasNewPost,
+            showOnline: c.otherParty.isOnline,
             onTap: onTap,
           ),
           const SizedBox(width: 14),
-
-          // ── CHAT INFO ──
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(
                   child: Text(
@@ -427,7 +446,9 @@ class _Tile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
-                      color: unread ? (dark ? Colors.white70 : Colors.black87) : sub,
+                      color: unread
+                          ? (dark ? Colors.white70 : Colors.black87)
+                          : sub,
                       fontStyle: c.lastMessage?.isDeleted == true
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -442,7 +463,8 @@ class _Tile extends StatelessWidget {
                 if (unread)
                   Container(
                     margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     constraints: const BoxConstraints(minWidth: 22),
                     decoration: BoxDecoration(
                       color: _green,
@@ -476,6 +498,7 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hint = Theme.of(context).hintColor;
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -494,11 +517,12 @@ class _Empty extends StatelessWidget {
         Center(
           child: Text(
             isFiltered
-                ? 'No matching conversations'
+                ? l10n.noMatchingConversations
                 : isArchived
-                ? 'No archived chats'
-                : 'No conversations yet',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: hint),
+                ? l10n.noArchivedChats
+                : l10n.noConversationsYet,
+            style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w600, color: hint),
             textAlign: TextAlign.center,
           ),
         ),
@@ -506,7 +530,7 @@ class _Empty extends StatelessWidget {
           const SizedBox(height: 6),
           Center(
             child: Text(
-              'Customers will appear here when they message you',
+              l10n.customersWillAppearHere,
               style: TextStyle(color: hint),
               textAlign: TextAlign.center,
             ),

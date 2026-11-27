@@ -134,7 +134,7 @@ abstract class AppLocalizations {
   /// No description provided for @logout.
   ///
   /// In en, this message translates to:
-  /// **'Logout'**
+  /// **'Log out'**
   String get logout;
 
   /// No description provided for @deleteAccount.
@@ -194,7 +194,7 @@ abstract class AppLocalizations {
   /// Shown when the registration draft is missing during OTP step
   ///
   /// In en, this message translates to:
-  /// **'Registration session lost. Please start over.'**
+  /// **'Registration session lost. Please start again.'**
   String get registrationSessionLost;
 
   /// Confirmation after resending OTP
@@ -206,7 +206,7 @@ abstract class AppLocalizations {
   /// Error when OTP resend fails
   ///
   /// In en, this message translates to:
-  /// **'Failed to resend OTP'**
+  /// **'Failed to resend OTP.'**
   String get failedToResendOtp;
 
   /// Countdown before OTP can be resent
@@ -221,16 +221,16 @@ abstract class AppLocalizations {
   /// **'Didn\'t receive the code?'**
   String get didntReceiveCode;
 
-  /// Shown while OTP resend is in progress
+  /// No description provided for @sending.
   ///
   /// In en, this message translates to:
-  /// **'Sending...'**
-  String get sending;
+  /// **'Sending…'**
+  String sending(String percent);
 
   /// Shown while resend countdown is active
   ///
   /// In en, this message translates to:
-  /// **'Wait...'**
+  /// **'Wait'**
   String get wait;
 
   /// Resend OTP action label
@@ -410,7 +410,7 @@ abstract class AppLocalizations {
   /// No description provided for @enterOtp.
   ///
   /// In en, this message translates to:
-  /// **'Enter OTP'**
+  /// **'Enter the 6-digit OTP'**
   String get enterOtp;
 
   /// No description provided for @otpSent.
@@ -422,7 +422,7 @@ abstract class AppLocalizations {
   /// No description provided for @verifyOtp.
   ///
   /// In en, this message translates to:
-  /// **'Verify OTP'**
+  /// **'Verify'**
   String get verifyOtp;
 
   /// No description provided for @backToSignIn.
@@ -728,7 +728,7 @@ abstract class AppLocalizations {
   /// No description provided for @name.
   ///
   /// In en, this message translates to:
-  /// **'Full Name'**
+  /// **'Name'**
   String get name;
 
   /// No description provided for @phone.
@@ -752,7 +752,7 @@ abstract class AppLocalizations {
   /// No description provided for @area.
   ///
   /// In en, this message translates to:
-  /// **'Service Area'**
+  /// **'Area'**
   String get area;
 
   /// No description provided for @experience.
@@ -794,7 +794,7 @@ abstract class AppLocalizations {
   /// No description provided for @servicesIOffer.
   ///
   /// In en, this message translates to:
-  /// **'Services I Offer'**
+  /// **'Services I offer'**
   String get servicesIOffer;
 
   /// No description provided for @noServicesSelected.
@@ -812,7 +812,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateFailed.
   ///
   /// In en, this message translates to:
-  /// **'Update failed'**
+  /// **'Update failed. Please try again.'**
   String get updateFailed;
 
   /// No description provided for @retry.
@@ -821,17 +821,695 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @newPost.
+  ///
+  /// In en, this message translates to:
+  /// **'New Post'**
+  String get newPost;
+
+  /// No description provided for @photos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photos;
+
+  /// No description provided for @addAtLeastOnePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least one photo.'**
+  String get addAtLeastOnePhoto;
+
+  /// No description provided for @failedToSavePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save post'**
+  String get failedToSavePost;
+
+  /// No description provided for @deleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete file'**
+  String get deleteFailed;
+
+  /// No description provided for @imageNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Image not available'**
+  String get imageNotAvailable;
+
+  /// No description provided for @portfolioEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your work with photos to build your portfolio.'**
+  String get portfolioEmptySubtitle;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @minutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String minutesAgo(int minutes);
+
+  /// No description provided for @hoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String hoursAgo(int hours);
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String daysAgo(int days);
+
+  /// No description provided for @editPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Post'**
+  String get editPost;
+
+  /// No description provided for @deletePostAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Post'**
+  String get deletePostAction;
+
+  /// No description provided for @addPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Post'**
+  String get addPost;
+
+  /// No description provided for @portfolioFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load portfolio'**
+  String get portfolioFailedToLoad;
+
+  /// No description provided for @portfolioUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update portfolio'**
+  String get portfolioUpdateFailed;
+
+  /// No description provided for @portfolioDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete post'**
+  String get portfolioDeleteFailed;
+
+  /// No description provided for @requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get requests;
+
+  /// No description provided for @filterByCustomerService.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by customer or service...'**
+  String get filterByCustomerService;
+
+  /// No description provided for @noRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests yet.'**
+  String get noRequests;
+
+  /// No description provided for @noMatchingRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching requests'**
+  String get noMatchingRequests;
+
+  /// No description provided for @accept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get accept;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
+  /// No description provided for @requestAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Request accepted'**
+  String get requestAccepted;
+
+  /// No description provided for @requestRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Request rejected'**
+  String get requestRejected;
+
+  /// No description provided for @failedToAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept'**
+  String get failedToAccept;
+
+  /// No description provided for @failedToReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to reject'**
+  String get failedToReject;
+
+  /// No description provided for @viewJob.
+  ///
+  /// In en, this message translates to:
+  /// **'View Job'**
+  String get viewJob;
+
+  /// No description provided for @chatWithCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with Customer'**
+  String get chatWithCustomer;
+
+  /// No description provided for @jobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Job {number}'**
+  String jobLabel(String number);
+
+  /// No description provided for @jobWithStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Job {number} • {status}'**
+  String jobWithStatus(String number, String status);
+
+  /// No description provided for @requestRejectedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Rejected'**
+  String get requestRejectedBanner;
+
+  /// No description provided for @requestCancelledBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Cancelled'**
+  String get requestCancelledBanner;
+
+  /// No description provided for @failedToStartChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to start chat: {error}'**
+  String failedToStartChat(String error);
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statusAccepted;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @statTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get statTotal;
+
+  /// No description provided for @statPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statPending;
+
+  /// No description provided for @statAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get statAccepted;
+
+  /// No description provided for @typing.
+  ///
+  /// In en, this message translates to:
+  /// **'Typing...'**
+  String get typing;
+
+  /// No description provided for @sayHelloToStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Say hello to start chatting!'**
+  String get sayHelloToStart;
+
+  /// No description provided for @replyEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply…'**
+  String get replyEllipsis;
+
+  /// No description provided for @message.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get message;
+
+  /// No description provided for @attach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get attach;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @forwarded.
+  ///
+  /// In en, this message translates to:
+  /// **'Forwarded'**
+  String get forwarded;
+
+  /// No description provided for @deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get deleted;
+
+  /// No description provided for @starred.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred'**
+  String get starred;
+
+  /// No description provided for @removedFromStarred.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from starred'**
+  String get removedFromStarred;
+
+  /// No description provided for @messagePinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Message pinned'**
+  String get messagePinned;
+
+  /// No description provided for @messageUnpinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Message unpinned'**
+  String get messageUnpinned;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete message?'**
+  String get deleteMessage;
+
+  /// No description provided for @deleteMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} messages?'**
+  String deleteMessages(int count);
+
+  /// No description provided for @deleteForEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for everyone'**
+  String get deleteForEveryone;
+
+  /// No description provided for @deleteForEveryoneSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed for both of you'**
+  String get deleteForEveryoneSubtitle;
+
+  /// No description provided for @deleteForMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for me'**
+  String get deleteForMe;
+
+  /// No description provided for @deleteForMeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only removed on this phone'**
+  String get deleteForMeSubtitle;
+
+  /// No description provided for @deleteEveryoneFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} message(s) could not be deleted for everyone.'**
+  String deleteEveryoneFailed(int count);
+
+  /// No description provided for @originalMessageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The original message is no longer available.'**
+  String get originalMessageUnavailable;
+
+  /// No description provided for @fileTypeNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This file type is not allowed.'**
+  String get fileTypeNotAllowed;
+
+  /// No description provided for @fileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'File too large. Max {limit} MB for this type.'**
+  String fileTooLarge(int limit);
+
+  /// No description provided for @attachCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get attachCamera;
+
+  /// No description provided for @attachPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get attachPhotos;
+
+  /// No description provided for @attachVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get attachVideo;
+
+  /// No description provided for @attachDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get attachDocument;
+
+  /// No description provided for @attachSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos 5 MB · Videos 20 MB · Files 15 MB'**
+  String get attachSizeHint;
+
+  /// No description provided for @pinnedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned message'**
+  String get pinnedMessage;
+
+  /// No description provided for @pinnedXofY.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned {i} of {n}'**
+  String pinnedXofY(int i, int n);
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
+  /// No description provided for @mediaLinksDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Media, links & docs'**
+  String get mediaLinksDocs;
+
+  /// No description provided for @starredMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred messages'**
+  String get starredMessages;
+
+  /// No description provided for @mediaTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get mediaTab;
+
+  /// No description provided for @docsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Docs'**
+  String get docsTab;
+
+  /// No description provided for @linksTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get linksTab;
+
+  /// No description provided for @noMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'No media'**
+  String get noMedia;
+
+  /// No description provided for @noDocuments.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents'**
+  String get noDocuments;
+
+  /// No description provided for @noLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'No links'**
+  String get noLinks;
+
+  /// No description provided for @noStarredMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No starred messages'**
+  String get noStarredMessages;
+
+  /// No description provided for @file.
+  ///
+  /// In en, this message translates to:
+  /// **'File'**
+  String get file;
+
   /// No description provided for @customers.
   ///
   /// In en, this message translates to:
   /// **'Customers'**
   String get customers;
 
+  /// No description provided for @archivedChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived Chats'**
+  String get archivedChats;
+
+  /// No description provided for @viewActiveChats.
+  ///
+  /// In en, this message translates to:
+  /// **'View Active Chats'**
+  String get viewActiveChats;
+
+  /// No description provided for @viewArchivedChats.
+  ///
+  /// In en, this message translates to:
+  /// **'View Archived Chats'**
+  String get viewArchivedChats;
+
   /// No description provided for @searchCustomers.
   ///
   /// In en, this message translates to:
   /// **'Search customers'**
   String get searchCustomers;
+
+  /// No description provided for @filterUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get filterUnread;
+
+  /// No description provided for @filterUnreadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread {count}'**
+  String filterUnreadCount(int count);
+
+  /// No description provided for @filterPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get filterPinned;
+
+  /// No description provided for @pinChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin chat'**
+  String get pinChat;
+
+  /// No description provided for @unpinChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin chat'**
+  String get unpinChat;
+
+  /// No description provided for @archiveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive chat'**
+  String get archiveChat;
+
+  /// No description provided for @unarchiveChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive chat'**
+  String get unarchiveChat;
+
+  /// No description provided for @deleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat'**
+  String get deleteChat;
+
+  /// No description provided for @deleteChatWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat with {name}?'**
+  String deleteChatWith(String name);
+
+  /// No description provided for @deleteChatWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'All messages and files will be removed for both of you.'**
+  String get deleteChatWarning;
+
+  /// No description provided for @noMatchingConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching conversations'**
+  String get noMatchingConversations;
+
+  /// No description provided for @noArchivedChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No archived chats'**
+  String get noArchivedChats;
+
+  /// No description provided for @reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get reply;
+
+  /// No description provided for @noConversationsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get noConversationsYet;
+
+  /// No description provided for @customersWillAppearHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Customers will appear here when they message you'**
+  String get customersWillAppearHere;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @photoEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'📷 Photo'**
+  String get photoEmoji;
+
+  /// No description provided for @fileEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'📁 File'**
+  String get fileEmoji;
+
+  /// No description provided for @replyChip.
+  ///
+  /// In en, this message translates to:
+  /// **'↩ {sender}: {text}'**
+  String replyChip(String sender, String text);
+
+  /// No description provided for @backTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backTooltip;
+
+  /// No description provided for @refreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refreshTooltip;
 
   /// No description provided for @noCustomersYet.
   ///
@@ -844,12 +1522,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customers will appear here when they message you'**
   String get customersWillAppear;
-
-  /// No description provided for @deleteChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete chat'**
-  String get deleteChat;
 
   /// No description provided for @deleteChatConfirmation.
   ///
@@ -869,30 +1541,6 @@ abstract class AppLocalizations {
   /// **'Could not delete the chat'**
   String get failedToDeleteChat;
 
-  /// No description provided for @archiveChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Archive chat'**
-  String get archiveChat;
-
-  /// No description provided for @unarchiveChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Unarchive chat'**
-  String get unarchiveChat;
-
-  /// No description provided for @pinChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Pin chat'**
-  String get pinChat;
-
-  /// No description provided for @unpinChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Unpin chat'**
-  String get unpinChat;
-
   /// No description provided for @chatArchived.
   ///
   /// In en, this message translates to:
@@ -904,24 +1552,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat unarchived'**
   String get chatUnarchived;
-
-  /// No description provided for @copy.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy'**
-  String get copy;
-
-  /// No description provided for @deleteMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete message?'**
-  String get deleteMessage;
-
-  /// No description provided for @reply.
-  ///
-  /// In en, this message translates to:
-  /// **'Reply'**
-  String get reply;
 
   /// No description provided for @forward.
   ///
@@ -980,7 +1610,7 @@ abstract class AppLocalizations {
   /// No description provided for @photo.
   ///
   /// In en, this message translates to:
-  /// **'📷 Photo'**
+  /// **'Photo'**
   String get photo;
 
   /// No description provided for @videoFile.
@@ -994,6 +1624,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'📎 Attachment'**
   String get attachment;
+
+  /// No description provided for @forwardedLower.
+  ///
+  /// In en, this message translates to:
+  /// **'forwarded'**
+  String get forwardedLower;
+
+  /// No description provided for @video.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get video;
+
+  /// No description provided for @couldNotOpenFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this file.'**
+  String get couldNotOpenFile;
+
+  /// No description provided for @allowGalleryAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow gallery access to save this file.'**
+  String get allowGalleryAccess;
+
+  /// No description provided for @galleryPluginMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery plugin not installed in this build. Opening share sheet instead.'**
+  String get galleryPluginMissing;
+
+  /// No description provided for @couldNotSaveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save to the gallery.'**
+  String get couldNotSaveToGallery;
+
+  /// No description provided for @couldNotPlayVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not play this video.'**
+  String get couldNotPlayVideo;
+
+  /// No description provided for @saveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to gallery'**
+  String get saveToGallery;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @messageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Message deleted'**
+  String get messageDeleted;
+
+  /// No description provided for @notSentTapToRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent · Tap to retry'**
+  String get notSentTapToRetry;
+
+  /// No description provided for @errorTapToRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'{error} · Tap to retry'**
+  String errorTapToRetry(String error);
+
+  /// No description provided for @saveShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Save / share'**
+  String get saveShare;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @forwardMessageTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward message to…'**
+  String get forwardMessageTo;
+
+  /// No description provided for @forwardMessagesTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward {count} messages to…'**
+  String forwardMessagesTo(int count);
+
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @noChatsToForwardTo.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats to forward to'**
+  String get noChatsToForwardTo;
+
+  /// No description provided for @sendingShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get sendingShort;
+
+  /// No description provided for @messageInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Message info'**
+  String get messageInfo;
+
+  /// No description provided for @couldNotLoadInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load info'**
+  String get couldNotLoadInfo;
+
+  /// No description provided for @read.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get read;
+
+  /// No description provided for @delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get delivered;
+
+  /// No description provided for @sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get sent;
+
+  /// No description provided for @reactionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions · {count}'**
+  String reactionsCount(int count);
 
   /// No description provided for @online.
   ///
@@ -1040,7 +1820,7 @@ abstract class AppLocalizations {
   /// No description provided for @manageServicesPosts.
   ///
   /// In en, this message translates to:
-  /// **'Manage your services, posts, and requests all in one place.'**
+  /// **'Manage your services, posts and all your requests in one place.'**
   String get manageServicesPosts;
 
   /// No description provided for @stayConnected.
@@ -1052,7 +1832,7 @@ abstract class AppLocalizations {
   /// No description provided for @getNotifications.
   ///
   /// In en, this message translates to:
-  /// **'Get real-time notifications for new requests and updates.'**
+  /// **'Get instant notifications for new requests and updates.'**
   String get getNotifications;
 
   /// No description provided for @getStarted.
@@ -1211,30 +1991,6 @@ abstract class AppLocalizations {
   /// **'Filter by description...'**
   String get filterByDescription;
 
-  /// No description provided for @requests.
-  ///
-  /// In en, this message translates to:
-  /// **'Requests'**
-  String get requests;
-
-  /// No description provided for @noRequests.
-  ///
-  /// In en, this message translates to:
-  /// **'No requests yet.'**
-  String get noRequests;
-
-  /// No description provided for @accept.
-  ///
-  /// In en, this message translates to:
-  /// **'Accept'**
-  String get accept;
-
-  /// No description provided for @reject.
-  ///
-  /// In en, this message translates to:
-  /// **'Reject'**
-  String get reject;
-
   /// No description provided for @customer.
   ///
   /// In en, this message translates to:
@@ -1252,36 +2008,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description'**
   String get description;
-
-  /// No description provided for @filterByCustomerService.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by customer or service...'**
-  String get filterByCustomerService;
-
-  /// No description provided for @noMatchingRequests.
-  ///
-  /// In en, this message translates to:
-  /// **'No matching requests'**
-  String get noMatchingRequests;
-
-  /// No description provided for @requestAccepted.
-  ///
-  /// In en, this message translates to:
-  /// **'Request accepted'**
-  String get requestAccepted;
-
-  /// No description provided for @requestRejected.
-  ///
-  /// In en, this message translates to:
-  /// **'Request rejected'**
-  String get requestRejected;
-
-  /// No description provided for @chatWithCustomer.
-  ///
-  /// In en, this message translates to:
-  /// **'Chat with Customer'**
-  String get chatWithCustomer;
 
   /// No description provided for @aboutUs.
   ///
@@ -1349,6 +2075,42 @@ abstract class AppLocalizations {
   /// **'No FAQs available.'**
   String get noFaqs;
 
+  /// No description provided for @settingsPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferences;
+
+  /// No description provided for @settingsInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Information'**
+  String get settingsInformation;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @settingsDarkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get settingsDarkMode;
+
+  /// No description provided for @settingsDarkOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark theme enabled'**
+  String get settingsDarkOn;
+
+  /// No description provided for @settingsLightOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Light theme enabled'**
+  String get settingsLightOn;
+
   /// No description provided for @pushNotifications.
   ///
   /// In en, this message translates to:
@@ -1360,6 +2122,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Receive alerts about requests'**
   String get receiveAlerts;
+
+  /// No description provided for @viewNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'View Notifications'**
+  String get viewNotifications;
+
+  /// No description provided for @seeAllNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'See all your incoming notifications'**
+  String get seeAllNotifications;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageSwahili.
+  ///
+  /// In en, this message translates to:
+  /// **'Kiswahili'**
+  String get languageSwahili;
+
+  /// No description provided for @logoutConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to logout?'**
+  String get logoutConfirmation;
+
+  /// No description provided for @logoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get logoutConfirmTitle;
+
+  /// No description provided for @logoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You’ll need to sign in again to access your account.'**
+  String get logoutConfirmMessage;
+
+  /// No description provided for @logoutFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout failed: {error}'**
+  String logoutFailed(Object error);
+
+  /// No description provided for @loggingOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging out…'**
+  String get loggingOut;
+
+  /// No description provided for @deleteAccountConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'This action is permanent. All your data will be lost. Are you sure?'**
+  String get deleteAccountConfirmation;
+
+  /// No description provided for @couldNotDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete account'**
+  String get couldNotDeleteAccount;
+
+  /// No description provided for @profileUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully'**
+  String get profileUpdated;
+
+  /// No description provided for @tapToChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap camera to change photo'**
+  String get tapToChangePhoto;
+
+  /// No description provided for @nameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Name required'**
+  String get nameRequired;
+
+  /// No description provided for @nidaNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'NIDA Number'**
+  String get nidaNumber;
+
+  /// No description provided for @nidaHelperText.
+  ///
+  /// In en, this message translates to:
+  /// **'Set during registration. Contact support to change.'**
+  String get nidaHelperText;
+
+  /// No description provided for @verifiedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ VERIFIED'**
+  String get verifiedLabel;
+
+  /// No description provided for @selectAtLeastOneService.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one service'**
+  String get selectAtLeastOneService;
+
+  /// No description provided for @editServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit services'**
+  String get editServices;
+
+  /// No description provided for @noServicesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No services available.'**
+  String get noServicesAvailable;
+
+  /// No description provided for @servicesUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Services updated'**
+  String get servicesUpdated;
+
+  /// No description provided for @typeAreaOrPickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Type area or pick on map'**
+  String get typeAreaOrPickOnMap;
+
+  /// No description provided for @pickOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick on map'**
+  String get pickOnMap;
+
+  /// No description provided for @locationSetOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Location set on map'**
+  String get locationSetOnMap;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @pickLocationOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick location on map'**
+  String get pickLocationOnMap;
+
+  /// No description provided for @searchAreaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search area, street, or landmark…'**
+  String get searchAreaHint;
+
+  /// No description provided for @gettingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting address…'**
+  String get gettingAddress;
+
+  /// No description provided for @tapMapToSelectLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap on the map to select a location'**
+  String get tapMapToSelectLocation;
+
+  /// No description provided for @useThisLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location'**
+  String get useThisLocation;
+
+  /// No description provided for @selectedLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected location'**
+  String get selectedLocation;
+
+  /// No description provided for @zoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get zoomIn;
+
+  /// No description provided for @zoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get zoomOut;
 
   /// No description provided for @noNotificationsYet.
   ///
@@ -1397,29 +2363,11 @@ abstract class AppLocalizations {
   /// **'No messages yet'**
   String get noMessagesYet;
 
-  /// No description provided for @sayHelloToStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Say hello to start chatting!'**
-  String get sayHelloToStart;
-
   /// No description provided for @typeAMessage.
   ///
   /// In en, this message translates to:
   /// **'Type a message...'**
   String get typeAMessage;
-
-  /// No description provided for @typing.
-  ///
-  /// In en, this message translates to:
-  /// **'Typing...'**
-  String get typing;
-
-  /// No description provided for @messageDeleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Message deleted'**
-  String get messageDeleted;
 
   /// No description provided for @messageCopied.
   ///
@@ -1463,35 +2411,11 @@ abstract class AppLocalizations {
   /// **'Image'**
   String get image;
 
-  /// No description provided for @file.
-  ///
-  /// In en, this message translates to:
-  /// **'File'**
-  String get file;
-
   /// No description provided for @voiceMessage.
   ///
   /// In en, this message translates to:
   /// **'Voice message'**
   String get voiceMessage;
-
-  /// No description provided for @video.
-  ///
-  /// In en, this message translates to:
-  /// **'Video'**
-  String get video;
-
-  /// No description provided for @justNow.
-  ///
-  /// In en, this message translates to:
-  /// **'Just now'**
-  String get justNow;
-
-  /// No description provided for @noConversationsYet.
-  ///
-  /// In en, this message translates to:
-  /// **'No conversations yet'**
-  String get noConversationsYet;
 
   /// No description provided for @startChattingWithFundis.
   ///
@@ -1595,12 +2519,6 @@ abstract class AppLocalizations {
   /// **'Failed to download file'**
   String get downloadFailed;
 
-  /// No description provided for @deleteFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to delete file'**
-  String get deleteFailed;
-
   /// No description provided for @permissionDenied.
   ///
   /// In en, this message translates to:
@@ -1637,12 +2555,6 @@ abstract class AppLocalizations {
   /// **'No matching items'**
   String get noMatchingItems;
 
-  /// No description provided for @cancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
   /// No description provided for @add.
   ///
   /// In en, this message translates to:
@@ -1661,12 +2573,6 @@ abstract class AppLocalizations {
   /// **'Create'**
   String get create;
 
-  /// No description provided for @delete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get delete;
-
   /// No description provided for @call.
   ///
   /// In en, this message translates to:
@@ -1679,41 +2585,11 @@ abstract class AppLocalizations {
   /// **'Are you sure?'**
   String get areYouSure;
 
-  /// No description provided for @logoutConfirmation.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to logout?'**
-  String get logoutConfirmation;
-
-  /// No description provided for @deleteAccountConfirmation.
-  ///
-  /// In en, this message translates to:
-  /// **'This action is permanent. All your data will be lost. Are you sure?'**
-  String get deleteAccountConfirmation;
-
   /// No description provided for @selectServicesDialogTitle.
   ///
   /// In en, this message translates to:
   /// **'Select Services'**
   String get selectServicesDialogTitle;
-
-  /// No description provided for @selectAtLeastOneService.
-  ///
-  /// In en, this message translates to:
-  /// **'Select at least one service'**
-  String get selectAtLeastOneService;
-
-  /// No description provided for @servicesUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Services updated'**
-  String get servicesUpdated;
-
-  /// No description provided for @profileUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile updated successfully'**
-  String get profileUpdated;
 
   /// No description provided for @open.
   ///
@@ -2159,24 +3035,6 @@ abstract class AppLocalizations {
   /// **'You\'re all caught up!'**
   String get allCaughtUp;
 
-  /// No description provided for @refresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get refresh;
-
-  /// No description provided for @viewNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'View Notifications'**
-  String get viewNotifications;
-
-  /// No description provided for @seeAllNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'See all your incoming notifications'**
-  String get seeAllNotifications;
-
   /// No description provided for @markAllRead.
   ///
   /// In en, this message translates to:
@@ -2267,53 +3125,17 @@ abstract class AppLocalizations {
   /// **'Download'**
   String get download;
 
-  /// No description provided for @share.
-  ///
-  /// In en, this message translates to:
-  /// **'Share'**
-  String get share;
-
   /// No description provided for @openPdf.
   ///
   /// In en, this message translates to:
   /// **'Open PDF'**
   String get openPdf;
 
-  /// No description provided for @privacyPolicy.
-  ///
-  /// In en, this message translates to:
-  /// **'Privacy Policy'**
-  String get privacyPolicy;
-
-  /// No description provided for @tapToChangePhoto.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap camera to change photo'**
-  String get tapToChangePhoto;
-
-  /// No description provided for @nidaNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'NIDA Number'**
-  String get nidaNumber;
-
   /// No description provided for @typeArea.
   ///
   /// In en, this message translates to:
   /// **'Type area'**
   String get typeArea;
-
-  /// No description provided for @pickOnMap.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick on map'**
-  String get pickOnMap;
-
-  /// No description provided for @typeAreaOrPickOnMap.
-  ///
-  /// In en, this message translates to:
-  /// **'Type area or pick on map'**
-  String get typeAreaOrPickOnMap;
 
   /// No description provided for @oops.
   ///
@@ -3101,12 +3923,6 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete this message?'**
   String get areYouSureDeleteMessage;
 
-  /// No description provided for @filterAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get filterAll;
-
   /// No description provided for @filterOnProgress.
   ///
   /// In en, this message translates to:
@@ -3118,60 +3934,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get filterCompleted;
-
-  /// No description provided for @settingsPreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Preferences'**
-  String get settingsPreferences;
-
-  /// No description provided for @settingsInformation.
-  ///
-  /// In en, this message translates to:
-  /// **'Information'**
-  String get settingsInformation;
-
-  /// No description provided for @settingsAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'Account'**
-  String get settingsAccount;
-
-  /// No description provided for @settingsDarkMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark Mode'**
-  String get settingsDarkMode;
-
-  /// No description provided for @settingsDarkOn.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark theme enabled'**
-  String get settingsDarkOn;
-
-  /// No description provided for @settingsLightOn.
-  ///
-  /// In en, this message translates to:
-  /// **'Light theme enabled'**
-  String get settingsLightOn;
-
-  /// No description provided for @editServices.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit services'**
-  String get editServices;
-
-  /// No description provided for @noServicesAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No services available.'**
-  String get noServicesAvailable;
-
-  /// No description provided for @couldNotDeleteAccount.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not delete account'**
-  String get couldNotDeleteAccount;
 
   /// No description provided for @payments.
   ///
@@ -3208,12 +3970,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap to select images'**
   String get tapToSelectImages;
-
-  /// No description provided for @editPost.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Post'**
-  String get editPost;
 
   /// No description provided for @addMoreImages.
   ///

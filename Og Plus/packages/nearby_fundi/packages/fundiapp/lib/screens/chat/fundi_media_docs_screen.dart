@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 import '../../../providers/chat_provider.dart';
 
@@ -23,6 +24,8 @@ class FundiMediaDocsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -31,6 +34,7 @@ class FundiMediaDocsScreen extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
+            tooltip: l10n.backTooltip,
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                 size: 20, color: Colors.white),
             onPressed: () => Navigator.maybePop(context),
@@ -38,11 +42,15 @@ class FundiMediaDocsScreen extends StatelessWidget {
           title: Text(peerName,
               style: const TextStyle(
                   fontWeight: FontWeight.w600, color: Colors.white)),
-          bottom: const TabBar(
+          bottom: TabBar(
             indicatorColor: AppTheme.secondary,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white70,
-            tabs: [Tab(text: 'Media'), Tab(text: 'Docs'), Tab(text: 'Links')],
+            tabs: [
+              Tab(text: l10n.mediaTab),
+              Tab(text: l10n.docsTab),
+              Tab(text: l10n.linksTab),
+            ],
           ),
         ),
         body: TabBarView(children: [
@@ -64,8 +72,7 @@ class _Pager extends StatefulWidget {
   State<_Pager> createState() => _PagerState();
 }
 
-class _PagerState extends State<_Pager>
-    with AutomaticKeepAliveClientMixin {
+class _PagerState extends State<_Pager> with AutomaticKeepAliveClientMixin {
   final List<ChatMessage> _items = [];
   final _scroll = ScrollController();
   bool _loading = false, _more = true, _loaded = false;
@@ -117,8 +124,9 @@ class _PagerState extends State<_Pager>
     final today = DateTime(now.year, now.month, now.day);
     final date = DateTime(t.year, t.month, t.day);
     final diff = today.difference(date).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
+    final l10n = AppLocalizations.of(context)!;
+    if (diff == 0) return l10n.today;
+    if (diff == 1) return l10n.yesterday;
     if (diff < 7) return DateFormat('EEEE').format(t);
     return DateFormat('MMMM d, yyyy').format(t);
   }
@@ -129,6 +137,7 @@ class _PagerState extends State<_Pager>
   Widget build(BuildContext context) {
     super.build(context);
     final hint = Theme.of(context).hintColor;
+    final l10n = AppLocalizations.of(context)!;
 
     if (!_loaded) {
       return Center(
@@ -139,9 +148,9 @@ class _PagerState extends State<_Pager>
     }
     if (_items.isEmpty) {
       final label = switch (widget.tab) {
-        'docs' => 'No documents',
-        'links' => 'No links',
-        _ => 'No media',
+        'docs' => l10n.noDocuments,
+        'links' => l10n.noLinks,
+        _ => l10n.noMedia,
       };
       return Center(
           child: Text(label, style: TextStyle(color: hint, fontSize: 16)));
@@ -189,8 +198,7 @@ class _PagerState extends State<_Pager>
       return ListView.separated(
         controller: _scroll,
         itemCount: _items.length,
-        separatorBuilder: (_, __) =>
-        const Divider(height: 1, indent: 72),
+        separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
         itemBuilder: (_, i) {
           final m = _items[i];
           final f = m.file;
@@ -205,7 +213,7 @@ class _PagerState extends State<_Pager>
                 _ => Icons.insert_drive_file_rounded,
               }, color: AppTheme.primary),
             ),
-            title: Text(f?.name ?? 'File',
+            title: Text(f?.name ?? l10n.file,
                 maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text([
               if ((f?.ext ?? '').isNotEmpty) f!.ext!.toUpperCase(),

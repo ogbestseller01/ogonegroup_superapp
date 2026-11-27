@@ -7,6 +7,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 class PickMapLocationScreen extends StatefulWidget {
   final LatLng? initialCenter;
   final String? initialPlaceName;
@@ -271,9 +273,10 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
   void _confirm() {
     if (_selectedPoint == null) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final name = (_placeName != null && _placeName!.trim().isNotEmpty)
         ? _placeName!
-        : 'Selected location';
+        : l10n.selectedLocation;
 
     Navigator.pop(context, {
       'lat': _selectedPoint!.latitude,
@@ -285,17 +288,18 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pick location on map'),
+        title: Text(l10n.pickLocationOnMap),
         centerTitle: true,
         actions: [
           TextButton(
             onPressed: _selectedPoint != null ? _confirm : null,
-            child: const Text(
-              'OK',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            child: Text(
+              l10n.ok,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
@@ -359,7 +363,7 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
                       }
                     },
                     decoration: InputDecoration(
-                      hintText: 'Search area, street, or landmark…',
+                      hintText: l10n.searchAreaHint,
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _isSearching
                           ? const Padding(
@@ -444,13 +448,13 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
               children: [
                 _ZoomButton(
                   icon: Icons.add,
-                  tooltip: 'Zoom in',
+                  tooltip: l10n.zoomIn,
                   onPressed: () => _zoomBy(1),
                 ),
                 const SizedBox(height: 10),
                 _ZoomButton(
                   icon: Icons.remove,
-                  tooltip: 'Zoom out',
+                  tooltip: l10n.zoomOut,
                   onPressed: () => _zoomBy(-1),
                 ),
               ],
@@ -478,10 +482,9 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _isReverseGeocoding
-                              ? const Text('Getting address…')
+                              ? Text(l10n.gettingAddress)
                               : Text(
-                            _placeName ??
-                                'Tap on the map to select a location',
+                            _placeName ?? l10n.tapMapToSelectLocation,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                             ),
@@ -504,9 +507,9 @@ class _PickMapLocationScreenState extends State<PickMapLocationScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Use this location',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          l10n.useThisLocation,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),

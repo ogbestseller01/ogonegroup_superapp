@@ -233,7 +233,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 validator: (v) =>
-                (v == null || v.trim().isEmpty) ? 'Name required' : null,
+                (v == null || v.trim().isEmpty) ? l10n.nameRequired : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -251,8 +251,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.nidaNumber,
                   prefixIcon: const Icon(Icons.badge_outlined),
-                  helperText:
-                  'Set during registration. Contact support to change.',
+                  helperText: l10n.nidaHelperText,
                 ),
               ),
               const SizedBox(height: 16),
@@ -298,7 +297,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const Icon(Icons.check_circle,
                             size: 16, color: Colors.green),
                         const SizedBox(width: 6),
-                        Text('Location set on map',
+                        Text(l10n.locationSetOnMap,
                             style: theme.textTheme.bodySmall
                                 ?.copyWith(color: Colors.green)),
                       ],

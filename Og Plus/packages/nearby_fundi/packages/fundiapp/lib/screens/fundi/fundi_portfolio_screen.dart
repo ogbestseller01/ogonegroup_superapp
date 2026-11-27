@@ -1,5 +1,3 @@
-// FILE: lib/screens/fundi/fundi_portfolio_screen.dart
-
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -30,6 +28,16 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
     });
   }
 
+  void _snack(String message, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? AppTheme.error : AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -49,6 +57,7 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
           children: [
             _AppBarButton(
               icon: Icons.arrow_back_ios_new_rounded,
+              tooltip: l10n.back,
               onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.home),
             ),
             const SizedBox(width: 14),
@@ -56,21 +65,28 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
               child: Text(
                 l10n.myPortfolio,
                 style: const TextStyle(
-                    inherit: true,
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800
+                  inherit: true,
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
             _AppBarButton(
+              icon: Icons.refresh_rounded,
+              tooltip: l10n.refresh,
+              onTap: provider.isLoading ? null : () => context.read<PortfolioProvider>().loadPortfolio(),
+            ),
+            const SizedBox(width: 8),
+            _AppBarButton(
               icon: Icons.add_rounded,
+              tooltip: l10n.addPost,
               onTap: () => _showUploadSheet(context),
             ),
           ],
         ),
       ),
-      body: provider.isLoading
+      body: provider.isLoading && provider.items.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : provider.items.isEmpty
           ? _buildEmptyState(context, l10n)
@@ -104,8 +120,8 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
             const Icon(Icons.photo_library_outlined, size: 64, color: AppTheme.primary),
             const SizedBox(height: 16),
             Text(
-                l10n.noPostsYet,
-                style: const TextStyle(inherit: true, fontSize: 18, fontWeight: FontWeight.bold)
+              l10n.noPostsYet,
+              style: const TextStyle(inherit: true, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -145,7 +161,9 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
           builder: (context, modalSetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20, right: 20, top: 4,
+                left: 20,
+                right: 20,
+                top: 4,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: Column(
@@ -153,8 +171,8 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                      l10n.newPortfolioPost,
-                      style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800)
+                    l10n.newPortfolioPost,
+                    style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 12),
                   if (selectedImages.isNotEmpty)
@@ -162,17 +180,29 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                       height: 200,
                       margin: const EdgeInsets.only(bottom: 16),
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
                         itemCount: selectedImages.length,
                         itemBuilder: (context, index) => Stack(
                           fit: StackFit.expand,
                           children: [
-                            ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(selectedImages[index], fit: BoxFit.cover)),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(selectedImages[index], fit: BoxFit.cover),
+                            ),
                             Positioned(
-                              top: 4, right: 4,
+                              top: 4,
+                              right: 4,
                               child: GestureDetector(
                                 onTap: () => modalSetState(() => selectedImages.removeAt(index)),
-                                child: Container(padding: const EdgeInsets.all(2), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.close, size: 16, color: Colors.white)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                ),
                               ),
                             ),
                           ],
@@ -188,15 +218,19 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                     },
                     child: Container(
                       height: 100,
-                      decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFD0D5DD))),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFD0D5DD)),
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.add_photo_alternate_outlined, size: 32, color: AppTheme.primary),
                           const SizedBox(height: 8),
                           Text(
-                              l10n.tapToSelectImages,
-                              style: const TextStyle(inherit: true, fontWeight: FontWeight.w600)
+                            l10n.tapToSelectImages,
+                            style: const TextStyle(inherit: true, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -206,7 +240,9 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                   CustomButton(
                     text: l10n.post,
                     isLoading: isUploading,
-                    onPressed: selectedImages.isEmpty || isUploading ? null : () async {
+                    onPressed: selectedImages.isEmpty || isUploading
+                        ? null
+                        : () async {
                       modalSetState(() => isUploading = true);
                       final paths = selectedImages.map((f) => f.path).toList();
                       await context.read<PortfolioProvider>().addPortfolio(paths);
@@ -244,7 +280,9 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
           builder: (context, modalSetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: 20, right: 20, top: 4,
+                left: 20,
+                right: 20,
+                top: 4,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 20,
               ),
               child: Column(
@@ -252,8 +290,8 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                      l10n.editPost,
-                      style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800)
+                    l10n.editPost,
+                    style: const TextStyle(inherit: true, fontSize: 19, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 12),
 
@@ -263,7 +301,11 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                       height: 200,
                       margin: const EdgeInsets.only(bottom: 16),
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
                         itemCount: existingImages.length + newImages.length,
                         itemBuilder: (context, index) {
                           // Render existing images
@@ -273,10 +315,17 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(ImageUtils.getFullImageUrl(existingImages[index].url), fit: BoxFit.cover),
+                                  child: Image.network(
+                                    ImageUtils.getFullImageUrl(existingImages[index].url),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Text(l10n.imageNotAvailable, textAlign: TextAlign.center),
+                                    ),
+                                  ),
                                 ),
                                 Positioned(
-                                  top: 4, right: 4,
+                                  top: 4,
+                                  right: 4,
                                   child: GestureDetector(
                                     onTap: () {
                                       modalSetState(() {
@@ -284,7 +333,11 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                                         existingImages.removeAt(index);
                                       });
                                     },
-                                    child: Container(padding: const EdgeInsets.all(2), decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle), child: const Icon(Icons.delete, size: 16, color: Colors.white)),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                      child: const Icon(Icons.delete, size: 16, color: Colors.white),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -295,12 +348,20 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                           return Stack(
                             fit: StackFit.expand,
                             children: [
-                              ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(newImages[newIndex], fit: BoxFit.cover)),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(newImages[newIndex], fit: BoxFit.cover),
+                              ),
                               Positioned(
-                                top: 4, right: 4,
+                                top: 4,
+                                right: 4,
                                 child: GestureDetector(
                                   onTap: () => modalSetState(() => newImages.removeAt(newIndex)),
-                                  child: Container(padding: const EdgeInsets.all(2), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.close, size: 16, color: Colors.white)),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                  ),
                                 ),
                               ),
                             ],
@@ -318,14 +379,18 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                     },
                     child: Container(
                       height: 80,
-                      decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFD0D5DD))),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: const Color(0xFFD0D5DD)),
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.add_photo_alternate_outlined, color: AppTheme.primary),
                           Text(
-                              l10n.addMoreImages,
-                              style: const TextStyle(inherit: true, fontWeight: FontWeight.w600, fontSize: 13)
+                            l10n.addMoreImages,
+                            style: const TextStyle(inherit: true, fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                         ],
                       ),
@@ -335,7 +400,9 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
                   CustomButton(
                     text: l10n.saveChanges,
                     isLoading: isUpdating,
-                    onPressed: isUpdating ? null : () async {
+                    onPressed: isUpdating
+                        ? null
+                        : () async {
                       modalSetState(() => isUpdating = true);
                       final paths = newImages.map((f) => f.path).toList();
 
@@ -364,8 +431,8 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
-            l10n.deletePostTitle,
-            style: const TextStyle(inherit: true, fontWeight: FontWeight.w800)
+          l10n.deletePostTitle,
+          style: const TextStyle(inherit: true, fontWeight: FontWeight.w800),
         ),
         content: Text(
           l10n.deletePostConfirmation,
@@ -373,8 +440,8 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(l10n.cancel, style: const TextStyle(inherit: true))
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel, style: const TextStyle(inherit: true)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -387,6 +454,10 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
 
     if (confirmed == true && context.mounted) {
       await context.read<PortfolioProvider>().deletePortfolio(id);
+      if (context.mounted) {
+        final err = context.read<PortfolioProvider>().error;
+        if (err != null) _snack(err, error: true);
+      }
     }
   }
 }
@@ -396,23 +467,28 @@ class _FundiPortfolioScreenState extends State<FundiPortfolioScreen> {
 // ==================================================================
 class _AppBarButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
-  const _AppBarButton({required this.icon, required this.onTap});
+  final String? tooltip;
+  final VoidCallback? onTap;
+  const _AppBarButton({required this.icon, this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final button = Material(
       color: Colors.white.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          width: 42, height: 42,
+          width: 42,
+          height: 42,
           child: Icon(icon, color: Colors.white, size: 22),
         ),
       ),
     );
+
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
   }
 }
 
@@ -475,8 +551,8 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                      l10n.myPortfolio,
-                      style: const TextStyle(inherit: true, fontWeight: FontWeight.w700, fontSize: 15)
+                    l10n.myPortfolio,
+                    style: const TextStyle(inherit: true, fontWeight: FontWeight.w700, fontSize: 15),
                   ),
                 ),
                 PopupMenuButton<String>(
@@ -531,6 +607,9 @@ class _PortfolioFeedCardState extends State<_PortfolioFeedCard> {
                         if (progress == null) return child;
                         return Container(color: Colors.grey[100], child: const Center(child: CircularProgressIndicator()));
                       },
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(l10n.imageNotAvailable, textAlign: TextAlign.center),
+                      ),
                     );
                   },
                 ),

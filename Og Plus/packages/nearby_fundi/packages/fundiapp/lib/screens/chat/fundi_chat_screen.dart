@@ -11,9 +11,10 @@ import 'package:fundiapp_sdk/screens/chat/widgets/chat_viewers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart'; // ADDED
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/chat_conversation.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
@@ -127,7 +128,9 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
     final minI = pos.map((e) => e.index).reduce(math.min);
     final maxI = pos.map((e) => e.index).reduce(math.max);
     _showDown.value = minI > 1;
-    if (_chat.hasMoreOlder && maxI >= _chat.messages.length - 3) _chat.loadOlder();
+    if (_chat.hasMoreOlder && maxI >= _chat.messages.length - 3) {
+      _chat.loadOlder();
+    }
   }
 
   void _onText() {
@@ -164,14 +167,19 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
 
   Future<void> _jumpTo(int id) async {
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     if (!_chat.messages.any((m) => m.id == id)) {
       final ok = await _chat.loadUntil(id);
-      if (!ok || !mounted) return _snack('The original message is no longer available.');
+      if (!ok || !mounted) {
+        return _snack(l10n.originalMessageUnavailable);
+      }
       await WidgetsBinding.instance.endOfFrame;
     }
     final list = _chat.messages;
     final idx = list.indexWhere((m) => m.id == id);
-    if (idx == -1) return _snack('The original message is no longer available.');
+    if (idx == -1) {
+      return _snack(l10n.originalMessageUnavailable);
+    }
     if (_itemScroll.isAttached) {
       _itemScroll.scrollTo(
         index: list.length - 1 - idx,
@@ -196,16 +204,19 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   }
 
   int _limit(String ext) =>
-      _imgExt.contains(ext) ? 5 * _mb : (_vidExt.contains(ext) ? 20 * _mb : 15 * _mb);
+      _imgExt.contains(ext)
+          ? 5 * _mb
+          : (_vidExt.contains(ext) ? 20 * _mb : 15 * _mb);
 
   Future<void> _sendFile(File f) async {
+    final l10n = AppLocalizations.of(context)!;
     final ext = p.extension(f.path).replaceFirst('.', '').toLowerCase();
     if (_blocked.contains(ext)) {
-      return _snack('This file type is not allowed.', error: true);
+      return _snack(l10n.fileTypeNotAllowed, error: true);
     }
     final limit = _limit(ext);
     if (await f.length() > limit) {
-      return _snack('File too large. Max ${limit ~/ _mb} MB for this type.', error: true);
+      return _snack(l10n.fileTooLarge(limit ~/ _mb), error: true);
     }
     _chat.send(conversationId: _cid, file: f, replyTo: _takeReply());
     _toBottom();
@@ -248,12 +259,16 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   });
 
   Future<void> _document() => _guard(() async {
-    final r = await FilePicker.platform.pickFiles(allowMultiple: false);
-    final path = r?.files.first.path;
-    if (path != null && path.isNotEmpty) await _sendFile(File(path));
+    final files = await FilePicker.pickFiles();
+    if (files.isEmpty) return;
+    final path = files.first.path;
+    if (path != null && path.isNotEmpty) {
+      await _sendFile(File(path));
+    }
   });
 
   void _attachSheet() {
+    final l10n = AppLocalizations.of(context)!;
     Widget item(IconData i, Color c, String l, VoidCallback f) => InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
@@ -273,6 +288,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
         ]),
       ),
     );
+
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -286,16 +302,21 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                item(Icons.photo_camera_rounded, Colors.teal, 'Camera', _camera),
-                item(Icons.photo_rounded, Colors.purple, 'Photos', _gallery),
-                item(Icons.videocam_rounded, Colors.red, 'Video', _video),
-                item(Icons.insert_drive_file_rounded, Colors.blue, 'Document', _document),
+                item(Icons.photo_camera_rounded, Colors.teal,
+                    l10n.attachCamera, _camera),
+                item(Icons.photo_rounded, Colors.purple,
+                    l10n.attachPhotos, _gallery),
+                item(Icons.videocam_rounded, Colors.red,
+                    l10n.attachVideo, _video),
+                item(Icons.insert_drive_file_rounded, Colors.blue,
+                    l10n.attachDocument, _document),
               ],
             ),
             const SizedBox(height: 10),
             Text(
-              'Photos 5 MB · Videos 20 MB · Files 15 MB',
-              style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor),
+              l10n.attachSizeHint,
+              style:
+              TextStyle(fontSize: 12, color: Theme.of(context).hintColor),
               textAlign: TextAlign.center,
             ),
           ]),
@@ -340,24 +361,28 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   );
 
   Future<void> _togglePin(ChatMessage m) => _guard(() async {
+    final l10n = AppLocalizations.of(context)!;
     final now = await _chat.togglePin(m.id);
-    _snack(now ? 'Message pinned' : 'Message unpinned');
+    _snack(now ? l10n.messagePinned : l10n.messageUnpinned);
   });
 
   Future<void> _toggleStar(ChatMessage m) => _guard(() async {
+    final l10n = AppLocalizations.of(context)!;
     final now = await _chat.toggleStar(m.id);
-    _snack(now ? 'Starred' : 'Removed from starred');
+    _snack(now ? l10n.starred : l10n.removedFromStarred);
   });
 
   Future<void> _copy(String t) async {
+    final l10n = AppLocalizations.of(context)!;
     await Clipboard.setData(ClipboardData(text: t));
-    _snack('Copied');
+    _snack(l10n.copied);
   }
 
   Future<void> _forward(List<int> ids) async {
+    final l10n = AppLocalizations.of(context)!;
     if (await showFundiForwardSheet(context, ids)) {
       _clear();
-      _snack('Forwarded');
+      _snack(l10n.forwarded);
     }
   }
 
@@ -400,6 +425,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
 
   Future<void> _delete(List<ChatMessage> msgs) async {
     if (msgs.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
     final me = _chat.currentUser?.id;
     final pendingOnly = msgs.every((m) => m.isPending);
     if (pendingOnly) {
@@ -416,8 +442,8 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
       context: context,
       builder: (d) => AlertDialog(
         title: Text(real.length == 1
-            ? 'Delete message?'
-            : 'Delete ${real.length} messages?'),
+            ? l10n.deleteMessage
+            : l10n.deleteMessages(real.length)),
         contentPadding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -428,23 +454,24 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
                 dense: true,
                 leading: const Icon(Icons.delete_forever_outlined,
                     color: AppTheme.error),
-                title: const Text('Delete for everyone'),
-                subtitle: const Text('Removed for both of you'),
+                title: Text(l10n.deleteForEveryone),
+                subtitle: Text(l10n.deleteForEveryoneSubtitle),
                 onTap: () => Navigator.pop(d, 'everyone'),
               ),
             ListTile(
               dense: true,
               leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('Delete for me'),
-              subtitle: const Text('Only removed on this phone'),
+              title: Text(l10n.deleteForMe),
+              subtitle: Text(l10n.deleteForMeSubtitle),
               onTap: () => Navigator.pop(d, 'me'),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(d),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(d),
+            child: Text(l10n.cancel),
+          ),
         ],
       ),
     );
@@ -456,16 +483,17 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
         forEveryone: choice == 'everyone',
       );
       if (done.length < real.length) {
-        _snack('${real.length - done.length} message(s) could not be deleted for everyone.',
+        _snack(l10n.deleteEveryoneFailed(real.length - done.length),
             error: true);
       } else {
-        _snack('Deleted');
+        _snack(l10n.deleted);
       }
     });
     _clear();
   }
 
   PreferredSizeWidget _selectionBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final msgs = _sel;
     final allStarred = msgs.isNotEmpty && msgs.every((m) => m.isStarred);
     final hasText = msgs.any((m) => (m.content ?? '').trim().isNotEmpty);
@@ -480,9 +508,11 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
         icon: const Icon(Icons.close_rounded, color: Colors.white),
         onPressed: _clear,
       ),
-      title: Text('${_selected.length}',
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, color: Colors.white)),
+      title: Text(
+        '${_selected.length}',
+        style:
+        const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+      ),
       actions: [
         if (msgs.length == 1 && screenW > 360)
           IconButton(
@@ -531,7 +561,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   }
 
   PreferredSizeWidget _normalBar(bool dark) {
-    // FIXED: Removed unused variable 'c' at line 532
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: dark ? const Color(0xFF1F2C34) : AppTheme.primary,
@@ -539,6 +569,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
       elevation: 0,
       titleSpacing: 0,
       leading: IconButton(
+        tooltip: l10n.backTooltip,
         icon: const Icon(Icons.arrow_back_ios_new_rounded,
             size: 20, color: Colors.white),
         onPressed: () => Navigator.maybePop(context),
@@ -558,28 +589,34 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              _peer,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _peer,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 17,
-                  color: Colors.white),
-            ),
-            ValueListenableBuilder<bool>(
-              valueListenable: _chat.peerTyping,
-              builder: (_, typing, __) => AnimatedSize(
-                duration: const Duration(milliseconds: 150),
-                child: typing
-                    ? const Text('typing…',
-                    style: TextStyle(
-                        color: Colors.white70, fontSize: 12.5))
-                    : const SizedBox.shrink(),
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ]),
+              ValueListenableBuilder<bool>(
+                valueListenable: _chat.peerTyping,
+                builder: (_, typing, __) => AnimatedSize(
+                  duration: const Duration(milliseconds: 150),
+                  child: typing
+                      ? Text(
+                    l10n.typing,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 12.5),
+                  )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
         ),
       ]),
       actions: [
@@ -591,7 +628,9 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => FundiMediaDocsScreen(
-                      conversationId: _cid, peerName: _peer),
+                    conversationId: _cid,
+                    peerName: _peer,
+                  ),
                 ),
               );
               if (id != null) _jumpTo(id);
@@ -600,27 +639,29 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => FundiStarredMessagesScreen(
-                      conversationId: _cid, peerName: _peer),
+                    conversationId: _cid,
+                    peerName: _peer,
+                  ),
                 ),
               );
               if (id != null) _jumpTo(id);
             }
           },
-          itemBuilder: (_) => const [
+          itemBuilder: (_) => [
             PopupMenuItem(
               value: 'media',
               child: Row(children: [
-                Icon(Icons.perm_media_outlined),
-                SizedBox(width: 10),
-                Text('Media, links & docs'),
+                const Icon(Icons.perm_media_outlined),
+                const SizedBox(width: 10),
+                Text(l10n.mediaLinksDocs),
               ]),
             ),
             PopupMenuItem(
               value: 'starred',
               child: Row(children: [
-                Icon(Icons.star_border_rounded),
-                SizedBox(width: 10),
-                Text('Starred messages'),
+                const Icon(Icons.star_border_rounded),
+                const SizedBox(width: 10),
+                Text(l10n.starredMessages),
               ]),
             ),
           ],
@@ -656,8 +697,9 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
               onTap: () => FocusScope.of(context).unfocus(),
               child: Column(children: [
                 ListenableBuilder(
-                    listenable: _chat,
-                    builder: (_, __) => _pinnedBar(dark)),
+                  listenable: _chat,
+                  builder: (_, __) => _pinnedBar(dark),
+                ),
                 Expanded(
                   child: Stack(children: [
                     _messages(context),
@@ -676,7 +718,8 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
                             foregroundColor: AppTheme.primary,
                             elevation: 2,
                             onPressed: _toBottom,
-                            child: const Icon(Icons.keyboard_arrow_down_rounded,
+                            child: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
                                 size: 28),
                           ),
                         ),
@@ -704,6 +747,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   }
 
   Widget _pinnedBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final pins = _chat.pins;
     if (pins.isEmpty) return const SizedBox.shrink();
     final i = _pinCursor % pins.length;
@@ -733,28 +777,29 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pins.length > 1
-                          ? 'Pinned ${i + 1} of ${pins.length}'
-                          : 'Pinned message',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.primary,
-                      ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pins.length > 1
+                        ? l10n.pinnedXofY(i + 1, pins.length)
+                        : l10n.pinnedMessage,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primary,
                     ),
-                    Text(
-                      pin.getDisplayMessage(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: dark ? Colors.white70 : Colors.black87,
-                      ),
+                  ),
+                  Text(
+                    pin.getDisplayMessage(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: dark ? Colors.white70 : Colors.black87,
                     ),
-                  ]),
+                  ),
+                ],
+              ),
             ),
             IconButton(
               icon: const Icon(Icons.close_rounded, size: 20),
@@ -767,9 +812,10 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   }
 
   Widget _replyBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final r = _replyTo!;
     final author = r.senderId == _chat.currentUser?.id
-        ? 'You'
+        ? l10n.you
         : (r.senderName.isNotEmpty ? r.senderName : _peer);
     return Container(
       width: double.infinity,
@@ -787,27 +833,28 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
         const SizedBox(width: 10),
         Expanded(
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  author,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: AppTheme.primary,
-                  ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                author,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppTheme.primary,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  r.snippet,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: dark ? Colors.white70 : Colors.black87,
-                  ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                r.snippet,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: dark ? Colors.white70 : Colors.black87,
                 ),
-              ]),
+              ),
+            ],
+          ),
         ),
         if (r.isImage)
           Padding(
@@ -846,11 +893,13 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
 
   Widget _messages(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<ChatProvider>(builder: (context, provider, _) {
       final messages = provider.messages;
       if (!_firstLoadDone && messages.isEmpty) {
         return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary));
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        );
       }
       if (messages.isEmpty) {
         return Center(
@@ -881,7 +930,7 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Say hello to start the conversation',
+                l10n.sayHelloToStart,
                 style: TextStyle(color: Theme.of(context).hintColor),
                 textAlign: TextAlign.center,
               ),
@@ -912,7 +961,6 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
               ),
             );
           }
-          // FIXED: Added .toInt() to resolve the 'num' to 'int' error
           final idx = (messages.length - 1 - index).toInt();
           final m = messages[idx];
           final older = idx > 0 ? messages[idx - 1] : null;
@@ -947,82 +995,99 @@ class _FundiChatScreenState extends State<FundiChatScreen> {
   }
 
   Widget _input(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       top: false,
       child: Container(
         color: Colors.transparent,
         padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Expanded(
-            child: Container(
-              constraints: const BoxConstraints(maxHeight: 130),
-              decoration: BoxDecoration(
-                color: dark ? const Color(0xFF2A3942) : Colors.white,
-                borderRadius: BorderRadius.circular(26),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 130),
+                decoration: BoxDecoration(
+                  color: dark ? const Color(0xFF2A3942) : Colors.white,
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.attach,
+                      icon: Icon(
+                        Icons.attach_file_rounded,
+                        color: dark ? Colors.white70 : AppTheme.primary,
+                      ),
+                      onPressed: _attachSheet,
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _text,
+                        focusNode: _focus,
+                        minLines: 1,
+                        maxLines: 5,
+                        maxLength: 2000,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: dark ? Colors.white : Colors.black87,
+                        ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          hintText: _replyTo != null
+                              ? l10n.replyEllipsis
+                              : l10n.message,
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding:
+                          const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.photo_camera_outlined,
+                        color: dark ? Colors.white70 : Colors.grey.shade700,
+                      ),
+                      onPressed: _camera,
+                    ),
+                  ],
+                ),
               ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                IconButton(
-                  icon: Icon(Icons.attach_file_rounded,
-                      color: dark ? Colors.white70 : AppTheme.primary),
-                  onPressed: _attachSheet,
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _text,
-                    focusNode: _focus,
-                    minLines: 1,
-                    maxLines: 5,
-                    maxLength: 2000,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: dark ? Colors.white : Colors.black87,
-                    ),
-                    decoration: InputDecoration(
-                      counterText: '',
-                      hintText: _replyTo != null ? 'Reply…' : 'Message',
-                      filled: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.photo_camera_outlined,
-                      color: dark ? Colors.white70 : Colors.grey.shade700),
-                  onPressed: _camera,
-                ),
-              ]),
             ),
-          ),
-          const SizedBox(width: 6),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: _text,
-            builder: (_, v, __) {
-              final has = v.text.trim().isNotEmpty;
-              return Material(
-                color: has
-                    ? AppTheme.primary
-                    : (dark ? const Color(0xFF2A3942) : Colors.grey.shade400),
-                shape: const CircleBorder(),
-                child: InkWell(
-                  onTap: has ? _sendText : null,
-                  customBorder: const CircleBorder(),
-                  child: const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Center(
-                      child: Icon(Icons.send_rounded,
-                          color: Colors.white, size: 22),
+            const SizedBox(width: 6),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _text,
+              builder: (_, v, __) {
+                final has = v.text.trim().isNotEmpty;
+                return Material(
+                  color: has
+                      ? AppTheme.primary
+                      : (dark
+                      ? const Color(0xFF2A3942)
+                      : Colors.grey.shade400),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: has ? _sendText : null,
+                    customBorder: const CircleBorder(),
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: Icon(Icons.send_rounded,
+                            color: Colors.white, size: 22),
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-        ]),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

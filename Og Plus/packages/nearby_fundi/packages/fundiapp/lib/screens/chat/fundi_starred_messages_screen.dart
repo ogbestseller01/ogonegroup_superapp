@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 import '../../../providers/chat_provider.dart';
 
@@ -47,8 +48,7 @@ class _FundiStarredMessagesScreenState
     try {
       await context.read<ChatProvider>().toggleStar(m.id);
       if (mounted) {
-        setState(() =>
-        _items = _items?.where((x) => x.id != m.id).toList());
+        setState(() => _items = _items?.where((x) => x.id != m.id).toList());
       }
     } catch (e) {
       if (!mounted) return;
@@ -64,8 +64,9 @@ class _FundiStarredMessagesScreenState
     final today = DateTime(now.year, now.month, now.day);
     final date = DateTime(t.year, t.month, t.day);
     final diff = today.difference(date).inDays;
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
+    final l10n = AppLocalizations.of(context)!;
+    if (diff == 0) return l10n.today;
+    if (diff == 1) return l10n.yesterday;
     if (diff < 7) return DateFormat('EEEE').format(t);
     return DateFormat('MMMM d, yyyy').format(t);
   }
@@ -75,6 +76,7 @@ class _FundiStarredMessagesScreenState
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final me = context.read<ChatProvider>().currentUser?.id;
+    final l10n = AppLocalizations.of(context)!;
 
     Widget body;
     if (_error != null) {
@@ -89,7 +91,7 @@ class _FundiStarredMessagesScreenState
           Icon(Icons.star_border_rounded,
               size: 56, color: theme.hintColor.withValues(alpha: 0.5)),
           const SizedBox(height: 12),
-          Text('No starred messages',
+          Text(l10n.noStarredMessages,
               style: TextStyle(color: theme.hintColor)),
         ]),
       );
@@ -99,10 +101,9 @@ class _FundiStarredMessagesScreenState
         separatorBuilder: (_, __) => const Divider(height: 1),
         itemBuilder: (_, i) {
           final m = _items![i];
-          final who = m.senderId == me ? 'You' : widget.peerName;
+          final who = m.senderId == me ? l10n.you : widget.peerName;
           return ListTile(
-            leading:
-            const Icon(Icons.star_rounded, color: Colors.amber),
+            leading: const Icon(Icons.star_rounded, color: Colors.amber),
             title: Text(who,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600, fontSize: 14)),
@@ -112,13 +113,10 @@ class _FundiStarredMessagesScreenState
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                    m.time == null ? '' : _formatDay(m.time!),
-                    style:
-                    TextStyle(fontSize: 12, color: theme.hintColor)),
+                Text(m.time == null ? '' : _formatDay(m.time!),
+                    style: TextStyle(fontSize: 12, color: theme.hintColor)),
                 Text(m.timeLabel,
-                    style:
-                    TextStyle(fontSize: 12, color: theme.hintColor)),
+                    style: TextStyle(fontSize: 12, color: theme.hintColor)),
               ],
             ),
             onTap: () => Navigator.pop(context, m.id),
@@ -133,8 +131,8 @@ class _FundiStarredMessagesScreenState
         backgroundColor: isDark ? const Color(0xFF1F2C34) : AppTheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Starred messages',
-            style: TextStyle(
+        title: Text(l10n.starredMessages,
+            style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w600)),
       ),
       body: body,

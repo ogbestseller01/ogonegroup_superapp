@@ -27,7 +27,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
-  String get logout => 'Logout';
+  String get logout => 'Log out';
 
   @override
   String get deleteAccount => 'Delete Account';
@@ -57,7 +57,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActions => 'Quick Actions';
 
   @override
-  String get registrationSessionLost => 'Registration session lost. Please start over.';
+  String get registrationSessionLost => 'Registration session lost. Please start again.';
 
   @override
   String otpResentTo(String identifier) {
@@ -65,7 +65,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get failedToResendOtp => 'Failed to resend OTP';
+  String get failedToResendOtp => 'Failed to resend OTP.';
 
   @override
   String resendAvailableIn(int seconds) {
@@ -76,10 +76,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get didntReceiveCode => 'Didn\'t receive the code?';
 
   @override
-  String get sending => 'Sending...';
+  String sending(String percent) {
+    return 'Sending…';
+  }
 
   @override
-  String get wait => 'Wait...';
+  String get wait => 'Wait';
 
   @override
   String get resend => 'Resend';
@@ -173,13 +175,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterCodeSent => 'Enter the code sent to';
 
   @override
-  String get enterOtp => 'Enter OTP';
+  String get enterOtp => 'Enter the 6-digit OTP';
 
   @override
   String get otpSent => 'A 6-digit code has been sent to your email';
 
   @override
-  String get verifyOtp => 'Verify OTP';
+  String get verifyOtp => 'Verify';
 
   @override
   String get backToSignIn => 'Back to Sign In';
@@ -334,7 +336,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateInfo => 'Update Your Info';
 
   @override
-  String get name => 'Full Name';
+  String get name => 'Name';
 
   @override
   String get phone => 'Phone';
@@ -346,7 +348,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hourlyRate => 'Hourly Rate (TZS)';
 
   @override
-  String get area => 'Service Area';
+  String get area => 'Area';
 
   @override
   String get experience => 'Experience';
@@ -367,7 +369,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onlineStatus => 'Online Status';
 
   @override
-  String get servicesIOffer => 'Services I Offer';
+  String get servicesIOffer => 'Services I offer';
 
   @override
   String get noServicesSelected => 'No services selected';
@@ -376,25 +378,387 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveChanges => 'Save Changes';
 
   @override
-  String get updateFailed => 'Update failed';
+  String get updateFailed => 'Update failed. Please try again.';
 
   @override
   String get retry => 'Retry';
 
   @override
+  String get back => 'Back';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get newPost => 'New Post';
+
+  @override
+  String get photos => 'Photos';
+
+  @override
+  String get addAtLeastOnePhoto => 'Add at least one photo.';
+
+  @override
+  String get failedToSavePost => 'Failed to save post';
+
+  @override
+  String get deleteFailed => 'Failed to delete file';
+
+  @override
+  String get imageNotAvailable => 'Image not available';
+
+  @override
+  String get portfolioEmptySubtitle => 'Share your work with photos to build your portfolio.';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String minutesAgo(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String get editPost => 'Edit Post';
+
+  @override
+  String get deletePostAction => 'Delete Post';
+
+  @override
+  String get addPost => 'Add Post';
+
+  @override
+  String get portfolioFailedToLoad => 'Failed to load portfolio';
+
+  @override
+  String get portfolioUpdateFailed => 'Failed to update portfolio';
+
+  @override
+  String get portfolioDeleteFailed => 'Failed to delete post';
+
+  @override
+  String get requests => 'Requests';
+
+  @override
+  String get filterByCustomerService => 'Filter by customer or service...';
+
+  @override
+  String get noRequests => 'No requests yet.';
+
+  @override
+  String get noMatchingRequests => 'No matching requests';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get requestAccepted => 'Request accepted';
+
+  @override
+  String get requestRejected => 'Request rejected';
+
+  @override
+  String get failedToAccept => 'Failed to accept';
+
+  @override
+  String get failedToReject => 'Failed to reject';
+
+  @override
+  String get viewJob => 'View Job';
+
+  @override
+  String get chatWithCustomer => 'Chat with Customer';
+
+  @override
+  String jobLabel(String number) {
+    return 'Job $number';
+  }
+
+  @override
+  String jobWithStatus(String number, String status) {
+    return 'Job $number • $status';
+  }
+
+  @override
+  String get requestRejectedBanner => 'Request Rejected';
+
+  @override
+  String get requestCancelledBanner => 'Request Cancelled';
+
+  @override
+  String failedToStartChat(String error) {
+    return 'Failed to start chat: $error';
+  }
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusAccepted => 'Accepted';
+
+  @override
+  String get statusRejected => 'Rejected';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get statTotal => 'Total';
+
+  @override
+  String get statPending => 'Pending';
+
+  @override
+  String get statAccepted => 'Accepted';
+
+  @override
+  String get typing => 'Typing...';
+
+  @override
+  String get sayHelloToStart => 'Say hello to start chatting!';
+
+  @override
+  String get replyEllipsis => 'Reply…';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get attach => 'Attach';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied => 'Copied';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get forwarded => 'Forwarded';
+
+  @override
+  String get deleted => 'Deleted';
+
+  @override
+  String get starred => 'Starred';
+
+  @override
+  String get removedFromStarred => 'Removed from starred';
+
+  @override
+  String get messagePinned => 'Message pinned';
+
+  @override
+  String get messageUnpinned => 'Message unpinned';
+
+  @override
+  String get deleteMessage => 'Delete message?';
+
+  @override
+  String deleteMessages(int count) {
+    return 'Delete $count messages?';
+  }
+
+  @override
+  String get deleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get deleteForEveryoneSubtitle => 'Removed for both of you';
+
+  @override
+  String get deleteForMe => 'Delete for me';
+
+  @override
+  String get deleteForMeSubtitle => 'Only removed on this phone';
+
+  @override
+  String deleteEveryoneFailed(int count) {
+    return '$count message(s) could not be deleted for everyone.';
+  }
+
+  @override
+  String get originalMessageUnavailable => 'The original message is no longer available.';
+
+  @override
+  String get fileTypeNotAllowed => 'This file type is not allowed.';
+
+  @override
+  String fileTooLarge(int limit) {
+    return 'File too large. Max $limit MB for this type.';
+  }
+
+  @override
+  String get attachCamera => 'Camera';
+
+  @override
+  String get attachPhotos => 'Photos';
+
+  @override
+  String get attachVideo => 'Video';
+
+  @override
+  String get attachDocument => 'Document';
+
+  @override
+  String get attachSizeHint => 'Photos 5 MB · Videos 20 MB · Files 15 MB';
+
+  @override
+  String get pinnedMessage => 'Pinned message';
+
+  @override
+  String pinnedXofY(int i, int n) {
+    return 'Pinned $i of $n';
+  }
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get mediaLinksDocs => 'Media, links & docs';
+
+  @override
+  String get starredMessages => 'Starred messages';
+
+  @override
+  String get mediaTab => 'Media';
+
+  @override
+  String get docsTab => 'Docs';
+
+  @override
+  String get linksTab => 'Links';
+
+  @override
+  String get noMedia => 'No media';
+
+  @override
+  String get noDocuments => 'No documents';
+
+  @override
+  String get noLinks => 'No links';
+
+  @override
+  String get noStarredMessages => 'No starred messages';
+
+  @override
+  String get file => 'File';
+
+  @override
   String get customers => 'Customers';
 
   @override
+  String get archivedChats => 'Archived Chats';
+
+  @override
+  String get viewActiveChats => 'View Active Chats';
+
+  @override
+  String get viewArchivedChats => 'View Archived Chats';
+
+  @override
   String get searchCustomers => 'Search customers';
+
+  @override
+  String get filterUnread => 'Unread';
+
+  @override
+  String filterUnreadCount(int count) {
+    return 'Unread $count';
+  }
+
+  @override
+  String get filterPinned => 'Pinned';
+
+  @override
+  String get pinChat => 'Pin chat';
+
+  @override
+  String get unpinChat => 'Unpin chat';
+
+  @override
+  String get archiveChat => 'Archive chat';
+
+  @override
+  String get unarchiveChat => 'Unarchive chat';
+
+  @override
+  String get deleteChat => 'Delete chat';
+
+  @override
+  String deleteChatWith(String name) {
+    return 'Delete chat with $name?';
+  }
+
+  @override
+  String get deleteChatWarning => 'All messages and files will be removed for both of you.';
+
+  @override
+  String get noMatchingConversations => 'No matching conversations';
+
+  @override
+  String get noArchivedChats => 'No archived chats';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String get noConversationsYet => 'No conversations yet';
+
+  @override
+  String get customersWillAppearHere => 'Customers will appear here when they message you';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get photoEmoji => '📷 Photo';
+
+  @override
+  String get fileEmoji => '📁 File';
+
+  @override
+  String replyChip(String sender, String text) {
+    return '↩ $sender: $text';
+  }
+
+  @override
+  String get backTooltip => 'Back';
+
+  @override
+  String get refreshTooltip => 'Refresh';
 
   @override
   String get noCustomersYet => 'No customers yet';
 
   @override
   String get customersWillAppear => 'Customers will appear here when they message you';
-
-  @override
-  String get deleteChat => 'Delete chat';
 
   @override
   String get deleteChatConfirmation => 'All messages and files will be removed for both of you.';
@@ -406,31 +770,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get failedToDeleteChat => 'Could not delete the chat';
 
   @override
-  String get archiveChat => 'Archive chat';
-
-  @override
-  String get unarchiveChat => 'Unarchive chat';
-
-  @override
-  String get pinChat => 'Pin chat';
-
-  @override
-  String get unpinChat => 'Unpin chat';
-
-  @override
   String get chatArchived => 'Chat archived';
 
   @override
   String get chatUnarchived => 'Chat unarchived';
-
-  @override
-  String get copy => 'Copy';
-
-  @override
-  String get deleteMessage => 'Delete message?';
-
-  @override
-  String get reply => 'Reply';
 
   @override
   String get forward => 'Forward';
@@ -460,13 +803,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noAppToOpen => 'No app installed that can open this file type.';
 
   @override
-  String get photo => '📷 Photo';
+  String get photo => 'Photo';
 
   @override
   String get videoFile => '🎥 Video';
 
   @override
   String get attachment => '📎 Attachment';
+
+  @override
+  String get forwardedLower => 'forwarded';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get couldNotOpenFile => 'Could not open this file.';
+
+  @override
+  String get allowGalleryAccess => 'Allow gallery access to save this file.';
+
+  @override
+  String get galleryPluginMissing => 'Gallery plugin not installed in this build. Opening share sheet instead.';
+
+  @override
+  String get couldNotSaveToGallery => 'Could not save to the gallery.';
+
+  @override
+  String get couldNotPlayVideo => 'Could not play this video.';
+
+  @override
+  String get saveToGallery => 'Save to gallery';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get messageDeleted => 'Message deleted';
+
+  @override
+  String get notSentTapToRetry => 'Not sent · Tap to retry';
+
+  @override
+  String errorTapToRetry(String error) {
+    return '$error · Tap to retry';
+  }
+
+  @override
+  String get saveShare => 'Save / share';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get forwardMessageTo => 'Forward message to…';
+
+  @override
+  String forwardMessagesTo(int count) {
+    return 'Forward $count messages to…';
+  }
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get noChatsToForwardTo => 'No chats to forward to';
+
+  @override
+  String get sendingShort => 'Sending…';
+
+  @override
+  String get messageInfo => 'Message info';
+
+  @override
+  String get couldNotLoadInfo => 'Could not load info';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get sent => 'Sent';
+
+  @override
+  String reactionsCount(int count) {
+    return 'Reactions · $count';
+  }
 
   @override
   String get online => 'Online';
@@ -490,13 +914,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeFundi => 'Welcome Fundi';
 
   @override
-  String get manageServicesPosts => 'Manage your services, posts, and requests all in one place.';
+  String get manageServicesPosts => 'Manage your services, posts and all your requests in one place.';
 
   @override
   String get stayConnected => 'Stay Connected';
 
   @override
-  String get getNotifications => 'Get real-time notifications for new requests and updates.';
+  String get getNotifications => 'Get instant notifications for new requests and updates.';
 
   @override
   String get getStarted => 'Get Started';
@@ -577,18 +1001,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterByDescription => 'Filter by description...';
 
   @override
-  String get requests => 'Requests';
-
-  @override
-  String get noRequests => 'No requests yet.';
-
-  @override
-  String get accept => 'Accept';
-
-  @override
-  String get reject => 'Reject';
-
-  @override
   String get customer => 'Customer';
 
   @override
@@ -596,21 +1008,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get description => 'Description';
-
-  @override
-  String get filterByCustomerService => 'Filter by customer or service...';
-
-  @override
-  String get noMatchingRequests => 'No matching requests';
-
-  @override
-  String get requestAccepted => 'Request accepted';
-
-  @override
-  String get requestRejected => 'Request rejected';
-
-  @override
-  String get chatWithCustomer => 'Chat with Customer';
 
   @override
   String get aboutUs => 'About Us';
@@ -646,10 +1043,132 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noFaqs => 'No FAQs available.';
 
   @override
+  String get settingsPreferences => 'Preferences';
+
+  @override
+  String get settingsInformation => 'Information';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get settingsDarkMode => 'Dark Mode';
+
+  @override
+  String get settingsDarkOn => 'Dark theme enabled';
+
+  @override
+  String get settingsLightOn => 'Light theme enabled';
+
+  @override
   String get pushNotifications => 'Push Notifications';
 
   @override
   String get receiveAlerts => 'Receive alerts about requests';
+
+  @override
+  String get viewNotifications => 'View Notifications';
+
+  @override
+  String get seeAllNotifications => 'See all your incoming notifications';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageSwahili => 'Kiswahili';
+
+  @override
+  String get logoutConfirmation => 'Are you sure you want to logout?';
+
+  @override
+  String get logoutConfirmTitle => 'Log out?';
+
+  @override
+  String get logoutConfirmMessage => 'You’ll need to sign in again to access your account.';
+
+  @override
+  String logoutFailed(Object error) {
+    return 'Logout failed: $error';
+  }
+
+  @override
+  String get loggingOut => 'Logging out…';
+
+  @override
+  String get deleteAccountConfirmation => 'This action is permanent. All your data will be lost. Are you sure?';
+
+  @override
+  String get couldNotDeleteAccount => 'Could not delete account';
+
+  @override
+  String get profileUpdated => 'Profile updated successfully';
+
+  @override
+  String get tapToChangePhoto => 'Tap camera to change photo';
+
+  @override
+  String get nameRequired => 'Name required';
+
+  @override
+  String get nidaNumber => 'NIDA Number';
+
+  @override
+  String get nidaHelperText => 'Set during registration. Contact support to change.';
+
+  @override
+  String get verifiedLabel => '✓ VERIFIED';
+
+  @override
+  String get selectAtLeastOneService => 'Select at least one service';
+
+  @override
+  String get editServices => 'Edit services';
+
+  @override
+  String get noServicesAvailable => 'No services available.';
+
+  @override
+  String get servicesUpdated => 'Services updated';
+
+  @override
+  String get typeAreaOrPickOnMap => 'Type area or pick on map';
+
+  @override
+  String get pickOnMap => 'Pick on map';
+
+  @override
+  String get locationSetOnMap => 'Location set on map';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get pickLocationOnMap => 'Pick location on map';
+
+  @override
+  String get searchAreaHint => 'Search area, street, or landmark…';
+
+  @override
+  String get gettingAddress => 'Getting address…';
+
+  @override
+  String get tapMapToSelectLocation => 'Tap on the map to select a location';
+
+  @override
+  String get useThisLocation => 'Use this location';
+
+  @override
+  String get selectedLocation => 'Selected location';
+
+  @override
+  String get zoomIn => 'Zoom in';
+
+  @override
+  String get zoomOut => 'Zoom out';
 
   @override
   String get noNotificationsYet => 'No notifications yet';
@@ -670,16 +1189,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMessagesYet => 'No messages yet';
 
   @override
-  String get sayHelloToStart => 'Say hello to start chatting!';
-
-  @override
   String get typeAMessage => 'Type a message...';
-
-  @override
-  String get typing => 'Typing...';
-
-  @override
-  String get messageDeleted => 'Message deleted';
 
   @override
   String get messageCopied => 'Message copied';
@@ -703,19 +1213,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get image => 'Image';
 
   @override
-  String get file => 'File';
-
-  @override
   String get voiceMessage => 'Voice message';
-
-  @override
-  String get video => 'Video';
-
-  @override
-  String get justNow => 'Just now';
-
-  @override
-  String get noConversationsYet => 'No conversations yet';
 
   @override
   String get startChattingWithFundis => 'Start chatting with customers near you';
@@ -769,9 +1267,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get downloadFailed => 'Failed to download file';
 
   @override
-  String get deleteFailed => 'Failed to delete file';
-
-  @override
   String get permissionDenied => 'Permission denied';
 
   @override
@@ -790,9 +1285,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMatchingItems => 'No matching items';
 
   @override
-  String get cancel => 'Cancel';
-
-  @override
   String get add => 'Add';
 
   @override
@@ -802,31 +1294,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get create => 'Create';
 
   @override
-  String get delete => 'Delete';
-
-  @override
   String get call => 'Call';
 
   @override
   String get areYouSure => 'Are you sure?';
 
   @override
-  String get logoutConfirmation => 'Are you sure you want to logout?';
-
-  @override
-  String get deleteAccountConfirmation => 'This action is permanent. All your data will be lost. Are you sure?';
-
-  @override
   String get selectServicesDialogTitle => 'Select Services';
-
-  @override
-  String get selectAtLeastOneService => 'Select at least one service';
-
-  @override
-  String get servicesUpdated => 'Services updated';
-
-  @override
-  String get profileUpdated => 'Profile updated successfully';
 
   @override
   String get open => 'Open';
@@ -1061,15 +1535,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allCaughtUp => 'You\'re all caught up!';
 
   @override
-  String get refresh => 'Refresh';
-
-  @override
-  String get viewNotifications => 'View Notifications';
-
-  @override
-  String get seeAllNotifications => 'See all your incoming notifications';
-
-  @override
   String get markAllRead => 'Mark All Read';
 
   @override
@@ -1127,28 +1592,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get download => 'Download';
 
   @override
-  String get share => 'Share';
-
-  @override
   String get openPdf => 'Open PDF';
 
   @override
-  String get privacyPolicy => 'Privacy Policy';
-
-  @override
-  String get tapToChangePhoto => 'Tap camera to change photo';
-
-  @override
-  String get nidaNumber => 'NIDA Number';
-
-  @override
   String get typeArea => 'Type area';
-
-  @override
-  String get pickOnMap => 'Pick on map';
-
-  @override
-  String get typeAreaOrPickOnMap => 'Type area or pick on map';
 
   @override
   String get oops => 'Oops!';
@@ -1558,40 +2005,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get areYouSureDeleteMessage => 'Are you sure you want to delete this message?';
 
   @override
-  String get filterAll => 'All';
-
-  @override
   String get filterOnProgress => 'On progress';
 
   @override
   String get filterCompleted => 'Completed';
-
-  @override
-  String get settingsPreferences => 'Preferences';
-
-  @override
-  String get settingsInformation => 'Information';
-
-  @override
-  String get settingsAccount => 'Account';
-
-  @override
-  String get settingsDarkMode => 'Dark Mode';
-
-  @override
-  String get settingsDarkOn => 'Dark theme enabled';
-
-  @override
-  String get settingsLightOn => 'Light theme enabled';
-
-  @override
-  String get editServices => 'Edit services';
-
-  @override
-  String get noServicesAvailable => 'No services available.';
-
-  @override
-  String get couldNotDeleteAccount => 'Could not delete account';
 
   @override
   String get payments => 'Payments';
@@ -1610,9 +2027,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tapToSelectImages => 'Tap to select images';
-
-  @override
-  String get editPost => 'Edit Post';
 
   @override
   String get addMoreImages => 'Add more images';

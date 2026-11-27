@@ -1,4 +1,4 @@
-// lib/screens/chat/chat_screen.dart
+// packages/nearby_fundi/lib/screens/chat/chat_screen.dart
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -13,7 +13,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/chat_conversation.dart';
 import '../../models/chat_message.dart';
 import '../../providers/chat_provider.dart';
-import 'widgets/fundi_message_bubble.dart'; // Use the new bubble
+import 'widgets/fundi_message_bubble.dart';
 
 const int _mb = 1024 * 1024;
 const int _maxImageBytes = 5 * _mb;
@@ -124,7 +124,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _textController.clear();
     setState(() => _replyingTo = null);
 
-    // New optimistic send method
     _chat.send(conversationId: _conversationId, content: finalPayload);
     _scrollToBottom();
   }
@@ -152,7 +151,6 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    // New optimistic send method
     _chat.send(conversationId: _conversationId, file: file);
     _scrollToBottom();
   }
@@ -185,9 +183,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _pickDocument() async {
     try {
-      final result = await FilePicker.platform.pickFiles(allowMultiple: false);
-      final path = result?.files.first.path;
-      if (path != null && path.isNotEmpty) await _sendFile(File(path));
+      final files = await FilePicker.pickFiles(
+        allowMultiple: false,
+        type: FileType.any,
+      );
+      if (files.isEmpty) return;
+
+      final path = files.first.path;
+      if (path != null && path.isNotEmpty) {
+        await _sendFile(File(path));
+      }
     } catch (e) {
       _snack('$e', error: true);
     }
@@ -297,7 +302,6 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
-                // New bulk delete method
                 await _chat.deleteMessages([message.id], forEveryone: true);
                 _snack(l10n.messageDeleted);
               } catch (e) {
@@ -447,7 +451,6 @@ class _ChatScreenState extends State<ChatScreen> {
               final message = messages[messages.length - 1 - index];
               final isMine = message.senderId == myId;
 
-              // Using the new FundiMessageBubble
               return FundiMessageBubble(
                 key: ValueKey(message.id),
                 message: message,
