@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/chat_provider.dart';
 
-/// Returns true when the messages were forwarded.
 Future<bool> showForwardSheet(BuildContext context, List<int> messageIds) async {
   final ok = await showModalBottomSheet<bool>(
     context: context,
@@ -52,6 +52,7 @@ class _ForwardSheetState extends State<_ForwardSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final chat = context.watch<ChatProvider>();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -73,9 +74,10 @@ class _ForwardSheetState extends State<_ForwardSheet> {
                   Expanded(
                     child: Text(
                       widget.messageIds.length == 1
-                          ? 'Forward message to…'
-                          : 'Forward ${widget.messageIds.length} messages to…',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                          ? l10n.forwardMsgTo
+                          : l10n.forwardMsgsTo(widget.messageIds.length),
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w600),
                     ),
                   ),
                   if (_picked.isNotEmpty)
@@ -89,11 +91,12 @@ class _ForwardSheetState extends State<_ForwardSheet> {
               child: TextField(
                 onChanged: (v) => setState(() => _q = v.trim()),
                 decoration: InputDecoration(
-                  hintText: 'Search',
+                  hintText: l10n.search,
                   prefixIcon: const Icon(Icons.search_rounded),
                   isDense: true,
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
+                  fillColor:
+                  isDark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -104,7 +107,7 @@ class _ForwardSheetState extends State<_ForwardSheet> {
             Expanded(
               child: list.isEmpty
                   ? Center(
-                child: Text('No chats to forward to',
+                child: Text(l10n.noChatsToForward,
                     style: TextStyle(color: theme.hintColor)),
               )
                   : ListView.builder(
@@ -118,19 +121,24 @@ class _ForwardSheetState extends State<_ForwardSheet> {
                     activeColor: AppTheme.primary,
                     controlAffinity: ListTileControlAffinity.trailing,
                     secondary: CircleAvatar(
-                      backgroundColor: AppTheme.primary.withOpacity(0.15),
+                      backgroundColor:
+                      AppTheme.primary.withValues(alpha: 0.15),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : '?',
                         style: TextStyle(
-                            color: isDark ? Colors.white : AppTheme.primary,
+                            color:
+                            isDark ? Colors.white : AppTheme.primary,
                             fontWeight: FontWeight.w600),
                       ),
                     ),
-                    title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(name,
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
                     onChanged: (v) {
                       setState(() {
                         if (v == true) {
-                          if (_picked.length < _maxTargets) _picked.add(c.id);
+                          if (_picked.length < _maxTargets) {
+                            _picked.add(c.id);
+                          }
                         } else {
                           _picked.remove(c.id);
                         }
@@ -148,16 +156,18 @@ class _ForwardSheetState extends State<_ForwardSheet> {
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24)),
                   ),
                   onPressed: _picked.isEmpty || _sending ? null : _send,
                   icon: _sending
                       ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.send_rounded, size: 20),
-                  label: Text(_sending ? 'Sending…' : 'Send'),
+                  label: Text(_sending ? l10n.sending : l10n.send),
                 ),
               ),
             ),

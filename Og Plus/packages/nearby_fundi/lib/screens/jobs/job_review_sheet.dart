@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/job.dart';
 import '../../providers/job_provider.dart';
 
@@ -50,12 +51,13 @@ class JobReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = theme.colorScheme.onSurface;
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Your review',
+          l10n.yourReview,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -99,15 +101,6 @@ class JobReviewSheet extends StatefulWidget {
 }
 
 class _JobReviewSheetState extends State<JobReviewSheet> {
-  static const List<String> _labels = [
-    'Tap a star to rate',
-    'Poor',
-    'Fair',
-    'Good',
-    'Very good',
-    'Excellent',
-  ];
-
   final TextEditingController _remark = TextEditingController();
   int _rating = 0;
   bool _submitting = false;
@@ -120,8 +113,9 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_rating == 0) {
-      setState(() => _error = 'Please select a star rating.');
+      setState(() => _error = l10n.selectStarRating);
       return;
     }
 
@@ -146,23 +140,33 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
       navigator.pop(true);
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text('Thank you for your review!'),
+        ..showSnackBar(SnackBar(
+          content: Text(l10n.reviewSubmitted),
           backgroundColor: AppTheme.success,
         ));
     } else {
       setState(() {
         _submitting = false;
-        _error = provider.error ?? 'Failed to submit review.';
+        _error = provider.error ?? l10n.failedSubmitReview;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    final ratingLabels = [
+      l10n.tapStarToRate,
+      l10n.ratingPoor,
+      l10n.ratingFair,
+      l10n.ratingGood,
+      l10n.ratingVeryGood,
+      l10n.ratingExcellent,
+    ];
 
     return Container(
       width: double.infinity,
@@ -208,7 +212,7 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Rate ${widget.job.technicianName}',
+                      l10n.rateJobTitle(widget.job.technicianName),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colors.onSurface,
@@ -257,7 +261,7 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
               const SizedBox(height: 4),
               Center(
                 child: Text(
-                  _labels[_rating],
+                  ratingLabels[_rating],
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: _rating == 0
@@ -274,8 +278,8 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
                 maxLength: 1000,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  labelText: 'Remark (optional)',
-                  hintText: 'Tell us how the job went…',
+                  labelText: l10n.remarkOptional,
+                  hintText: l10n.tellUsHowJobWent,
                   filled: true,
                   fillColor: colors.surfaceContainerHighest,
                   border: OutlineInputBorder(
@@ -311,15 +315,15 @@ class _JobReviewSheetState extends State<JobReviewSheet> {
                     color: colors.onPrimary,
                   ),
                 )
-                    : const Text(
-                  'Submit review',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    : Text(
+                  l10n.submitReview,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 4),
               TextButton(
                 onPressed: _submitting ? null : () => Navigator.pop(context, false),
-                child: const Text('Maybe later'),
+                child: Text(l10n.maybeLater),
               ),
             ],
           ),

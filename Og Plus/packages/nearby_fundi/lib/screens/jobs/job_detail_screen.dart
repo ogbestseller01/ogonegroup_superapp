@@ -324,7 +324,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Your review',
+                      l10n.yourReview,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -334,7 +334,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'How was the job? Rate ${job.technicianName} and leave a remark.',
+                      l10n.howWasTheJob(job.technicianName),
                       style: TextStyle(
                         fontSize: 14,
                         height: 1.45,
@@ -373,7 +373,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   // 👇 Exactly on top of the text
                   Positioned(
-                    top: 8, // Adjust this to center perfectly on the text
+                    top: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
@@ -388,9 +388,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'Coming Soon',
-                        style: TextStyle(
+                      child: Text(
+                        l10n.comingSoon,
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           color: AppTheme.primary,
@@ -422,7 +422,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ElevatedButton.icon(
                 onPressed: () => _openReview(job),
                 icon: const Icon(Icons.star_rounded),
-                label: const Text('Rate this job'),
+                label: Text(l10n.rateThisJob),
                 style: _btnStyle(AppTheme.secondary).copyWith(
                   foregroundColor: const WidgetStatePropertyAll(AppTheme.primary),
                 ),
@@ -438,8 +438,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 },
                 icon: const Icon(Icons.chat_bubble_outline_rounded),
                 label: Text(
-                  // 👇 Updated text as requested
-                  '${l10n.chat} to get contact',
+                  l10n.chatToGetContact,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 style: _btnStyle(AppTheme.accent),

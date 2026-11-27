@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 
 class _C {
@@ -49,8 +50,17 @@ class MessageBubble extends StatelessWidget {
   bool get _failed => message.sendState == SendState.failed;
   bool get _sending => message.sendState == SendState.sending;
 
+  double _maxBubbleW(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    if (w < 360) return w * 0.82;
+    if (w > 800) return 520;
+    return w * 0.78;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // FIX: Fetch l10n at the top of build to ensure a valid BuildContext.
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final dark = theme.brightness == Brightness.dark;
@@ -62,7 +72,6 @@ class MessageBubble extends StatelessWidget {
     final c = _C(
       bubble,
       isMine ? Colors.white : scheme.onSurface,
-      // Fixed: withOpacity -> withValues
       isMine ? Colors.white70 : scheme.onSurface.withValues(alpha: 0.55),
       isMine ? Colors.white : AppTheme.primary,
       dark,
@@ -76,14 +85,13 @@ class MessageBubble extends StatelessWidget {
       crossAxisAlignment:
       reply != null ? CrossAxisAlignment.stretch : CrossAxisAlignment.start,
       children: [
-        if (message.isForwarded) _forwardedLabel(c),
-        if (reply != null) _quote(reply, c),
+        if (message.isForwarded) _forwardedLabel(c, l10n),
+        if (reply != null) _quote(context, reply, c, l10n),
         content,
       ],
     );
     if (reply != null) inner = IntrinsicWidth(child: inner);
 
-    // Fixed: withOpacity -> withValues
     final shown = highlighted
         ? Color.alphaBlend(Colors.amber.withValues(alpha: 0.4), bubble)
         : bubble;
@@ -109,9 +117,7 @@ class MessageBubble extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 clipBehavior: Clip.antiAlias,
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.78,
-                ),
+                constraints: BoxConstraints(maxWidth: _maxBubbleW(context)),
                 padding: _isMedia
                     ? const EdgeInsets.all(3)
                     : const EdgeInsets.fromLTRB(10, 6, 10, 6),
@@ -125,7 +131,6 @@ class MessageBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      // Fixed: withOpacity -> withValues
                       color: Colors.black.withValues(alpha: 0.07),
                       blurRadius: 3,
                       offset: const Offset(0, 1),
@@ -145,9 +150,10 @@ class MessageBubble extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 3, right: 2),
                 child: Text(
                   (message.sendError ?? '').isNotEmpty
-                      ? '${message.sendError} · Tap to retry'
-                      : 'Not sent · Tap to retry',
-                  style: const TextStyle(fontSize: 11.5, color: Colors.redAccent),
+                      ? '${message.sendError} · ${l10n?.tapToRetry ?? 'Tap to retry'}'
+                      : '${l10n?.notSent ?? 'Not sent'} · ${l10n?.tapToRetry ?? 'Tap to retry'}',
+                  style:
+                  const TextStyle(fontSize: 11.5, color: Colors.redAccent),
                 ),
               ),
           ],
@@ -156,9 +162,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  // ── Small pieces ───────────────────────────────────────
-
-  Widget _forwardedLabel(_C c) => Padding(
+  Widget _forwardedLabel(_C c, AppLocalizations? l10n) => Padding(
     padding: EdgeInsets.only(
         bottom: 3, left: _isMedia ? 6 : 0, top: _isMedia ? 3 : 0),
     child: Row(
@@ -167,7 +171,7 @@ class MessageBubble extends StatelessWidget {
         Icon(Icons.forward_rounded, size: 14, color: c.meta),
         const SizedBox(width: 4),
         Text(
-          'Forwarded',
+          l10n?.forwarded ?? 'Forwarded',
           style: TextStyle(
               fontSize: 12, fontStyle: FontStyle.italic, color: c.meta),
         ),
@@ -175,7 +179,6 @@ class MessageBubble extends StatelessWidget {
     ),
   );
 
-  /// WhatsApp-style emoji pill under the bubble: "👍❤️ 3".
   Widget _reactionPill(_C c) {
     final emojis = message.reactions.map((r) => r.emoji).take(3).join();
     final total = message.reactionTotal;
@@ -190,14 +193,12 @@ class MessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: mine
-            // Fixed: withOpacity -> withValues
                 ? AppTheme.primary.withValues(alpha: 0.6)
-            // Fixed: withOpacity -> withValues
                 : Colors.grey.withValues(alpha: 0.25),
           ),
           boxShadow: [
-            // Fixed: withOpacity -> withValues
-            BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08), blurRadius: 3),
           ],
         ),
         child: Row(
@@ -224,17 +225,17 @@ class MessageBubble extends StatelessWidget {
   Widget _content(BuildContext context, _C c) {
     switch (message.messageType) {
       case 'image':
-        return _mediaWithCaption(c, _image(c));
+        return _mediaWithCaption(context, c, _image(context, c));
       case 'video':
-        return _mediaWithCaption(c, _video(c));
+        return _mediaWithCaption(context, c, _video(context, c));
       case 'file':
-        return _fileCard(c);
+        return _fileCard(context, c);
       default:
         return _textWithMeta((message.content ?? '').trim(), c);
     }
   }
 
-  Widget _mediaWithCaption(_C c, Widget media) {
+  Widget _mediaWithCaption(BuildContext context, _C c, Widget media) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,18 +317,20 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  /// The quoted message. TAP = jump to the original (handled by the screen).
-  Widget _quote(ReplyRef r, _C c) {
+  Widget _quote(BuildContext context, ReplyRef r, _C c, AppLocalizations? l10n) {
     final mine = r.senderId == myId;
     final name = mine
-        ? 'You'
+        ? (l10n?.you ?? 'You')
         : ((r.senderName ?? '').isNotEmpty ? r.senderName! : peerName);
     final bar = isMine ? Colors.white : AppTheme.primary;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 5, top: _isMedia ? 3 : 0, left: _isMedia ? 3 : 0, right: _isMedia ? 3 : 0),
+      padding: EdgeInsets.only(
+          bottom: 5,
+          top: _isMedia ? 3 : 0,
+          left: _isMedia ? 3 : 0,
+          right: _isMedia ? 3 : 0),
       child: Material(
-        // Fixed: withOpacity -> withValues
         color: isMine
             ? Colors.black.withValues(alpha: 0.18)
             : AppTheme.primary.withValues(alpha: 0.08),
@@ -363,7 +366,6 @@ class MessageBubble extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            // Fixed: withOpacity -> withValues
                             color: c.text.withValues(alpha: 0.8),
                             fontSize: 12.5,
                           ),
@@ -398,11 +400,16 @@ class MessageBubble extends StatelessWidget {
     child: Center(child: Icon(icon, size: 44, color: Colors.grey)),
   );
 
-  Widget _image(_C c) {
+  Widget _image(BuildContext context, _C c) {
     final f = message.file;
+    final w = _maxBubbleW(context) - 6;
+    final h = (w * 0.85).clamp(120.0, 300.0);
     if (f == null) {
       return SizedBox(
-          width: 230, height: 120, child: _placeholder(c, Icons.broken_image));
+        width: w,
+        height: h,
+        child: _placeholder(c, Icons.broken_image),
+      );
     }
 
     final net = CachedNetworkImage(
@@ -420,17 +427,19 @@ class MessageBubble extends StatelessWidget {
 
     final local = f.localPath;
     final Widget img = local != null
-        ? Image.file(File(local),
-        fit: BoxFit.cover,
-        cacheWidth: 700,
-        errorBuilder: (_, __, ___) => net)
+        ? Image.file(
+      File(local),
+      fit: BoxFit.cover,
+      cacheWidth: 700,
+      errorBuilder: (_, __, ___) => net,
+    )
         : net;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(11),
       child: SizedBox(
-        width: 230,
-        height: 230,
+        width: w,
+        height: h,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -463,12 +472,14 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _video(_C c) {
+  Widget _video(BuildContext context, _C c) {
+    final w = _maxBubbleW(context) - 6;
+    final h = (w * 0.65).clamp(120.0, 240.0);
     return ClipRRect(
       borderRadius: BorderRadius.circular(11),
       child: SizedBox(
-        width: 230,
-        height: 150,
+        width: w,
+        height: h,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -477,7 +488,8 @@ class MessageBubble extends StatelessWidget {
               child: CircleAvatar(
                 radius: 26,
                 backgroundColor: Colors.black54,
-                child: Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+                child:
+                Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
               ),
             ),
             Positioned(
@@ -485,11 +497,13 @@ class MessageBubble extends StatelessWidget {
               bottom: 8,
               child: Row(
                 children: [
-                  const Icon(Icons.videocam_rounded, color: Colors.white70, size: 16),
+                  const Icon(Icons.videocam_rounded,
+                      color: Colors.white70, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     message.file?.formattedSize ?? '',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style:
+                    const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -518,23 +532,24 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  Widget _fileCard(_C c) {
+  Widget _fileCard(BuildContext context, _C c) {
+    final l10n = AppLocalizations.of(context);
     final f = message.file;
     final (icon, color) = _fileStyle(f?.kind ?? ChatFileKind.other);
     final info = [
       if ((f?.ext ?? '').isNotEmpty) f!.ext!.toUpperCase(),
       if ((f?.formattedSize ?? '').isNotEmpty) f!.formattedSize,
     ].join(' · ');
+    final cardW = _maxBubbleW(context).clamp(180.0, 260.0);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 250,
+          width: cardW,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            // Fixed: withOpacity -> withValues
             color: isMine
                 ? Colors.black.withValues(alpha: 0.14)
                 : color.withValues(alpha: 0.08),
@@ -557,7 +572,7 @@ class MessageBubble extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      f?.name ?? 'File',
+                      f?.name ?? l10n?.file ?? 'File',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -567,7 +582,8 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
                     if (info.isNotEmpty)
-                      Text(info, style: TextStyle(color: c.meta, fontSize: 12)),
+                      Text(info,
+                          style: TextStyle(color: c.meta, fontSize: 12)),
                   ],
                 ),
               ),
@@ -576,7 +592,8 @@ class MessageBubble extends StatelessWidget {
                   width: 28,
                   height: 28,
                   child: _failed
-                      ? const Icon(Icons.refresh_rounded, color: Colors.redAccent)
+                      ? const Icon(Icons.refresh_rounded,
+                      color: Colors.redAccent)
                       : CircularProgressIndicator(
                     value: message.progress > 0 ? message.progress : null,
                     strokeWidth: 2.5,
@@ -585,10 +602,10 @@ class MessageBubble extends StatelessWidget {
                 )
               else
                 IconButton(
-                  tooltip: 'Save / share',
+                  tooltip: l10n?.saveShare ?? 'Save / share',
                   visualDensity: VisualDensity.compact,
-                  // Fixed: withOpacity -> withValues
-                  icon: Icon(Icons.download_rounded, color: c.text.withValues(alpha: 0.8)),
+                  icon: Icon(Icons.download_rounded,
+                      color: c.text.withValues(alpha: 0.8)),
                   onPressed: onSave,
                 ),
             ],

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 import '../../../widgets/swipe_to_reply.dart';
 import 'message_bubble.dart';
@@ -59,7 +60,6 @@ class ChatMessageRow extends StatelessWidget {
       peerName: peerName,
       highlighted: highlighted,
       authHeaders: authHeaders,
-      // Row's InkWell is the single source of truth for starting selection.
       onLongPress: null,
       onTap: selecting ? onToggleSelect : onOpen,
       onSave: onSave,
@@ -78,12 +78,15 @@ class ChatMessageRow extends StatelessWidget {
             left: isMine ? 6 : null,
             right: isMine ? null : 6,
             child: Builder(
-              builder: (ctx) => InkResponse(
+              builder: (innerContext) => InkResponse(
                 radius: 18,
                 onTap: () {
-                  final box = ctx.findRenderObject() as RenderBox;
-                  // Anchor at the chevron's own position; showMessageMenu clamps to screen.
-                  onOpenMenu(box.localToGlobal(Offset(0, box.size.height)));
+                  // Use the Builder's context to get the RenderBox safely
+                  final RenderBox? box = innerContext.findRenderObject() as RenderBox?;
+                  if (box != null) {
+                    final Offset offset = box.localToGlobal(Offset.zero);
+                    onOpenMenu(Offset(offset.dx + box.size.width / 2, offset.dy + box.size.height));
+                  }
                 },
                 child: Container(
                   width: 28,
@@ -116,7 +119,9 @@ class ChatMessageRow extends StatelessWidget {
       onTap: selecting ? onToggleSelect : null,
       onLongPress: (m.isPending || selecting) ? null : onToggleSelect,
       child: Container(
-        color: selected ? AppTheme.primary.withValues(alpha: 0.16) : Colors.transparent,
+        color: selected
+            ? AppTheme.primary.withValues(alpha: 0.16)
+            : Colors.transparent,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -147,10 +152,15 @@ class ChatMessageRow extends StatelessWidget {
 class _Tombstone extends StatelessWidget {
   final bool isMine, dark;
   final String time;
-  const _Tombstone({required this.isMine, required this.time, required this.dark});
+  const _Tombstone({
+    required this.isMine,
+    required this.time,
+    required this.dark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final fg = dark ? Colors.white54 : Colors.black45;
     final screenW = MediaQuery.of(context).size.width;
     final maxW = screenW * 0.72;
@@ -176,8 +186,9 @@ class _Tombstone extends StatelessWidget {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                'This message was deleted',
-                style: TextStyle(fontStyle: FontStyle.italic, color: fg, fontSize: 14),
+                l10n?.thisMessageWasDeleted ?? 'This message was deleted',
+                style: TextStyle(
+                    fontStyle: FontStyle.italic, color: fg, fontSize: 14),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

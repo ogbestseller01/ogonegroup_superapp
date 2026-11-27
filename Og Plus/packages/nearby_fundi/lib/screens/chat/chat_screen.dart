@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/chat_conversation.dart';
@@ -130,7 +131,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final minI = pos.map((e) => e.index).reduce(math.min);
     final maxI = pos.map((e) => e.index).reduce(math.max);
     _showDown.value = minI > 1;
-    if (_chat.hasMoreOlder && maxI >= _chat.messages.length - 3) _chat.loadOlder();
+    if (_chat.hasMoreOlder && maxI >= _chat.messages.length - 3) {
+      _chat.loadOlder();
+    }
   }
 
   void _onText() {
@@ -166,17 +169,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _jumpTo(int id) async {
+    final l10n = AppLocalizations.of(context)!;
     if (!mounted) return;
     if (!_chat.messages.any((m) => m.id == id)) {
       final ok = await _chat.loadUntil(id);
       if (!ok || !mounted) {
-        return _snack('The original message is no longer available.');
+        return _snack(l10n.originalMsgNotAvailable);
       }
       await WidgetsBinding.instance.endOfFrame;
     }
     final list = _chat.messages;
     final idx = list.indexWhere((m) => m.id == id);
-    if (idx == -1) return _snack('The original message is no longer available.');
+    if (idx == -1) return _snack(l10n.originalMsgNotAvailable);
     if (_itemScroll.isAttached) {
       _itemScroll.scrollTo(
         index: list.length - 1 - idx,
@@ -200,17 +204,19 @@ class _ChatScreenState extends State<ChatScreen> {
     _toBottom();
   }
 
-  int _limit(String ext) =>
-      _imgExt.contains(ext) ? 5 * _mb : (_vidExt.contains(ext) ? 20 * _mb : 15 * _mb);
+  int _limit(String ext) => _imgExt.contains(ext)
+      ? 5 * _mb
+      : (_vidExt.contains(ext) ? 20 * _mb : 15 * _mb);
 
   Future<void> _sendFile(File f) async {
+    final l10n = AppLocalizations.of(context)!;
     final ext = p.extension(f.path).replaceFirst('.', '').toLowerCase();
     if (_blocked.contains(ext)) {
-      return _snack('This file type is not allowed.', error: true);
+      return _snack(l10n.fileNotAllowed, error: true);
     }
     final limit = _limit(ext);
     if (await f.length() > limit) {
-      return _snack('File too large. Max ${limit ~/ _mb} MB for this type.', error: true);
+      return _snack(l10n.fileTooLarge(limit ~/ _mb), error: true);
     }
     _chat.send(conversationId: _cid, file: f, replyTo: _takeReply());
     _toBottom();
@@ -259,6 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
   });
 
   void _attachSheet() {
+    final l10n = AppLocalizations.of(context)!;
     Widget item(IconData i, Color c, String l, VoidCallback f) => InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
@@ -291,15 +298,16 @@ class _ChatScreenState extends State<ChatScreen> {
               spacing: 12,
               runSpacing: 8,
               children: [
-                item(Icons.photo_camera_rounded, Colors.teal, 'Camera', _camera),
-                item(Icons.photo_rounded, Colors.purple, 'Photos', _gallery),
-                item(Icons.videocam_rounded, Colors.red, 'Video', _video),
-                item(Icons.insert_drive_file_rounded, Colors.blue, 'Document', _document),
+                item(Icons.photo_camera_rounded, Colors.teal, l10n.camera, _camera),
+                item(Icons.photo_rounded, Colors.purple, l10n.photos, _gallery),
+                item(Icons.videocam_rounded, Colors.red, l10n.video, _video),
+                item(Icons.insert_drive_file_rounded, Colors.blue, l10n.document,
+                    _document),
               ],
             ),
             const SizedBox(height: 10),
             Text(
-              'Photos 5 MB · Videos 20 MB · Files 15 MB',
+              l10n.fileSizeHint,
               style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor),
               textAlign: TextAlign.center,
             ),
@@ -345,24 +353,28 @@ class _ChatScreenState extends State<ChatScreen> {
   );
 
   Future<void> _togglePin(ChatMessage m) => _guard(() async {
+    final l10n = AppLocalizations.of(context)!;
     final now = await _chat.togglePin(m.id);
-    _snack(now ? 'Message pinned' : 'Message unpinned');
+    _snack(now ? l10n.messagePinned : l10n.messageUnpinned);
   });
 
   Future<void> _toggleStar(ChatMessage m) => _guard(() async {
+    final l10n = AppLocalizations.of(context)!;
     final now = await _chat.toggleStar(m.id);
-    _snack(now ? 'Starred' : 'Removed from starred');
+    _snack(now ? l10n.starred : l10n.removedFromStarred);
   });
 
   Future<void> _copy(String t) async {
+    final l10n = AppLocalizations.of(context)!;
     await Clipboard.setData(ClipboardData(text: t));
-    _snack('Copied');
+    _snack(l10n.copied);
   }
 
   Future<void> _forward(List<int> ids) async {
+    final l10n = AppLocalizations.of(context)!;
     if (await showForwardSheet(context, ids)) {
       _clear();
-      _snack('Forwarded');
+      _snack(l10n.forwarded);
     }
   }
 
@@ -387,7 +399,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _toggleSelect(ChatMessage m) {
     if (m.isPending) return;
-    // Guard against double-fire from overlapping gesture handlers.
     final now = DateTime.now();
     if (now.difference(_lastToggle) < const Duration(milliseconds: 250)) return;
     _lastToggle = now;
@@ -401,10 +412,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_selected.isNotEmpty) setState(_selected.clear);
   }
 
-  List<ChatMessage> get _sel => _chat.messages.where((m) => _selected.contains(m.id)).toList();
+  List<ChatMessage> get _sel =>
+      _chat.messages.where((m) => _selected.contains(m.id)).toList();
 
   Future<void> _delete(List<ChatMessage> msgs) async {
     if (msgs.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
     final me = _chat.currentUser?.id;
     final pendingOnly = msgs.every((m) => m.isPending);
     if (pendingOnly) {
@@ -414,12 +427,15 @@ class _ChatScreenState extends State<ChatScreen> {
       return _clear();
     }
     final real = msgs.where((m) => !m.isPending).toList();
-    final everyoneOk = real.every((m) => m.senderId == me && m.canDeleteForEveryone);
+    final everyoneOk =
+    real.every((m) => m.senderId == me && m.canDeleteForEveryone);
 
     final choice = await showDialog<String>(
       context: context,
       builder: (d) => AlertDialog(
-        title: Text(real.length == 1 ? 'Delete message?' : 'Delete ${real.length} messages?'),
+        title: Text(real.length == 1
+            ? l10n.deleteMessage
+            : l10n.deleteMessages(real.length)),
         contentPadding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -428,22 +444,26 @@ class _ChatScreenState extends State<ChatScreen> {
             if (everyoneOk)
               ListTile(
                 dense: true,
-                leading: const Icon(Icons.delete_forever_outlined, color: AppTheme.error),
-                title: const Text('Delete for everyone'),
-                subtitle: const Text('Removed for both of you'),
+                leading: const Icon(Icons.delete_forever_outlined,
+                    color: AppTheme.error),
+                title: Text(l10n.deleteForEveryone),
+                subtitle: Text(l10n.removedForBoth),
                 onTap: () => Navigator.pop(d, 'everyone'),
               ),
             ListTile(
               dense: true,
               leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('Delete for me'),
-              subtitle: const Text('Only removed on this phone'),
+              title: Text(l10n.deleteForMe),
+              subtitle: Text(l10n.onlyRemovedThisPhone),
               onTap: () => Navigator.pop(d, 'me'),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(d), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(d),
+            child: Text(l10n.cancel),
+          ),
         ],
       ),
     );
@@ -455,12 +475,10 @@ class _ChatScreenState extends State<ChatScreen> {
         forEveryone: choice == 'everyone',
       );
       if (done.length < real.length) {
-        _snack(
-          '${real.length - done.length} message(s) could not be deleted for everyone.',
-          error: true,
-        );
+        _snack(l10n.msgCouldNotBeDeleted(real.length - done.length),
+            error: true);
       } else {
-        _snack('Deleted');
+        _snack(l10n.deleted);
       }
     });
     _clear();
@@ -471,6 +489,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final allStarred = msgs.isNotEmpty && msgs.every((m) => m.isStarred);
     final hasText = msgs.any((m) => (m.content ?? '').trim().isNotEmpty);
     final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
 
     return AppBar(
       automaticallyImplyLeading: false,
@@ -486,7 +505,7 @@ class _ChatScreenState extends State<ChatScreen> {
         style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
       ),
       actions: [
-        if (msgs.length == 1 && screenW > 360)
+        if (msgs.length == 1 && !isCompact)
           IconButton(
             icon: const Icon(Icons.reply_rounded, color: Colors.white),
             onPressed: () {
@@ -495,7 +514,7 @@ class _ChatScreenState extends State<ChatScreen> {
               _startReply(m);
             },
           ),
-        if (hasText && screenW > 360)
+        if (hasText && !isCompact)
           IconButton(
             icon: const Icon(Icons.content_copy_outlined, color: Colors.white),
             onPressed: () {
@@ -535,7 +554,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   PreferredSizeWidget _normalBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final c = widget.conversation;
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
+
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: dark ? const Color(0xFF1F2C34) : AppTheme.primary,
@@ -543,14 +566,15 @@ class _ChatScreenState extends State<ChatScreen> {
       elevation: 0,
       titleSpacing: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+            size: 20, color: Colors.white),
         onPressed: () => Navigator.maybePop(context),
       ),
       title: Row(children: [
         UserAvatar(
           name: _peer,
           url: c.otherParty.avatar,
-          radius: 18,
+          radius: isCompact ? 16 : 18,
           hasStatus: c.hasNewPost,
           onStatusTap: c.technicianId == null
               ? null
@@ -563,9 +587,9 @@ class _ChatScreenState extends State<ChatScreen> {
               _peer,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 17,
+                fontSize: isCompact ? 15 : 17,
                 color: Colors.white,
               ),
             ),
@@ -574,8 +598,9 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (_, typing, __) => AnimatedSize(
                 duration: const Duration(milliseconds: 150),
                 child: typing
-                    ? const Text('typing…',
-                    style: TextStyle(color: Colors.white70, fontSize: 12.5))
+                    ? Text(l10n.typing,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 12.5))
                     : const SizedBox.shrink(),
               ),
             ),
@@ -590,7 +615,8 @@ class _ChatScreenState extends State<ChatScreen> {
               final id = await Navigator.push<int>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MediaDocsScreen(conversationId: _cid, peerName: _peer),
+                  builder: (_) =>
+                      MediaDocsScreen(conversationId: _cid, peerName: _peer),
                 ),
               );
               if (id != null) _jumpTo(id);
@@ -598,32 +624,98 @@ class _ChatScreenState extends State<ChatScreen> {
               final id = await Navigator.push<int>(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => StarredMessagesScreen(conversationId: _cid, peerName: _peer),
+                  builder: (_) =>
+                      StarredMessagesScreen(conversationId: _cid, peerName: _peer),
                 ),
               );
               if (id != null) _jumpTo(id);
             }
           },
-          itemBuilder: (_) => const [
+          itemBuilder: (_) => [
             PopupMenuItem(
               value: 'media',
               child: Row(children: [
-                Icon(Icons.perm_media_outlined),
-                SizedBox(width: 10),
-                Text('Media, links & docs'),
+                const Icon(Icons.perm_media_outlined),
+                const SizedBox(width: 10),
+                Text(l10n.mediaLinksDocs),
               ]),
             ),
             PopupMenuItem(
               value: 'starred',
               child: Row(children: [
-                Icon(Icons.star_border_rounded),
-                SizedBox(width: 10),
-                Text('Starred messages'),
+                const Icon(Icons.star_border_rounded),
+                const SizedBox(width: 10),
+                Text(l10n.starredMessages),
               ]),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  // ── NEW: Tap to Pay Action ───────────────────────────────────────
+  Future<void> _onTapToPay() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.payForJob), // Using existing or 'Pay for Job'
+        content: Text(l10n.payForJobConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      Navigator.pushNamed(context, AppRoutes.jobs);
+    }
+  }
+
+  // ── NEW: Persistent Tap to Pay Button (WhatsApp Style) ───────────
+  Widget _tapToPayButton(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
+    final bgColor = dark ? const Color(0xFF1F2C34) : Colors.white;
+    final textColor = dark ? Colors.white : AppTheme.primary;
+
+    return Material(
+      color: bgColor,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      child: InkWell(
+        onTap: _onTapToPay,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.payment_rounded, color: textColor, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.tapToPayForJob,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15.5,
+                  ),
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, color: textColor.withValues(alpha: 0.5), size: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -652,7 +744,10 @@ class _ChatScreenState extends State<ChatScreen> {
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
               child: Column(children: [
-                ListenableBuilder(listenable: _chat, builder: (_, __) => _pinnedBar(dark)),
+                ListenableBuilder(
+                  listenable: _chat,
+                  builder: (_, __) => _pinnedBar(dark),
+                ),
                 Expanded(
                   child: Stack(children: [
                     _messages(context),
@@ -666,11 +761,13 @@ class _ChatScreenState extends State<ChatScreen> {
                           duration: const Duration(milliseconds: 150),
                           child: FloatingActionButton.small(
                             heroTag: 'chat_down',
-                            backgroundColor: dark ? const Color(0xFF2A3942) : Colors.white,
+                            backgroundColor:
+                            dark ? const Color(0xFF2A3942) : Colors.white,
                             foregroundColor: AppTheme.primary,
                             elevation: 2,
                             onPressed: _toBottom,
-                            child: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
+                            child: const Icon(Icons.keyboard_arrow_down_rounded,
+                                size: 28),
                           ),
                         ),
                       ),
@@ -678,6 +775,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   ]),
                 ),
                 if (!_selecting) ...[
+                  // NEW: Tap to Pay button right above the input
+                  _tapToPayButton(dark),
+
                   AnimatedSize(
                     duration: const Duration(milliseconds: 160),
                     alignment: Alignment.bottomCenter,
@@ -697,6 +797,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _pinnedBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final pins = _chat.pins;
     if (pins.isEmpty) return const SizedBox.shrink();
     final i = _pinCursor % pins.length;
@@ -726,7 +827,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
-                  pins.length > 1 ? 'Pinned ${i + 1} of ${pins.length}' : 'Pinned message',
+                  pins.length > 1
+                      ? l10n.pinnedXOfY(i + 1, pins.length)
+                      : l10n.pinnedMessage,
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -755,9 +858,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _replyBar(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
     final r = _replyTo!;
     final author = r.senderId == _chat.currentUser?.id
-        ? 'You'
+        ? l10n.you
         : ((r.senderName).isNotEmpty ? r.senderName : _peer);
     return Container(
       width: double.infinity,
@@ -809,7 +913,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   cacheKey: 'chat_${r.id}',
                   memCacheWidth: 120,
                   fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => const Icon(Icons.image_outlined),
+                  errorWidget: (_, __, ___) =>
+                  const Icon(Icons.image_outlined),
                 ),
               ),
             ),
@@ -823,14 +928,21 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   bool _sameDay(DateTime? a, DateTime? b) =>
-      a != null && b != null && a.year == b.year && a.month == b.month && a.day == b.day;
+      a != null &&
+          b != null &&
+          a.year == b.year &&
+          a.month == b.month &&
+          a.day == b.day;
 
   Widget _messages(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Consumer<ChatProvider>(builder: (context, provider, _) {
       final messages = provider.messages;
       if (!_firstLoadDone && messages.isEmpty) {
-        return const Center(child: CircularProgressIndicator(color: AppTheme.primary));
+        return const Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        );
       }
       if (messages.isEmpty) {
         return Center(
@@ -854,7 +966,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Say hello to start the conversation',
+                l10n.sayHello,
                 style: TextStyle(color: Theme.of(context).hintColor),
                 textAlign: TextAlign.center,
               ),
@@ -888,7 +1000,8 @@ class _ChatScreenState extends State<ChatScreen> {
           final idx = messages.length - 1 - index;
           final m = messages[idx];
           final older = idx > 0 ? messages[idx - 1] : null;
-          final showDay = m.time != null && (older == null || !_sameDay(older.time, m.time));
+          final showDay =
+              m.time != null && (older == null || !_sameDay(older.time, m.time));
 
           return Column(mainAxisSize: MainAxisSize.min, children: [
             if (showDay) _DayChip(label: chatDayLabel(context, m.time!)),
@@ -918,6 +1031,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _input(bool dark) {
+    final l10n = AppLocalizations.of(context)!;
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
+
     return SafeArea(
       top: false,
       child: Container(
@@ -948,12 +1065,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     maxLength: 2000,
                     textCapitalization: TextCapitalization.sentences,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: isCompact ? 15 : 16,
                       color: dark ? Colors.white : Colors.black87,
                     ),
                     decoration: InputDecoration(
                       counterText: '',
-                      hintText: _replyTo != null ? 'Reply…' : 'Message',
+                      hintText: _replyTo != null ? l10n.reply : l10n.message,
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -985,11 +1102,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: InkWell(
                   onTap: has ? _sendText : null,
                   customBorder: const CircleBorder(),
-                  child: const SizedBox(
-                    width: 48,
-                    height: 48,
+                  child: SizedBox(
+                    width: isCompact ? 44 : 48,
+                    height: isCompact ? 44 : 48,
                     child: Center(
-                      child: Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                      child: Icon(Icons.send_rounded,
+                          color: Colors.white, size: isCompact ? 20 : 22),
                     ),
                   ),
                 ),

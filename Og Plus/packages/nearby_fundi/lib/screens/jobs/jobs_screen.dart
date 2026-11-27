@@ -1,6 +1,5 @@
 // lib/screens/jobs/jobs_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
@@ -52,14 +51,18 @@ class _JobsScreenState extends State<JobsScreen> {
   }
 
   void _handleBack() {
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+    // FIXED: Pop the current screen to return to the Chat (or previous screen).
+    // Previously, it forced navigation to Home, which would break the Chat -> Jobs flow.
+    Navigator.of(context).pop();
   }
 
   void _openChat(Job job) {
     if (job.technicianUserId == 0) return;
-    Navigator.pushNamed(context, AppRoutes.chatScreen,
-        arguments: job.technicianUserId);
+    Navigator.pushNamed(
+      context,
+      AppRoutes.chatScreen,
+      arguments: job.technicianUserId,
+    );
   }
 
   void _openJob(Job job) {
@@ -107,7 +110,10 @@ class _JobsScreenState extends State<JobsScreen> {
         title: Text(
           l10n.jobs,
           style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         elevation: 0,
         backgroundColor: AppTheme.primary,
@@ -138,7 +144,8 @@ class _JobsScreenState extends State<JobsScreen> {
       JobProvider provider, AppLocalizations l10n, ThemeData theme, double hPad) {
     if (provider.jobs.isEmpty && (provider.isLoading || !_initialLoadDone)) {
       return const Center(
-          child: CircularProgressIndicator(color: AppTheme.primary));
+        child: CircularProgressIndicator(color: AppTheme.primary),
+      );
     }
 
     if (provider.jobs.isEmpty) {
@@ -146,9 +153,11 @@ class _JobsScreenState extends State<JobsScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           const SizedBox(height: 120),
-          Icon(Icons.work_outline_rounded,
-              size: 72,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+          Icon(
+            Icons.work_outline_rounded,
+            size: 72,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 16),
           Center(
             child: Text(
@@ -243,9 +252,11 @@ class _JobsScreenState extends State<JobsScreen> {
 
         if (filtered.isEmpty) ...[
           const SizedBox(height: 40),
-          Icon(Icons.filter_alt_off_rounded,
-              size: 56,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+          Icon(
+            Icons.filter_alt_off_rounded,
+            size: 56,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 12),
           Center(
             child: Text(
@@ -295,8 +306,10 @@ class _JobsScreenState extends State<JobsScreen> {
             color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
             fontSize: 14,
           ),
-          prefixIcon: Icon(Icons.search_rounded,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
           suffixIcon: _searchQuery.isEmpty
               ? null
               : IconButton(
@@ -501,8 +514,11 @@ class _JobsScreenState extends State<JobsScreen> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined,
-                          size: 15, color: softColor),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 15,
+                        color: softColor,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -550,8 +566,11 @@ class _JobsScreenState extends State<JobsScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.play_circle_outline_rounded,
-                                size: 14, color: softColor),
+                            Icon(
+                              Icons.play_circle_outline_rounded,
+                              size: 14,
+                              color: softColor,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               '${l10n.startedOn} ${_formatDate(job.startedAt)}',
@@ -563,8 +582,11 @@ class _JobsScreenState extends State<JobsScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.check_circle_outline_rounded,
-                                size: 14, color: AppTheme.success),
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
+                              size: 14,
+                              color: AppTheme.success,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               '${l10n.completedOnLabel} ${_formatDate(job.completedAt)}',
@@ -608,7 +630,8 @@ class _JobsScreenState extends State<JobsScreen> {
                           foregroundColor: AppTheme.secondary,
                           side: const BorderSide(color: AppTheme.secondary),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                         ),
                       ),
@@ -629,9 +652,11 @@ class _JobsScreenState extends State<JobsScreen> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.primary,
                           side: BorderSide(
-                              color: AppTheme.primary.withValues(alpha: 0.4)),
+                            color: AppTheme.primary.withValues(alpha: 0.4),
+                          ),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
@@ -641,20 +666,25 @@ class _JobsScreenState extends State<JobsScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () => _openChat(job),
-                          icon: const Icon(Icons.chat_bubble_outline_rounded,
-                              size: 16),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 16,
+                          ),
                           label: Text(
-                            '${l10n.chat} to get contact',
+                            l10n.chatToGetContact,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 13),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -665,7 +695,6 @@ class _JobsScreenState extends State<JobsScreen> {
 
                 const SizedBox(height: 10),
                 // ── Coming Soon Contact Fundi Button ──
-                // Wrapped in IgnorePointer so taps don't trigger anything
                 IgnorePointer(
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -684,19 +713,22 @@ class _JobsScreenState extends State<JobsScreen> {
                             disabledForegroundColor:
                             AppTheme.primary.withValues(alpha: 0.4),
                             side: BorderSide(
-                                color: AppTheme.primary.withValues(alpha: 0.15)),
+                              color: AppTheme.primary.withValues(alpha: 0.15),
+                            ),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
-                      // 👇 Exactly on top of the text
                       Positioned(
                         top: 4,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppTheme.secondary,
                             borderRadius: BorderRadius.circular(6),
@@ -708,9 +740,9 @@ class _JobsScreenState extends State<JobsScreen> {
                               ),
                             ],
                           ),
-                          child: const Text(
-                            'Coming Soon',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.comingSoon,
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w900,
                               color: AppTheme.primary,
@@ -750,7 +782,10 @@ class _StatusPill extends StatelessWidget {
           Container(
             width: 7,
             height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 6),
           Text(

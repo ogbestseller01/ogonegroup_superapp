@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -185,9 +184,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.cancel, // Localized
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -208,7 +207,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                     Center(
                       child: Text(
-                        'NearbyFundi',
+                        'NearbyFundi', // Kept as brand name
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.hintColor,
                           fontWeight: FontWeight.w600,
@@ -267,7 +266,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Keep your personal information up to date.',
+          l10n.editProfileSubtitle, // Localized
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.hintColor,
@@ -301,14 +300,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Personal information',
+            l10n.personalInformation, // Localized
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Edit your name and contact details.',
+            l10n.editNameAndContact, // Localized
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.hintColor,
             ),
@@ -324,18 +323,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             textInputAction: TextInputAction.next,
             decoration: _inputDecoration(
               theme,
-              hint: 'Enter your full name',
+              hint: l10n.enterFullName, // Localized
               icon: Icons.person_outline_rounded,
             ),
             validator: (value) {
               final name = value?.trim() ?? '';
 
               if (name.isEmpty) {
-                return 'Name is required';
+                return l10n.nameRequiredError; // Localized
               }
 
               if (name.length < 2) {
-                return 'Enter a valid name';
+                return l10n.validNameError; // Localized
               }
 
               return null;
@@ -354,7 +353,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             onFieldSubmitted: (_) => _save(),
             decoration: _inputDecoration(
               theme,
-              hint: 'Enter your phone number',
+              hint: l10n.enterPhoneNumber, // Localized
               icon: Icons.phone_outlined,
             ),
           ),

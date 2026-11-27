@@ -1,8 +1,8 @@
 // lib/screens/chat/widgets/message_actions.dart
-// The per-message dropdown: emoji row + Reply, Pin, Copy, Forward, Star, Info, Select, Delete.
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 
 const List<String> kQuickReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -18,7 +18,7 @@ class MessageMenuActions {
   final VoidCallback onInfo;
   final VoidCallback onSelect;
   final VoidCallback onDelete;
-  final VoidCallback onSave; // files / media
+  final VoidCallback onSave;
 
   const MessageMenuActions({
     required this.onReact,
@@ -41,6 +41,7 @@ Future<void> showMessageMenu(
       required ChatMessage message,
       required MessageMenuActions actions,
     }) async {
+  final l10n = AppLocalizations.of(context)!;
   final media = MediaQuery.of(context);
   final size = media.size;
   final insets = media.viewPadding;
@@ -51,7 +52,6 @@ Future<void> showMessageMenu(
   final hasFile = message.file != null;
   const more = '__more';
 
-  // Clamp anchor so the menu never opens off-screen on small/wide devices.
   final clampedX = anchor.dx.clamp(8.0, size.width - 8.0);
   final clampedY = anchor.dy.clamp(safeTop, size.height - safeBottom);
 
@@ -89,12 +89,11 @@ Future<void> showMessageMenu(
     ),
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     items: [
-      // ── Emoji quick-reaction row ───────────────────────────────────────────
       PopupMenuItem<String>(
         enabled: false,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: SizedBox(
-          width: 250, // Constrains total width to prevent overflow
+          width: 250,
           child: Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -113,24 +112,25 @@ Future<void> showMessageMenu(
         ),
       ),
       const PopupMenuDivider(height: 1),
-      item('reply', Icons.reply_rounded, 'Reply'),
+      item('reply', Icons.reply_rounded, l10n.reply),
       item(
         'pin',
         message.isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-        message.isPinned ? 'Unpin' : 'Pin',
+        message.isPinned ? l10n.unpin : l10n.pin,
       ),
-      if (hasText) item('copy', Icons.content_copy_outlined, 'Copy'),
-      item('forward', Icons.forward_rounded, 'Forward'),
+      if (hasText) item('copy', Icons.content_copy_outlined, l10n.copy),
+      item('forward', Icons.forward_rounded, l10n.forward),
       item(
         'star',
         message.isStarred ? Icons.star_rounded : Icons.star_border_rounded,
-        message.isStarred ? 'Unstar' : 'Star',
+        message.isStarred ? l10n.unstar : l10n.star,
       ),
-      if (hasFile) item('save', Icons.download_rounded, 'Save'),
-      item('info', Icons.info_outline_rounded, 'Info'),
-      item('select', Icons.check_circle_outline_rounded, 'Select'),
+      if (hasFile) item('save', Icons.download_rounded, l10n.save),
+      item('info', Icons.info_outline_rounded, l10n.info),
+      item('select', Icons.check_circle_outline_rounded, l10n.select),
       const PopupMenuDivider(height: 1),
-      item('delete', Icons.delete_outline_rounded, 'Delete', color: AppTheme.error),
+      item('delete', Icons.delete_outline_rounded, l10n.delete,
+          color: AppTheme.error),
     ],
   );
 
@@ -171,7 +171,6 @@ Future<void> showMessageMenu(
   }
 }
 
-/// A single emoji tap target.
 class _EmojiButton extends StatelessWidget {
   final String emoji;
   final bool highlighted;
@@ -194,9 +193,8 @@ class _EmojiButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: highlighted
-              ? AppTheme.primary.withValues(alpha: 0.18)
-              : null,
+          color:
+          highlighted ? AppTheme.primary.withValues(alpha: 0.18) : null,
         ),
         child: FittedBox(
           fit: BoxFit.contain,
@@ -210,7 +208,6 @@ class _EmojiButton extends StatelessWidget {
   }
 }
 
-/// The "+ more" button beside the emojis.
 class _MoreButton extends StatelessWidget {
   final VoidCallback onTap;
   const _MoreButton({required this.onTap});

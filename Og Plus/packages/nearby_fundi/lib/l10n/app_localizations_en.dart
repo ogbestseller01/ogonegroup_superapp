@@ -257,6 +257,120 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registerNoCountryFound => 'No country found';
 
   @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get blogSearchHint => 'Search by fundi name...';
+
+  @override
+  String get blogEmptySubtitle => 'Check back later for updates from our technicians.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String blogNoResults(String query) {
+    return 'No posts match \"$query\"';
+  }
+
+  @override
+  String get loadMorePosts => 'Load more posts';
+
+  @override
+  String get imageNotAvailable => 'Image not available';
+
+  @override
+  String get viewProfile => 'View Profile';
+
+  @override
+  String get timeJustNow => 'Just now';
+
+  @override
+  String timeMinutesAgo(int count) {
+    return '${count}m ago';
+  }
+
+  @override
+  String timeHoursAgo(int count) {
+    return '${count}h ago';
+  }
+
+  @override
+  String timeDaysAgo(int count) {
+    return '${count}d ago';
+  }
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get sendSmsCode => 'Send SMS Code';
+
+  @override
+  String get confirmCompletionBody => 'Would you like to send the 6-digit verification code via SMS to complete this job?';
+
+  @override
+  String get comingSoon => 'coming soon!';
+
+  @override
+  String get yourReview => 'Your review';
+
+  @override
+  String howWasTheJob(String name) {
+    return 'How was the job? Rate $name and leave a remark.';
+  }
+
+  @override
+  String rateJobTitle(String name) {
+    return 'Rate $name';
+  }
+
+  @override
+  String get tapStarToRate => 'Tap a star to rate';
+
+  @override
+  String get ratingPoor => 'Poor';
+
+  @override
+  String get ratingFair => 'Fair';
+
+  @override
+  String get ratingGood => 'Good';
+
+  @override
+  String get ratingVeryGood => 'Very good';
+
+  @override
+  String get ratingExcellent => 'Excellent';
+
+  @override
+  String get selectStarRating => 'Please select a star rating.';
+
+  @override
+  String get reviewSubmitted => 'Thank you for your review!';
+
+  @override
+  String get failedSubmitReview => 'Failed to submit review.';
+
+  @override
+  String get remarkOptional => 'Remark (optional)';
+
+  @override
+  String get tellUsHowJobWent => 'Tell us how the job went…';
+
+  @override
+  String get submitReview => 'Submit review';
+
+  @override
+  String get maybeLater => 'Maybe later';
+
+  @override
+  String get rateThisJob => 'Rate this job';
+
+  @override
+  String get chatToGetContact => 'Chat to get contact';
+
+  @override
   String get findFundi => 'Find Fundi';
 
   @override
@@ -299,7 +413,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewOnMap => 'View on map';
 
   @override
-  String get refresh => 'Refresh';
+  String get editProfileSubtitle => 'Keep your personal information up to date.';
+
+  @override
+  String get personalInformation => 'Personal information';
+
+  @override
+  String get editNameAndContact => 'Edit your name and contact details.';
+
+  @override
+  String get enterFullName => 'Enter your full name';
+
+  @override
+  String get enterPhoneNumber => 'Enter your phone number';
+
+  @override
+  String get nameRequiredError => 'Name is required';
+
+  @override
+  String get validNameError => 'Enter a valid name';
+
+  @override
+  String get name => 'Full Name';
+
+  @override
+  String get phone => 'Phone';
 
   @override
   String get noFundisFound => 'No Fundis Found';
@@ -318,9 +456,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pleaseTryAgain => 'Please try again';
-
-  @override
-  String get retry => 'Retry';
 
   @override
   String noResultsFor(String service) {
@@ -364,9 +499,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kmAway => 'km away';
-
-  @override
-  String get viewProfile => 'View Profile';
 
   @override
   String get directions => 'Directions';
@@ -525,9 +657,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no => 'No';
 
   @override
-  String get cancel => 'Cancel';
-
-  @override
   String get delete => 'Delete';
 
   @override
@@ -643,18 +772,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterValidName => 'Enter a valid name';
-
-  @override
-  String get enterFullName => 'Enter your full name';
-
-  @override
-  String get enterPhoneNumber => 'Enter your phone number';
-
-  @override
-  String get personalInformation => 'Personal information';
-
-  @override
-  String get editNameAndContact => 'Edit your name and contact details.';
 
   @override
   String get keepInfoUpdated => 'Keep your personal information up to date.';
@@ -1007,12 +1124,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateInfo => 'Update Your Info';
 
   @override
-  String get name => 'Full Name';
-
-  @override
-  String get phone => 'Phone';
-
-  @override
   String get saveChanges => 'Save Changes';
 
   @override
@@ -1262,7 +1373,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageDeleted => 'Message deleted';
 
   @override
-  String get deleteMessage => 'Delete Message';
+  String get deleteMessage => 'Delete message?';
 
   @override
   String get areYouSureDeleteMessage => 'Are you sure you want to delete this message?';
@@ -1286,7 +1397,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageReactionRemoved => 'Reaction removed';
 
   @override
-  String get typing => 'Typing...';
+  String get typing => 'typing…';
 
   @override
   String get download => 'Download';
@@ -1385,9 +1496,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiAssistant => 'AI Assistant';
 
   @override
-  String get comingSoon => 'coming soon!';
-
-  @override
   String get pleaseEnterLocation => 'Please enter a location';
 
   @override
@@ -1465,10 +1573,283 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noContactDetails => 'No contact details available for this fundi.';
 
   @override
-  String get rateThisJob => 'Rate this job';
+  String get contactFundi => 'Contact Fundi';
 
   @override
-  String get contactFundi => 'Contact Fundi';
+  String get chats => 'Chats';
+
+  @override
+  String get archives => 'Archives';
+
+  @override
+  String get updates => 'Updates';
+
+  @override
+  String get message => 'Message';
+
+  @override
+  String get reply => 'Reply';
+
+  @override
+  String get sayHello => 'Say hello to start the conversation';
+
+  @override
+  String get noArchivedChats => 'No archived chats';
+
+  @override
+  String get nothingHere => 'Nothing here';
+
+  @override
+  String get findTechnicians => 'Find technicians';
+
+  @override
+  String get unread => 'Unread';
+
+  @override
+  String unreadCount(int count) {
+    return 'Unread $count';
+  }
+
+  @override
+  String get pinned => 'Pinned';
+
+  @override
+  String get pinChat => 'Pin chat';
+
+  @override
+  String get unpinChat => 'Unpin chat';
+
+  @override
+  String get archiveChat => 'Archive chat';
+
+  @override
+  String get unarchiveChat => 'Unarchive chat';
+
+  @override
+  String get deleteChat => 'Delete chat';
+
+  @override
+  String deleteChatConfirm(String name) {
+    return 'Delete chat with $name?';
+  }
+
+  @override
+  String get deleteChatWarning => 'All messages and files in this chat will be removed for both of you.';
+
+  @override
+  String get chatArchived => 'Chat archived';
+
+  @override
+  String get chatUnarchived => 'Chat unarchived';
+
+  @override
+  String get chatDeleted => 'Chat deleted';
+
+  @override
+  String get chatDeleteFailed => 'Could not delete the chat';
+
+  @override
+  String get noRecentUpdates => 'No recent updates';
+
+  @override
+  String get postsFromFundis => 'Posts from fundis you chat with show up here';
+
+  @override
+  String get newUpdates => 'New';
+
+  @override
+  String get viewedUpdates => 'Viewed';
+
+  @override
+  String newPosts(int count) {
+    return '$count new post';
+  }
+
+  @override
+  String newPostsPlural(int count) {
+    return '$count new posts';
+  }
+
+  @override
+  String hAgo(int count) {
+    return '$count h ago';
+  }
+
+  @override
+  String get mediaLinksDocs => 'Media, links & docs';
+
+  @override
+  String get starredMessages => 'Starred messages';
+
+  @override
+  String pinnedXOfY(int current, int total) {
+    return 'Pinned $current of $total';
+  }
+
+  @override
+  String get originalMsgNotAvailable => 'The original message is no longer available.';
+
+  @override
+  String get fileNotAllowed => 'This file type is not allowed.';
+
+  @override
+  String fileTooLarge(int max) {
+    return 'File too large. Max $max MB for this type.';
+  }
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get photos => 'Photos';
+
+  @override
+  String get video => 'Video';
+
+  @override
+  String get document => 'Document';
+
+  @override
+  String get fileSizeHint => 'Photos 5 MB · Videos 20 MB · Files 15 MB';
+
+  @override
+  String get messagePinned => 'Message pinned';
+
+  @override
+  String get messageUnpinned => 'Message unpinned';
+
+  @override
+  String get starred => 'Starred';
+
+  @override
+  String get removedFromStarred => 'Removed from starred';
+
+  @override
+  String deleteMessages(int count) {
+    return 'Delete $count messages?';
+  }
+
+  @override
+  String get deleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get deleteForMe => 'Delete for me';
+
+  @override
+  String get onlyRemovedThisPhone => 'Only removed on this phone';
+
+  @override
+  String msgCouldNotBeDeleted(int count) {
+    return '$count message(s) could not be deleted for everyone.';
+  }
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get thisMessageWasDeleted => 'This message was deleted';
+
+  @override
+  String get messageInfo => 'Message info';
+
+  @override
+  String get read => 'Read';
+
+  @override
+  String get delivered => 'Delivered';
+
+  @override
+  String get sent => 'Sent';
+
+  @override
+  String reactionsCount(int count) {
+    return 'Reactions · $count';
+  }
+
+  @override
+  String get couldNotLoadInfo => 'Could not load info';
+
+  @override
+  String get noMedia => 'No media';
+
+  @override
+  String get noDocs => 'No documents';
+
+  @override
+  String get noLinks => 'No links';
+
+  @override
+  String get media => 'Media';
+
+  @override
+  String get docs => 'Docs';
+
+  @override
+  String get links => 'Links';
+
+  @override
+  String get saveShare => 'Save / share';
+
+  @override
+  String get noChatsToForward => 'No chats to forward to';
+
+  @override
+  String get forwardMsgTo => 'Forward message to…';
+
+  @override
+  String forwardMsgsTo(int count) {
+    return 'Forward $count messages to…';
+  }
+
+  @override
+  String get sending => 'Sending…';
+
+  @override
+  String get more => 'More';
+
+  @override
+  String get info => 'Info';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get forward => 'Forward';
+
+  @override
+  String get pin => 'Pin';
+
+  @override
+  String get unpin => 'Unpin';
+
+  @override
+  String get star => 'Star';
+
+  @override
+  String get unstar => 'Unstar';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get noStarredMessages => 'No starred messages';
+
+  @override
+  String get file => 'File';
+
+  @override
+  String get showInChat => 'Show in chat';
+
+  @override
+  String newPostsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new posts',
+      one: '1 new post',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get noTicketsYet => 'No tickets yet';
@@ -1495,13 +1876,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noPostsMatch => 'No posts match';
 
   @override
-  String get imageNotAvailable => 'Image not available';
-
-  @override
-  String get video => 'Video';
-
-  @override
   String get tapToPlayVideo => 'Tap to play video';
+
+  @override
+  String get tapToPayForJob => 'Tap to Pay for Job';
+
+  @override
+  String get payForJobConfirm => 'Do you want to pay for a job?';
+
+  @override
+  String get confirm => 'Go to Pay';
 
   @override
   String get startedOn => 'Started';
@@ -1554,16 +1938,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sending => 'Sending…';
-
-  @override
   String get confirmCompletionTitle => 'Confirm Completion';
-
-  @override
-  String get confirmCompletionBody => 'Would you like to send the 6-digit verification code via SMS to complete this job?';
-
-  @override
-  String get sendSmsCode => 'Send SMS Code';
 
   @override
   String get completionCodeHint => '------';

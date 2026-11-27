@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/chat_user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -37,7 +38,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (user == null || token == null) return;
     chat.initialize(
       token: token,
-      currentUser: ChatUser(id: user.id, name: user.name, email: user.email, phone: user.phone, avatar: user.profilePhoto),
+      currentUser: ChatUser(
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.profilePhoto,
+      ),
     );
     await chat.refreshConversations();
   }
@@ -47,11 +54,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
-  // Handles the hardware back button (Android) and the app bar back button.
-  // If we are on Archives or Updates, go to Chats. If on Chats, exit.
   void _handleBack() {
     if (_tab != 0) {
-      setState(() => _tab = 0); // Go back to Chats tab
+      setState(() => _tab = 0);
     } else {
       _goHome();
     }
@@ -59,21 +64,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final chat = context.watch<ChatProvider>();
-    const titles = ['Chats', 'Archives', 'Updates'];
+    final titles = [l10n.chats, l10n.archives, l10n.updates];
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
 
     return PopScope(
-      // Only allow popping out of the Chat screen if we are already on the Chats tab
       canPop: _tab == 0,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          // If user pressed back and we are on Archives/Updates, go to Chats
-          _handleBack();
-        }
+        if (!didPop) _handleBack();
       },
       child: Scaffold(
-        backgroundColor: dark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+        backgroundColor:
+        dark ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           backgroundColor: dark ? const Color(0xFF1F2C34) : AppTheme.primary,
@@ -81,14 +86,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
           elevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.light,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                size: 20, color: Colors.white),
             onPressed: _handleBack,
           ),
-          title: Text(titles[_tab], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 20)),
+          title: Text(
+            titles[_tab],
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: isCompact ? 18 : 20,
+            ),
+          ),
           actions: [
             IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                onPressed: chat.refreshConversations
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+              onPressed: chat.refreshConversations,
             ),
           ],
         ),
@@ -99,9 +111,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
         ]),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
-          height: 64,
+          height: isCompact ? 58 : 64,
+          labelBehavior: isCompact
+              ? NavigationDestinationLabelBehavior.onlyShowSelected
+              : NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (i) {
-            // If user taps the current tab, reset to Chats (tab 0)
             if (i == _tab && i != 0) {
               setState(() => _tab = 0);
             } else {
@@ -112,17 +126,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
             NavigationDestination(
               icon: Badge(
                 isLabelVisible: chat.totalUnread > 0,
-                label: Text(chat.totalUnread > 99 ? '99+' : '${chat.totalUnread}'),
+                label: Text(
+                  chat.totalUnread > 99 ? '99+' : '${chat.totalUnread}',
+                ),
                 backgroundColor: const Color(0xFF25D366),
                 child: const Icon(Icons.chat_bubble_outline_rounded),
               ),
               selectedIcon: const Icon(Icons.chat_bubble_rounded),
-              label: 'Chats',
+              label: l10n.chats,
             ),
-            const NavigationDestination(
-              icon: Icon(Icons.archive_outlined),
-              selectedIcon: Icon(Icons.archive_rounded),
-              label: 'Archives',
+            NavigationDestination(
+              icon: const Icon(Icons.archive_outlined),
+              selectedIcon: const Icon(Icons.archive_rounded),
+              label: l10n.archives,
             ),
             NavigationDestination(
               icon: Badge(
@@ -132,7 +148,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 child: const Icon(Icons.auto_awesome_outlined),
               ),
               selectedIcon: const Icon(Icons.auto_awesome_rounded),
-              label: 'Updates',
+              label: l10n.updates,
             ),
           ],
         ),

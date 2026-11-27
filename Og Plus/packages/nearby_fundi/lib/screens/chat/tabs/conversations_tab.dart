@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_conversation.dart';
 import '../../../providers/chat_provider.dart';
 import '../chat_screen.dart';
@@ -57,6 +58,7 @@ class _ConversationsTabState extends State<ConversationsTab> {
   }
 
   Future<void> _longPress(ChatConversation c) async {
+    final l10n = AppLocalizations.of(context)!;
     final chat = context.read<ChatProvider>();
 
     final act = await showModalBottomSheet<String>(
@@ -66,18 +68,24 @@ class _ConversationsTabState extends State<ConversationsTab> {
       builder: (s) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
-            leading: Icon(c.isPinned ? Icons.push_pin_outlined : Icons.push_pin_rounded),
-            title: Text(c.isPinned ? 'Unpin chat' : 'Pin chat'),
+            leading: Icon(c.isPinned
+                ? Icons.push_pin_outlined
+                : Icons.push_pin_rounded),
+            title: Text(c.isPinned ? l10n.unpinChat : l10n.pinChat),
             onTap: () => Navigator.pop(s, 'pin'),
           ),
           ListTile(
-            leading: Icon(c.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined),
-            title: Text(c.isArchived ? 'Unarchive chat' : 'Archive chat'),
+            leading: Icon(c.isArchived
+                ? Icons.unarchive_outlined
+                : Icons.archive_outlined),
+            title: Text(c.isArchived ? l10n.unarchiveChat : l10n.archiveChat),
             onTap: () => Navigator.pop(s, 'archive'),
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
-            title: const Text('Delete chat', style: TextStyle(color: AppTheme.error)),
+            leading:
+            const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+            title: Text(l10n.deleteChat,
+                style: const TextStyle(color: AppTheme.error)),
             onTap: () => Navigator.pop(s, 'delete'),
           ),
         ]),
@@ -90,28 +98,29 @@ class _ConversationsTabState extends State<ConversationsTab> {
         await chat.setConversationState(c.id, pinned: !c.isPinned);
       } else if (act == 'archive') {
         await chat.setConversationState(c.id, archived: !c.isArchived);
-        _snack(c.isArchived ? 'Chat unarchived' : 'Chat archived');
+        _snack(c.isArchived ? l10n.chatUnarchived : l10n.chatArchived);
       } else if (act == 'delete') {
         final ok = await showDialog<bool>(
           context: context,
           builder: (d) => AlertDialog(
-            title: Text('Delete chat with ${c.otherParty.name}?'),
-            content: const Text(
-              'All messages and files in this chat will be removed for both of you.',
-            ),
+            title: Text(l10n.deleteChatConfirm(c.otherParty.name)),
+            content: Text(l10n.deleteChatWarning),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(d, false),
+                child: Text(l10n.cancel),
+              ),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: AppTheme.error),
                 onPressed: () => Navigator.pop(d, true),
-                child: const Text('Delete'),
+                child: Text(l10n.delete),
               ),
             ],
           ),
         );
         if (ok == true) {
           final done = await chat.deleteConversation(c.id);
-          _snack(done ? 'Chat deleted' : 'Could not delete the chat', error: !done);
+          _snack(done ? l10n.chatDeleted : l10n.chatDeleteFailed, error: !done);
         }
       }
     } catch (e) {
@@ -121,23 +130,30 @@ class _ConversationsTabState extends State<ConversationsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final chat = context.watch<ChatProvider>();
     final screenW = MediaQuery.of(context).size.width;
     final isWide = screenW >= 700;
+    final isCompact = screenW < 360;
 
     var list = widget.archived ? chat.archivedChats : chat.activeChats;
 
     if (!widget.archived) {
-      if (_filter == _Filter.unread) list = list.where((c) => c.unreadCount > 0).toList();
-      if (_filter == _Filter.pinned) list = list.where((c) => c.isPinned).toList();
+      if (_filter == _Filter.unread) {
+        list = list.where((c) => c.unreadCount > 0).toList();
+      }
+      if (_filter == _Filter.pinned) {
+        list = list.where((c) => c.isPinned).toList();
+      }
     }
     final q = _q.toLowerCase();
     if (q.isNotEmpty) {
       list = list.where((c) => c.otherParty.name.toLowerCase().contains(q)).toList();
     }
 
-    final total = widget.archived ? chat.archivedChats.length : chat.activeChats.length;
+    final total =
+    widget.archived ? chat.archivedChats.length : chat.activeChats.length;
 
     return Center(
       child: ConstrainedBox(
@@ -145,20 +161,27 @@ class _ConversationsTabState extends State<ConversationsTab> {
         child: Column(children: [
           Container(
             color: dark ? const Color(0xFF1F2C34) : Colors.white,
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+            padding: EdgeInsets.fromLTRB(
+              isCompact ? 8 : 12,
+              8,
+              isCompact ? 8 : 12,
+              6,
+            ),
             child: Column(children: [
               Container(
-                height: 40,
+                height: isCompact ? 36 : 40,
                 decoration: BoxDecoration(
-                  color: dark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
+                  color:
+                  dark ? const Color(0xFF2A3942) : const Color(0xFFF0F2F5),
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: TextField(
                   controller: _search,
                   onChanged: (v) => setState(() => _q = v.trim()),
                   decoration: InputDecoration(
-                    hintText: 'Search',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 22),
+                    hintText: l10n.search,
+                    prefixIcon:
+                    Icon(Icons.search_rounded, size: isCompact ? 18 : 22),
                     suffixIcon: _q.isEmpty
                         ? null
                         : IconButton(
@@ -176,7 +199,7 @@ class _ConversationsTabState extends State<ConversationsTab> {
               ),
               if (!widget.archived)
                 SizedBox(
-                  height: 44,
+                  height: isCompact ? 40 : 44,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.only(top: 8),
@@ -186,21 +209,25 @@ class _ConversationsTabState extends State<ConversationsTab> {
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
                             label: Text(switch (f) {
-                              _Filter.all => 'All',
-                              _Filter.unread =>
-                              chat.unreadChats > 0 ? 'Unread ${chat.unreadChats}' : 'Unread',
-                              _Filter.pinned => 'Pinned',
+                              _Filter.all => l10n.all,
+                              _Filter.unread => chat.unreadChats > 0
+                                  ? l10n.unreadCount(chat.unreadChats)
+                                  : l10n.unread,
+                              _Filter.pinned => l10n.pinned,
                             }),
                             selected: _filter == f,
                             showCheckmark: false,
-                            selectedColor: AppTheme.primary.withValues(alpha: dark ? 0.55 : 0.14),
+                            selectedColor: AppTheme.primary
+                                .withValues(alpha: dark ? 0.55 : 0.14),
                             labelStyle: TextStyle(
                               fontWeight: FontWeight.w600,
+                              fontSize: isCompact ? 12.5 : null,
                               color: _filter == f
                                   ? (dark ? Colors.white : AppTheme.primary)
                                   : null,
                             ),
-                            onSelected: (_) => setState(() => _filter = f),
+                            onSelected: (_) =>
+                                setState(() => _filter = f),
                           ),
                         ),
                     ],
@@ -213,7 +240,8 @@ class _ConversationsTabState extends State<ConversationsTab> {
               color: AppTheme.primary,
               onRefresh: chat.refreshConversations,
               child: (chat.isLoading && chat.conversations.isEmpty)
-                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+                  ? const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary))
                   : list.isEmpty
                   ? _Empty(
                 archived: widget.archived,
@@ -226,8 +254,10 @@ class _ConversationsTabState extends State<ConversationsTab> {
                 separatorBuilder: (_, __) => Divider(
                   height: 1,
                   thickness: 0.5,
-                  indent: 78,
-                  color: dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.18),
+                  indent: isCompact ? 66 : 78,
+                  color: dark
+                      ? Colors.white10
+                      : Colors.grey.withValues(alpha: 0.18),
                 ),
                 itemBuilder: (_, i) {
                   final c = list[i];
@@ -237,7 +267,8 @@ class _ConversationsTabState extends State<ConversationsTab> {
                     onLongPress: () => _longPress(c),
                     onStatusTap: c.technicianId == null
                         ? null
-                        : () => openTechnicianBlog(context, c.technicianId!),
+                        : () => openTechnicianBlog(
+                        context, c.technicianId!),
                   );
                 },
               ),
@@ -260,24 +291,34 @@ class _Empty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final hint = Theme.of(context).hintColor;
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       children: [
-        const SizedBox(height: 110),
+        SizedBox(height: isCompact ? 80 : 110),
         Icon(
-          archived ? Icons.archive_outlined : Icons.chat_bubble_outline_rounded,
-          size: 64,
+          archived
+              ? Icons.archive_outlined
+              : Icons.chat_bubble_outline_rounded,
+          size: isCompact ? 52 : 64,
           color: hint.withValues(alpha: 0.4),
         ),
         const SizedBox(height: 16),
         Center(
           child: Text(
             archived
-                ? 'No archived chats'
-                : (noChatsAtAll ? 'No conversations yet' : 'Nothing here'),
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: hint),
+                ? l10n.noArchivedChats
+                : (noChatsAtAll ? l10n.noConversationsYet : l10n.nothingHere),
+            style: TextStyle(
+              fontSize: isCompact ? 15 : 17,
+              fontWeight: FontWeight.w600,
+              color: hint,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -287,7 +328,7 @@ class _Empty extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onFind,
               icon: const Icon(Icons.search_rounded),
-              label: const Text('Find technicians'),
+              label: Text(l10n.findTechnicians),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 44),
                 shape: const StadiumBorder(),

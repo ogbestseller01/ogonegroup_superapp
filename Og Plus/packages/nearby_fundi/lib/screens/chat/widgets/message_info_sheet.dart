@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../models/chat_message.dart';
 import '../../../providers/chat_provider.dart';
+import '../chat_date_utils.dart';
 
 Future<void> showMessageInfo(BuildContext context, ChatMessage message) {
   return showModalBottomSheet<void>(
@@ -33,36 +35,13 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
     _future = context.read<ChatProvider>().fetchInfo(widget.message.id);
   }
 
-  /// Helper to format the date (replaces the missing chatDateTimeLabel)
-  String _formatDate(DateTime t) {
-    final now = DateTime.now();
-    final local = t.toLocal();
-
-    // Format time like "14:30"
-    final timeStr = '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-
-    // Same day
-    if (local.year == now.year && local.month == now.month && local.day == now.day) {
-      return timeStr;
-    }
-
-    // Yesterday
-    final yesterday = now.subtract(const Duration(days: 1));
-    if (local.year == yesterday.year && local.month == yesterday.month && local.day == yesterday.day) {
-      return 'Yesterday $timeStr';
-    }
-
-    // Different day
-    return '${local.day}/${local.month}/${local.year} $timeStr';
-  }
-
   Widget _row(IconData icon, Color color, String label, DateTime? t) {
     return ListTile(
       dense: true,
       leading: Icon(icon, color: color, size: 22),
       title: Text(label),
       trailing: Text(
-        t == null ? '—' : _formatDate(t),
+        t == null ? '—' : chatFullDateTime(context, t),
         style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
       ),
     );
@@ -70,32 +49,41 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final me = context.read<ChatProvider>().currentUser?.id;
     final theme = Theme.of(context);
     final m = widget.message;
 
     return SafeArea(
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text('Message info',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  l10n.messageInfo,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w600),
+                ),
               ),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  // Fixed deprecation warning
                   color: AppTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(m.getDisplayMessage(), maxLines: 4, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  m.getDisplayMessage(),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const SizedBox(height: 8),
               FutureBuilder<MessageInfo>(
@@ -111,8 +99,10 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
                     return Padding(
                       padding: const EdgeInsets.all(24),
                       child: Center(
-                        child: Text('${snap.error ?? 'Could not load info'}',
-                            style: TextStyle(color: theme.hintColor)),
+                        child: Text(
+                          '${snap.error ?? l10n.couldNotLoadInfo}',
+                          style: TextStyle(color: theme.hintColor),
+                        ),
                       ),
                     );
                   }
@@ -121,28 +111,40 @@ class _MessageInfoSheetState extends State<MessageInfoSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (info.isMine) ...[
-                        _row(Icons.done_all_rounded, Colors.lightBlue, 'Read', info.readAt),
-                        _row(Icons.done_all_rounded, Colors.grey, 'Delivered', info.deliveredAt),
+                        _row(Icons.done_all_rounded, Colors.lightBlue,
+                            l10n.read, info.readAt),
+                        _row(Icons.done_all_rounded, Colors.grey,
+                            l10n.delivered, info.deliveredAt),
                       ],
-                      _row(Icons.send_rounded, Colors.grey, 'Sent', info.sentAt),
+                      _row(Icons.send_rounded, Colors.grey, l10n.sent,
+                          info.sentAt),
                       if (info.reactions.isNotEmpty) ...[
                         const Divider(),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                          child: Text('Reactions · ${info.reactions.length}',
-                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          child: Text(
+                            l10n.reactionsCount(info.reactions.length),
+                            style:
+                            const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ),
                         for (final r in info.reactions)
                           ListTile(
                             dense: true,
                             leading: CircleAvatar(
                               radius: 18,
-                              // Fixed deprecation warning
-                              backgroundColor: AppTheme.primary.withValues(alpha: 0.12),
-                              child: Text(r.name.isNotEmpty ? r.name[0].toUpperCase() : '?'),
+                              backgroundColor:
+                              AppTheme.primary.withValues(alpha: 0.12),
+                              child: Text(
+                                r.name.isNotEmpty
+                                    ? r.name[0].toUpperCase()
+                                    : '?',
+                              ),
                             ),
-                            title: Text(r.userId == me ? 'You' : r.name),
-                            trailing: Text(r.emoji, style: const TextStyle(fontSize: 24)),
+                            title:
+                            Text(r.userId == me ? l10n.you : r.name),
+                            trailing: Text(r.emoji,
+                                style: const TextStyle(fontSize: 24)),
                           ),
                       ],
                       const SizedBox(height: 12),

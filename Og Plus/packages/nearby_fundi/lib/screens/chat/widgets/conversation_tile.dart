@@ -1,4 +1,4 @@
-// lib/screens/chat/widgets/conversation_tile.dart  (NEW)
+// lib/screens/chat/widgets/conversation_tile.dart
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
@@ -27,76 +27,102 @@ class ConversationTile extends StatelessWidget {
     final c = conversation;
     final unread = c.unreadCount > 0;
     final sub = dark ? Colors.white54 : Colors.grey.shade600;
+    final screenW = MediaQuery.of(context).size.width;
+    final isCompact = screenW < 360;
+    final avatarRadius = isCompact ? 22.0 : 26.0;
 
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 14,
+          vertical: isCompact ? 8 : 10,
+        ),
         child: Row(children: [
           UserAvatar(
             name: c.otherParty.name,
             url: c.otherParty.avatar,
-            radius: 26,
+            radius: avatarRadius,
             hasStatus: c.hasNewPost,
-            onStatusTap: onStatusTap, // ring tap -> blog?technicianId=...
+            onStatusTap: onStatusTap,
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: isCompact ? 10 : 14),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Expanded(
-                  child: Text(
-                    c.otherParty.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
-                      color: dark ? Colors.white : Colors.black87,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text(
+                        c.otherParty.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isCompact ? 15 : 16.5,
+                          fontWeight:
+                          unread ? FontWeight.w700 : FontWeight.w500,
+                          color: dark ? Colors.white : Colors.black87,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Text(
-                  c.getFormattedLastMessageTime(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: unread ? _green : sub,
-                    fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 3),
-              Row(children: [
-                Expanded(
-                  child: Text(
-                    c.getLastMessageDisplay(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: unread ? (dark ? Colors.white70 : Colors.black87) : sub,
-                      fontStyle: c.lastMessage?.isDeleted == true ? FontStyle.italic : FontStyle.normal,
+                    const SizedBox(width: 6),
+                    Text(
+                      c.getFormattedLastMessageTime(),
+                      style: TextStyle(
+                        fontSize: isCompact ? 11 : 12,
+                        color: unread ? _green : sub,
+                        fontWeight:
+                        unread ? FontWeight.w600 : FontWeight.w400,
+                      ),
                     ),
-                  ),
-                ),
-                if (c.isPinned) Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: Icon(Icons.push_pin_rounded, size: 16, color: sub),
-                ),
-                if (unread) Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  constraints: const BoxConstraints(minWidth: 22),
-                  decoration: BoxDecoration(color: _green, borderRadius: BorderRadius.circular(12)),
-                  child: Text(
-                    c.unreadCount > 99 ? '99+' : '${c.unreadCount}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ]),
-            ]),
+                  ]),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Expanded(
+                      child: Text(
+                        c.getLastMessageDisplay(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isCompact ? 13 : 14,
+                          color: unread
+                              ? (dark ? Colors.white70 : Colors.black87)
+                              : sub,
+                          fontStyle: c.lastMessage?.isDeleted == true
+                              ? FontStyle.italic
+                              : FontStyle.normal,
+                        ),
+                      ),
+                    ),
+                    if (c.isPinned)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child:
+                        Icon(Icons.push_pin_rounded, size: 16, color: sub),
+                      ),
+                    if (unread)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        constraints: const BoxConstraints(minWidth: 22),
+                        decoration: BoxDecoration(
+                          color: _green,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          c.unreadCount > 99 ? '99+' : '${c.unreadCount}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isCompact ? 10.5 : 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                  ]),
+                ]),
           ),
         ]),
       ),
@@ -104,5 +130,4 @@ class ConversationTile extends StatelessWidget {
   }
 }
 
-/// Re-exported so the tabs only need one import for the brand colour.
 const Color kChatPrimary = AppTheme.primary;

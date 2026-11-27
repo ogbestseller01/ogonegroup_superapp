@@ -16,15 +16,7 @@ class ConfirmCompletionPromptModal extends StatelessWidget {
   final String cancelLabel;
   final String confirmLabel;
 
-  /// Opens the dialog.
-  ///
-  /// Localizations are resolved here, from the CALLER's context (which sits
-  /// under MaterialApp/Localizations), and passed into the dialog as plain
-  /// strings. The dialog itself never calls AppLocalizations.of(context), so
-  /// it can never throw "Null check operator used on a null value" — even if
-  /// the dialog route's context cannot see the Localizations ancestor.
   static Future<bool?> show(BuildContext context) {
-    // `of` may return null if the delegate isn't visible — we don't use `!`.
     final l10n = AppLocalizations.of(context);
 
     return showDialog<bool>(

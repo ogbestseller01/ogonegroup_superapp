@@ -144,7 +144,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
                 else if (filteredPosts.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _buildNoResultsState(context, provider),
+                      child: _buildNoResultsState(context, provider, l10n),
                     )
                   else
                     SliverPadding(
@@ -238,7 +238,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
       ),
       actions: [
         IconButton(
-          tooltip: 'Refresh',
+          tooltip: l10n.refresh,
           icon: provider.isLoading
               ? const SizedBox(
             width: 18,
@@ -261,6 +261,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
         required int shown,
       }) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -283,7 +284,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
                 controller: _filterController,
                 onChanged: (v) => setState(() => _filterQuery = v),
                 decoration: InputDecoration(
-                  hintText: 'Search by fundi name...',
+                  hintText: l10n.blogSearchHint,
                   hintStyle: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     fontSize: 15,
@@ -358,7 +359,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Check back later for updates from our technicians.',
+              l10n.blogEmptySubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
               ),
@@ -376,6 +377,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
       VoidCallback onRetry,
       ) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -400,7 +402,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
               ),
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
+              label: Text(l10n.retry),
             ),
           ],
         ),
@@ -408,7 +410,11 @@ class _BlogsScreenState extends State<BlogsScreen> {
     );
   }
 
-  Widget _buildNoResultsState(BuildContext context, PostProvider provider) {
+  Widget _buildNoResultsState(
+      BuildContext context,
+      PostProvider provider,
+      AppLocalizations l10n,
+      ) {
     final theme = Theme.of(context);
     return Center(
       child: Padding(
@@ -421,7 +427,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             Text(
-              'No posts match "$_filterQuery"',
+              l10n.blogNoResults(_filterQuery),
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
@@ -431,7 +437,7 @@ class _BlogsScreenState extends State<BlogsScreen> {
               const SizedBox(height: 12),
               TextButton(
                 onPressed: provider.isLoading ? null : () => provider.fetchPosts(),
-                child: const Text('Load more posts'),
+                child: Text(l10n.loadMorePosts),
               ),
             ],
           ],
@@ -454,6 +460,7 @@ class _FullscreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.black87,
       body: Stack(
@@ -467,13 +474,13 @@ class _FullscreenImageViewer extends StatelessWidget {
                 child: AppNetworkImage(
                   path: imagePath,
                   fit: BoxFit.contain,
-                  fallback: const Column(
+                  fallback: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.broken_image, size: 60, color: Colors.white54),
-                      SizedBox(height: 8),
-                      Text('Image not available',
-                          style: TextStyle(color: Colors.white54)),
+                      const Icon(Icons.broken_image, size: 60, color: Colors.white54),
+                      const SizedBox(height: 8),
+                      Text(l10n.imageNotAvailable,
+                          style: const TextStyle(color: Colors.white54)),
                     ],
                   ),
                 ),
@@ -641,6 +648,7 @@ class _PostCardState extends State<_PostCard> {
   }
 
   Widget _buildHeader(ThemeData theme, Post post) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
       child: Row(
@@ -696,7 +704,7 @@ class _PostCardState extends State<_PostCard> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _ago(post.createdAt),
+                    _ago(post.createdAt, l10n),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color:
                       theme.colorScheme.onSurface.withValues(alpha: 0.5),
@@ -714,12 +722,12 @@ class _PostCardState extends State<_PostCard> {
             onSelected: (v) {
               if (v == 'profile') widget.onTechnicianTap(post.technicianId);
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'profile',
                 child: ListTile(
-                  leading: Icon(Icons.person_outline),
-                  title: Text('View Profile'),
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(l10n.viewProfile),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -730,13 +738,13 @@ class _PostCardState extends State<_PostCard> {
     );
   }
 
-  String _ago(DateTime t) {
+  String _ago(DateTime t, AppLocalizations l10n) {
     final d = DateTime.now().difference(t);
     if (d.inDays > 7) return '${t.day}/${t.month}/${t.year}';
-    if (d.inDays > 0) return '${d.inDays}d ago';
-    if (d.inHours > 0) return '${d.inHours}h ago';
-    if (d.inMinutes > 0) return '${d.inMinutes}m ago';
-    return 'Just now';
+    if (d.inDays > 0) return l10n.timeDaysAgo(d.inDays);
+    if (d.inHours > 0) return l10n.timeHoursAgo(d.inHours);
+    if (d.inMinutes > 0) return l10n.timeMinutesAgo(d.inMinutes);
+    return l10n.timeJustNow;
   }
 }
 
