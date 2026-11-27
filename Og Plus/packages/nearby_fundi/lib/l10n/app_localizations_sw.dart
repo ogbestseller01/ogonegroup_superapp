@@ -54,6 +54,146 @@ class AppLocalizationsSw extends AppLocalizations {
   String get becomeFundi => 'Kuwa Fundi';
 
   @override
+  String get otpDigitRequired => 'Weka OTP ya tarakimu 6';
+
+  @override
+  String get passwordMinLength => 'Nenosiri lazima liwe na angalau herufi 6';
+
+  @override
+  String get repeatPassword => 'Rudia nenosiri lako';
+
+  @override
+  String get passwordsDoNotMatch => 'Manenosiri hayafanani';
+
+  @override
+  String get languageEnglish => 'English 🇬🇧';
+
+  @override
+  String get languageSwahili => 'Kiswahili 🇹🇿';
+
+  @override
+  String get themeLight => 'Mwanga ☀️';
+
+  @override
+  String get themeDark => 'Giza 🌙';
+
+  @override
+  String get themeSystem => 'Mfumo ⚙️';
+
+  @override
+  String get accountVerified => 'Akaunti imethibitishwa!';
+
+  @override
+  String get welcomeToApp => 'Karibu NearbyFundi';
+
+  @override
+  String welcomeToAppName(String name) {
+    return 'Karibu NearbyFundi, $name';
+  }
+
+  @override
+  String get takingYouToDashboard => 'Tunakupeleka kwenye dashibodi yako…';
+
+  @override
+  String get continueButton => 'Endelea';
+
+  @override
+  String get invalidOrExpiredCode => 'Nambari si sahihi au imeisha muda. Jaribu tena.';
+
+  @override
+  String get couldNotSendCodeAuto => 'Hatukuweza kutuma nambari kiotomatiki. Bonyeza \"Tuma tena\" hapa chini.';
+
+  @override
+  String codeSentBySms(String target) {
+    return 'Tumetuma nambari ya tarakimu 6 kwa SMS kwenda\n$target';
+  }
+
+  @override
+  String codeSentByEmail(String target) {
+    return 'Tumetuma nambari ya tarakimu 6 kwenye barua pepe yako\n$target';
+  }
+
+  @override
+  String get newCodeSent => 'Nambari mpya imetumwa.';
+
+  @override
+  String get couldNotResendCode => 'Imeshindwa kutuma tena. Jaribu tena.';
+
+  @override
+  String resendCodeIn(String time) {
+    return 'Tuma tena baada ya $time';
+  }
+
+  @override
+  String get resendCode => 'Tuma tena msimbo';
+
+  @override
+  String get changeMyDetails => 'Badilisha taarifa zangu';
+
+  @override
+  String get passwordResetSuccess => 'Nenosiri limebadilishwa kwa mafanikio';
+
+  @override
+  String get emailHint => 'wewe@mfano.com';
+
+  @override
+  String get registerPhoneHint => '712345678';
+
+  @override
+  String get splashTagline => 'Pata msaada unaoaminika, mahali unapohitaji.';
+
+  @override
+  String get onboardFindFundisTitle => 'Pata Mafundi';
+
+  @override
+  String get onboardFindFundisDesc => 'Gundua mafundi wanaoaminika na waliothibitishwa wanaotoa huduma bora karibu nawe.';
+
+  @override
+  String get onboardConnectFastTitle => 'Ungana Haraka';
+
+  @override
+  String get onboardConnectFastDesc => 'Vinjari wasifu wa mafundi, angalia ukadiriaji na ungana na mtaalamu sahihi.';
+
+  @override
+  String get onboardGetItDoneTitle => 'Kamilisha';
+
+  @override
+  String get onboardGetItDoneDesc => 'Tuma ombi lako, likubaliwe na fuatilia huduma yako kutoka mwanzo hadi mwisho.';
+
+  @override
+  String get benefitVerified => 'Imethibitishwa';
+
+  @override
+  String get benefitTrusted => 'Inaaminika';
+
+  @override
+  String get benefitFast => 'Haraka';
+
+  @override
+  String get rememberMe => 'Nikumbuke';
+
+  @override
+  String get orContinueWith => 'au endelea na';
+
+  @override
+  String get phoneHint => '679117291';
+
+  @override
+  String get pleaseEnterPhone => 'Tafadhali ingiza namba ya simu';
+
+  @override
+  String get enterValidPhoneDigits => 'Ingiza namba sahihi ya tarakimu 9';
+
+  @override
+  String get back => 'Rudi';
+
+  @override
+  String get trustedTechniciansNearYou => 'Mafundi wa kuaminika karibu nawe';
+
+  @override
+  String get nearbyFundiTagline => 'NearbyFundi • mafundi wa kuaminika karibu nawe';
+
+  @override
   String get registerNameTooShort => 'Jina ni fupi sana';
 
   @override
@@ -398,9 +538,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get enterPassword => 'Ingiza nenosiri lako';
-
-  @override
-  String get passwordMinLength => 'Nenosiri lazima liwe na angalau herufi 6';
 
   @override
   String get pleaseAcceptTerms => 'Tafadhali kubali Masharti na Sheria';
@@ -1410,9 +1547,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get verifyAndComplete => 'Thibitisha na Ukamilishe';
-
-  @override
-  String get resendCode => 'Tuma tena msimbo';
 
   @override
   String resendIn(int seconds) {

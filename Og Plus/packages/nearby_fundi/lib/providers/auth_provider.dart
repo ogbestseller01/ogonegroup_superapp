@@ -57,6 +57,10 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   bool _lastGoogleWasNew = false;
 
+  /// Saved account for the one-tap "Continue as [User]" button.
+  RememberedAccount? _remembered;
+  bool _rememberedLoaded = false;
+
   /// Bumps on every logout / expiry / user switch. Per-user providers and
   /// async work compare against it to avoid cross-session leaks.
   int _sessionEpoch = 0;
@@ -69,12 +73,17 @@ class AuthProvider extends ChangeNotifier {
   bool get lastGoogleWasNew => _lastGoogleWasNew;
   int get sessionEpoch => _sessionEpoch;
 
+  /// Non-null when a one-tap login is available.
+  RememberedAccount? get remembered => _remembered;
+  bool get rememberedLoaded => _rememberedLoaded;
+
   AuthProvider({GlobalKey<NavigatorState>? navigatorKey})
       : _navigatorKey = navigatorKey {
     // Any ApiService (not just ours) reports an expired LIVE session here.
     ApiService.onGlobalSessionExpired = () => _endSession(redirect: true);
     _api.onSessionExpired = () => _endSession(redirect: true);
     _loadStoredSession();
+    unawaited(_loadRemembered());
   }
 
   void clearError() {
@@ -94,8 +103,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ─── Register (customer) ─────────────────────────────────────
-  /// Returns a [RegisterResult] so the UI knows whether (and where) the OTP
-  /// was delivered. Use `.success` if you only need a bool.
   Future<RegisterResult> register(
       String name,
       String email,
@@ -151,12 +158,23 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ─── Password login ──────────────────────────────────────────
-  Future<bool> login(String identifier, String password) async {
+  /// [rememberMe] = true asks the server for a long-lived remember token
+  /// (30 days) that is stored securely for one-tap login.
+  Future<bool> login(String identifier, String password,
+      {bool rememberMe = false}) async {
     _setLoading(true);
     try {
-      final res = await _api.login(identifier.trim(), password);
+      final res =
+      await _api.login(identifier.trim(), password, rememberMe: rememberMe);
       if (res.success && res.data != null) {
-        await _saveSession(Map<String, dynamic>.from(res.data as Map));
+        final map = Map<String, dynamic>.from(res.data as Map);
+        await _saveSession(map);
+
+        final remember = map['remember_token']?.toString();
+        if (rememberMe && remember != null && remember.isNotEmpty) {
+          await _persistRemembered(map, remember);
+        }
+
         _error = null;
         return true;
       }
@@ -168,6 +186,62 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // ─── One-tap login ("Continue as [User]") ────────────────────
+  /// Exchanges the saved remember token for a fresh session token. The server
+  /// rotates the remember token, and the new one is stored here.
+  Future<bool> quickLogin() async {
+    if (_remembered == null) return false;
+
+    _setLoading(true);
+    try {
+      final rememberToken = await StorageService.getRememberToken();
+      if (rememberToken == null || rememberToken.isEmpty) {
+        await _clearRemembered();
+        _error = 'Saved login is no longer valid. Please sign in again.';
+        return false;
+      }
+
+      final fcmToken = await _fcmTokenSafe();
+      final res = await _api.quickLogin(rememberToken, fcmToken: fcmToken);
+
+      if (res.success && res.data != null) {
+        final map = Map<String, dynamic>.from(res.data as Map);
+        await _saveSession(map);
+
+        final newRemember = map['remember_token']?.toString();
+        if (newRemember != null && newRemember.isNotEmpty) {
+          await _persistRemembered(map, newRemember);
+        }
+
+        _error = null;
+        return true;
+      }
+
+      // 401 = token expired / revoked / password changed -> forget it.
+      // Other errors (locked, inactive, offline) keep the saved account.
+      if (res.statusCode == 401) {
+        await _clearRemembered();
+      }
+      _error = res.message;
+      return false;
+    } catch (e) {
+      debugPrint('quickLogin error: $e');
+      _error = 'Login failed. Please try again.';
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// "Use another account": removes the saved login (server + device).
+  Future<void> forgetRemembered() async {
+    final token = await StorageService.getRememberToken();
+    await _clearRemembered();
+    if (token != null && token.isNotEmpty) {
+      unawaited(_api.forgetRemembered(token));
     }
   }
 
@@ -346,6 +420,7 @@ class AuthProvider extends ChangeNotifier {
         final userData = res.data['user'] ?? res.data;
         _user = User.fromJson(userData, _token!);
         await _storeUser();
+        unawaited(_syncRememberedProfile(_user!));
         _error = null;
         return true;
       }
@@ -385,6 +460,8 @@ class AuthProvider extends ChangeNotifier {
       final token = _token;
       final res = await _api.deleteAccount();
       if (res.success) {
+        // The account no longer exists: its saved one-tap login must go too.
+        await _clearRemembered();
         await _endSession(redirect: true);
         if (token != null) unawaited(_revokeRemote(token, null));
         return true;
@@ -413,6 +490,7 @@ class AuthProvider extends ChangeNotifier {
         }
         _user = fresh;
         await _storeUser();
+        unawaited(_syncRememberedProfile(fresh));
         _error = null;
       } else {
         _error = res.message;
@@ -427,6 +505,8 @@ class AuthProvider extends ChangeNotifier {
   // ─── Logout ──────────────────────────────────────────────────
   /// Local logout is immediate and complete. Server revocation (Sanctum token
   /// + FCM token) runs afterwards with an explicit token, with a retry.
+  /// The remembered account is KEPT so the login screen can offer
+  /// "Continue as [User]".
   Future<void> logout() async {
     final token = _token;
     String? fcm;
@@ -457,6 +537,65 @@ class AuthProvider extends ChangeNotifier {
   // PRIVATE
   // ==============================================================
 
+  // ─── Remember-me helpers ─────────────────────────────────────
+  Future<void> _loadRemembered() async {
+    _remembered = await StorageService.getRememberedAccount();
+    _rememberedLoaded = true;
+    _safeNotify();
+  }
+
+  Future<void> _persistRemembered(
+      Map<String, dynamic> data, String rememberToken) async {
+    try {
+      final userData = data['user'] is Map
+          ? Map<String, dynamic>.from(data['user'] as Map)
+          : <String, dynamic>{};
+      final u = User.fromJson(userData, '');
+      if (u.id == 0) return;
+
+      final keepPhoto = (_remembered?.id == u.id) ? _remembered?.photo : null;
+
+      final account = RememberedAccount(
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        photo: u.profilePhoto ?? keepPhoto,
+      );
+
+      await StorageService.saveRememberToken(rememberToken);
+      await StorageService.saveRememberedAccount(account);
+      _remembered = account;
+      _rememberedLoaded = true;
+      _safeNotify();
+    } catch (e) {
+      debugPrint('persist remembered failed: $e');
+    }
+  }
+
+  /// Keeps the saved name / photo fresh (e.g. the Google photo that /me returns).
+  Future<void> _syncRememberedProfile(User u) async {
+    final r = _remembered;
+    if (r == null || r.id != u.id) return;
+    if (r.name == u.name && r.email == u.email && r.photo == u.profilePhoto) {
+      return;
+    }
+    final updated = r.copyWith(
+      name: u.name,
+      email: u.email.isNotEmpty ? u.email : null,
+      photo: u.profilePhoto,
+    );
+    _remembered = updated;
+    await StorageService.saveRememberedAccount(updated);
+    _safeNotify();
+  }
+
+  Future<void> _clearRemembered() async {
+    await StorageService.clearRemembered();
+    _remembered = null;
+    _rememberedLoaded = true;
+    _safeNotify();
+  }
+
   /// Single place where a session ends (logout, expiry, user switch).
   Future<void> _endSession({required bool redirect}) async {
     if (_ending) return;
@@ -471,7 +610,7 @@ class AuthProvider extends ChangeNotifier {
       _safeNotify();
 
       try {
-        await StorageService.clearAll();
+        await StorageService.clearAll(); // does NOT touch the remembered account
       } catch (e) {
         debugPrint('clearAll failed: $e');
       }
@@ -546,6 +685,7 @@ class AuthProvider extends ChangeNotifier {
         }
         _user = fresh;
         await _storeUser();
+        unawaited(_syncRememberedProfile(fresh));
         _safeNotify();
       }
     } catch (_) {}

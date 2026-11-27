@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 
 /// Short animated "splash" shown right after the OTP is verified.
@@ -26,9 +27,6 @@ class _RegistrationSuccessScreenState extends State<RegistrationSuccessScreen>
   late final Animation<double> _fade;
   Timer? _timer;
   bool _navigated = false;
-
-  String _t(String en, String sw) =>
-      Localizations.localeOf(context).languageCode == 'sw' ? sw : en;
 
   @override
   void initState() {
@@ -67,6 +65,7 @@ class _RegistrationSuccessScreenState extends State<RegistrationSuccessScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final accent = isDark ? AppTheme.secondary : AppTheme.primary;
@@ -122,7 +121,7 @@ class _RegistrationSuccessScreenState extends State<RegistrationSuccessScreen>
                   child: Column(
                     children: [
                       Text(
-                        _t('Account verified!', 'Akaunti imethibitishwa!'),
+                        l10n.accountVerified,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 28,
@@ -134,9 +133,8 @@ class _RegistrationSuccessScreenState extends State<RegistrationSuccessScreen>
                       const SizedBox(height: 10),
                       Text(
                         firstName.isEmpty
-                            ? _t('Welcome to NearbyFundi', 'Karibu NearbyFundi')
-                            : _t('Welcome to NearbyFundi, $firstName',
-                            'Karibu NearbyFundi, $firstName'),
+                            ? l10n.welcomeToApp
+                            : l10n.welcomeToAppName(firstName),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -155,15 +153,14 @@ class _RegistrationSuccessScreenState extends State<RegistrationSuccessScreen>
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        _t('Taking you to your dashboard…',
-                            'Tunakupeleka kwenye dashibodi yako…'),
+                        l10n.takingYouToDashboard,
                         style: TextStyle(color: theme.hintColor, fontSize: 13.5),
                       ),
                       const SizedBox(height: 28),
                       TextButton(
                         onPressed: _goToDashboard,
                         child: Text(
-                          _t('Continue', 'Endelea'),
+                          l10n.continueButton,
                           style: TextStyle(
                             color: accent,
                             fontWeight: FontWeight.w700,

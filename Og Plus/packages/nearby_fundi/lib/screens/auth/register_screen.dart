@@ -1,4 +1,3 @@
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -568,7 +567,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                       decoration: _inputDecoration(
                         context,
-                        hintText: 'you@example.com',
+                        hintText: l10n.emailHint,
                         prefixIcon: Icons.email_outlined,
                       ),
                       validator: _validateEmail,
@@ -598,7 +597,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ],
                             decoration: _inputDecoration(
                               context,
-                              hintText: '712345678',
+                              hintText: l10n.registerPhoneHint,
                               prefixIcon:
                               Icons.phone_outlined,
                             ),

@@ -54,6 +54,146 @@ class AppLocalizationsEn extends AppLocalizations {
   String get becomeFundi => 'Become a Fundi';
 
   @override
+  String get otpDigitRequired => 'Enter 6-digit OTP';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 6 characters';
+
+  @override
+  String get repeatPassword => 'Repeat your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get languageEnglish => 'English 🇬🇧';
+
+  @override
+  String get languageSwahili => 'Kiswahili 🇹🇿';
+
+  @override
+  String get themeLight => 'Light ☀️';
+
+  @override
+  String get themeDark => 'Dark 🌙';
+
+  @override
+  String get themeSystem => 'System ⚙️';
+
+  @override
+  String get accountVerified => 'Account verified!';
+
+  @override
+  String get welcomeToApp => 'Welcome to NearbyFundi';
+
+  @override
+  String welcomeToAppName(String name) {
+    return 'Welcome to NearbyFundi, $name';
+  }
+
+  @override
+  String get takingYouToDashboard => 'Taking you to your dashboard…';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String get invalidOrExpiredCode => 'Invalid or expired code. Please try again.';
+
+  @override
+  String get couldNotSendCodeAuto => 'We could not send your code automatically. Tap \"Resend code\" below.';
+
+  @override
+  String codeSentBySms(String target) {
+    return 'We sent a 6-digit code by SMS to\n$target';
+  }
+
+  @override
+  String codeSentByEmail(String target) {
+    return 'We sent a 6-digit code to your email\n$target';
+  }
+
+  @override
+  String get newCodeSent => 'A new code has been sent.';
+
+  @override
+  String get couldNotResendCode => 'Could not resend the code. Try again.';
+
+  @override
+  String resendCodeIn(String time) {
+    return 'Resend code in $time';
+  }
+
+  @override
+  String get resendCode => 'Resend code';
+
+  @override
+  String get changeMyDetails => 'Change my details';
+
+  @override
+  String get passwordResetSuccess => 'Password reset successfully';
+
+  @override
+  String get emailHint => 'you@example.com';
+
+  @override
+  String get registerPhoneHint => '712345678';
+
+  @override
+  String get splashTagline => 'Find trusted help, right where you need it.';
+
+  @override
+  String get onboardFindFundisTitle => 'Find Fundis';
+
+  @override
+  String get onboardFindFundisDesc => 'Discover trusted and verified technicians offering quality services near you.';
+
+  @override
+  String get onboardConnectFastTitle => 'Connect Fast';
+
+  @override
+  String get onboardConnectFastDesc => 'Browse technician profiles, check ratings and connect with the right professional.';
+
+  @override
+  String get onboardGetItDoneTitle => 'Get It Done';
+
+  @override
+  String get onboardGetItDoneDesc => 'Send your request, get accepted and follow your service from start to finish.';
+
+  @override
+  String get benefitVerified => 'Verified';
+
+  @override
+  String get benefitTrusted => 'Trusted';
+
+  @override
+  String get benefitFast => 'Fast';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get orContinueWith => 'or continue with';
+
+  @override
+  String get phoneHint => '679117291';
+
+  @override
+  String get pleaseEnterPhone => 'Please enter phone number';
+
+  @override
+  String get enterValidPhoneDigits => 'Enter a valid 9-digit number';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get trustedTechniciansNearYou => 'Trusted technicians near you';
+
+  @override
+  String get nearbyFundiTagline => 'NearbyFundi • trusted technicians near you';
+
+  @override
   String get registerNameTooShort => 'Name is too short';
 
   @override
@@ -398,9 +538,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterPassword => 'Enter your password';
-
-  @override
-  String get passwordMinLength => 'Password must be at least 6 characters';
 
   @override
   String get pleaseAcceptTerms => 'Please accept the Terms & Conditions';
@@ -1410,9 +1547,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verifyAndComplete => 'Verify & Complete';
-
-  @override
-  String get resendCode => 'Resend code';
 
   @override
   String resendIn(int seconds) {

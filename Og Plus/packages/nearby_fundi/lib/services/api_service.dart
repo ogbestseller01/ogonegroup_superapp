@@ -14,6 +14,7 @@ class ApiResponse {
   final dynamic data;
   final Map<String, dynamic>? errors;
   final bool sessionExpired;
+  final int? statusCode;
 
   ApiResponse({
     required this.success,
@@ -21,6 +22,7 @@ class ApiResponse {
     this.data,
     this.errors,
     this.sessionExpired = false,
+    this.statusCode,
   });
 
   factory ApiResponse.fromJson(Map<String, dynamic> json) => ApiResponse(
@@ -45,6 +47,7 @@ class ApiService {
 
   /// Endpoints that are used while logged out. A 401 here means "wrong
   /// credentials", not "session expired", and no token must be attached.
+  /// '/v1/auth/quick-login' also matches '/v1/auth/quick-login/forget'.
   static const List<String> _publicAuthPaths = [
     '/v1/auth/login',
     '/v1/auth/google',
@@ -55,6 +58,7 @@ class ApiService {
     '/v1/auth/resend-otp',
     '/v1/auth/forgot-password',
     '/v1/auth/reset-password',
+    '/v1/auth/quick-login',
   ];
 
   bool _isPublicAuthPath(String p) => _publicAuthPaths.any(p.contains);
@@ -66,12 +70,17 @@ class ApiService {
       receiveTimeout: const Duration(seconds: 30),
       // Uploads (photos / videos up to 20 MB) need more time
       sendTimeout: const Duration(minutes: 2),
+      headers: {
+        // "Flutter" makes the backend label this session "Mobile App";
+        // the OS shows up in the login-notification email.
+        'User-Agent': 'NearbyFundi Flutter (${Platform.operatingSystem})',
+      },
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         // Never overwrite an explicitly supplied Authorization header
-        // (used by logoutWithToken so it can't be hijacked by a new login).
+        // (used by logoutWithToken / quickLogin so they can't be hijacked).
         if (!_isPublicAuthPath(options.path) &&
             !options.headers.containsKey('Authorization')) {
           final token = await StorageService.getToken();
@@ -133,9 +142,50 @@ class ApiService {
     return _post('/v1/auth/register-fundi', data: data);
   }
 
-  Future<ApiResponse> login(String identifier, String password) =>
-      _post('/v1/auth/login',
-          data: {'email': identifier, 'password': password});
+  Future<ApiResponse> login(String identifier, String password,
+      {bool rememberMe = false}) =>
+      _post('/v1/auth/login', data: {
+        'email': identifier,
+        'password': password,
+        if (rememberMe) 'remember_me': true,
+      });
+
+  /// One-tap login. Bearer = the REMEMBER token (explicit header, so the
+  /// interceptor never swaps it for a session token).
+  Future<ApiResponse> quickLogin(String rememberToken,
+      {String? fcmToken}) async {
+    try {
+      final res = await _dio.post(
+        '/v1/auth/quick-login',
+        data: {
+          if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $rememberToken'},
+          extra: {'skip401': true},
+        ),
+      );
+      return _parseResponse('POST', '/v1/auth/quick-login', res);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  /// "Switch account": revokes the remember token server-side.
+  Future<ApiResponse> forgetRemembered(String rememberToken) async {
+    try {
+      final res = await _dio.post(
+        '/v1/auth/quick-login/forget',
+        options: Options(
+          headers: {'Authorization': 'Bearer $rememberToken'},
+          extra: {'skip401': true},
+        ),
+      );
+      return _parseResponse('POST', '/v1/auth/quick-login/forget', res);
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
 
   Future<ApiResponse> loginWithGoogle(String idToken, {String? fcmToken}) =>
       _post('/v1/auth/google', data: {
@@ -1016,12 +1066,14 @@ class ApiService {
             message: (serverMessage != null && serverMessage.isNotEmpty)
                 ? serverMessage
                 : 'Invalid Credentials.',
+            statusCode: 401,
           );
         }
         return ApiResponse(
           success: false,
           message: 'Session expired. Please log in again.',
           sessionExpired: true,
+          statusCode: 401,
         );
       }
 
@@ -1040,6 +1092,7 @@ class ApiService {
           success: false,
           message: message,
           errors: errs is Map ? Map<String, dynamic>.from(errs) : null,
+          statusCode: 422,
         );
       }
 
@@ -1047,6 +1100,7 @@ class ApiService {
         return ApiResponse(
           success: false,
           message: body['message']?.toString() ?? 'Something went wrong',
+          statusCode: status,
         );
       }
     }

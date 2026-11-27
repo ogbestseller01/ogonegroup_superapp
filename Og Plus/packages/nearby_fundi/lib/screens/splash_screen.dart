@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
+// Adjust this import if your generated AppLocalizations lives elsewhere.
+import '../l10n/app_localizations.dart';
 
 /// Package name of this SDK (must match `name:` in pubspec.yaml).
 /// Needed so assets resolve when this code runs inside the super app.
@@ -37,30 +39,21 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2200),
     );
 
-    _logoScale = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(
+    _logoScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
       ),
     );
 
-    _logoFade = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
       ),
     );
 
-    _contentFade = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    _contentFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _mainController,
         curve: const Interval(0.3, 0.8, curve: Curves.easeOut),
@@ -83,9 +76,6 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  /// First launch  -> onboarding (which then opens the dashboard)
-  /// Every launch after -> dashboard directly (guest or logged in).
-  /// Login is only opened later, when the user tries a protected action.
   Future<void> _navigate() async {
     final prefs = await SharedPreferences.getInstance();
     final isFirstLaunch = prefs.getBool('is_first_launch') ?? true;
@@ -105,6 +95,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -144,7 +136,8 @@ class _SplashScreenState extends State<SplashScreen>
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.secondary.withOpacity(0.35),
+                                    color: AppTheme.secondary
+                                        .withOpacity(0.35),
                                     blurRadius: 50,
                                     spreadRadius: 10,
                                   ),
@@ -175,7 +168,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                   const SizedBox(height: 40),
 
-                  // Brand Name
+                  // Brand name — not localized on purpose.
                   FadeTransition(
                     opacity: _contentFade,
                     child: Column(
@@ -202,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Find trusted help, right where you need it.',
+                          l.splashTagline,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
@@ -234,7 +227,7 @@ class _SplashScreenState extends State<SplashScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Loading...',
+                          l.loading,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.4),
                             fontSize: 12,

@@ -250,7 +250,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   style: const TextStyle(fontSize: 15),
                                   decoration: _modernInputDecoration(
                                     context,
-                                    hint: 'you@example.com',
+                                    hint: l10n.emailHint,
                                     icon: Icons.email_outlined,
                                   ),
                                   validator: (v) {
@@ -385,7 +385,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 20),
                 _SheetTile(
-                  title: 'English 🇬🇧',
+                  title: l10n.languageEnglish,
                   selected: settings.locale == 'en',
                   onTap: () async {
                     await settings.updateLocale('en');
@@ -396,7 +396,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'Kiswahili 🇹🇿',
+                  title: l10n.languageSwahili,
                   selected: settings.locale == 'sw',
                   onTap: () async {
                     await settings.updateLocale('sw');
@@ -446,7 +446,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 20),
                 _SheetTile(
-                  title: 'Light ☀️',
+                  title: l10n.themeLight,
                   selected: themeProvider.themeMode == ThemeMode.light,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.light);
@@ -455,7 +455,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'Dark 🌙',
+                  title: l10n.themeDark,
                   selected: themeProvider.themeMode == ThemeMode.dark,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.dark);
@@ -464,7 +464,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'System ⚙️',
+                  title: l10n.themeSystem,
                   selected: themeProvider.themeMode == ThemeMode.system,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.system);

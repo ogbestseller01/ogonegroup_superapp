@@ -15,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/continue_as_card.dart';
 import '../../widgets/flag_icon.dart';
 
 const String _kAssetPackage = 'nearbyfundi_sdk';
@@ -90,6 +91,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _termsAccepted = false;
   bool _isLoading = false;
   bool _isEmailMode = true;
+
+  // Remember me / one-tap login
+  bool _rememberMe = true;
+  bool _quickLoading = false;
 
   @override
   void initState() {
@@ -171,6 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await auth.login(
         identifier,
         _passwordController.text.trim(),
+        rememberMe: _rememberMe,
       );
       if (!mounted) return;
 
@@ -189,7 +195,43 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ----------------------------------------------------------
-  // Google sign-in (all work happens inside AuthProvider)
+  // One-tap login ("Continue as [User]")
+  // ----------------------------------------------------------
+
+  Future<void> _handleQuickLogin() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _quickLoading = true;
+    });
+    final auth = context.read<AuthProvider>()..clearError();
+
+    try {
+      final success = await auth.quickLogin();
+      if (!mounted) return;
+
+      if (success) {
+        _openHome();
+        return;
+      }
+      _snack(auth.errorMessage ?? 'Login failed. Please try again.');
+    } catch (e) {
+      debugPrint('Quick login failed: $e');
+      if (!mounted) return;
+      _snack('Login failed. Please try again.');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _quickLoading = false;
+      });
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Google sign-in
   // ----------------------------------------------------------
 
   Future<void> _handleGoogleSignIn() async {
@@ -228,6 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _openCountrySheet() async {
     final p = _Palette.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     final picked = await showModalBottomSheet<Country>(
       context: context,
@@ -240,6 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (_) => _CountrySheet(
         countries: _countries,
         selected: _selectedCountry,
+        searchHint: l10n.registerSearchCountry,
+        noResultsText: l10n.registerNoCountryFound,
       ),
     );
 
@@ -303,9 +348,9 @@ class _LoginScreenState extends State<LoginScreen> {
     _showAppSheet(
       title: l10n.theme,
       children: [
-        tile(ThemeMode.light, 'Light', Icons.light_mode_rounded),
-        tile(ThemeMode.dark, 'Dark', Icons.dark_mode_rounded),
-        tile(ThemeMode.system, 'System', Icons.brightness_auto_rounded),
+        tile(ThemeMode.light, l10n.light, Icons.light_mode_rounded),
+        tile(ThemeMode.dark, l10n.dark, Icons.dark_mode_rounded),
+        tile(ThemeMode.system, l10n.system, Icons.brightness_auto_rounded),
       ],
     );
   }
@@ -361,6 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final p = _Palette.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final isSmall = MediaQuery.sizeOf(context).width < 380;
     final topInset = MediaQuery.paddingOf(context).top;
     final sidePad = isSmall ? 16.0 : 20.0;
@@ -386,14 +432,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
                     children: [
-                      _topBar(),
+                      _topBar(l10n),
                       const SizedBox(height: 14),
-                      const _BrandHeader(),
+                      _BrandHeader(tagline: l10n.trustedTechniciansNearYou),
                       const SizedBox(height: 26),
-                      _formCard(p, isSmall),
+                      _formCard(p, isSmall, l10n),
                       const SizedBox(height: 16),
                       Text(
-                        'NearbyFundi • trusted technicians near you',
+                        l10n.nearbyFundiTagline,
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
@@ -412,8 +458,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _topBar() {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _topBar(AppLocalizations l10n) {
     final themeMode = context.watch<ThemeProvider>().themeMode;
     context.watch<SettingsProvider>(); // rebuild on locale change
 
@@ -432,7 +477,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (canGoBack)
           _GlassIconButton(
             icon: Icons.arrow_back_rounded,
-            tooltip: 'Back',
+            tooltip: l10n.back,
             onTap: _goBack,
           )
         else
@@ -457,8 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _formCard(_Palette p, bool isSmall) {
-    final l10n = AppLocalizations.of(context)!;
+  Widget _formCard(_Palette p, bool isSmall, AppLocalizations l10n) {
     final padH = isSmall ? 20.0 : 24.0;
 
     return Container(
@@ -497,35 +541,107 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextStyle(fontSize: 14.5, color: p.muted),
             ),
             const SizedBox(height: 22),
+
+            // ── One-tap "Continue as [User]" ──
+            // Only a cancel (X) icon. On cancel → forget remembered account
+            // so the normal credential form is shown again.
+            Consumer<AuthProvider>(
+              builder: (_, auth, __) {
+                final acc = auth.remembered;
+                if (acc == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: ContinueAsCard(
+                    account: acc,
+                    loading: _quickLoading,
+                    onContinue: _isLoading ? null : _handleQuickLogin,
+                    // Cancel / switch → just forget the saved account
+                    onSwitch: _isLoading
+                        ? null
+                        : () => auth.forgetRemembered(),
+                  ),
+                );
+              },
+            ),
+
             _LoginToggle(
               isEmailMode: _isEmailMode,
               palette: p,
               enabled: !_isLoading,
+              emailLabel: l10n.email,
+              phoneLabel: l10n.phone,
               onChanged: (isEmail) => setState(() {
                 _isEmailMode = isEmail;
                 _identifierController.clear();
               }),
             ),
             const SizedBox(height: 18),
-            _isEmailMode ? _emailField(p, l10n) : _phoneRow(p),
+            _isEmailMode ? _emailField(p, l10n) : _phoneRow(p, l10n),
             const SizedBox(height: 16),
             _passwordField(p, l10n),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => Navigator.pushNamed(context, AppRoutes.forgot),
-                child: Text(
-                  l10n.forgotPassword,
-                  style: TextStyle(
-                    color: p.link,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
+
+            // ── Remember me (left) + Forgot password (right) ──
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _isLoading
+                        ? null
+                        : () => setState(() => _rememberMe = !_rememberMe),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              onChanged: _isLoading
+                                  ? null
+                                  : (v) =>
+                                  setState(() => _rememberMe = v ?? false),
+                              activeColor: AppTheme.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              l10n.rememberMe,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: p.text.withOpacity(0.8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.pushNamed(context, AppRoutes.forgot),
+                  child: Text(
+                    l10n.forgotPassword,
+                    style: TextStyle(
+                      color: p.link,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             _TermsRow(
@@ -540,14 +656,14 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 22),
             _PrimaryButton(
               label: l10n.signIn,
-              loading: _isLoading,
+              loading: _isLoading && !_quickLoading,
               onPressed: _isLoading ? null : _handleLogin,
             ),
             const SizedBox(height: 20),
-            _OrDivider(label: 'or continue with', color: p.muted),
+            _OrDivider(label: l10n.orContinueWith, color: p.muted),
             const SizedBox(height: 16),
             _SocialButton(
-              label: 'Continue with Google',
+              label: l10n.continueWithGoogle,
               assetPath: _kGoogleIconAsset,
               fallbackIcon: Icons.g_mobiledata_rounded,
               enabled: !_isLoading,
@@ -566,7 +682,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: _isLoading
                       ? null
-                      : () => Navigator.pushNamed(context, AppRoutes.register),
+                      : () =>
+                      Navigator.pushNamed(context, AppRoutes.register),
                   child: Text(
                     l10n.signUp,
                     style: TextStyle(
@@ -593,7 +710,7 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(fontSize: 15),
       decoration: _inputDecoration(
         context,
-        hint: 'you@example.com',
+        hint: l10n.emailHint,
         icon: Icons.email_outlined,
       ),
       validator: (value) {
@@ -605,7 +722,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _phoneRow(_Palette p) {
+  Widget _phoneRow(_Palette p, AppLocalizations l10n) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -625,15 +742,15 @@ class _LoginScreenState extends State<LoginScreen> {
             style: const TextStyle(fontSize: 15),
             decoration: _inputDecoration(
               context,
-              hint: '679117291',
+              hint: l10n.phoneHint,
               icon: Icons.phone_outlined,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter phone number';
+                return l10n.pleaseEnterPhone;
               }
               if (!RegExp(r'^[67]\d{8}$').hasMatch(_digitsOnly(value))) {
-                return 'Enter a valid 9-digit number';
+                return l10n.enterValidPhoneDigits;
               }
               return null;
             },
@@ -772,7 +889,9 @@ class _Blob extends StatelessWidget {
 // ============================================================
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+  const _BrandHeader({required this.tagline});
+
+  final String tagline;
 
   @override
   Widget build(BuildContext context) {
@@ -815,11 +934,11 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'NearbyFundi',
                 style: TextStyle(
                   fontSize: 26,
@@ -828,10 +947,10 @@ class _BrandHeader extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                'Trusted technicians near you',
-                style: TextStyle(
+                tagline,
+                style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.3,
@@ -1007,12 +1126,16 @@ class _LoginToggle extends StatelessWidget {
     required this.isEmailMode,
     required this.palette,
     required this.enabled,
+    required this.emailLabel,
+    required this.phoneLabel,
     required this.onChanged,
   });
 
   final bool isEmailMode;
   final _Palette palette;
   final bool enabled;
+  final String emailLabel;
+  final String phoneLabel;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -1026,13 +1149,13 @@ class _LoginToggle extends StatelessWidget {
       child: Row(
         children: [
           _segment(
-            label: 'Email',
+            label: emailLabel,
             icon: Icons.email_outlined,
             active: isEmailMode,
             onTap: enabled ? () => onChanged(true) : null,
           ),
           _segment(
-            label: 'Phone',
+            label: phoneLabel,
             icon: Icons.phone_outlined,
             active: !isEmailMode,
             onTap: enabled ? () => onChanged(false) : null,
@@ -1133,10 +1256,17 @@ class _CountryButton extends StatelessWidget {
 }
 
 class _CountrySheet extends StatefulWidget {
-  const _CountrySheet({required this.countries, required this.selected});
+  const _CountrySheet({
+    required this.countries,
+    required this.selected,
+    required this.searchHint,
+    required this.noResultsText,
+  });
 
   final List<Country> countries;
   final Country selected;
+  final String searchHint;
+  final String noResultsText;
 
   @override
   State<_CountrySheet> createState() => _CountrySheetState();
@@ -1170,7 +1300,8 @@ class _CountrySheetState extends State<_CountrySheet> {
     final p = _Palette.of(context);
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+      EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.85,
         child: Column(
@@ -1190,7 +1321,7 @@ class _CountrySheetState extends State<_CountrySheet> {
                 controller: _searchController,
                 onChanged: _filter,
                 decoration: InputDecoration(
-                  hintText: 'Search country...',
+                  hintText: widget.searchHint,
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: p.field,
@@ -1205,7 +1336,7 @@ class _CountrySheetState extends State<_CountrySheet> {
               child: _filtered.isEmpty
                   ? Center(
                 child: Text(
-                  'No country found',
+                  widget.noResultsText,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: theme.hintColor),
                 ),

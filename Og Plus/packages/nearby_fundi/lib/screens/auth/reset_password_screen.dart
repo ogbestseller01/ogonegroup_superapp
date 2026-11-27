@@ -54,7 +54,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.resetPasswordButton),
+          content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
           backgroundColor: AppTheme.success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -274,7 +274,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   validator: (v) =>
                                   v != null && v.length == 6
                                       ? null
-                                      : 'Enter 6-digit OTP',
+                                      : l10n.otpDigitRequired,
                                 ),
                                 const SizedBox(height: 18),
 
@@ -288,7 +288,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   style: const TextStyle(fontSize: 15),
                                   decoration: _modernInputDecoration(
                                     context,
-                                    hint: 'Minimum 8 characters',
+                                    hint: l10n.passwordMinLength,
                                     icon: Icons.lock_outline_rounded,
                                     suffix: IconButton(
                                       icon: Icon(
@@ -307,7 +307,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                       return l10n.enterPassword;
                                     }
                                     if (v.length < 8) {
-                                      return 'Password must be at least 8 characters';
+                                      return l10n.passwordMinLength;
                                     }
                                     return null;
                                   },
@@ -324,7 +324,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   style: const TextStyle(fontSize: 15),
                                   decoration: _modernInputDecoration(
                                     context,
-                                    hint: 'Repeat your password',
+                                    hint: l10n.repeatPassword,
                                     icon: Icons.lock_outline_rounded,
                                     suffix: IconButton(
                                       icon: Icon(
@@ -341,7 +341,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                                   validator: (v) =>
                                   v == _passwordController.text
                                       ? null
-                                      : 'Passwords do not match',
+                                      : l10n.passwordsDoNotMatch,
                                 ),
                                 const SizedBox(height: 32),
 
@@ -465,7 +465,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 20),
                 _SheetTile(
-                  title: 'English 🇬🇧',
+                  title: l10n.languageEnglish,
                   selected: settings.locale == 'en',
                   onTap: () async {
                     await settings.updateLocale('en');
@@ -476,7 +476,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'Kiswahili 🇹🇿',
+                  title: l10n.languageSwahili,
                   selected: settings.locale == 'sw',
                   onTap: () async {
                     await settings.updateLocale('sw');
@@ -526,7 +526,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         fontSize: 18, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 20),
                 _SheetTile(
-                  title: 'Light ☀️',
+                  title: l10n.themeLight,
                   selected: themeProvider.themeMode == ThemeMode.light,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.light);
@@ -535,7 +535,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'Dark 🌙',
+                  title: l10n.themeDark,
                   selected: themeProvider.themeMode == ThemeMode.dark,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.dark);
@@ -544,7 +544,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 ),
                 const SizedBox(height: 10),
                 _SheetTile(
-                  title: 'System ⚙️',
+                  title: l10n.themeSystem,
                   selected: themeProvider.themeMode == ThemeMode.system,
                   onTap: () {
                     themeProvider.setThemeMode(ThemeMode.system);

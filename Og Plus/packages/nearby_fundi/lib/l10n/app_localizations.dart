@@ -185,6 +185,270 @@ abstract class AppLocalizations {
   /// **'Become a Fundi'**
   String get becomeFundi;
 
+  /// No description provided for @otpDigitRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 6-digit OTP'**
+  String get otpDigitRequired;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMinLength;
+
+  /// No description provided for @repeatPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat your password'**
+  String get repeatPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English 🇬🇧'**
+  String get languageEnglish;
+
+  /// No description provided for @languageSwahili.
+  ///
+  /// In en, this message translates to:
+  /// **'Kiswahili 🇹🇿'**
+  String get languageSwahili;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light ☀️'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark 🌙'**
+  String get themeDark;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System ⚙️'**
+  String get themeSystem;
+
+  /// No description provided for @accountVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Account verified!'**
+  String get accountVerified;
+
+  /// No description provided for @welcomeToApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to NearbyFundi'**
+  String get welcomeToApp;
+
+  /// No description provided for @welcomeToAppName.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to NearbyFundi, {name}'**
+  String welcomeToAppName(String name);
+
+  /// No description provided for @takingYouToDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Taking you to your dashboard…'**
+  String get takingYouToDashboard;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @invalidOrExpiredCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid or expired code. Please try again.'**
+  String get invalidOrExpiredCode;
+
+  /// No description provided for @couldNotSendCodeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send your code automatically. Tap \"Resend code\" below.'**
+  String get couldNotSendCodeAuto;
+
+  /// No description provided for @codeSentBySms.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code by SMS to\n{target}'**
+  String codeSentBySms(String target);
+
+  /// No description provided for @codeSentByEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'We sent a 6-digit code to your email\n{target}'**
+  String codeSentByEmail(String target);
+
+  /// No description provided for @newCodeSent.
+  ///
+  /// In en, this message translates to:
+  /// **'A new code has been sent.'**
+  String get newCodeSent;
+
+  /// No description provided for @couldNotResendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not resend the code. Try again.'**
+  String get couldNotResendCode;
+
+  /// No description provided for @resendCodeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code in {time}'**
+  String resendCodeIn(String time);
+
+  /// No description provided for @resendCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend code'**
+  String get resendCode;
+
+  /// No description provided for @changeMyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Change my details'**
+  String get changeMyDetails;
+
+  /// No description provided for @passwordResetSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset successfully'**
+  String get passwordResetSuccess;
+
+  /// No description provided for @emailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get emailHint;
+
+  /// No description provided for @registerPhoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'712345678'**
+  String get registerPhoneHint;
+
+  /// No description provided for @splashTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Find trusted help, right where you need it.'**
+  String get splashTagline;
+
+  /// No description provided for @onboardFindFundisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Fundis'**
+  String get onboardFindFundisTitle;
+
+  /// No description provided for @onboardFindFundisDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover trusted and verified technicians offering quality services near you.'**
+  String get onboardFindFundisDesc;
+
+  /// No description provided for @onboardConnectFastTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Fast'**
+  String get onboardConnectFastTitle;
+
+  /// No description provided for @onboardConnectFastDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse technician profiles, check ratings and connect with the right professional.'**
+  String get onboardConnectFastDesc;
+
+  /// No description provided for @onboardGetItDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get It Done'**
+  String get onboardGetItDoneTitle;
+
+  /// No description provided for @onboardGetItDoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your request, get accepted and follow your service from start to finish.'**
+  String get onboardGetItDoneDesc;
+
+  /// No description provided for @benefitVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get benefitVerified;
+
+  /// No description provided for @benefitTrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted'**
+  String get benefitTrusted;
+
+  /// No description provided for @benefitFast.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast'**
+  String get benefitFast;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me'**
+  String get rememberMe;
+
+  /// No description provided for @orContinueWith.
+  ///
+  /// In en, this message translates to:
+  /// **'or continue with'**
+  String get orContinueWith;
+
+  /// No description provided for @phoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'679117291'**
+  String get phoneHint;
+
+  /// No description provided for @pleaseEnterPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter phone number'**
+  String get pleaseEnterPhone;
+
+  /// No description provided for @enterValidPhoneDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid 9-digit number'**
+  String get enterValidPhoneDigits;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @trustedTechniciansNearYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted technicians near you'**
+  String get trustedTechniciansNearYou;
+
+  /// No description provided for @nearbyFundiTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'NearbyFundi • trusted technicians near you'**
+  String get nearbyFundiTagline;
+
   /// No description provided for @registerNameTooShort.
   ///
   /// In en, this message translates to:
@@ -868,12 +1132,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your password'**
   String get enterPassword;
-
-  /// No description provided for @passwordMinLength.
-  ///
-  /// In en, this message translates to:
-  /// **'Password must be at least 6 characters'**
-  String get passwordMinLength;
 
   /// No description provided for @pleaseAcceptTerms.
   ///
@@ -2812,12 +3070,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verify & Complete'**
   String get verifyAndComplete;
-
-  /// No description provided for @resendCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Resend code'**
-  String get resendCode;
 
   /// No description provided for @resendIn.
   ///

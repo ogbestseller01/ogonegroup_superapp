@@ -1,9 +1,7 @@
-// lib/models/user.dart
-
 class User {
   final int id;
   final String name;
-  final String email; // may be '' (Apple "hide my email" / phone-only accounts)
+  final String email;
   final String? phone;
   final String? locale;
   final String? profilePhoto;
@@ -27,7 +25,8 @@ class User {
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString(),
       locale: json['locale']?.toString() ?? 'en',
-      profilePhoto: (json['profile_photo'] ?? json['avatar'] ?? json['profile_image'])
+      profilePhoto:
+      (json['profile_photo'] ?? json['avatar'] ?? json['profile_image'])
           ?.toString(),
       token: token,
     );

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
+// Adjust this import if your generated AppLocalizations lives elsewhere.
+import '../l10n/app_localizations.dart';
 
 /// Package name of this SDK (must match `name:` in pubspec.yaml).
 /// Needed so assets resolve when this code runs inside the super app.
@@ -23,23 +25,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<OnboardingItem> _items = const [
+  /// Const model list — holds an enum tag, localized at render time.
+  static const List<OnboardingItem> _items = [
     OnboardingItem(
-      title: 'Find Fundis',
-      description:
-      'Discover trusted and verified technicians offering quality services near you.',
+      type: OnboardingPageType.findFundis,
       icon: Icons.handyman_rounded,
     ),
     OnboardingItem(
-      title: 'Connect Fast',
-      description:
-      'Browse technician profiles, check ratings and connect with the right professional.',
+      type: OnboardingPageType.connectFast,
       icon: Icons.people_alt_rounded,
     ),
     OnboardingItem(
-      title: 'Get It Done',
-      description:
-      'Send your request, get accepted and follow your service from start to finish.',
+      type: OnboardingPageType.getItDone,
       icon: Icons.task_alt_rounded,
     ),
   ];
@@ -71,14 +68,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  /// Open the dashboard. Login is requested later, only when the user
-  /// tries something that needs an account.
   void _getStarted() {
     Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final size = MediaQuery.sizeOf(context);
     final isSmall = size.width < 400;
     final isShort = size.height < 640;
@@ -138,6 +134,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
+                    // Brand name — not localized on purpose.
                     Flexible(
                       child: Text(
                         'NearbyFundi',
@@ -155,9 +152,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     if (!isLastPage)
                       TextButton(
                         onPressed: _skipToEnd,
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(
+                        child: Text(
+                          l.skip,
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -234,7 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                isLastPage ? 'Get Started' : 'Continue',
+                                isLastPage ? l.getStarted : l.continueButton,
                                 style: const TextStyle(
                                   fontSize: 17,
                                   fontWeight: FontWeight.w700,
@@ -274,20 +271,19 @@ class _OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Icon circle scales with the smaller dimension so it never
-        // eats the whole page on short/landscape screens.
-        final double base = math.min(constraints.maxWidth, constraints.maxHeight);
+        final double base =
+        math.min(constraints.maxWidth, constraints.maxHeight);
         final double outer = (base * 0.46).clamp(120.0, 200.0);
         final double inner = outer * 0.70;
 
         return SingleChildScrollView(
-          // Scrollable vertically so text never overflows on small screens.
           physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           child: ConstrainedBox(
-            // Keep content centered when there is plenty of room.
             constraints: BoxConstraints(
               minHeight: constraints.maxHeight - 32,
             ),
@@ -336,9 +332,9 @@ class _OnboardingPage extends StatelessWidget {
 
                   const SizedBox(height: 28),
 
-                  // Title
+                  // Title (localized)
                   Text(
-                    item.title,
+                    item.title(l),
                     textAlign: TextAlign.center,
                     softWrap: true,
                     style: TextStyle(
@@ -365,9 +361,9 @@ class _OnboardingPage extends StatelessWidget {
 
                   const SizedBox(height: 18),
 
-                  // Description
+                  // Description (localized)
                   Text(
-                    item.description,
+                    item.description(l),
                     textAlign: TextAlign.center,
                     softWrap: true,
                     style: TextStyle(
@@ -380,15 +376,24 @@ class _OnboardingPage extends StatelessWidget {
 
                   const SizedBox(height: 22),
 
-                  // Benefits — Wrap handles horizontal overflow.
-                  Wrap(
+                  // Benefits — const children, localized at render.
+                  const Wrap(
                     spacing: 12,
                     runSpacing: 10,
                     alignment: WrapAlignment.center,
-                    children: const [
-                      _Benefit(icon: Icons.verified_rounded, text: 'Verified'),
-                      _Benefit(icon: Icons.star_rounded, text: 'Trusted'),
-                      _Benefit(icon: Icons.bolt_rounded, text: 'Fast'),
+                    children: [
+                      _Benefit(
+                        icon: Icons.verified_rounded,
+                        type: BenefitType.verified,
+                      ),
+                      _Benefit(
+                        icon: Icons.star_rounded,
+                        type: BenefitType.trusted,
+                      ),
+                      _Benefit(
+                        icon: Icons.bolt_rounded,
+                        type: BenefitType.fast,
+                      ),
                     ],
                   ),
 
@@ -406,17 +411,32 @@ class _OnboardingPage extends StatelessWidget {
 // ============================================================
 // BENEFIT PILL
 // ============================================================
+enum BenefitType { verified, trusted, fast }
+
 class _Benefit extends StatelessWidget {
   final IconData icon;
-  final String text;
+  final BenefitType type;
 
   const _Benefit({
     required this.icon,
-    required this.text,
+    required this.type,
   });
+
+  String _label(AppLocalizations l) {
+    switch (type) {
+      case BenefitType.verified:
+        return l.benefitVerified;
+      case BenefitType.trusted:
+        return l.benefitTrusted;
+      case BenefitType.fast:
+        return l.benefitFast;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
@@ -430,7 +450,7 @@ class _Benefit extends StatelessWidget {
           Icon(icon, color: AppTheme.secondary, size: 16),
           const SizedBox(width: 6),
           Text(
-            text,
+            _label(l),
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 13,
@@ -446,14 +466,36 @@ class _Benefit extends StatelessWidget {
 // ============================================================
 // MODEL
 // ============================================================
+enum OnboardingPageType { findFundis, connectFast, getItDone }
+
 class OnboardingItem {
-  final String title;
-  final String description;
+  final OnboardingPageType type;
   final IconData icon;
 
   const OnboardingItem({
-    required this.title,
-    required this.description,
+    required this.type,
     required this.icon,
   });
+
+  String title(AppLocalizations l) {
+    switch (type) {
+      case OnboardingPageType.findFundis:
+        return l.onboardFindFundisTitle;
+      case OnboardingPageType.connectFast:
+        return l.onboardConnectFastTitle;
+      case OnboardingPageType.getItDone:
+        return l.onboardGetItDoneTitle;
+    }
+  }
+
+  String description(AppLocalizations l) {
+    switch (type) {
+      case OnboardingPageType.findFundis:
+        return l.onboardFindFundisDesc;
+      case OnboardingPageType.connectFast:
+        return l.onboardConnectFastDesc;
+      case OnboardingPageType.getItDone:
+        return l.onboardGetItDoneDesc;
+    }
+  }
 }

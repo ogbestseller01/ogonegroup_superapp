@@ -47,9 +47,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _resending = false;
   String? _error;
 
-  String _t(String en, String sw) =>
-      Localizations.localeOf(context).languageCode == 'sw' ? sw : en;
-
   @override
   void initState() {
     super.initState();
@@ -100,20 +97,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return v;
   }
 
-  String get _infoText {
+  String _infoText(AppLocalizations l10n) {
     if (!widget.otpSent || widget.channel == 'none') {
-      return _t(
-        'We could not send your code automatically. Tap "Resend code" below.',
-        'Hatukuweza kutuma nambari kiotomatiki. Bonyeza "Tuma tena" hapa chini.',
-      );
+      return l10n.couldNotSendCodeAuto;
     }
     final to = _mask(widget.sentTo ?? widget.email);
     if (widget.channel == 'sms') {
-      return _t('We sent a 6-digit code by SMS to\n$to',
-          'Tumetuma nambari ya tarakimu 6 kwa SMS kwenda\n$to');
+      return l10n.codeSentBySms(to);
     }
-    return _t('We sent a 6-digit code to your email\n$to',
-        'Tumetuma nambari ya tarakimu 6 kwenye barua pepe yako\n$to');
+    return l10n.codeSentByEmail(to);
   }
 
   void _snack(String message, {bool error = true}) {
@@ -133,9 +125,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Future<void> _handleVerify() async {
     if (_isLoading) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final code = _codeController.text.trim();
     if (code.length != 6) {
-      setState(() => _error = AppLocalizations.of(context)!.enterOtp);
+      setState(() => _error = l10n.enterOtp);
       return;
     }
 
@@ -162,8 +155,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     final message = auth.errorMessage ??
-        _t('Invalid or expired code. Please try again.',
-            'Nambari si sahihi au imeisha muda. Jaribu tena.');
+        AppLocalizations.of(context)!.invalidOrExpiredCode;
     auth.clearError();
 
     setState(() {
@@ -190,17 +182,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _resending = false);
 
+    final l10n = AppLocalizations.of(context)!;
     if (ok) {
       _codeController.clear();
       _startCountdown();
       setState(() {});
-      _snack(_t('A new code has been sent.', 'Nambari mpya imetumwa.'),
-          error: false);
+      _snack(l10n.newCodeSent, error: false);
       _focusNode.requestFocus();
     } else {
-      _snack(auth.errorMessage ??
-          _t('Could not resend the code. Try again.',
-              'Imeshindwa kutuma tena. Jaribu tena.'));
+      _snack(auth.errorMessage ?? l10n.couldNotResendCode);
       auth.clearError();
     }
   }
@@ -325,7 +315,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              _infoText,
+                              _infoText(l10n),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 15,
@@ -442,8 +432,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             Center(
                               child: _secondsLeft > 0
                                   ? Text(
-                                _t('Resend code in ${_formatTime(_secondsLeft)}',
-                                    'Tuma tena baada ya ${_formatTime(_secondsLeft)}'),
+                                l10n.resendCodeIn(_formatTime(_secondsLeft)),
                                 style: TextStyle(
                                     color: theme.hintColor, fontSize: 14.5),
                               )
@@ -458,7 +447,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                       strokeWidth: 2),
                                 )
                                     : Text(
-                                  _t('Resend code', 'Tuma tena nambari'),
+                                  l10n.resendCode,
                                   style: TextStyle(
                                     color: accent,
                                     fontWeight: FontWeight.w700,
@@ -474,7 +463,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                 onPressed:
                                 _isLoading ? null : () => Navigator.maybePop(context),
                                 child: Text(
-                                  _t('Change my details', 'Badilisha taarifa zangu'),
+                                  l10n.changeMyDetails,
                                   style: TextStyle(
                                     color: theme.hintColor,
                                     fontWeight: FontWeight.w600,
