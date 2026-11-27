@@ -559,9 +559,22 @@ Route::prefix('v19')->group(function () {
         Route::get('technicians/profile', [TechnicianController::class, 'getOwnProfile']);
         Route::put('technicians/profile', [TechnicianController::class, 'updateProfile']);
         Route::post('technicians/profile/photo', [TechnicianController::class, 'uploadProfilePhoto']);
+
+        // ═══════════════════════════════════════════════════════
+        // SERVICE CHANGE REQUESTS — canonical + alias routes
+        // ═══════════════════════════════════════════════════════
+        // POST – create change request (canonical)
         Route::post('technicians/services', [TechnicianServiceChangeController::class, 'store'])
             ->middleware('throttle:10,1');
+        // POST – create change request (alias for consistency)
+        Route::post('technicians/service-changes', [TechnicianServiceChangeController::class, 'store'])
+            ->middleware('throttle:10,1');
+
+        // GET – current state + catalog + latest request (canonical)
         Route::get('technicians/service-changes', [TechnicianServiceChangeController::class, 'options']);
+        // GET – alias so clients calling /options work too
+        Route::get('technicians/service-changes/options', [TechnicianServiceChangeController::class, 'options']);
+
         Route::post('technicians/heartbeat', [TechnicianController::class, 'heartbeat']);
         Route::post('technicians/location', [TechnicianController::class, 'updateLocation']);
     });
