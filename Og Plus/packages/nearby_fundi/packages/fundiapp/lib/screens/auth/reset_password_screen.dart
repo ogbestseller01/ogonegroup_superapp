@@ -1,4 +1,4 @@
-// reset_password_screen.dart
+// lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -37,6 +37,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _handleReset() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     auth.clearError();
 
@@ -50,7 +51,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.resetPasswordButton),
+          content: Text(l10n.resetPasswordButton),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -155,7 +156,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                           validator: (v) => v != null && v.length == 6
                               ? null
-                              : 'Enter 6-digit OTP',
+                              : l10n.enter6DigitOtp,
                         ),
                         const SizedBox(height: 18),
                         TextFormField(
@@ -185,7 +186,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                           validator: (v) => v != null && v.length >= 8
                               ? null
-                              : 'Password must be at least 8 characters',
+                              : l10n.passwordMinLength,
                         ),
                         const SizedBox(height: 18),
                         TextFormField(
@@ -215,7 +216,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           ),
                           validator: (v) => v == _passwordController.text
                               ? null
-                              : 'Passwords do not match',
+                              : l10n.passwordsDoNotMatch,
                         ),
                         const SizedBox(height: 28),
                         CustomButton(

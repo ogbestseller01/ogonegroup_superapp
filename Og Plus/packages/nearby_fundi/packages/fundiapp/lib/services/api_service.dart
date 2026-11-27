@@ -1,4 +1,5 @@
 // lib/services/api_service.dart
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -14,6 +15,10 @@ class ApiResponse {
   final dynamic data;
   final Map<String, dynamic>? errors;
   final bool sessionExpired;
+
+  /// HTTP status. `null` means no HTTP answer at all (timeout, offline,
+  /// unexpected exception). The auth provider uses this to show the
+  /// localized "network error" text.
   final int? statusCode;
 
   ApiResponse({
@@ -25,20 +30,51 @@ class ApiResponse {
     this.statusCode,
   });
 
-  factory ApiResponse.fromJson(Map<String, dynamic> json) => ApiResponse(
-    success: json['success'] ?? (json['status'] == 'success'),
-    message: json['message']?.toString() ?? 'No message from server',
-    data: json['data'],
-    errors: json['errors'] is Map
-        ? Map<String, dynamic>.from(json['errors'] as Map)
-        : null,
-  );
+  factory ApiResponse.fromJson(Map<String, dynamic> json, {int? statusCode}) {
+    final s = json['success'];
+    return ApiResponse(
+      success: s is bool
+          ? s
+          : (s == 1 || s == '1' || json['status'] == 'success'),
+      message: json['message']?.toString() ?? 'No message from server',
+      data: json['data'],
+      errors: json['errors'] is Map
+          ? Map<String, dynamic>.from(json['errors'] as Map)
+          : null,
+      statusCode: statusCode,
+    );
+  }
 }
 
-/// Main API service — handles all HTTP requests across the application.
+/// Main API service: handles all HTTP requests across the application.
 class ApiService {
   late final Dio _dio;
+
+  /// Fired when a 401 hits a request that belonged to the LIVE session
+  /// (set by the AuthProvider that owns this instance).
   void Function()? onSessionExpired;
+
+  /// Fired for any other ApiService instance (providers create their own),
+  /// so a dead session redirects to login no matter who made the call.
+  /// Set once in AuthProvider: `ApiService.onGlobalSessionExpired = ...`.
+  static void Function()? onGlobalSessionExpired;
+
+  /// Endpoints used while logged out. A 401 here means "wrong credentials"
+  /// or "saved login invalid", NOT "session expired", and the stored session
+  /// token must not be attached.
+  /// '/v1/auth/quick-login' also matches '/v1/auth/quick-login/forget'.
+  static const List<String> _publicAuthPaths = [
+    '/v1/auth/login',
+    '/v1/auth/register',
+    '/v1/auth/register-fundi',
+    '/v1/auth/verify-otp',
+    '/v1/auth/resend-otp',
+    '/v1/auth/forgot-password',
+    '/v1/auth/reset-password',
+    '/v1/auth/quick-login',
+  ];
+
+  bool _isPublicAuthPath(String p) => _publicAuthPaths.any(p.contains);
 
   ApiService() {
     _dio = Dio(BaseOptions(
@@ -46,11 +82,20 @@ class ApiService {
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       sendTimeout: const Duration(minutes: 2), // video uploads up to 20 MB
+      headers: {
+        // "FundiApp" makes the backend label this session "Fundi App"
+        // (see getDeviceName patch); the OS shows up in the login email.
+        'User-Agent': 'FundiApp Flutter (${Platform.operatingSystem})',
+      },
     ));
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        if (!options.headers.containsKey('Authorization')) {
+        // Never overwrite an explicit Authorization header (registration
+        // token, quick-login, logoutWithToken) and never attach the session
+        // token to public auth endpoints.
+        if (!_isPublicAuthPath(options.path) &&
+            !options.headers.containsKey('Authorization')) {
           final token = await StorageService.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -60,12 +105,22 @@ class ApiService {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        final isRegistrationCall =
-        e.requestOptions.path.contains('/technicians/register/');
+        final req = e.requestOptions;
+        final isRegistrationCall = req.path.contains('/technicians/register/');
 
-        if (e.response?.statusCode == 401 && !isRegistrationCall) {
-          await StorageService.clearAuth();
-          onSessionExpired?.call();
+        if (e.response?.statusCode == 401 &&
+            !isRegistrationCall &&
+            !_isPublicAuthPath(req.path)) {
+          final sent = req.headers['Authorization']
+              ?.toString()
+              .replaceFirst('Bearer ', '');
+          final current = await StorageService.getToken();
+          // Only the LIVE session may end itself. A late 401 from an old
+          // token (e.g. logoutWithToken after local logout) must not.
+          if (sent != null && sent.isNotEmpty && sent == current) {
+            await StorageService.clearAuth();
+            (onSessionExpired ?? onGlobalSessionExpired)?.call();
+          }
         }
         return handler.next(e);
       },
@@ -104,10 +159,40 @@ class ApiService {
     return _post('/v1/auth/register-fundi', data: data);
   }
 
-  Future<ApiResponse> login(String identifier, String password) =>
-      _post('/v1/auth/login', data: {'email': identifier, 'password': password});
+  /// Password login. [rememberMe] asks the server for a 30-day remember token.
+  Future<ApiResponse> login(
+      String identifier,
+      String password, {
+        bool rememberMe = false,
+      }) =>
+      _post('/v1/auth/login', data: {
+        'email': identifier,
+        'password': password,
+        if (rememberMe) 'remember_me': true,
+      });
 
-  Future<ApiResponse> verifyOtp(String identifier, String otp, {String? fcmToken}) =>
+  /// One-tap login. Bearer = the REMEMBER token (explicit header, so the
+  /// interceptor never swaps it for a session token).
+  Future<ApiResponse> quickLogin(String rememberToken, {String? fcmToken}) =>
+      _post(
+        '/v1/auth/quick-login',
+        data: {
+          if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+        },
+        headers: {'Authorization': 'Bearer $rememberToken'},
+      );
+
+  /// "Use another account": revokes the remember token server-side.
+  Future<ApiResponse> forgetRemembered(String rememberToken) => _post(
+    '/v1/auth/quick-login/forget',
+    headers: {'Authorization': 'Bearer $rememberToken'},
+  );
+
+  Future<ApiResponse> verifyOtp(
+      String identifier,
+      String otp, {
+        String? fcmToken,
+      }) =>
       _post('/v1/auth/verify-otp', data: {
         'identifier': identifier,
         'otp': otp,
@@ -133,7 +218,19 @@ class ApiService {
       });
 
   Future<ApiResponse> logout() => _post('/v1/auth/logout');
+
+  /// Revokes a specific session token (used after local logout already ran).
+  Future<ApiResponse> logoutWithToken(String token, {String? fcmToken}) =>
+      _post(
+        '/v1/auth/logout',
+        data: {
+          if (fcmToken != null && fcmToken.isNotEmpty) 'fcm_token': fcmToken,
+        },
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
   Future<ApiResponse> getProfile() => _get('/v1/auth/me');
+
   Future<ApiResponse> updateProfile(Map<String, dynamic> data) =>
       _put('/v1/auth/profile', data: data);
 
@@ -162,23 +259,15 @@ class ApiService {
   // SECTION 2: SERVICES CATALOG
   // ============================================================
 
-  Future<ApiResponse> getServices({String locale = 'en'}) async {
-    try {
-      final res = await _dio.get(
-        '/v1/services',
-        options: Options(headers: {'Accept-Language': locale}),
-      );
-      return ApiResponse.fromJson(res.data);
-    } catch (e) {
-      return _handleError(e);
-    }
-  }
+  Future<ApiResponse> getServices({String locale = 'en'}) =>
+      _get('/v1/services', headers: {'Accept-Language': locale});
 
   // ============================================================
   // SECTION 3: TECHNICIAN PROFILE & SERVICES
   // ============================================================
 
-  Future<ApiResponse> getMyTechnicianProfile() => _get('/v19/technicians/profile');
+  Future<ApiResponse> getMyTechnicianProfile() =>
+      _get('/v19/technicians/profile');
 
   Future<ApiResponse> updateTechnicianProfile(Map<String, dynamic> data) =>
       _put('/v19/technicians/profile', data: data);
@@ -382,7 +471,8 @@ class ApiService {
         if (search != null && search.isNotEmpty) 'search': search,
       });
 
-  Future<ApiResponse> getTechnicianDetail(int id) => _get('/v1/technicians/$id');
+  Future<ApiResponse> getTechnicianDetail(int id) =>
+      _get('/v1/technicians/$id');
 
   Future<ApiResponse> getPublicPortfoliosByTechnician(int technicianId) =>
       _get('/v1/portfolios/$technicianId');
@@ -498,7 +588,9 @@ class ApiService {
   Future<ApiResponse> deletePortfolio(int id) => _delete('/v3/portfolios/$id');
 
   Future<ApiResponse> updatePortfolioSocialLinks(
-      int id, Map<String, dynamic> socialLinks) =>
+      int id,
+      Map<String, dynamic> socialLinks,
+      ) =>
       _put('/v3/portfolios/$id/social-links', data: socialLinks);
 
   Future<ApiResponse> getPortfolios({int? technicianId, int page = 1}) =>
@@ -522,7 +614,8 @@ class ApiService {
   Future<ApiResponse> updateRequestStatus(int id, String status) =>
       _patch('/v4/requests/$id/status', data: {'status': status});
 
-  Future<ApiResponse> cancelRequest(int id) => _delete('/v4/requests/$id/cancel');
+  Future<ApiResponse> cancelRequest(int id) =>
+      _delete('/v4/requests/$id/cancel');
 
   Future<ApiResponse> markOnTheWay(int requestId) =>
       _patch('/v4/requests/$requestId/on-the-way');
@@ -537,10 +630,9 @@ class ApiService {
   // SECTION 9B: JOBS & TICKETS
   // ============================================================
 
-  Future<ApiResponse> getMyJobs({String? status}) =>
-      _get('/v4/jobs', query: {
-        if (status != null && status.isNotEmpty) 'status': status,
-      });
+  Future<ApiResponse> getMyJobs({String? status}) => _get('/v4/jobs', query: {
+    if (status != null && status.isNotEmpty) 'status': status,
+  });
 
   Future<ApiResponse> getJobDetail(int id) => _get('/v4/jobs/$id');
 
@@ -585,8 +677,7 @@ class ApiService {
   // SECTION 12: CHAT & MESSAGING (V14)
   // ============================================================
 
-  Future<ApiResponse> getConversations() =>
-      _get('/v14/chat/conversations');
+  Future<ApiResponse> getConversations() => _get('/v14/chat/conversations');
 
   Future<ApiResponse> getOrCreateConversation({
     required int customerId,
@@ -629,7 +720,8 @@ class ApiService {
         filename: filePath.split(Platform.pathSeparator).last,
       );
     }
-    return _postMultipart('/v14/chat/send', form, onSendProgress: onSendProgress);
+    return _postMultipart('/v14/chat/send', form,
+        onSendProgress: onSendProgress);
   }
 
   Future<ApiResponse> markConversationAsRead(int conversationId) =>
@@ -680,7 +772,11 @@ class ApiService {
   Future<ApiResponse> fetchStarred(int conversationId) =>
       _get('/v14/chat/conversations/$conversationId/starred');
 
-  Future<ApiResponse> fetchMedia(int conversationId, String tab, {int? beforeId}) {
+  Future<ApiResponse> fetchMedia(
+      int conversationId,
+      String tab, {
+        int? beforeId,
+      }) {
     final q = <String, dynamic>{'tab': tab, 'limit': '40'};
     if (beforeId != null) q['before_id'] = '$beforeId';
     return _get('/v14/chat/conversations/$conversationId/media', query: q);
@@ -702,13 +798,15 @@ class ApiService {
 
   Future<ApiResponse> getNotifications({String? excludeType, String? type}) =>
       _get('/v15/notifications', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
         if (type != null && type.isNotEmpty) 'type': type,
       });
 
   Future<ApiResponse> getUnreadNotificationCount({String? excludeType}) =>
       _get('/v15/notifications/unread-count', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   Future<ApiResponse> markNotificationAsRead(String notificationId) =>
@@ -716,7 +814,8 @@ class ApiService {
 
   Future<ApiResponse> markAllNotificationsAsRead({String? excludeType}) =>
       _put('/v15/notifications/read-all', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   Future<ApiResponse> deleteNotification(String notificationId) =>
@@ -724,7 +823,8 @@ class ApiService {
 
   Future<ApiResponse> clearNotifications({String? excludeType}) =>
       _delete('/v15/notifications/clear', query: {
-        if (excludeType != null && excludeType.isNotEmpty) 'exclude_type': excludeType,
+        if (excludeType != null && excludeType.isNotEmpty)
+          'exclude_type': excludeType,
       });
 
   // ============================================================
@@ -751,7 +851,10 @@ class ApiService {
         if (notes != null) MapEntry('notes', notes),
       ]);
       formData.files.add(
-        MapEntry('payment_proof', await MultipartFile.fromFile(paymentProof.path)),
+        MapEntry(
+          'payment_proof',
+          await MultipartFile.fromFile(paymentProof.path),
+        ),
       );
       return _post('/v16/subscriptions', data: formData);
     }
@@ -766,7 +869,8 @@ class ApiService {
 
   Future<ApiResponse> getMySubscriptions() => _get('/v16/my-subscriptions');
   Future<ApiResponse> getMyInvoices() => _get('/v16/my-invoices');
-  Future<ApiResponse> checkSubscriptionStatus() => _get('/v16/check-subscription');
+  Future<ApiResponse> checkSubscriptionStatus() =>
+      _get('/v16/check-subscription');
 
   Future<String?> downloadInvoice(int invoiceId) async {
     try {
@@ -839,6 +943,40 @@ class ApiService {
   // PRIVATE HTTP HELPERS
   // ============================================================
 
+  /// Turns a Dio response into an [ApiResponse]. Never throws: a non-JSON
+  /// body becomes a failed response (with the HTTP status) instead of a crash.
+  ApiResponse _parse(Response res) {
+    final data = res.data;
+
+    if (data is Map) {
+      return ApiResponse.fromJson(
+        Map<String, dynamic>.from(data),
+        statusCode: res.statusCode,
+      );
+    }
+
+    if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        if (decoded is Map) {
+          return ApiResponse.fromJson(
+            Map<String, dynamic>.from(decoded),
+            statusCode: res.statusCode,
+          );
+        }
+      } catch (_) {}
+    }
+
+    return ApiResponse(
+      success: false,
+      message: 'Server returned an unexpected response.',
+      statusCode: res.statusCode,
+    );
+  }
+
+  Options? _opts(Map<String, String>? headers) =>
+      (headers != null && headers.isNotEmpty) ? Options(headers: headers) : null;
+
   Future<ApiResponse> _get(
       String path, {
         Map<String, dynamic>? query,
@@ -848,11 +986,9 @@ class ApiService {
       final res = await _dio.get(
         path,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -868,12 +1004,10 @@ class ApiService {
       final res = await _dio.post(
         path,
         data: data,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
         onSendProgress: onSendProgress,
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -890,12 +1024,10 @@ class ApiService {
       final res = await _dio.post(
         path,
         data: formData,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
         onSendProgress: onSendProgress,
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -912,11 +1044,9 @@ class ApiService {
         path,
         data: data,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -931,11 +1061,9 @@ class ApiService {
       final res = await _dio.patch(
         path,
         data: data,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -950,11 +1078,9 @@ class ApiService {
       final res = await _dio.delete(
         path,
         queryParameters: query,
-        options: (headers != null && headers.isNotEmpty)
-            ? Options(headers: headers)
-            : null,
+        options: _opts(headers),
       );
-      return ApiResponse.fromJson(res.data);
+      return _parse(res);
     } catch (e) {
       return _handleError(e);
     }
@@ -975,7 +1101,11 @@ class ApiService {
     ));
   }
 
-  Future<void> _appendFiles(FormData formData, String key, dynamic paths) async {
+  Future<void> _appendFiles(
+      FormData formData,
+      String key,
+      dynamic paths,
+      ) async {
     if (paths is! List) return;
     for (final p in paths) {
       await _appendFile(formData, key, p);
@@ -1001,14 +1131,15 @@ class ApiService {
     final isRegistrationCall =
     error.requestOptions.path.contains('/technicians/register/');
 
-    // Network-level failures
+    // Network-level failures (statusCode stays null on purpose)
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         return ApiResponse(
           success: false,
-          message: 'Connection timed out. Please check your network and try again.',
+          message:
+          'Connection timed out. Please check your network and try again.',
         );
       case DioExceptionType.connectionError:
         return ApiResponse(
@@ -1022,21 +1153,39 @@ class ApiService {
     }
 
     final statusCode = error.response?.statusCode;
+    final body = error.response?.data;
 
     if (statusCode == 401) {
+      if (isRegistrationCall) {
+        return ApiResponse(
+          success: false,
+          statusCode: statusCode,
+          message: 'Registration session expired. Please start over.',
+        );
+      }
+
+      // Wrong credentials / invalid saved login: NOT a session expiry.
+      if (_isPublicAuthPath(error.requestOptions.path)) {
+        final serverMessage = body is Map ? body['message']?.toString() : null;
+        return ApiResponse(
+          success: false,
+          statusCode: statusCode,
+          message: (serverMessage != null && serverMessage.isNotEmpty)
+              ? serverMessage
+              : 'Invalid credentials.',
+        );
+      }
+
       return ApiResponse(
         success: false,
         statusCode: statusCode,
-        message: isRegistrationCall
-            ? 'Registration session expired. Please start over.'
-            : 'Session expired. Please log in again.',
-        sessionExpired: !isRegistrationCall,
+        message: 'Session expired. Please log in again.',
+        sessionExpired: true,
       );
     }
 
-    final data = error.response?.data;
-    if (data is Map) {
-      final map = Map<String, dynamic>.from(data);
+    if (body is Map) {
+      final map = Map<String, dynamic>.from(body);
       final message = map['message']?.toString();
       final errors = map['errors'] is Map
           ? Map<String, dynamic>.from(map['errors'] as Map)

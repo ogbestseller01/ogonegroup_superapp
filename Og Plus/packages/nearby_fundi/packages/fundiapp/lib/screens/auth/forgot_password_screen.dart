@@ -27,6 +27,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _handleSend() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     final auth = context.read<AuthProvider>();
     auth.clearError();
     final success = await auth.forgotPassword(_emailController.text.trim());
@@ -34,12 +35,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.otpSent),
+          content: Text(l10n.otpSent),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.pushNamed(context, AppRoutes.reset, arguments: _emailController.text.trim());
+      Navigator.pushNamed(
+        context,
+        AppRoutes.reset,
+        arguments: _emailController.text.trim(),
+      );
     } else if (auth.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -79,12 +84,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Icon(Icons.lock_reset_rounded, size: 40, color: Colors.white),
+                    child: const Icon(
+                      Icons.lock_reset_rounded,
+                      size: 40,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     l10n.resetPassword,
-                    style: theme.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w800),
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -105,7 +116,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             prefixIcon: const Icon(Icons.email_outlined),
                           ),
                           validator: (v) =>
-                          v != null && v.contains('@') ? null : 'Enter a valid email',
+                          v != null && v.contains('@') ? null : l10n.enterValidEmail,
                         ),
                         const SizedBox(height: 32),
                         CustomButton(

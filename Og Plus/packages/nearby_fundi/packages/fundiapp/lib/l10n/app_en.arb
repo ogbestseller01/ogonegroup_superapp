@@ -18,6 +18,62 @@
   "comingSoon": "Coming soon!",
   "quickActions": "Quick Actions",
 
+
+  "registrationSessionLost": "Registration session lost. Please start over.",
+    "@registrationSessionLost": {
+      "description": "Shown when the registration draft is missing during OTP step"
+    },
+    "otpResentTo": "OTP resent to {identifier}",
+    "@otpResentTo": {
+      "description": "Confirmation after resending OTP",
+      "placeholders": {
+        "identifier": { "type": "String" }
+      }
+    },
+    "failedToResendOtp": "Failed to resend OTP",
+    "@failedToResendOtp": {
+      "description": "Error when OTP resend fails"
+    },
+    "resendAvailableIn": "Resend available in {seconds}s",
+    "@resendAvailableIn": {
+      "description": "Countdown before OTP can be resent",
+      "placeholders": {
+        "seconds": { "type": "int" }
+      }
+    },
+    "didntReceiveCode": "Didn't receive the code?",
+    "@didntReceiveCode": {
+      "description": "Prompt to resend OTP"
+    },
+    "sending": "Sending...",
+    "@sending": {
+      "description": "Shown while OTP resend is in progress"
+    },
+    "wait": "Wait...",
+    "@wait": {
+      "description": "Shown while resend countdown is active"
+    },
+    "resend": "Resend",
+    "@resend": {
+      "description": "Resend OTP action label"
+    },
+    "enter6DigitOtp": "Enter 6-digit OTP",
+    "@enter6DigitOtp": {
+      "description": "Validation message for OTP field"
+    },
+    "passwordMinLength": "Password must be at least 8 characters",
+    "@passwordMinLength": {
+      "description": "Validation message for password field"
+    },
+    "passwordsDoNotMatch": "Passwords do not match",
+    "@passwordsDoNotMatch": {
+      "description": "Validation message for confirm password"
+    },
+    "enterValidEmail": "Enter a valid email",
+    "@enterValidEmail": {
+      "description": "Validation message for email field"
+    },
+
   "regStep1Failed": "Could not create your account. Please check your details and try again.",
   "regOtpDeliveryFailed": "Account created, but we could not send the code right now. Tap Resend on the next screen.",
   "regOtpSentSms": "We sent a 6-digit verification code via SMS to {recipient}",
@@ -66,6 +122,44 @@
   "otpCode": "OTP Code",
   "newPassword": "New Password",
   "resetPasswordButton": "Reset Password",
+
+  "loginBack": "Back",
+  "loginTheme": "Theme",
+  "loginThemeLight": "Light",
+  "loginThemeDark": "Dark",
+  "loginEmail": "Email",
+  "loginPhone": "Phone",
+  "loginEmailHint": "you@example.com",
+  "loginPhoneHint": "712345678",
+  "loginEnterValidEmail": "Enter a valid email",
+  "loginEnterPhone": "Enter phone number",
+  "loginPhoneDigits": "7–15 digits required",
+  "loginPasswordMin": "Min 6 characters",
+  "loginSearchCountry": "Search country...",
+  "loginNoCountry": "No country found",
+  "loginIAgree": "I agree to the",
+  "loginTerms": "Terms & Conditions",
+  "loginAnd": "and",
+  "loginPrivacy": "Privacy Policy",
+  "loginAcceptTerms": "Please accept the Terms & Conditions to continue",
+  "loginBrandTagline": "Hire. Manage. Get it done.",
+  "loginHome": "Home",
+  "loginRememberMe": "Remember me",
+  "loginContinueAs": "Continue as {name}",
+  "@loginContinueAs": { "placeholders": { "name": { "type": "String" } } },
+  "loginUseAnother": "Use another account",
+  "loginFailed": "Login failed. Please try again.",
+  "loginNetworkError": "Network error. Check your connection and try again.",
+  "loginNotFundiAccount": "This account is not a Fundi account. Please use the NearbyFundi customer app.",
+  "loginSavedLoginInvalid": "Saved login is no longer valid. Please sign in again.",
+  "loginSessionExpired": "Session expired. Please sign in again.",
+  "loginRegistrationExpired": "Registration session expired. Please start over.",
+  "loginPhoneTaken": "This phone number is already registered. Please log in or use a different number.",
+  "loginPhoneDeleted": "This phone number belongs to a deleted account. Contact support to restore it, or use a different number.",
+  "loginEmailTaken": "This email is already registered. Please log in or use a different email.",
+  "loginIdTaken": "This ID number has already been registered. Contact support if you believe this is a mistake.",
+  "loginStepsIncomplete": "Some registration steps are incomplete. Please go back and complete them before submitting.",
+  "loginSubmitFailed": "Registration submission failed. Please try again.",
 
   "myProfile": " Profile",
   "editProfile": "Edit Profile",

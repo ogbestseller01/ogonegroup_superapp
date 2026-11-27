@@ -191,6 +191,78 @@ abstract class AppLocalizations {
   /// **'Quick Actions'**
   String get quickActions;
 
+  /// Shown when the registration draft is missing during OTP step
+  ///
+  /// In en, this message translates to:
+  /// **'Registration session lost. Please start over.'**
+  String get registrationSessionLost;
+
+  /// Confirmation after resending OTP
+  ///
+  /// In en, this message translates to:
+  /// **'OTP resent to {identifier}'**
+  String otpResentTo(String identifier);
+
+  /// Error when OTP resend fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to resend OTP'**
+  String get failedToResendOtp;
+
+  /// Countdown before OTP can be resent
+  ///
+  /// In en, this message translates to:
+  /// **'Resend available in {seconds}s'**
+  String resendAvailableIn(int seconds);
+
+  /// Prompt to resend OTP
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive the code?'**
+  String get didntReceiveCode;
+
+  /// Shown while OTP resend is in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Sending...'**
+  String get sending;
+
+  /// Shown while resend countdown is active
+  ///
+  /// In en, this message translates to:
+  /// **'Wait...'**
+  String get wait;
+
+  /// Resend OTP action label
+  ///
+  /// In en, this message translates to:
+  /// **'Resend'**
+  String get resend;
+
+  /// Validation message for OTP field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 6-digit OTP'**
+  String get enter6DigitOtp;
+
+  /// Validation message for password field
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordMinLength;
+
+  /// Validation message for confirm password
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// Validation message for email field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get enterValidEmail;
+
   /// No description provided for @regStep1Failed.
   ///
   /// In en, this message translates to:
@@ -412,6 +484,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset Password'**
   String get resetPasswordButton;
+
+  /// No description provided for @loginBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get loginBack;
+
+  /// No description provided for @loginTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get loginTheme;
+
+  /// No description provided for @loginThemeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get loginThemeLight;
+
+  /// No description provided for @loginThemeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get loginThemeDark;
+
+  /// No description provided for @loginEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get loginEmail;
+
+  /// No description provided for @loginPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get loginPhone;
+
+  /// No description provided for @loginEmailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get loginEmailHint;
+
+  /// No description provided for @loginPhoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'712345678'**
+  String get loginPhoneHint;
+
+  /// No description provided for @loginEnterValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email'**
+  String get loginEnterValidEmail;
+
+  /// No description provided for @loginEnterPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter phone number'**
+  String get loginEnterPhone;
+
+  /// No description provided for @loginPhoneDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'7–15 digits required'**
+  String get loginPhoneDigits;
+
+  /// No description provided for @loginPasswordMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Min 6 characters'**
+  String get loginPasswordMin;
+
+  /// No description provided for @loginSearchCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Search country...'**
+  String get loginSearchCountry;
+
+  /// No description provided for @loginNoCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'No country found'**
+  String get loginNoCountry;
+
+  /// No description provided for @loginIAgree.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the'**
+  String get loginIAgree;
+
+  /// No description provided for @loginTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get loginTerms;
+
+  /// No description provided for @loginAnd.
+  ///
+  /// In en, this message translates to:
+  /// **'and'**
+  String get loginAnd;
+
+  /// No description provided for @loginPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get loginPrivacy;
+
+  /// No description provided for @loginAcceptTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Please accept the Terms & Conditions to continue'**
+  String get loginAcceptTerms;
+
+  /// No description provided for @loginBrandTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Hire. Manage. Get it done.'**
+  String get loginBrandTagline;
+
+  /// No description provided for @loginHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get loginHome;
+
+  /// No description provided for @loginRememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember me'**
+  String get loginRememberMe;
+
+  /// No description provided for @loginContinueAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as {name}'**
+  String loginContinueAs(String name);
+
+  /// No description provided for @loginUseAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Use another account'**
+  String get loginUseAnother;
+
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please try again.'**
+  String get loginFailed;
+
+  /// No description provided for @loginNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error. Check your connection and try again.'**
+  String get loginNetworkError;
+
+  /// No description provided for @loginNotFundiAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is not a Fundi account. Please use the NearbyFundi customer app.'**
+  String get loginNotFundiAccount;
+
+  /// No description provided for @loginSavedLoginInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved login is no longer valid. Please sign in again.'**
+  String get loginSavedLoginInvalid;
+
+  /// No description provided for @loginSessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired. Please sign in again.'**
+  String get loginSessionExpired;
+
+  /// No description provided for @loginRegistrationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration session expired. Please start over.'**
+  String get loginRegistrationExpired;
+
+  /// No description provided for @loginPhoneTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone number is already registered. Please log in or use a different number.'**
+  String get loginPhoneTaken;
+
+  /// No description provided for @loginPhoneDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone number belongs to a deleted account. Contact support to restore it, or use a different number.'**
+  String get loginPhoneDeleted;
+
+  /// No description provided for @loginEmailTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This email is already registered. Please log in or use a different email.'**
+  String get loginEmailTaken;
+
+  /// No description provided for @loginIdTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This ID number has already been registered. Contact support if you believe this is a mistake.'**
+  String get loginIdTaken;
+
+  /// No description provided for @loginStepsIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some registration steps are incomplete. Please go back and complete them before submitting.'**
+  String get loginStepsIncomplete;
+
+  /// No description provided for @loginSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration submission failed. Please try again.'**
+  String get loginSubmitFailed;
 
   /// No description provided for @myProfile.
   ///

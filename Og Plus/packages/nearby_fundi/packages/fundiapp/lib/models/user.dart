@@ -11,10 +11,13 @@ class User {
   /// 'pending' | 'active' | 'suspended' | 'inactive'
   final String status;
 
-  /// Backend flag — true after admin approval.
+  /// Backend flag: true after admin approval.
   final bool isActive;
 
-  /// Bearer token (only present after login / step-6).
+  /// Absolute URL of the profile photo (technician photo or Google avatar).
+  final String? profilePhoto;
+
+  /// Bearer token (only present after login). Never written to stored JSON.
   final String? token;
 
   const User({
@@ -26,16 +29,21 @@ class User {
     this.locale = 'en',
     this.status = 'pending',
     this.isActive = false,
+    this.profilePhoto,
     this.token,
   });
+
+  bool get isValid => id != 0;
 
   /// True while waiting for admin approval (post step-6, pre-approve).
   bool get isPendingApproval => status == 'pending' && !isActive;
 
   factory User.fromJson(Map<String, dynamic> json, [String? token]) {
     final rawToken = token ?? json['token']?.toString();
-    final rawStatus = json['status']?.toString() ?? 'pending';
     final rawActive = json['is_active'];
+    final rawPhoto =
+    (json['profile_photo'] ?? json['avatar'] ?? json['profile_image'])
+        ?.toString();
 
     return User(
       id: (json['id'] is int)
@@ -46,12 +54,15 @@ class User {
       phone: json['phone']?.toString(),
       nida: json['nida']?.toString(),
       locale: json['locale']?.toString() ?? 'en',
-      status: rawStatus,
+      status: json['status']?.toString() ?? 'pending',
       isActive: rawActive == true || rawActive == 1 || rawActive == '1',
+      profilePhoto:
+      (rawPhoto != null && rawPhoto.isNotEmpty) ? rawPhoto : null,
       token: (rawToken != null && rawToken.isNotEmpty) ? rawToken : null,
     );
   }
 
+  /// Profile only: the token lives in secure storage, not here.
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -61,7 +72,7 @@ class User {
     'locale': locale,
     'status': status,
     'is_active': isActive,
-    'token': token,
+    'profile_photo': profilePhoto,
   };
 
   User copyWith({
@@ -73,6 +84,8 @@ class User {
     String? locale,
     String? status,
     bool? isActive,
+    String? profilePhoto,
+    bool clearProfilePhoto = false,
     String? token,
   }) =>
       User(
@@ -84,6 +97,8 @@ class User {
         locale: locale ?? this.locale,
         status: status ?? this.status,
         isActive: isActive ?? this.isActive,
+        profilePhoto:
+        clearProfilePhoto ? null : (profilePhoto ?? this.profilePhoto),
         token: token ?? this.token,
       );
 }

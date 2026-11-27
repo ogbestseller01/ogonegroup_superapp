@@ -66,6 +66,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     setState(() => _resendCountdown = 60);
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         if (_resendCountdown > 0) {
           _resendCountdown--;
@@ -77,10 +81,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Future<void> _handleVerify() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.enterOtp),
+          content: Text(l10n.enterOtp),
           backgroundColor: AppTheme.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -107,9 +113,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             arguments: draftId,
           );
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registration session lost. Please start over.'),
+            SnackBar(
+              content: Text(l10n.registrationSessionLost),
               backgroundColor: AppTheme.error,
               behavior: SnackBarBehavior.floating,
             ),
@@ -156,6 +163,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Future<void> _resendOtp() async {
     if (_resendCountdown > 0) return;
 
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isResending = true);
     final auth = context.read<AuthProvider>();
     auth.clearError();
@@ -172,7 +180,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _startCountdown();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('OTP resent to ${widget.identifier}'),
+          content: Text(l10n.otpResentTo(widget.identifier)),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
         ),
@@ -180,7 +188,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Failed to resend OTP'),
+          content: Text(auth.errorMessage ?? l10n.failedToResendOtp),
           backgroundColor: AppTheme.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -286,8 +294,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     children: [
                       Text(
                         _resendCountdown > 0
-                            ? 'Resend available in ${_resendCountdown}s'
-                            : "Didn't receive the code?",
+                            ? l10n.resendAvailableIn(_resendCountdown)
+                            : l10n.didntReceiveCode,
                         style: theme.textTheme.bodySmall,
                       ),
                       const SizedBox(width: 8),
@@ -297,10 +305,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             : _resendOtp,
                         child: Text(
                           _isResending
-                              ? 'Sending...'
+                              ? l10n.sending
                               : _resendCountdown > 0
-                              ? 'Wait...'
-                              : 'Resend',
+                              ? l10n.wait
+                              : l10n.resend,
                           style: TextStyle(
                             color: (_resendCountdown > 0 || _isResending)
                                 ? theme.hintColor

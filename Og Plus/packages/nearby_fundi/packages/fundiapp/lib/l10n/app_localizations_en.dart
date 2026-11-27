@@ -57,6 +57,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActions => 'Quick Actions';
 
   @override
+  String get registrationSessionLost => 'Registration session lost. Please start over.';
+
+  @override
+  String otpResentTo(String identifier) {
+    return 'OTP resent to $identifier';
+  }
+
+  @override
+  String get failedToResendOtp => 'Failed to resend OTP';
+
+  @override
+  String resendAvailableIn(int seconds) {
+    return 'Resend available in ${seconds}s';
+  }
+
+  @override
+  String get didntReceiveCode => 'Didn\'t receive the code?';
+
+  @override
+  String get sending => 'Sending...';
+
+  @override
+  String get wait => 'Wait...';
+
+  @override
+  String get resend => 'Resend';
+
+  @override
+  String get enter6DigitOtp => 'Enter 6-digit OTP';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 8 characters';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get enterValidEmail => 'Enter a valid email';
+
+  @override
   String get regStep1Failed => 'Could not create your account. Please check your details and try again.';
 
   @override
@@ -170,6 +210,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetPasswordButton => 'Reset Password';
+
+  @override
+  String get loginBack => 'Back';
+
+  @override
+  String get loginTheme => 'Theme';
+
+  @override
+  String get loginThemeLight => 'Light';
+
+  @override
+  String get loginThemeDark => 'Dark';
+
+  @override
+  String get loginEmail => 'Email';
+
+  @override
+  String get loginPhone => 'Phone';
+
+  @override
+  String get loginEmailHint => 'you@example.com';
+
+  @override
+  String get loginPhoneHint => '712345678';
+
+  @override
+  String get loginEnterValidEmail => 'Enter a valid email';
+
+  @override
+  String get loginEnterPhone => 'Enter phone number';
+
+  @override
+  String get loginPhoneDigits => '7–15 digits required';
+
+  @override
+  String get loginPasswordMin => 'Min 6 characters';
+
+  @override
+  String get loginSearchCountry => 'Search country...';
+
+  @override
+  String get loginNoCountry => 'No country found';
+
+  @override
+  String get loginIAgree => 'I agree to the';
+
+  @override
+  String get loginTerms => 'Terms & Conditions';
+
+  @override
+  String get loginAnd => 'and';
+
+  @override
+  String get loginPrivacy => 'Privacy Policy';
+
+  @override
+  String get loginAcceptTerms => 'Please accept the Terms & Conditions to continue';
+
+  @override
+  String get loginBrandTagline => 'Hire. Manage. Get it done.';
+
+  @override
+  String get loginHome => 'Home';
+
+  @override
+  String get loginRememberMe => 'Remember me';
+
+  @override
+  String loginContinueAs(String name) {
+    return 'Continue as $name';
+  }
+
+  @override
+  String get loginUseAnother => 'Use another account';
+
+  @override
+  String get loginFailed => 'Login failed. Please try again.';
+
+  @override
+  String get loginNetworkError => 'Network error. Check your connection and try again.';
+
+  @override
+  String get loginNotFundiAccount => 'This account is not a Fundi account. Please use the NearbyFundi customer app.';
+
+  @override
+  String get loginSavedLoginInvalid => 'Saved login is no longer valid. Please sign in again.';
+
+  @override
+  String get loginSessionExpired => 'Session expired. Please sign in again.';
+
+  @override
+  String get loginRegistrationExpired => 'Registration session expired. Please start over.';
+
+  @override
+  String get loginPhoneTaken => 'This phone number is already registered. Please log in or use a different number.';
+
+  @override
+  String get loginPhoneDeleted => 'This phone number belongs to a deleted account. Contact support to restore it, or use a different number.';
+
+  @override
+  String get loginEmailTaken => 'This email is already registered. Please log in or use a different email.';
+
+  @override
+  String get loginIdTaken => 'This ID number has already been registered. Contact support if you believe this is a mistake.';
+
+  @override
+  String get loginStepsIncomplete => 'Some registration steps are incomplete. Please go back and complete them before submitting.';
+
+  @override
+  String get loginSubmitFailed => 'Registration submission failed. Please try again.';
 
   @override
   String get myProfile => ' Profile';

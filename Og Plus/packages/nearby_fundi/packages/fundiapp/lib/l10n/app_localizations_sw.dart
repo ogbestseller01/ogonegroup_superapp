@@ -57,6 +57,46 @@ class AppLocalizationsSw extends AppLocalizations {
   String get quickActions => 'Vitendo vya Haraka';
 
   @override
+  String get registrationSessionLost => 'Kikao cha usajili kimepotea. Tafadhali anza upya.';
+
+  @override
+  String otpResentTo(String identifier) {
+    return 'OTP imetumwa tena kwa $identifier';
+  }
+
+  @override
+  String get failedToResendOtp => 'Imeshindwa kutuma tena OTP';
+
+  @override
+  String resendAvailableIn(int seconds) {
+    return 'Inapatikana tena baada ya sekunde $seconds';
+  }
+
+  @override
+  String get didntReceiveCode => 'Hukupokea msimbo?';
+
+  @override
+  String get sending => 'Inatuma...';
+
+  @override
+  String get wait => 'Subiri...';
+
+  @override
+  String get resend => 'Tuma tena';
+
+  @override
+  String get enter6DigitOtp => 'Weka OTP ya tarakimu 6';
+
+  @override
+  String get passwordMinLength => 'Nenosiri lazima liwe na herufi 8 au zaidi';
+
+  @override
+  String get passwordsDoNotMatch => 'Manenosiri hayafanani';
+
+  @override
+  String get enterValidEmail => 'Weka barua pepe sahihi';
+
+  @override
   String get regStep1Failed => 'Imeshindwa kufungua akaunti yako. Tafadhali angalia taarifa zako na ujaribu tena.';
 
   @override
@@ -170,6 +210,116 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get resetPasswordButton => 'Weka Upya Nenosiri';
+
+  @override
+  String get loginBack => 'Rudi';
+
+  @override
+  String get loginTheme => 'Mandhari';
+
+  @override
+  String get loginThemeLight => 'Nyepesi';
+
+  @override
+  String get loginThemeDark => 'Nyeusi';
+
+  @override
+  String get loginEmail => 'Barua pepe';
+
+  @override
+  String get loginPhone => 'Simu';
+
+  @override
+  String get loginEmailHint => 'you@example.com';
+
+  @override
+  String get loginPhoneHint => '712345678';
+
+  @override
+  String get loginEnterValidEmail => 'Weka barua pepe sahihi';
+
+  @override
+  String get loginEnterPhone => 'Weka namba ya simu';
+
+  @override
+  String get loginPhoneDigits => 'Inahitaji tarakimu 7–15';
+
+  @override
+  String get loginPasswordMin => 'Angalau herufi 6';
+
+  @override
+  String get loginSearchCountry => 'Tafuta nchi...';
+
+  @override
+  String get loginNoCountry => 'Hakuna nchi iliyopatikana';
+
+  @override
+  String get loginIAgree => 'Nakubali';
+
+  @override
+  String get loginTerms => 'Vigezo na Masharti';
+
+  @override
+  String get loginAnd => 'na';
+
+  @override
+  String get loginPrivacy => 'Sera ya Faragha';
+
+  @override
+  String get loginAcceptTerms => 'Tafadhali kubali Vigezo na Masharti ili kuendelea';
+
+  @override
+  String get loginBrandTagline => 'Ajiri. Simamia. Maliza kazi.';
+
+  @override
+  String get loginHome => 'Nyumbani';
+
+  @override
+  String get loginRememberMe => 'Nikumbuke';
+
+  @override
+  String loginContinueAs(String name) {
+    return 'Endelea kama $name';
+  }
+
+  @override
+  String get loginUseAnother => 'Tumia akaunti nyingine';
+
+  @override
+  String get loginFailed => 'Imeshindikana kuingia. Tafadhali jaribu tena.';
+
+  @override
+  String get loginNetworkError => 'Hitilafu ya mtandao. Angalia muunganisho wako kisha ujaribu tena.';
+
+  @override
+  String get loginNotFundiAccount => 'Akaunti hii si ya Fundi. Tafadhali tumia programu ya wateja ya NearbyFundi.';
+
+  @override
+  String get loginSavedLoginInvalid => 'Taarifa za kuingia zilizohifadhiwa hazifai tena. Tafadhali ingia tena.';
+
+  @override
+  String get loginSessionExpired => 'Muda wa kikao umeisha. Tafadhali ingia tena.';
+
+  @override
+  String get loginRegistrationExpired => 'Kikao cha usajili kimeisha. Tafadhali anza upya.';
+
+  @override
+  String get loginPhoneTaken => 'Namba hii ya simu tayari imesajiliwa. Tafadhali ingia au tumia namba nyingine.';
+
+  @override
+  String get loginPhoneDeleted => 'Namba hii ya simu ilikuwa ya akaunti iliyofutwa. Wasiliana na msaada ili kuirejesha, au tumia namba nyingine.';
+
+  @override
+  String get loginEmailTaken => 'Barua pepe hii tayari imesajiliwa. Tafadhali ingia au tumia barua pepe nyingine.';
+
+  @override
+  String get loginIdTaken => 'Namba hii ya kitambulisho tayari imesajiliwa. Wasiliana na msaada ikiwa unaamini ni kosa.';
+
+  @override
+  String get loginStepsIncomplete => 'Baadhi ya hatua za usajili hazijakamilika. Rudi nyuma uzikamilishe kabla ya kuwasilisha.';
+
+  @override
+  String get loginSubmitFailed => 'Imeshindikana kuwasilisha usajili. Tafadhali jaribu tena.';
 
   @override
   String get myProfile => 'Profaili ';
