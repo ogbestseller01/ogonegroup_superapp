@@ -15,7 +15,7 @@ class OtpMail extends Mailable
     public string $name;
     public string $type;
     public ?string $url;
-    public ?string $resetUrl;
+    public ?string $resetUrl = null;
 
     public function __construct(
         string $otp,
@@ -37,9 +37,9 @@ class OtpMail extends Mailable
 
     public function build()
     {
-        $subject = $this->type === 'email_verification'
-            ? 'Verify Your Email - NearbyFundi'
-            : 'Password Reset OTP - NearbyFundi';
+        $subject = $this->type === 'password_reset'
+            ? 'Password Reset OTP - NearbyFundi'
+            : 'Verify Your Email - NearbyFundi';
 
         return $this->subject($subject)->view('emails.otp');
     }

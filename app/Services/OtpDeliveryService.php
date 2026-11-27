@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\OtpMail;
 use App\Models\Otp;
 use App\Models\SmsLog;
 use App\Models\User;
@@ -13,9 +14,8 @@ use Throwable;
  * Delivers an OTP over SMS and/or email.
  *
  * Rules:
- *   • Phone present  → SMS first.
- *   • SMS fails and email present → email fallback.
- *   • No phone, email present → email.
+ *   • Phone present → SMS.
+ *   • Email present → email too (whether or not SMS worked).
  *   • Nothing available → returns success=false (never throws).
  *
  * Never calls a missing method. Never throws.
@@ -49,7 +49,7 @@ class OtpDeliveryService
             if ($smsError === null) {
                 $smsSent = true;
             } else {
-                Log::warning('OTP SMS delivery failed, will try email fallback', [
+                Log::warning('OTP SMS delivery failed, email will still be tried', [
                     'user_id' => $user->id,
                     'phone'   => $user->phone,
                     'error'   => $smsError,
@@ -57,18 +57,13 @@ class OtpDeliveryService
             }
         }
 
-        // ── 2) Email if SMS did not go out (or no phone) ────────
-        if (!$smsSent && !empty($user->email)) {
+        // ── 2) Always email too when the user has an email ──────
+        //      email_sent is true only if the send really succeeded.
+        if (!empty($user->email)) {
             $emailSent = $this->tryEmail($user, $otp, $verificationUrl);
         }
 
-        // ── 3) Optional: also email as a backup when both channels exist ──
-        if ($smsSent && !empty($user->email)) {
-            $this->tryEmail($user, $otp, $verificationUrl);
-            $emailSent = true; // secondary, doesn't override channel
-        }
-
-        // ── 4) Build result ─────────────────────────────────────
+        // ── 3) Build result ─────────────────────────────────────
         if ($smsSent) {
             return [
                 'success'     => true,
@@ -217,17 +212,17 @@ class OtpDeliveryService
 
         try {
             $code    = $otp->plain_otp ?? '******';
-            $minutes = method_exists($otp, 'getRemainingMinutes') ? $otp->getRemainingMinutes() : 10;
 
-            Mail::raw(
-                "Your Nearby Fundi verification code is: {$code}\n\n"
-                . "This code expires in {$minutes} minutes.\n\n"
-                . "If you didn't request it, please ignore this email.",
-                function ($message) use ($user) {
-                    $message->to($user->email)
-                        ->subject('Your Nearby Fundi Verification Code');
-                }
-            );
+            if (empty($otp->plain_otp)) {
+                throw new \RuntimeException('Plain OTP code is missing.');
+            }
+
+            Mail::to($user->email)->send(new OtpMail(
+                (string) $code,
+                $user->email,
+                (string) ($user->name ?: 'there'),
+                (string) $otp->type
+            ));
 
             Log::info('OTP email sent', ['user_id' => $user->id, 'email' => $user->email]);
             return true;
