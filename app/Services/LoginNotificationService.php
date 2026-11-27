@@ -25,11 +25,14 @@ class LoginNotificationService
     /** Call right after a successful sign-in. $method: password|google|apple|otp|quick-login */
     public static function dispatch(User $user, Request $request, string $method = 'password'): void
     {
+        // Everything that depends on the request is read HERE, before the
+        // response is sent: the queued closure only gets plain values.
         $ctx = [
             'user_id' => $user->id,
             'ip'      => (string) $request->ip(),
             'ua'      => (string) $request->userAgent(),
             'device'  => self::deviceFrom($request),
+            'app'     => self::appNameFrom($request),
             'method'  => $method,
             'at'      => now()->toIso8601String(),
         ];
@@ -72,8 +75,9 @@ class LoginNotificationService
             }
 
             $details = [
+                'app'      => $ctx['app'] ?? 'Nearby Fundi',
                 'when'     => \Carbon\Carbon::parse($ctx['at'])->timezone(self::TZ)->format('d M Y, H:i') . ' (EAT)',
-                'device'   => $ctx['device'] ?: 'Unknown',
+                'device'   => $ctx['device'] ?: 'Unknown device',
                 'ip'       => $ctx['ip'] ?: 'Unknown',
                 'location' => $location ?: 'Unknown',
                 'method'   => $this->methodLabel($ctx['method']),
@@ -87,40 +91,130 @@ class LoginNotificationService
         }
     }
 
-    /** Human device label: app header first, user-agent as fallback. */
+    // ──────────────────────────────────────────────
+    // DEVICE / APP DETECTION
+    // ──────────────────────────────────────────────
+
+    /** Brand shown in the email: "Fundi App" or "Nearby Fundi". */
+    public static function appNameFrom(Request $request): string
+    {
+        $app = strtolower(trim((string) $request->header('X-App', '')));
+        $ua  = (string) $request->userAgent();
+
+        return match (true) {
+            $app === 'fundi'    || str_contains($ua, 'FundiApp') => 'Fundi App',
+            default                                              => 'Nearby Fundi',
+        };
+    }
+
+    /**
+     * Human device label for the email, login history and sessions list.
+     * Priority: exact device sent by the app -> user-agent guess.
+     */
     public static function deviceFrom(Request $request): string
     {
         return self::deviceLabel(
             (string) $request->header('X-Client-Device', ''),
-            (string) $request->userAgent()
+            (string) $request->userAgent(),
+            self::clean($request->header('X-Device-Model')),
+            self::clean($request->header('X-Device-OS')),
+            strtolower(self::clean($request->header('X-App'), 20))
         );
     }
 
-    public static function deviceLabel(string $clientDevice, string $ua): string
-    {
+    public static function deviceLabel(
+        string $clientDevice,
+        string $ua,
+        string $model = '',
+        string $os = '',
+        string $app = ''
+    ): string {
+        // 0) Legacy header, kept for any client that already sends it.
         if ($clientDevice !== '') {
-            return mb_substr($clientDevice, 0, 120);
+            return mb_substr(self::clean($clientDevice, 120), 0, 120);
         }
 
-        $os = match (true) {
-            str_contains($ua, 'Android')                           => 'Android',
-            str_contains($ua, 'iPhone'), str_contains($ua, 'iPad') => 'iOS',
-            str_contains($ua, 'Windows')                           => 'Windows',
-            str_contains($ua, 'Mac OS')                            => 'macOS',
-            str_contains($ua, 'Linux')                             => 'Linux',
-            default                                                => null,
+        $appName = match (true) {
+            $app === 'fundi'    || str_contains($ua, 'FundiApp')    => 'Fundi App',
+            $app === 'customer' || str_contains($ua, 'NearbyFundi') => 'Nearby Fundi app',
+            default => null,
         };
 
-        $browser = match (true) {
-            str_contains($ua, 'Edg')     => 'Edge',
-            str_contains($ua, 'Firefox') => 'Firefox',
-            str_contains($ua, 'Chrome')  => 'Chrome',
-            str_contains($ua, 'Safari')  => 'Safari',
-            str_contains($ua, 'Dart')    => 'NearbyFundi app',
-            default                      => null,
-        };
+        // 1) Best case: the app told us the exact device.
+        if ($model !== '') {
+            $device = self::friendlyModel($model);
+            $label  = $os !== '' ? "{$device} ({$os})" : $device;
 
-        return trim(($browser ?? 'Unknown app') . ($os ? " on {$os}" : ''));
+            return $appName ? "{$appName} · {$label}" : $label;
+        }
+
+        // 2) Native-app user-agents without model info.
+        if (str_contains($ua, 'Postman')) {
+            return 'Postman';
+        }
+
+        if (preg_match('/\((ios|android)\)/i', $ua, $m)) {
+            $platform = strtolower($m[1]) === 'ios' ? 'iPhone / iPad' : 'Android phone';
+            return $appName ? "{$appName} · {$platform}" : $platform;
+        }
+
+        if (str_contains($ua, 'okhttp'))           return 'Android phone';
+        if (preg_match('/CFNetwork|Darwin/', $ua)) return 'iPhone / iPad';
+        if (str_starts_with($ua, 'Dart/'))         return $appName ?? 'Mobile app';
+
+        // 3) Browsers.
+        if (str_contains($ua, 'Mozilla')) {
+            $browser = match (true) {
+                str_contains($ua, 'Edg/')    => 'Edge',
+                str_contains($ua, 'OPR/')    => 'Opera',
+                str_contains($ua, 'Firefox') => 'Firefox',
+                str_contains($ua, 'Chrome')  => 'Chrome',
+                str_contains($ua, 'Safari')  => 'Safari',
+                default                      => 'Browser',
+            };
+
+            // Order matters: iPhone UAs contain "Mac OS X", Android UAs "Linux".
+            $system = match (true) {
+                str_contains($ua, 'iPhone') || str_contains($ua, 'iPad') => 'iOS',
+                str_contains($ua, 'Android')   => 'Android',
+                str_contains($ua, 'Windows')   => 'Windows',
+                str_contains($ua, 'Macintosh') => 'macOS',
+                str_contains($ua, 'Linux')     => 'Linux',
+                default => null,
+            };
+
+            return $system ? "{$browser} on {$system}" : $browser;
+        }
+
+        return 'Unknown device';
+    }
+
+    /** Header values come from the client: strip odd characters, cap length. */
+    private static function clean(?string $value, int $max = 60): string
+    {
+        $v = preg_replace('/[^\p{L}\p{N} ,._\-\(\)\/·]/u', '', (string) $value) ?? '';
+
+        return trim(mb_substr($v, 0, $max));
+    }
+
+    /** iOS sends a code like "iPhone17,3"; show a name people recognise. */
+    private static function friendlyModel(string $model): string
+    {
+        static $iphones = [
+            'iPhone14,7' => 'iPhone 14',      'iPhone14,8' => 'iPhone 14 Plus',
+            'iPhone15,2' => 'iPhone 14 Pro',  'iPhone15,3' => 'iPhone 14 Pro Max',
+            'iPhone15,4' => 'iPhone 15',      'iPhone15,5' => 'iPhone 15 Plus',
+            'iPhone16,1' => 'iPhone 15 Pro',  'iPhone16,2' => 'iPhone 15 Pro Max',
+            'iPhone17,1' => 'iPhone 16 Pro',  'iPhone17,2' => 'iPhone 16 Pro Max',
+            'iPhone17,3' => 'iPhone 16',      'iPhone17,4' => 'iPhone 16 Plus',
+            'iPhone17,5' => 'iPhone 16e',
+        ];
+
+        if (isset($iphones[$model]))           return $iphones[$model];
+        if (str_starts_with($model, 'iPhone')) return 'iPhone';   // newer / unmapped
+        if (str_starts_with($model, 'iPad'))   return 'iPad';
+
+        return $model; // Android: "Samsung SM-A546E"
     }
 
     private function methodLabel(string $method): string
@@ -133,6 +227,10 @@ class LoginNotificationService
             default       => 'Password',
         };
     }
+
+    // ──────────────────────────────────────────────
+    // LOCATION
+    // ──────────────────────────────────────────────
 
     private function locate(string $ip): ?string
     {
