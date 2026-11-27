@@ -677,26 +677,6 @@ class TechnicianController extends BaseApiController
         ], 'Profile photo updated successfully.');
     }
 
-    public function updateServices(Request $request)
-    {
-        $technician = $request->user()->technician;
-
-        if (!$technician) {
-            return $this->notFound('Technician not found.');
-        }
-
-        $data = $request->validate([
-            'services'   => 'required|array|min:1',
-            'services.*' => 'exists:services,id',
-        ]);
-
-        $technician->services()->sync($data['services']);
-
-        $this->logAudit('update_technician_services', 'technician', $technician->id, 'Services updated');
-
-        return $this->successResponse($technician->load('services'), 'Services updated successfully.');
-    }
-
     // ═══════════════════════════════════════════════════════
     // LOCATION
     // ═══════════════════════════════════════════════════════

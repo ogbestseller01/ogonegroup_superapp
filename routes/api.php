@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\TechnicianController;
+use App\Http\Controllers\Api\TechnicianServiceChangeController;
 use App\Http\Controllers\Api\SearchNearbyFundiController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\PortfolioController;
@@ -48,7 +49,7 @@ use App\Http\Controllers\Api\ChatExtrasController;
 use App\Http\Controllers\Api\SystemUpdateController;
 use App\Http\Controllers\Api\PrintReportController;
 
-// ▲▲▲ Public device token controller (anonymous super app)
+// Public device token controller (anonymous super app)
 use App\Http\Controllers\Api\DeviceTokenController;
 
 // Health check
@@ -57,17 +58,17 @@ Route::get('/health', fn () => response()->json(['status' => 'ok', 'timestamp' =
 // Media streaming with HTTP Range support (iOS video)
 Route::get('/media/{path}', [MediaController::class, 'stream'])->where('path', '.*');
 
-// ▲▲▲ Moved under v26 as `v26/system-updates/all` (kept here as legacy alias)
+// Moved under v26 as `v26/system-updates/all` (kept here as legacy alias)
 Route::get('system-updates/all', [SystemUpdateController::class, 'all']);
 
-// ▲▲▲ PUBLIC device-token registration (super app, anonymous)
+// PUBLIC device-token registration (super app, anonymous)
 Route::post('v1/device-token', [DeviceTokenController::class, 'store'])
     ->middleware('throttle:60,1');
 Route::delete('v1/device-token', [DeviceTokenController::class, 'destroy'])
     ->middleware('throttle:60,1');
 
 // =============================================
-// V1 – AUTH & PUBLIC
+// V1 AUTH & PUBLIC
 // =============================================
 Route::prefix('v1')->group(function () {
 
@@ -157,7 +158,8 @@ Route::prefix('v2')->middleware(['auth:sanctum', 'active.session', 'subscription
     Route::get('technicians/profile', [TechnicianController::class, 'getOwnProfile']);
     Route::put('technicians/profile', [TechnicianController::class, 'updateProfile']);
     Route::post('technicians/profile/photo', [TechnicianController::class, 'uploadProfilePhoto']);
-    Route::post('technicians/services', [TechnicianController::class, 'updateServices']);
+    Route::post('technicians/services', [TechnicianServiceChangeController::class, 'store'])
+        ->middleware('throttle:10,1');
     Route::post('technicians/location', [TechnicianController::class, 'updateLocation']);
     Route::post('technicians/heartbeat', [TechnicianController::class, 'heartbeat']);
 });
@@ -557,7 +559,9 @@ Route::prefix('v19')->group(function () {
         Route::get('technicians/profile', [TechnicianController::class, 'getOwnProfile']);
         Route::put('technicians/profile', [TechnicianController::class, 'updateProfile']);
         Route::post('technicians/profile/photo', [TechnicianController::class, 'uploadProfilePhoto']);
-        Route::post('technicians/services', [TechnicianController::class, 'updateServices']);
+        Route::post('technicians/services', [TechnicianServiceChangeController::class, 'store'])
+            ->middleware('throttle:10,1');
+        Route::get('technicians/service-changes', [TechnicianServiceChangeController::class, 'options']);
         Route::post('technicians/heartbeat', [TechnicianController::class, 'heartbeat']);
         Route::post('technicians/location', [TechnicianController::class, 'updateLocation']);
     });
@@ -576,6 +580,19 @@ Route::prefix('v20')->middleware(['auth:sanctum', 'active.session'])->group(func
     Route::get('admin/technicians/{id}/biometrics', [TechnicianController::class, 'adminBiometrics'])
         ->whereNumber('id')
         ->middleware('permission:technicians.view');
+
+    // Fundi service change approvals
+    Route::get('admin/service-changes', [TechnicianServiceChangeController::class, 'adminIndex'])
+        ->middleware('permission:service-changes.view');
+    Route::get('admin/service-changes/{id}', [TechnicianServiceChangeController::class, 'adminShow'])
+        ->whereNumber('id')
+        ->middleware('permission:service-changes.view');
+    Route::post('admin/service-changes/{id}/approve', [TechnicianServiceChangeController::class, 'approve'])
+        ->whereNumber('id')
+        ->middleware('permission:service-changes.approve');
+    Route::post('admin/service-changes/{id}/reject', [TechnicianServiceChangeController::class, 'reject'])
+        ->whereNumber('id')
+        ->middleware('permission:service-changes.reject');
 });
 
 // =============================================
