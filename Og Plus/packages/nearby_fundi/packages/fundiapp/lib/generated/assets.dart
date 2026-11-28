@@ -20,32 +20,41 @@ class $AssetsIconsGen {
   const $AssetsIconsGen();
 
   final AssetGenImage airtel = const AssetGenImage('assets/icons/airtel.png');
-  final AssetGenImage appIcon =
-      const AssetGenImage('assets/icons/app_icon.png');
-  final AssetGenImage appIconForeground =
-      const AssetGenImage('assets/icons/app_icon_foreground.png');
-  final AssetGenImage mixxByYas =
-      const AssetGenImage('assets/icons/mixx_by_yas.png');
+  final AssetGenImage appIcon = const AssetGenImage(
+    'assets/icons/app_icon.png',
+  );
+  final AssetGenImage appIconForeground = const AssetGenImage(
+    'assets/icons/app_icon_foreground.png',
+  );
+  final AssetGenImage mixxByYas = const AssetGenImage(
+    'assets/icons/mixx_by_yas.png',
+  );
   final AssetGenImage mpesa = const AssetGenImage('assets/icons/mpesa.png');
   final AssetGenImage nearby = const AssetGenImage('assets/icons/nearby.png');
-  final AssetGenImage nearbyfundiLogov1 =
-      const AssetGenImage('assets/icons/nearbyfundi-logov1.png');
-  final AssetGenImage nearbyfundiLogov2 =
-      const AssetGenImage('assets/icons/nearbyfundi-logov2.png');
-  final AssetGenImage nearbylogo =
-      const AssetGenImage('assets/icons/nearbylogo.png');
+  final AssetGenImage nearbyfundiLogov1 = const AssetGenImage(
+    'assets/icons/nearbyfundi-logov1.png',
+  );
+  final AssetGenImage nearbyfundiLogov2 = const AssetGenImage(
+    'assets/icons/nearbyfundi-logov2.png',
+  );
+  final AssetGenImage nearbylogo = const AssetGenImage(
+    'assets/icons/nearbylogo.png',
+  );
 }
 
 class $AssetsImagesGen {
   const $AssetsImagesGen();
 
-  final AssetGenImage backimg =
-      const AssetGenImage('assets/images/backimg.jpg');
-  final AssetGenImage englishflug =
-      const AssetGenImage('assets/images/englishflug.png');
+  final AssetGenImage backimg = const AssetGenImage(
+    'assets/images/backimg.jpg',
+  );
+  final AssetGenImage englishflug = const AssetGenImage(
+    'assets/images/englishflug.png',
+  );
   final AssetGenImage home = const AssetGenImage('assets/images/home.jpg');
-  final AssetGenImage nearbyfundiLogov1 =
-      const AssetGenImage('assets/images/nearbyfundi-logov1.png');
+  final AssetGenImage nearbyfundiLogov1 = const AssetGenImage(
+    'assets/images/nearbyfundi-logov1.png',
+  );
   final AssetGenImage tzflug = const AssetGenImage('assets/images/tzflug.png');
 }
 
@@ -83,6 +92,8 @@ class $AssetsProfileGen {
       'lib/screens/fundi/profile/fundi_profile_screen.dart';
   final String fundiSettingsScreen =
       'lib/screens/fundi/profile/fundi_settings_screen.dart';
+  final String manageServicesScreen =
+      'lib/screens/fundi/profile/manage_services_screen.dart';
   final String pickMapLocationScreen =
       'lib/screens/fundi/profile/pick_map_location_screen.dart';
 }
@@ -148,15 +159,8 @@ class AssetGenImage {
     );
   }
 
-  ImageProvider provider({
-    AssetBundle? bundle,
-    String? package,
-  }) {
-    return AssetImage(
-      _assetName,
-      bundle: bundle,
-      package: package,
-    );
+  ImageProvider provider({AssetBundle? bundle, String? package}) {
+    return AssetImage(_assetName, bundle: bundle, package: package);
   }
 
   Widget custom({

@@ -17,6 +17,14 @@
   "soon": "Hivi karibuni",
   "becomeFundi": "Kuwa Fundi",
 
+    "loginRequiredTitle": "Uhitaji kuingia",
+    "loginChooseContinue": "Chagua jinsi unavyotaka kuendelea",
+    "loginAsCustomer": "Ingia kama Mteja",
+    "loginCustomerSub": "Weka booking ya Fundi aliye karibu nawe",
+    "loginAsFundi": "Ingia kama Fundi",
+    "loginFundiSub": "Dhibiti kazi, maombi na wasifu",
+    "goHome": "Nenda Nyumbani",
+
   "secureChatTitle": "Karibu kwenye mawasiliano salama ya kazi",
     "secureChatDescription": "Jadili huduma, jadiliana kuhusu bei na kubaliana kuhusu kazi kabla ya kufanya malipo.",
     "secureChatBargain": "Jadiliana bei moja kwa moja na fundi wako.",

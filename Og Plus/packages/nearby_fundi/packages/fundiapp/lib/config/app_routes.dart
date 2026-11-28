@@ -35,6 +35,7 @@ class AppRoutes {
   static const String requests = '/requests';
   static const String profile = '/profile';
   static const String editProfile = '/edit-profile';
+  static const String manageServices = '/manage-services';
   static const String settings = '/settings';
   static const String notifications = '/notifications';
 
@@ -114,6 +115,7 @@ class AppRoutes {
     requests: 'Requests',
     profile: 'Profile',
     editProfile: 'Edit Profile',
+    manageServices: 'Manage Services',
     settings: 'Settings',
     notifications: 'Notifications',
     tickets: 'Tickets',

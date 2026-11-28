@@ -69,6 +69,21 @@
   "@opening": {
     "placeholders": { "name": { "type": "String" } }
   },
+    "appName": "OG Plus",
+    "superApps": "Super App",
+    "onboardingWelcomeTitle": "Welcome to OG Plus",
+    "onboardingWelcomeSubtitle": "Your ultimate hub for professional booking services, securely unified in one intelligent experience.",
+    "onboardingFeaturedTitle": "Featured: NearbyFundi",
+    "onboardingFeaturedSubtitle": "Connect instantly with verified technicians, track service tickets, and make secure mobile payments effortlessly.",
+    "onboardingSkip": "Skip",
+    "onboardingGetStarted": "Get Started",
+    "onboardingContinue": "Continue",
+    "appUpdatesTitle": "App Updates",
+    "appUpdatesEmpty": "No updates yet",
+    "appUpdatesEmptySub": "Check back later for news and improvements.",
+    "retry": "Retry",
+    "updateViewDetails": "View Details",
+
 
   "nearbyFundi": "NearbyFundi",
   "msosi": "Msosi Chap Chap",
@@ -81,6 +96,7 @@
   "safariPoa": "Safari Poa",
   "duma": "Duma App",
   "comingSoon": "Coming Soon",
+
 
   "appearance": "Appearance",
   "system": "System",

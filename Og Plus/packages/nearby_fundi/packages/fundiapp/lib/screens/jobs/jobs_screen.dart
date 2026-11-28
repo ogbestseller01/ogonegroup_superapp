@@ -6,9 +6,14 @@ import 'package:provider/provider.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../models/job.dart';
+import '../../models/request.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/job_provider.dart';
+import '../../providers/request_provider.dart';
 import '../../widgets/work_status_widgets.dart';
 import '../../l10n/app_localizations.dart';
+import '../chat/fundi_chat_screen.dart';
 import 'job_detail_screen.dart';
 
 class JobsScreen extends StatefulWidget {
@@ -28,7 +33,10 @@ class _JobsScreenState extends State<JobsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<JobProvider>().loadJobs();
+      // Requests hold the customerId that chat needs.
+      context.read<RequestProvider>().loadMyRequests();
     });
   }
 
@@ -103,7 +111,13 @@ class _JobsScreenState extends State<JobsScreen> {
             options: _filters,
             selected: _filter,
             counts: counts,
-            onSelected: (v) => setState(() => _filter = v), labels: {},
+            onSelected: (v) => setState(() => _filter = v),
+            labels: {
+              'all': l10n.filterAll,
+              'pending': l10n.statusPending,
+              'on-progress': l10n.jobStatusOnProgress,
+              'completed': l10n.jobStatusCompleted,
+            },
           ),
           const SizedBox(height: 8),
           Expanded(child: _buildBody(provider, filtered, l10n)),
@@ -126,7 +140,7 @@ class _JobsScreenState extends State<JobsScreen> {
     if (provider.error != null && provider.jobs.isEmpty) {
       return WorkEmptyState(
         icon: Icons.error_outline_rounded,
-        message: provider.error!,
+        message: l10n.jobsLoadFailed,
         onRetry: provider.loadJobs,
       );
     }
@@ -193,10 +207,6 @@ class _JobCard extends StatelessWidget {
     final color = workStatusColor(job.status);
 
     return WorkCard(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,7 +240,7 @@ class _JobCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    WorkStatusBadge(status: job.status),
+                    JobStatusBadge(status: job.status),
                   ],
                 ),
                 WorkMetaLine(
@@ -245,13 +255,165 @@ class _JobCard extends StatelessWidget {
                   icon: Icons.confirmation_number_outlined,
                   text: job.tickets.isEmpty
                       ? l10n.noTicket
-                      : '${job.tickets.length} ${l10n.tickets.toLowerCase()} • ${job.tickets.last.ticketNumber}',
+                      : '${l10n.ticketsCount(job.tickets.length)} • ${job.tickets.last.ticketNumber}',
                 ),
                 WorkMetaLine(
                   icon: Icons.access_time_rounded,
                   text: '${l10n.created} ${formatEAT(job.createdAt)}',
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => JobDetailDialog.show(context, job),
+                    icon: const Icon(Icons.visibility_outlined, size: 17),
+                    label: Text(
+                      l10n.viewJobDetails,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor:
+                      isDark ? AppTheme.secondary : AppTheme.primary,
+                      minimumSize: const Size(0, 48),
+                      side: BorderSide(
+                        color: (isDark ? AppTheme.secondary : AppTheme.primary)
+                            .withOpacity(0.5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15)),
+                      textStyle: const TextStyle(
+                          inherit: true,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: _ChatButton(job: job),
+                ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+// ─── CHAT WITH CUSTOMER ──────────────────────────────────────────────────
+class _ChatButton extends StatefulWidget {
+  final WorkJob job;
+
+  const _ChatButton({required this.job});
+
+  @override
+  State<_ChatButton> createState() => _ChatButtonState();
+}
+
+class _ChatButtonState extends State<_ChatButton> {
+  bool _opening = false;
+
+  /// The request that created this job (it carries the customerId).
+  ServiceRequest? _findRequest(RequestProvider provider) {
+    for (final r in provider.requests) {
+      if (r.jobNumber == widget.job.jobNumber) return r;
+    }
+    return null;
+  }
+
+  Future<void> _startChat() async {
+    if (_opening) return;
+    setState(() => _opening = true);
+
+    final l10n = AppLocalizations.of(context)!;
+    final requestProvider = context.read<RequestProvider>();
+    final chatProvider = context.read<ChatProvider>();
+    final authProvider = context.read<AuthProvider>();
+
+    try {
+      var request = _findRequest(requestProvider);
+      if (request == null) {
+        await requestProvider.refresh();
+        if (!mounted) return;
+        request = _findRequest(requestProvider);
+      }
+
+      if (request == null) {
+        _showError(l10n.jobChatUnavailable);
+        return;
+      }
+
+      final conversation = await chatProvider.getOrCreateConversation(
+        customerId: request.customerId,
+        fundiId: authProvider.user!.id,
+      );
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FundiChatScreen(conversation: conversation),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Job chat failed: $e');
+      if (mounted) _showError(l10n.jobChatUnavailable);
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.secondary : AppTheme.primary;
+    final fg = isDark ? AppTheme.primary : Colors.white;
+
+    return ElevatedButton(
+      onPressed: _opening ? null : _startChat,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        minimumSize: const Size(0, 48),
+        elevation: 0,
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 10),
+        textStyle: const TextStyle(
+            inherit: true, fontWeight: FontWeight.w700, fontSize: 13.5),
+      ),
+      child: _opening
+          ? SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2.2, color: bg),
+      )
+          : Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.chat_bubble_outline_rounded, size: 17, color: fg),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              l10n.chatWithCustomer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

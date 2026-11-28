@@ -155,7 +155,7 @@ abstract class AppLocalizations {
   /// Subtitle shown under the empty state icon on the App Updates screen
   ///
   /// In en, this message translates to:
-  /// **'You\'re all caught up. New updates will appear here.'**
+  /// **'Check back later for news and improvements.'**
   String get appUpdatesEmptySub;
 
   /// Tooltip/label for the action that marks every visible update as viewed
@@ -229,6 +229,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opening {name}...'**
   String opening(String name);
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Og Plus'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your ultimate hub for professional booking services, securely unified in one intelligent experience.'**
+  String get onboardingWelcomeSubtitle;
+
+  /// No description provided for @onboardingFeaturedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured: NearbyFundi'**
+  String get onboardingFeaturedTitle;
+
+  /// No description provided for @onboardingFeaturedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect instantly with verified technicians, track service tickets, and make secure mobile payments effortlessly.'**
+  String get onboardingFeaturedSubtitle;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinue;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @updateViewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get updateViewDetails;
 
   /// No description provided for @nearbyFundi.
   ///
@@ -445,12 +499,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
-
-  /// No description provided for @retry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get retry;
 
   /// No description provided for @loading.
   ///
@@ -967,12 +1015,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The camera could not be started. Please try again.'**
   String get cameraUnavailableBody;
-
-  /// No description provided for @onboardingWelcomeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome to Og Plus'**
-  String get onboardingWelcomeTitle;
 
   /// No description provided for @onboardingWelcomeBody.
   ///

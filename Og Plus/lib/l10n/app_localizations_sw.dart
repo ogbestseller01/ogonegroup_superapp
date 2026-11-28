@@ -12,7 +12,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get appName => 'OG Plus';
 
   @override
-  String get superApps => 'Programu Kuu';
+  String get superApps => 'Super App';
 
   @override
   String get settings => 'Mipangilio';
@@ -80,6 +80,35 @@ class AppLocalizationsSw extends AppLocalizations {
   String opening(String name) {
     return 'Inafungua $name...';
   }
+
+  @override
+  String get onboardingWelcomeTitle => 'Karibu Og Plus';
+
+  @override
+  String get onboardingWelcomeSubtitle =>
+      'Kituo chako kikuu cha huduma za booking za kitaalamu, zilizounganishwa kwa usalama katika uzoefu mmoja mahiri.';
+
+  @override
+  String get onboardingFeaturedTitle => 'Iliyoangaziwa: NearbyFundi';
+
+  @override
+  String get onboardingFeaturedSubtitle =>
+      'Ungana papo hapo na mafundi waliothibitishwa, fuatilia tiketi za huduma, na fanya malipo salama ya simu bila shida.';
+
+  @override
+  String get onboardingSkip => 'Ruka';
+
+  @override
+  String get onboardingGetStarted => 'Anza Sasa';
+
+  @override
+  String get onboardingContinue => 'Endelea';
+
+  @override
+  String get retry => 'Jaribu tena';
+
+  @override
+  String get updateViewDetails => 'Tazama Maelezo';
 
   @override
   String get nearbyFundi => 'NearbyFundi';
@@ -190,9 +219,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get save => 'Hifadhi';
-
-  @override
-  String get retry => 'Jaribu tena';
 
   @override
   String get loading => 'Inapakia...';
@@ -457,9 +483,6 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get cameraUnavailableBody => 'Imeshindwa kuwasha kamera. Jaribu tena.';
-
-  @override
-  String get onboardingWelcomeTitle => 'Karibu Og Plus';
 
   @override
   String get onboardingWelcomeBody =>

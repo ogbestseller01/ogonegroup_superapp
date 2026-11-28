@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../config/app_prefs.dart';
 import '../../config/app_routes.dart';
 import '../../config/app_theme.dart';
+import '../../config/app_strings.dart';
 
 // ══════════════════════════════════════════════════════════════
 // Design Constants & Colors (Synced with AppTheme Dark Mode)
@@ -73,19 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentIndex = 0;
   bool _isFinishing = false;
 
-  final List<_OnboardStep> _steps = [
-    const _OnboardStep(
-      title: 'Welcome to OG Plus',
-      subtitle: 'Your ultimate hub for professional booking services, securely unified in one intelligent experience.',
-    ),
-    _OnboardStep(
-      title: 'Featured: NearbyFundi',
-      subtitle: 'Connect instantly with verified technicians, track service tickets, and make secure mobile payments effortlessly.',
-      tiles: [_nearbyFundi],
-    ),
-  ];
-
-  bool get _isLastPage => _currentIndex == _steps.length - 1;
+  bool get _isLastPage => _currentIndex == 1;
 
   @override
   void dispose() {
@@ -119,20 +108,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Forced default dark styling matching AppTheme dark definitions
-    const backgroundColor = AppTheme.darkBackground; // #00050F
-    const textColor = AppTheme.darkTextPrimary;     // #FFFFFF
-    const secondaryText = AppTheme.darkTextSecondary; // #9FC0EB
+    final t = context.t;
+    const backgroundColor = AppTheme.darkBackground;
+    const textColor = AppTheme.darkTextPrimary;
+    const secondaryText = AppTheme.darkTextSecondary;
+
+    // Dynamic steps based on locale
+    final steps = [
+      _OnboardStep(
+        title: t.onboardingWelcomeTitle,
+        subtitle: t.onboardingWelcomeSubtitle,
+      ),
+      _OnboardStep(
+        title: t.onboardingFeaturedTitle,
+        subtitle: t.onboardingFeaturedSubtitle,
+        tiles: [_nearbyFundi],
+      ),
+    ];
 
     return Scaffold(
       backgroundColor: backgroundColor,
       body: Stack(
         children: [
-          // ── Full-Screen Faint Dark Background Image (ogplus.png) ──────────
+          // ── Full-Screen Faint Dark Background Image ──────────
           Positioned.fill(
             child: IgnorePointer(
               child: Opacity(
-                opacity: 0.22, // Balanced dark opacity for clear background visibility
+                opacity: 0.22,
                 child: Image.asset(
                   'assets/images/ogplus.png',
                   fit: BoxFit.cover,
@@ -158,7 +160,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 38,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white, // Crisp white background container for logo visibility
+                              color: Colors.white,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.3),
@@ -179,9 +181,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
-                            'OG Plus',
-                            style: TextStyle(
+                          Text(
+                            t.appName,
+                            style: const TextStyle(
                               color: textColor,
                               fontWeight: FontWeight.w900,
                               fontSize: 16,
@@ -194,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         TextButton(
                           onPressed: _completeOnboarding,
                           style: TextButton.styleFrom(foregroundColor: secondaryText),
-                          child: const Text('Skip', style: TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text(t.onboardingSkip, style: const TextStyle(fontWeight: FontWeight.w700)),
                         ),
                     ],
                   ),
@@ -204,10 +206,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
-                    itemCount: _steps.length,
+                    itemCount: steps.length,
                     onPageChanged: (index) => setState(() => _currentIndex = index),
                     itemBuilder: (context, index) {
-                      final step = _steps[index];
+                      final step = steps[index];
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 28),
                         child: Column(
@@ -295,7 +297,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_steps.length, (i) {
+                        children: List.generate(steps.length, (i) {
                           bool isActive = i == _currentIndex;
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
@@ -324,7 +326,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             ),
                           ),
                           child: Text(
-                            _isLastPage ? 'Get Started' : 'Continue',
+                            _isLastPage ? t.onboardingGetStarted : t.onboardingContinue,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -370,9 +372,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
-          'NearbyFundi',
-          style: TextStyle(
+        Text(
+          tile.label, // Uses localized label if needed, though "NearbyFundi" is a brand
+          style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             color: AppTheme.darkTextSecondary,

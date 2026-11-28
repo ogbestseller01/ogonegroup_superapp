@@ -15,8 +15,8 @@ import '../../../providers/technician_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../widgets/app_network_image.dart';
 import '../../../widgets/confirmation_dialog.dart';
-import '../../../widgets/custom_button.dart';
 import '../../notifications/notification_list_screen.dart';
+import 'manage_services_screen.dart';
 
 // ─── Shared look helpers ─────────────────────────────────────────────────
 Color _accent(bool isDark) => isDark ? AppTheme.secondary : AppTheme.primary;
@@ -77,32 +77,17 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
     Navigator.pushNamed(context, AppRoutes.editProfile);
   }
 
+  /// Opens the manage-services flow (admin-approved changes).
+  /// Service editing no longer happens inline on this screen.
   Future<void> _editServices() async {
-    final l10n = AppLocalizations.of(context)!;
-    final tech = context.read<TechnicianProvider>();
-    final catalog = context.read<ServiceProvider>().services;
-
-    final selectedIds = await showModalBottomSheet<Set<int>>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      constraints: const BoxConstraints(maxWidth: 560),
-      builder: (_) => _ServicesEditorSheet(
-        selectedIds: (tech.technician?.services ?? const <Service>[])
-            .map((s) => s.id)
-            .toSet(),
-        catalog: catalog,
-      ),
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ManageServicesScreen()),
     );
-    if (selectedIds == null || !mounted) return;
-
-    final ok = await tech.updateServices(selectedIds.toList());
-    if (!mounted) return;
-    _snack(
-      ok ? l10n.servicesUpdated : (tech.error ?? l10n.updateFailed),
-      error: !ok,
-    );
+    // Refresh after returning (in case admin already approved)
+    if (mounted) {
+      context.read<TechnicianProvider>().fetchMyProfile();
+    }
   }
 
   Future<void> _logout() async {
@@ -615,7 +600,8 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
                   : Column(
                 children: [
                   for (final s in services)
-                    _serviceTile(isDark, s, _categoryLabel(catalog, s)),
+                    _serviceTile(
+                        isDark, s, _categoryLabel(catalog, s)),
                 ],
               ),
             ),
@@ -935,7 +921,9 @@ class _FundiProfileScreenState extends State<FundiProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _FlagPng(
-                    asset: _flagAsset(settings.locale), height: 20, width: 28),
+                    asset: _flagAsset(settings.locale),
+                    height: 20,
+                    width: 28),
                 const SizedBox(width: 8),
                 Text(
                   settings.locale == 'sw'
@@ -1121,165 +1109,6 @@ class _FlagPng extends StatelessWidget {
             size: height * 0.7,
             color: theme.colorScheme.primary,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════ SERVICES EDITOR (multi-select) ═════════════════════════
-
-class _ServicesEditorSheet extends StatefulWidget {
-  final Set<int> selectedIds;
-  final List<Service> catalog;
-
-  const _ServicesEditorSheet({
-    required this.selectedIds,
-    required this.catalog,
-  });
-
-  @override
-  State<_ServicesEditorSheet> createState() => _ServicesEditorSheetState();
-}
-
-class _ServicesEditorSheetState extends State<_ServicesEditorSheet> {
-  late final Set<int> _selected = {...widget.selectedIds};
-  String? _error;
-
-  void _toggle(int id, bool on) {
-    setState(() {
-      _error = null;
-      if (on) {
-        _selected.add(id);
-      } else {
-        _selected.remove(id);
-      }
-    });
-  }
-
-  void _submit() {
-    final l10n = AppLocalizations.of(context)!;
-    if (_selected.isEmpty) {
-      setState(() => _error = l10n.selectAtLeastOneService);
-      return;
-    }
-    Navigator.pop(context, _selected);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final l10n = AppLocalizations.of(context)!;
-    final height = MediaQuery.sizeOf(context).height * 0.8;
-
-    return MediaQuery.withClampedTextScaling(
-      minScaleFactor: 0.85,
-      maxScaleFactor: 1.25,
-      child: SizedBox(
-        height: height,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l10n.editServices,
-                  style: TextStyle(
-                    inherit: true,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.4,
-                    color: _ink(isDark),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: widget.catalog.isEmpty
-                  ? Center(
-                child: Text(
-                  l10n.noServicesAvailable,
-                  style: TextStyle(color: _muted(isDark)),
-                ),
-              )
-                  : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: widget.catalog.length,
-                itemBuilder: (context, i) {
-                  final s = widget.catalog[i];
-                  final on = _selected.contains(s.id);
-                  final category = s.categories.isNotEmpty
-                      ? s.categories.map((c) => c.name).join(', ')
-                      : null;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Material(
-                      color: on
-                          ? _accent(isDark).withValues(alpha: 0.07)
-                          : Colors.transparent,
-                      clipBehavior: Clip.antiAlias,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: BorderSide(
-                          color: on
-                              ? _accent(isDark).withValues(alpha: 0.4)
-                              : _cardBorder(isDark),
-                        ),
-                      ),
-                      child: CheckboxListTile(
-                        contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12),
-                        activeColor: _accent(isDark),
-                        checkColor:
-                        isDark ? AppTheme.primary : Colors.white,
-                        title: Text(
-                          s.name,
-                          style: TextStyle(
-                            inherit: true,
-                            fontWeight: FontWeight.w700,
-                            color: _ink(isDark),
-                          ),
-                        ),
-                        subtitle: category != null
-                            ? Text(
-                          category,
-                          style: TextStyle(
-                            inherit: true,
-                            fontSize: 12,
-                            color: _muted(isDark),
-                          ),
-                        )
-                            : null,
-                        value: on,
-                        onChanged: (v) => _toggle(s.id, v == true),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                child: Text(
-                  _error!,
-                  style: TextStyle(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: CustomButton(
-                text: l10n.saveChanges,
-                onPressed: _submit,
-              ),
-            ),
-          ],
         ),
       ),
     );

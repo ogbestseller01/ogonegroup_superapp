@@ -54,6 +54,27 @@ class AppLocalizationsSw extends AppLocalizations {
   String get becomeFundi => 'Kuwa Fundi';
 
   @override
+  String get loginRequiredTitle => 'Uhitaji kuingia';
+
+  @override
+  String get loginChooseContinue => 'Chagua jinsi unavyotaka kuendelea';
+
+  @override
+  String get loginAsCustomer => 'Ingia kama Mteja';
+
+  @override
+  String get loginCustomerSub => 'Weka booking ya Fundi aliye karibu nawe';
+
+  @override
+  String get loginAsFundi => 'Ingia kama Fundi';
+
+  @override
+  String get loginFundiSub => 'Dhibiti kazi, maombi na wasifu';
+
+  @override
+  String get goHome => 'Nenda Nyumbani';
+
+  @override
   String get secureChatTitle => 'Karibu kwenye mawasiliano salama ya kazi';
 
   @override

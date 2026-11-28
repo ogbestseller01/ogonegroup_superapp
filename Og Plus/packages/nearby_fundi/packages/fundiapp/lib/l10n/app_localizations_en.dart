@@ -9,10 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'NETSAF FUNDI APP';
+  String get appTitle => 'FUNDI APP';
 
   @override
-  String get fundiAppTitle => 'NETSAF FUNDI APP';
+  String get fundiAppTitle => ' FUNDI APP';
 
   @override
   String get hello => 'Hello';
@@ -1141,6 +1141,119 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationSetOnMap => 'Location set on map';
 
   @override
+  String get svcTitle => 'My services';
+
+  @override
+  String get svcSearchHint => 'Search services or categories';
+
+  @override
+  String get svcOtherCategory => 'Other services';
+
+  @override
+  String get svcNoResults => 'No services found';
+
+  @override
+  String get svcCurrent => 'On your profile';
+
+  @override
+  String get svcToAdd => 'To add';
+
+  @override
+  String get svcToRemove => 'To remove';
+
+  @override
+  String get svcBlocked => 'Rejected: you cannot add this service';
+
+  @override
+  String get svcSelectOne => 'Select at least one service';
+
+  @override
+  String svcSelectedCount(int count) {
+    return 'Selected services: $count';
+  }
+
+  @override
+  String get svcReviewChanges => 'Review changes';
+
+  @override
+  String get svcConfirmTitle => 'Confirm service change';
+
+  @override
+  String get svcConfirmBody => 'An admin must approve these changes before your profile is updated.';
+
+  @override
+  String get svcReasonLabel => 'Reason for change';
+
+  @override
+  String get svcReasonHint => 'Explain why you are changing your services';
+
+  @override
+  String get svcReasonMin => 'Enter at least 10 characters';
+
+  @override
+  String get svcCancel => 'Cancel';
+
+  @override
+  String get svcSubmit => 'Submit for approval';
+
+  @override
+  String get svcSubmitted => 'Your request was submitted for approval';
+
+  @override
+  String get svcSubmitFailed => 'Could not submit your request. Please try again.';
+
+  @override
+  String get svcLoadFailed => 'Could not load services. Please try again.';
+
+  @override
+  String get svcRetry => 'Try again';
+
+  @override
+  String get svcPendingTitle => 'Waiting for approval';
+
+  @override
+  String get svcPendingBody => 'Your current services stay unchanged. You can send another change after this one is reviewed.';
+
+  @override
+  String get svcYourReason => 'Your reason';
+
+  @override
+  String get svcRejectedTitle => 'Your last request was rejected';
+
+  @override
+  String get svcRejectionReason => 'Reason';
+
+  @override
+  String get viewJobDetails => 'View job details';
+
+  @override
+  String get jobDialogClose => 'Close';
+
+  @override
+  String get jobStatusOnProgress => 'In progress';
+
+  @override
+  String get jobStatusCompleted => 'Completed';
+
+  @override
+  String get jobsLoadFailed => 'Could not load jobs. Please try again.';
+
+  @override
+  String get jobChatUnavailable => 'Could not open the chat. Please try again.';
+
+  @override
+  String get homeDefaultName => 'Fundi';
+
+  @override
+  String get homeNotificationsSubtitle => 'Stay updated on your jobs and messages';
+
+  @override
+  String get homeNotificationsEmptyHint => 'You will see updates about your jobs, requests and messages here.';
+
+  @override
+  String get homeNotificationFallback => 'Notification';
+
+  @override
   String get privacyPolicy => 'Privacy Policy';
 
   @override
@@ -2009,6 +2122,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterCompleted => 'Completed';
+
+  @override
+  String get svcSubmitting => 'Submitting changes...';
+
+  @override
+  String get svcBack => 'Back';
+
+  @override
+  String get svcClearSearch => 'Clear search';
+
+  @override
+  String get svcDiscardTitle => 'Discard changes?';
+
+  @override
+  String get svcDiscardBody => 'Your selection has not been submitted and will be lost.';
+
+  @override
+  String get svcDiscard => 'Discard';
+
+  @override
+  String get svcKeepEditing => 'Keep editing';
 
   @override
   String get payments => 'Payments';

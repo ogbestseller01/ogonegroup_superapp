@@ -8,7 +8,6 @@ import '../../models/system_update.dart';
 import '../../providers/system_update_provider.dart';
 import '../../widgets/system_update_sheet.dart';
 
-/// Full list of ALL app updates — public endpoint (any date).
 class SystemUpdatesListScreen extends StatefulWidget {
   const SystemUpdatesListScreen({super.key});
 
@@ -76,7 +75,7 @@ class _SystemUpdatesListScreenState extends State<SystemUpdatesListScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => p.loadAll(),
-                      child: const Text('Retry'),
+                      child: Text(t.retry), // <-- LOCALIZED
                     ),
                   ],
                 ),
@@ -207,7 +206,7 @@ class _UpdateTile extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.system_update_rounded, // <-- New App Update Icon
+                  Icons.system_update_rounded,
                   color: Colors.white,
                   size: 20,
                 ),

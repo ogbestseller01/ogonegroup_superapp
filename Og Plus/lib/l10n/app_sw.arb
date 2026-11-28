@@ -19,6 +19,25 @@
     "placeholders": { "name": { "type": "String" } }
   },
 
+  "appName": "OG Plus",
+    "superApps": "Super App",
+    "onboardingWelcomeTitle": "Karibu OG Plus",
+    "onboardingWelcomeSubtitle": "Kituo chako kikuu cha huduma za booking za kitaalamu, zilizounganishwa kwa usalama katika uzoefu mmoja mahiri.",
+    "onboardingFeaturedTitle": "Iliyoangaziwa: NearbyFundi",
+    "onboardingFeaturedSubtitle": "Ungana papo hapo na mafundi waliothibitishwa, fuatilia tiketi za huduma, na fanya malipo salama ya simu bila shida.",
+    "onboardingSkip": "Ruka",
+    "onboardingGetStarted": "Anza Sasa",
+    "onboardingContinue": "Endelea",
+    "appUpdatesTitle": "Masasisho ya Programu",
+    "appUpdatesEmpty": "Hakuna masasisho bado",
+    "appUpdatesEmptySub": "Angalia baadaye kwa habari na maboresho.",
+    "retry": "Jaribu Tena",
+    "updateViewDetails": "Tazama Maelezo",
+
+
+
+
+
   "appUpdatesTitle": "Taarifa za Programu",
   "appUpdatesEmpty": "Hakuna taarifa bado",
   "appUpdatesEmptySub": "Umeshafika mwisho. Taarifa mpya zitaonekana hapa.",

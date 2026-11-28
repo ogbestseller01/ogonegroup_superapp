@@ -17,6 +17,14 @@
   "soon": "Soon",
   "becomeFundi": "Become a Fundi",
 
+    "loginRequiredTitle": "Login required",
+    "loginChooseContinue": "Choose how you want to continue",
+    "loginAsCustomer": "Login as Customer",
+    "loginCustomerSub": "Book a Fundi near you",
+    "loginAsFundi": "Login as Fundi",
+    "loginFundiSub": "Manage jobs, requests & portfolio",
+    "goHome": "Go Home",
+
   "secureChatTitle": "Welcome to secure job communication",
     "secureChatDescription": "Discuss the service, negotiate the price and agree on the work before making a payment.",
     "secureChatBargain": "Bargain directly with your fundi.",

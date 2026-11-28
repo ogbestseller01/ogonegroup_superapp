@@ -65,6 +65,7 @@ import 'screens/fundi/fundi_requests_screen.dart';
 import 'screens/fundi/profile/edit_profile_screen.dart';
 import 'screens/fundi/profile/fundi_profile_screen.dart';
 import 'screens/fundi/profile/fundi_settings_screen.dart';
+import 'screens/fundi/profile/manage_services_screen.dart';
 import 'screens/jobs/jobs_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/splash_screen.dart';
@@ -336,6 +337,8 @@ Route<dynamic> generateFundiAppRoute(RouteSettings settings) {
       return route(const FundiProfileScreen());
     case AppRoutes.editProfile:
       return route(const EditProfileScreen());
+    case AppRoutes.manageServices:
+      return route(const ManageServicesScreen());
     case AppRoutes.settings:
       return route(const FundiSettingsScreen());
 

@@ -32,15 +32,13 @@ class TechnicianProvider extends ChangeNotifier {
     return _finish(res.success, res.message);
   }
 
-  Future<bool> updateServices(List<int> serviceIds) async {
-    _setLoading(true);
-    final res = await _api.updateTechnicianServices(serviceIds);
-    return _finish(res.success, res.message);
-  }
-
-  // NOTE: updateServicePrices() was removed — the backend has no
-  // /v19/technicians/services/prices route. If the design needs
-  // per-service pricing, it must be added to the backend first.
+  // NOTE: Instant service updates are no longer allowed here.
+  // Service changes must go through ManageServicesScreen, which uses
+  // ApiService.getServiceChangeOptions() / submitServiceChange() and
+  // is subject to admin approval.
+  //
+  // updateServicePrices() also has no backend route and must not be
+  // re-added until the backend supports it.
 
   // ── Read actions ──────────────────────────────────────────
 

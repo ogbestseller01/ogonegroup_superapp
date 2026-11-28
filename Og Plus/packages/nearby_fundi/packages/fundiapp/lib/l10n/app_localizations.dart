@@ -98,13 +98,13 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'NETSAF FUNDI APP'**
+  /// **'FUNDI APP'**
   String get appTitle;
 
   /// No description provided for @fundiAppTitle.
   ///
   /// In en, this message translates to:
-  /// **'NETSAF FUNDI APP'**
+  /// **' FUNDI APP'**
   String get fundiAppTitle;
 
   /// No description provided for @hello.
@@ -2267,6 +2267,228 @@ abstract class AppLocalizations {
   /// **'Location set on map'**
   String get locationSetOnMap;
 
+  /// No description provided for @svcTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My services'**
+  String get svcTitle;
+
+  /// No description provided for @svcSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services or categories'**
+  String get svcSearchHint;
+
+  /// No description provided for @svcOtherCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Other services'**
+  String get svcOtherCategory;
+
+  /// No description provided for @svcNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No services found'**
+  String get svcNoResults;
+
+  /// No description provided for @svcCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'On your profile'**
+  String get svcCurrent;
+
+  /// No description provided for @svcToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'To add'**
+  String get svcToAdd;
+
+  /// No description provided for @svcToRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'To remove'**
+  String get svcToRemove;
+
+  /// No description provided for @svcBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected: you cannot add this service'**
+  String get svcBlocked;
+
+  /// No description provided for @svcSelectOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one service'**
+  String get svcSelectOne;
+
+  /// No description provided for @svcSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected services: {count}'**
+  String svcSelectedCount(int count);
+
+  /// No description provided for @svcReviewChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get svcReviewChanges;
+
+  /// No description provided for @svcConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm service change'**
+  String get svcConfirmTitle;
+
+  /// No description provided for @svcConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An admin must approve these changes before your profile is updated.'**
+  String get svcConfirmBody;
+
+  /// No description provided for @svcReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for change'**
+  String get svcReasonLabel;
+
+  /// No description provided for @svcReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain why you are changing your services'**
+  String get svcReasonHint;
+
+  /// No description provided for @svcReasonMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 10 characters'**
+  String get svcReasonMin;
+
+  /// No description provided for @svcCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get svcCancel;
+
+  /// No description provided for @svcSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit for approval'**
+  String get svcSubmit;
+
+  /// No description provided for @svcSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request was submitted for approval'**
+  String get svcSubmitted;
+
+  /// No description provided for @svcSubmitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit your request. Please try again.'**
+  String get svcSubmitFailed;
+
+  /// No description provided for @svcLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load services. Please try again.'**
+  String get svcLoadFailed;
+
+  /// No description provided for @svcRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get svcRetry;
+
+  /// No description provided for @svcPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get svcPendingTitle;
+
+  /// No description provided for @svcPendingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current services stay unchanged. You can send another change after this one is reviewed.'**
+  String get svcPendingBody;
+
+  /// No description provided for @svcYourReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Your reason'**
+  String get svcYourReason;
+
+  /// No description provided for @svcRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your last request was rejected'**
+  String get svcRejectedTitle;
+
+  /// No description provided for @svcRejectionReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get svcRejectionReason;
+
+  /// No description provided for @viewJobDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View job details'**
+  String get viewJobDetails;
+
+  /// No description provided for @jobDialogClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get jobDialogClose;
+
+  /// No description provided for @jobStatusOnProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get jobStatusOnProgress;
+
+  /// No description provided for @jobStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get jobStatusCompleted;
+
+  /// No description provided for @jobsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load jobs. Please try again.'**
+  String get jobsLoadFailed;
+
+  /// No description provided for @jobChatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the chat. Please try again.'**
+  String get jobChatUnavailable;
+
+  /// No description provided for @homeDefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Fundi'**
+  String get homeDefaultName;
+
+  /// No description provided for @homeNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay updated on your jobs and messages'**
+  String get homeNotificationsSubtitle;
+
+  /// No description provided for @homeNotificationsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You will see updates about your jobs, requests and messages here.'**
+  String get homeNotificationsEmptyHint;
+
+  /// No description provided for @homeNotificationFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get homeNotificationFallback;
+
   /// No description provided for @privacyPolicy.
   ///
   /// In en, this message translates to:
@@ -3934,6 +4156,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get filterCompleted;
+
+  /// Loading text shown while the service change request is being submitted to the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting changes...'**
+  String get svcSubmitting;
+
+  /// No description provided for @svcBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get svcBack;
+
+  /// No description provided for @svcClearSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get svcClearSearch;
+
+  /// No description provided for @svcDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get svcDiscardTitle;
+
+  /// No description provided for @svcDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your selection has not been submitted and will be lost.'**
+  String get svcDiscardBody;
+
+  /// No description provided for @svcDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get svcDiscard;
+
+  /// No description provided for @svcKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get svcKeepEditing;
 
   /// No description provided for @payments.
   ///

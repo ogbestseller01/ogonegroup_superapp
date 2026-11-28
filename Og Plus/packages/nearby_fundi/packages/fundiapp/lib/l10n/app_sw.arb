@@ -1,8 +1,8 @@
 {
   "@@locale": "sw",
 
-  "appTitle": "NETSAF FUNDI APP",
-  "fundiAppTitle": "NETSAF FUNDI APP",
+  "appTitle": " FUNDI APP",
+  "fundiAppTitle": "FUNDI APP",
   "hello": "Habari",
   "home": "Nyumbani",
   "settings": "Mipangilio",
@@ -463,6 +463,47 @@
   "otpResentTo": "OTP imetumwa tena kwa {identifier}",
   "failedToResendOtp": "Imeshindwa kutuma tena OTP.",
 
+  "homeDefaultName": "Fundi",
+  "homeNotificationsSubtitle": "Pata taarifa mpya za kazi na ujumbe wako",
+  "homeNotificationsEmptyHint": "Utaona taarifa kuhusu kazi, maombi na ujumbe wako hapa.",
+  "homeNotificationFallback": "Arifa",
+
+  "svcTitle": "Huduma zangu",
+    "svcSearchHint": "Tafuta huduma au aina",
+    "svcOtherCategory": "Huduma nyingine",
+    "svcNoResults": "Hakuna huduma iliyopatikana",
+    "svcCurrent": "Ipo kwenye wasifu wako",
+    "svcToAdd": "Za kuongeza",
+    "svcToRemove": "Za kuondoa",
+    "svcBlocked": "Ilikataliwa: huwezi kuongeza huduma hii",
+    "svcSelectOne": "Chagua angalau huduma moja",
+    "svcSelectedCount": "Huduma zilizochaguliwa: {count}",
+    "@svcSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+    "svcReviewChanges": "Kagua mabadiliko",
+    "svcConfirmTitle": "Thibitisha mabadiliko ya huduma",
+    "svcConfirmBody": "Msimamizi lazima aidhinishe mabadiliko haya kabla wasifu wako kubadilika.",
+    "svcReasonLabel": "Sababu ya mabadiliko",
+    "svcReasonHint": "Eleza kwa nini unabadilisha huduma zako",
+    "svcReasonMin": "Andika angalau herufi 10",
+    "svcCancel": "Ghairi",
+    "svcSubmit": "Tuma kwa idhini",
+    "svcSubmitted": "Ombi lako limetumwa kwa idhini",
+    "svcSubmitFailed": "Imeshindikana kutuma ombi lako. Tafadhali jaribu tena.",
+    "svcLoadFailed": "Imeshindikana kupakia huduma. Tafadhali jaribu tena.",
+    "svcRetry": "Jaribu tena",
+    "svcPendingTitle": "Inasubiri idhini",
+    "svcPendingBody": "Huduma zako za sasa hazijabadilika. Unaweza kutuma ombi jingine baada ya hili kupitiwa.",
+    "svcYourReason": "Sababu yako",
+    "svcRejectedTitle": "Ombi lako la mwisho lilikataliwa",
+    "svcRejectionReason": "Sababu",
+
+  "viewJobDetails": "Tazama maelezo ya kazi",
+  "jobDialogClose": "Funga",
+  "jobStatusOnProgress": "Inaendelea",
+  "jobStatusCompleted": "Imekamilika",
+  "jobsLoadFailed": "Imeshindikana kupakia kazi. Tafadhali jaribu tena.",
+  "jobChatUnavailable": "Imeshindikana kufungua mazungumzo. Tafadhali jaribu tena.",
+
   "privacyPolicy": "Sera ya Faragha",
 
   "ok": "Sawa",
@@ -900,6 +941,19 @@
   "deletePostTitle": "Futa Chapisho?",
   "deletePostConfirmation": "Una uhakika unataka kuondoa chapisho hili lote?",
   "editImages": "Hariri Picha",
+
+    "svcSubmitting": "Inawasilisha mabadiliko...",
+    "@svcSubmitting": {
+      "description": "Loading text shown while the service change request is being submitted to the server."
+    },
+
+
+      "svcBack": "Rudi",
+      "svcClearSearch": "Futa utafutaji",
+      "svcDiscardTitle": "Ghairi mabadiliko?",
+      "svcDiscardBody": "Uchaguzi wako haujatumwa na utapotea.",
+      "svcDiscard": "Ghairi",
+      "svcKeepEditing": "Endelea kuhariri",
 
   "myBalance": "Salio Langu",
   "earnings": "Mapato",

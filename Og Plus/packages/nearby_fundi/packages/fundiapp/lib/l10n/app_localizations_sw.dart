@@ -9,10 +9,10 @@ class AppLocalizationsSw extends AppLocalizations {
   AppLocalizationsSw([String locale = 'sw']) : super(locale);
 
   @override
-  String get appTitle => 'NETSAF FUNDI APP';
+  String get appTitle => ' FUNDI APP';
 
   @override
-  String get fundiAppTitle => 'NETSAF FUNDI APP';
+  String get fundiAppTitle => 'FUNDI APP';
 
   @override
   String get hello => 'Habari';
@@ -1141,6 +1141,119 @@ class AppLocalizationsSw extends AppLocalizations {
   String get locationSetOnMap => 'Mahali pamewekwa kwenye ramani';
 
   @override
+  String get svcTitle => 'Huduma zangu';
+
+  @override
+  String get svcSearchHint => 'Tafuta huduma au aina';
+
+  @override
+  String get svcOtherCategory => 'Huduma nyingine';
+
+  @override
+  String get svcNoResults => 'Hakuna huduma iliyopatikana';
+
+  @override
+  String get svcCurrent => 'Ipo kwenye wasifu wako';
+
+  @override
+  String get svcToAdd => 'Za kuongeza';
+
+  @override
+  String get svcToRemove => 'Za kuondoa';
+
+  @override
+  String get svcBlocked => 'Ilikataliwa: huwezi kuongeza huduma hii';
+
+  @override
+  String get svcSelectOne => 'Chagua angalau huduma moja';
+
+  @override
+  String svcSelectedCount(int count) {
+    return 'Huduma zilizochaguliwa: $count';
+  }
+
+  @override
+  String get svcReviewChanges => 'Kagua mabadiliko';
+
+  @override
+  String get svcConfirmTitle => 'Thibitisha mabadiliko ya huduma';
+
+  @override
+  String get svcConfirmBody => 'Msimamizi lazima aidhinishe mabadiliko haya kabla wasifu wako kubadilika.';
+
+  @override
+  String get svcReasonLabel => 'Sababu ya mabadiliko';
+
+  @override
+  String get svcReasonHint => 'Eleza kwa nini unabadilisha huduma zako';
+
+  @override
+  String get svcReasonMin => 'Andika angalau herufi 10';
+
+  @override
+  String get svcCancel => 'Ghairi';
+
+  @override
+  String get svcSubmit => 'Tuma kwa idhini';
+
+  @override
+  String get svcSubmitted => 'Ombi lako limetumwa kwa idhini';
+
+  @override
+  String get svcSubmitFailed => 'Imeshindikana kutuma ombi lako. Tafadhali jaribu tena.';
+
+  @override
+  String get svcLoadFailed => 'Imeshindikana kupakia huduma. Tafadhali jaribu tena.';
+
+  @override
+  String get svcRetry => 'Jaribu tena';
+
+  @override
+  String get svcPendingTitle => 'Inasubiri idhini';
+
+  @override
+  String get svcPendingBody => 'Huduma zako za sasa hazijabadilika. Unaweza kutuma ombi jingine baada ya hili kupitiwa.';
+
+  @override
+  String get svcYourReason => 'Sababu yako';
+
+  @override
+  String get svcRejectedTitle => 'Ombi lako la mwisho lilikataliwa';
+
+  @override
+  String get svcRejectionReason => 'Sababu';
+
+  @override
+  String get viewJobDetails => 'Tazama maelezo ya kazi';
+
+  @override
+  String get jobDialogClose => 'Funga';
+
+  @override
+  String get jobStatusOnProgress => 'Inaendelea';
+
+  @override
+  String get jobStatusCompleted => 'Imekamilika';
+
+  @override
+  String get jobsLoadFailed => 'Imeshindikana kupakia kazi. Tafadhali jaribu tena.';
+
+  @override
+  String get jobChatUnavailable => 'Imeshindikana kufungua mazungumzo. Tafadhali jaribu tena.';
+
+  @override
+  String get homeDefaultName => 'Fundi';
+
+  @override
+  String get homeNotificationsSubtitle => 'Pata taarifa mpya za kazi na ujumbe wako';
+
+  @override
+  String get homeNotificationsEmptyHint => 'Utaona taarifa kuhusu kazi, maombi na ujumbe wako hapa.';
+
+  @override
+  String get homeNotificationFallback => 'Arifa';
+
+  @override
   String get privacyPolicy => 'Sera ya Faragha';
 
   @override
@@ -2009,6 +2122,27 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get filterCompleted => 'Imekamilika';
+
+  @override
+  String get svcSubmitting => 'Inawasilisha mabadiliko...';
+
+  @override
+  String get svcBack => 'Rudi';
+
+  @override
+  String get svcClearSearch => 'Futa utafutaji';
+
+  @override
+  String get svcDiscardTitle => 'Ghairi mabadiliko?';
+
+  @override
+  String get svcDiscardBody => 'Uchaguzi wako haujatumwa na utapotea.';
+
+  @override
+  String get svcDiscard => 'Ghairi';
+
+  @override
+  String get svcKeepEditing => 'Endelea kuhariri';
 
   @override
   String get payments => 'Malipo';

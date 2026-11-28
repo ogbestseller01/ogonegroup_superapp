@@ -37,7 +37,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appUpdatesEmptySub =>
-      'You\'re all caught up. New updates will appear here.';
+      'Check back later for news and improvements.';
 
   @override
   String get appUpdatesMarkAllRead => 'Mark all as read';
@@ -80,6 +80,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String opening(String name) {
     return 'Opening $name...';
   }
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to Og Plus';
+
+  @override
+  String get onboardingWelcomeSubtitle =>
+      'Your ultimate hub for professional booking services, securely unified in one intelligent experience.';
+
+  @override
+  String get onboardingFeaturedTitle => 'Featured: NearbyFundi';
+
+  @override
+  String get onboardingFeaturedSubtitle =>
+      'Connect instantly with verified technicians, track service tickets, and make secure mobile payments effortlessly.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingGetStarted => 'Get Started';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get updateViewDetails => 'View Details';
 
   @override
   String get nearbyFundi => 'NearbyFundi';
@@ -189,9 +218,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get save => 'Save';
-
-  @override
-  String get retry => 'Retry';
 
   @override
   String get loading => 'Loading...';
@@ -455,9 +481,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cameraUnavailableBody =>
       'The camera could not be started. Please try again.';
-
-  @override
-  String get onboardingWelcomeTitle => 'Welcome to Og Plus';
 
   @override
   String get onboardingWelcomeBody =>

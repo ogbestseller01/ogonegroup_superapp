@@ -263,7 +263,7 @@ class ApiService {
       _get('/v1/services', headers: {'Accept-Language': locale});
 
   // ============================================================
-  // SECTION 3: TECHNICIAN PROFILE & SERVICES
+  // SECTION 3: TECHNICIAN PROFILE & SERVICE CHANGES
   // ============================================================
 
   Future<ApiResponse> getMyTechnicianProfile() =>
@@ -279,8 +279,46 @@ class ApiService {
     return _post('/v19/technicians/profile/photo', data: formData);
   }
 
-  Future<ApiResponse> updateTechnicianServices(List<int> serviceIds) =>
-      _post('/v19/technicians/services', data: {'services': serviceIds});
+  // ── Service change requests (approval workflow) ───────────
+  // Old instant-update endpoint (/v19/technicians/services) is closed.
+  // All service changes now go through the approval flow.
+  //
+  // Backend bindings (routes/api.php, v19 group):
+  //   POST /v19/technicians/services                   → store()
+  //   POST /v19/technicians/service-changes            → store()  (alias)
+  //   GET  /v19/technicians/service-changes            → options() (canonical)
+  //   GET  /v19/technicians/service-changes/options    → options() (alias)
+  //
+  // store() validator expects:
+  //   services: array<int>  (1..50, distinct, exists:services,id)
+  //   reason:   string      (10..1000 chars)
+  //
+  // options() returns:
+  //   services, current_service_ids, blocked_service_ids, latest_request
+
+  /// Returns current services, full catalog (with categories), blocked IDs,
+  /// and the latest request (if any).
+  Future<ApiResponse> getServiceChangeOptions({String locale = 'en'}) =>
+      _get(
+        '/v19/technicians/service-changes',
+        headers: {'Accept-Language': locale},
+      );
+
+  /// Submits a new change request. Only one pending request is allowed.
+  /// Backend expects `services` (array of ints) and `reason` (string 10-1000).
+  Future<ApiResponse> submitServiceChange({
+    required List<int> serviceIds,
+    required String reason,
+    String locale = 'en',
+  }) =>
+      _post(
+        '/v19/technicians/services',
+        data: {
+          'services': serviceIds,
+          'reason': reason,
+        },
+        headers: {'Accept-Language': locale},
+      );
 
   // ============================================================
   // SECTION 4: LOCATION & HEARTBEAT

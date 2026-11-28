@@ -1,8 +1,8 @@
 {
   "@@locale": "en",
 
-  "appTitle": "NETSAF FUNDI APP",
-  "fundiAppTitle": "NETSAF FUNDI APP",
+  "appTitle": "FUNDI APP",
+  "fundiAppTitle": " FUNDI APP",
   "hello": "Hello",
   "home": "Home",
   "settings": "Settings",
@@ -606,6 +606,47 @@
   "otpResentTo": "OTP resent to {identifier}",
   "failedToResendOtp": "Failed to resend OTP.",
 
+   "svcTitle": "My services",
+    "svcSearchHint": "Search services or categories",
+    "svcOtherCategory": "Other services",
+    "svcNoResults": "No services found",
+    "svcCurrent": "On your profile",
+    "svcToAdd": "To add",
+    "svcToRemove": "To remove",
+    "svcBlocked": "Rejected: you cannot add this service",
+    "svcSelectOne": "Select at least one service",
+    "svcSelectedCount": "Selected services: {count}",
+    "@svcSelectedCount": {"placeholders": {"count": {"type": "int"}}},
+    "svcReviewChanges": "Review changes",
+    "svcConfirmTitle": "Confirm service change",
+    "svcConfirmBody": "An admin must approve these changes before your profile is updated.",
+    "svcReasonLabel": "Reason for change",
+    "svcReasonHint": "Explain why you are changing your services",
+    "svcReasonMin": "Enter at least 10 characters",
+    "svcCancel": "Cancel",
+    "svcSubmit": "Submit for approval",
+    "svcSubmitted": "Your request was submitted for approval",
+    "svcSubmitFailed": "Could not submit your request. Please try again.",
+    "svcLoadFailed": "Could not load services. Please try again.",
+    "svcRetry": "Try again",
+    "svcPendingTitle": "Waiting for approval",
+    "svcPendingBody": "Your current services stay unchanged. You can send another change after this one is reviewed.",
+    "svcYourReason": "Your reason",
+    "svcRejectedTitle": "Your last request was rejected",
+    "svcRejectionReason": "Reason",
+
+  "viewJobDetails": "View job details",
+  "jobDialogClose": "Close",
+  "jobStatusOnProgress": "In progress",
+  "jobStatusCompleted": "Completed",
+  "jobsLoadFailed": "Could not load jobs. Please try again.",
+  "jobChatUnavailable": "Could not open the chat. Please try again.",
+
+  "homeDefaultName": "Fundi",
+  "homeNotificationsSubtitle": "Stay updated on your jobs and messages",
+  "homeNotificationsEmptyHint": "You will see updates about your jobs, requests and messages here.",
+  "homeNotificationFallback": "Notification",
+
   "privacyPolicy": "Privacy Policy",
 
   "ok": "OK",
@@ -983,6 +1024,18 @@
   "editServices": "Edit services",
   "noServicesAvailable": "No services available.",
   "couldNotDeleteAccount": "Could not delete account",
+
+   "svcSubmitting": "Submitting changes...",
+    "@svcSubmitting": {
+      "description": "Loading text shown while the service change request is being submitted to the server."
+    },
+
+    "svcBack": "Back",
+    "svcClearSearch": "Clear search",
+    "svcDiscardTitle": "Discard changes?",
+    "svcDiscardBody": "Your selection has not been submitted and will be lost.",
+    "svcDiscard": "Discard",
+    "svcKeepEditing": "Keep editing",
 
   "payments": "Payments",
   "myPortfolio": "My Portfolio",

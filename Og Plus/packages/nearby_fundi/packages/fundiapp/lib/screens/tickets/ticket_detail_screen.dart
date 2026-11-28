@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../models/job.dart';
+import '../../utils/ticket_pdf_generator.dart'; // <-- Added import
 import '../../widgets/work_status_widgets.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -11,14 +12,20 @@ class TicketDetailScreen extends StatelessWidget {
   final WorkTicket ticket;
   const TicketDetailScreen({super.key, required this.ticket});
 
-  void _downloadTicket(BuildContext context) {
+  Future<void> _downloadTicket(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.downloadingTicket(ticket.ticketNumber)),
-        backgroundColor: AppTheme.primary,
-      ),
-    );
+    try {
+      await TicketPdfGenerator.generateAndPrint(ticket, l10n);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to generate PDF: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    }
   }
 
   @override

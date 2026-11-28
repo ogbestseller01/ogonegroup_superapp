@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fundiapp_sdk/fundi_app_mini.dart';
 
+// ── FIXED IMPORTS ──
 import '../config/app_routes.dart';
 import '../config/app_theme.dart';
+// Go up two directories (../../) to reach lib/, then into l10n/
+import '../../l10n/app_localizations.dart';
 
 /// Shows the "Who's logging in?" card.
 /// The dialog closes itself BEFORE navigating, so it never stays in the
@@ -23,6 +26,9 @@ class _LoginRoleDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    // ── FIX: Use AppLocalizations directly if the extension isn't found ──
+    final t = AppLocalizations.of(context)!;
 
     return Dialog(
       backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
@@ -49,7 +55,7 @@ class _LoginRoleDialog extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Login required',
+                t.loginRequiredTitle, // <-- LOCALIZED
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 21,
@@ -60,7 +66,7 @@ class _LoginRoleDialog extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Choose how you want to continue',
+                t.loginChooseContinue, // <-- LOCALIZED
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -71,16 +77,16 @@ class _LoginRoleDialog extends StatelessWidget {
 
               _RoleButton(
                 icon: Icons.person_search_rounded,
-                title: 'Login as Customer',
-                subtitle: 'Book a Fundi near you',
+                title: t.loginAsCustomer, // <-- LOCALIZED
+                subtitle: t.loginCustomerSub, // <-- LOCALIZED
                 filled: true,
                 onTap: () => _goCustomer(context),
               ),
               const SizedBox(height: 12),
               _RoleButton(
                 icon: Icons.handyman_rounded,
-                title: 'Login as Fundi',
-                subtitle: 'Manage jobs, requests & portfolio',
+                title: t.loginAsFundi, // <-- LOCALIZED
+                subtitle: t.loginFundiSub, // <-- LOCALIZED
                 filled: false,
                 onTap: () => _goFundi(context),
               ),
@@ -88,9 +94,9 @@ class _LoginRoleDialog extends StatelessWidget {
               TextButton.icon(
                 onPressed: () => Navigator.of(context).pop(), // Go Home
                 icon: const Icon(Icons.home_rounded, size: 20),
-                label: const Text(
-                  'Go Home',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                label: Text(
+                  t.goHome, // <-- LOCALIZED
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -101,15 +107,12 @@ class _LoginRoleDialog extends StatelessWidget {
   }
 
   void _goCustomer(BuildContext context) {
-    // Navigator belonging to NearbyFundi's own MaterialApp
     final nav = Navigator.of(context);
     nav.pop(); // close dialog first
     nav.pushNamed(AppRoutes.login);
   }
 
   void _goFundi(BuildContext context) {
-    // Fundi is a nested MaterialApp, so push it on the ROOT navigator.
-    // Popping it returns the user to NearbyFundi Home.
     final root = Navigator.of(context, rootNavigator: true);
     Navigator.of(context).pop(); // close dialog first
     root.push(

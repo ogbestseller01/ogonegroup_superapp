@@ -201,39 +201,73 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
   void _showNotifications() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isWide = MediaQuery.sizeOf(context).width >= 800;
 
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      constraints: const BoxConstraints(maxWidth: 640),
-      builder: (sheetCtx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.82,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkSurface : Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+    if (isWide) {
+      // Desktop / Tablet: Show as a centered Dialog
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(24),
+          child: Container(
+            width: 600,
+            height: 700,
+            decoration: BoxDecoration(
+              color: isDark ? AppTheme.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: _NotificationsSheet(
+              controller: ScrollController(),
+              showDragHandle: false,
+              onClose: () => Navigator.of(ctx).pop(),
+              onSelect: (notification) {
+                _notif.markAsRead(notification['id']);
+                Navigator.of(ctx).pop();
+                if (mounted) _handleNotificationTap(notification);
+              },
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Mobile: Show as a standard Bottom Sheet
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        constraints: const BoxConstraints(maxWidth: 640),
+        builder: (sheetCtx) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (_, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppTheme.darkSurface : Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
                 ),
-              ),
-              child: _NotificationsSheet(
-                controller: scrollController,
-                onSelect: (notification) {
-                  _notif.markAsRead(notification['id']);
-                  Navigator.of(sheetCtx).pop();
-                  if (mounted) _handleNotificationTap(notification);
-                },
-              ),
-            );
-          },
-        );
-      },
-    );
+                child: _NotificationsSheet(
+                  controller: scrollController,
+                  showDragHandle: true,
+                  onClose: () => Navigator.of(sheetCtx).pop(),
+                  onSelect: (notification) {
+                    _notif.markAsRead(notification['id']);
+                    Navigator.of(sheetCtx).pop();
+                    if (mounted) _handleNotificationTap(notification);
+                  },
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
   }
 
   void _handleNotificationTap(Map<String, dynamic> notification) {
@@ -310,7 +344,7 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
           leading: IconButton(
             icon: const Icon(Icons.menu_rounded, color: Colors.white),
             onPressed: _openDrawer,
-            tooltip: 'Menu',
+            tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
           ),
           title: Row(
             children: [
@@ -403,10 +437,14 @@ class FundiHomeScreenState extends State<FundiHomeScreen>
 class _NotificationsSheet extends StatelessWidget {
   final ScrollController controller;
   final ValueChanged<Map<String, dynamic>> onSelect;
+  final bool showDragHandle;
+  final VoidCallback onClose;
 
   const _NotificationsSheet({
     required this.controller,
     required this.onSelect,
+    this.showDragHandle = true,
+    required this.onClose,
   });
 
   @override
@@ -417,16 +455,19 @@ class _NotificationsSheet extends StatelessWidget {
 
     return Column(
       children: [
-        const SizedBox(height: 12),
-        Container(
-          width: 44,
-          height: 4,
-          decoration: BoxDecoration(
-            color: theme.dividerColor,
-            borderRadius: BorderRadius.circular(5),
+        if (showDragHandle) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: 44,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.dividerColor,
+              borderRadius: BorderRadius.circular(5),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ] else
+          const SizedBox(height: 16),
 
         // ── Header ──
         Padding(
@@ -451,41 +492,59 @@ class _NotificationsSheet extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            l10n.notifications,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              inherit: true,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
-                              color: _ink(isDark),
-                            ),
-                          ),
-                        ),
-                        if (unread > 0) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: AppTheme.secondary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              unread > 99 ? '99+' : '$unread',
-                              style: const TextStyle(
-                                inherit: true,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: AppTheme.primary,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                l10n.notifications,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  inherit: true,
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w800,
+                                  color: _ink(isDark),
+                                ),
                               ),
                             ),
+                            if (unread > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.secondary,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  unread > 99 ? '99+' : '$unread',
+                                  style: const TextStyle(
+                                    inherit: true,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.homeNotificationsSubtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            inherit: true,
+                            fontSize: 12.5,
+                            color: isDark
+                                ? AppTheme.darkTextSecondary
+                                : AppTheme.greyText,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -508,6 +567,14 @@ class _NotificationsSheet extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           fontSize: 12.5,
                         ),
+                      ),
+                    ),
+                  if (!showDragHandle)
+                    IconButton(
+                      onPressed: onClose,
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: _ink(isDark),
                       ),
                     ),
                 ],
@@ -536,7 +603,7 @@ class _NotificationsSheet extends StatelessWidget {
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(
-                        height: 300,
+                        height: 350,
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -555,13 +622,30 @@ class _NotificationsSheet extends StatelessWidget {
                                   color: theme.hintColor,
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 16),
                               Text(
                                 l10n.noNotificationsYet,
                                 style: TextStyle(
                                   inherit: true,
                                   color: theme.hintColor,
                                   fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding:
+                                const EdgeInsets.symmetric(horizontal: 40),
+                                child: Text(
+                                  l10n.homeNotificationsEmptyHint,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    inherit: true,
+                                    color:
+                                    theme.hintColor.withValues(alpha: 0.7),
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -747,7 +831,7 @@ class _FundiDrawer extends StatelessWidget {
     final totalJobs = context.watch<JobProvider>().jobs.length;
     final totalTickets = context.watch<TicketProvider>().tickets.length;
 
-    final name = user?.name ?? 'Fundi';
+    final name = user?.name ?? l10n.homeDefaultName;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'F';
 
     return Drawer(
@@ -815,7 +899,7 @@ class _FundiDrawer extends StatelessWidget {
                           color: Colors.white,
                           size: 26,
                         ),
-                        tooltip: 'Close',
+                        tooltip: l10n.jobDialogClose,
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.15),
                           padding: const EdgeInsets.all(8),
@@ -928,17 +1012,7 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-                  // Settings now opens the Settings tab (profile + menus)
-                  _DrawerItem(
-                    icon: Icons.settings_outlined,
-                    label: l10n.settings,
-                    onTap: () {
-                      final home = context
-                          .findAncestorStateOfType<FundiHomeScreenState>();
-                      Navigator.pop(context);
-                      home?.navigateToTab(4);
-                    },
-                  ),
+                  // Settings item removed from drawer – available only in bottom nav
                 ],
               ),
             ),
@@ -1263,7 +1337,7 @@ class _HomeDashboardContent extends StatelessWidget {
     final unreadChats = context.watch<ChatProvider>().totalUnread;
 
     final user = auth.user;
-    final name = user?.name ?? 'Fundi';
+    final name = user?.name ?? l10n.homeDefaultName;
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'F';
 
     final totalJobs = jobProvider.jobs.length;
@@ -1705,7 +1779,8 @@ class _NotificationTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             notification['title']?.toString() ??
-                                'Notification',
+                                AppLocalizations.of(context)!
+                                    .homeNotificationFallback,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -2577,12 +2652,7 @@ class _JobTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: WorkCard(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
-          );
-        },
+        onTap: () => JobDetailDialog.show(context, job),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2616,7 +2686,7 @@ class _JobTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      WorkStatusBadge(status: job.status),
+                      JobStatusBadge(status: job.status),
                     ],
                   ),
                   WorkMetaLine(

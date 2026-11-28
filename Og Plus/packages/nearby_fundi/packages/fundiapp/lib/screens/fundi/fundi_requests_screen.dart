@@ -7,10 +7,7 @@ import '../../config/app_routes.dart';
 import '../../models/request.dart';
 import '../../providers/request_provider.dart';
 import '../../providers/job_provider.dart';
-import '../../providers/chat_provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../l10n/app_localizations.dart';
-import '../chat/fundi_chat_screen.dart';
 import '../../config/app_theme.dart';
 import 'fundi_home_screen.dart'; // for FundiHomeScreenState
 
@@ -189,35 +186,6 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
         'jobNumber=${request.jobNumber}');
     if (request.jobId == null) return;
     Navigator.pushNamed(context, AppRoutes.jobs);
-  }
-
-  // ─── Chat ───────────────────────────────────────────────────────────────
-  Future<void> _startChat(BuildContext context, ServiceRequest request) async {
-    try {
-      final chatProvider = context.read<ChatProvider>();
-      final authProvider = context.read<AuthProvider>();
-
-      final conversation = await chatProvider.getOrCreateConversation(
-        customerId: request.customerId,
-        fundiId: authProvider.user!.id,
-      );
-
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                FundiChatScreen(conversation: conversation),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        final l10n = AppLocalizations.of(context)!;
-        _showSnack(context, l10n.failedToStartChat(e.toString()),
-            isError: true);
-      }
-    }
   }
 
   void _showSnack(BuildContext context, String message, {bool isError = false}) {
@@ -839,11 +807,14 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
               ),
             ],
 
-            const SizedBox(height: 16),
-
             // Actions
+            if (isPending ||
+                isRejectedOrCancelled ||
+                (isAccepted && request.hasJob && request.jobId != null))
+              const SizedBox(height: 16),
             if (isPending) _buildPendingActions(context, request, l10n),
-            if (isAccepted) _buildAcceptedActions(context, request, l10n),
+            if (isAccepted && request.hasJob && request.jobId != null)
+              _buildAcceptedActions(request, l10n),
             if (isRejectedOrCancelled)
               _buildRejectedActions(request, theme, isDark, l10n),
           ],
@@ -883,32 +854,16 @@ class _FundiRequestsScreenState extends State<FundiRequestsScreen> {
   }
 
   Widget _buildAcceptedActions(
-      BuildContext context, ServiceRequest request, AppLocalizations l10n) {
-    return Column(
-      children: [
-        if (request.hasJob && request.jobId != null) ...[
-          SizedBox(
-            width: double.infinity,
-            child: _PrimaryButton(
-              label: l10n.viewJob,
-              color: AppTheme.primary,
-              outlined: true,
-              icon: Icons.work_outline_rounded,
-              onPressed: () => _openJob(request),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: _PrimaryButton(
-            label: l10n.chatWithCustomer,
-            color: AppTheme.primary,
-            icon: Icons.chat_bubble_outline_rounded,
-            onPressed: () => _startChat(context, request),
-          ),
-        ),
-      ],
+      ServiceRequest request, AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      child: _PrimaryButton(
+        label: l10n.viewJob,
+        color: AppTheme.primary,
+        outlined: true,
+        icon: Icons.work_outline_rounded,
+        onPressed: () => _openJob(request),
+      ),
     );
   }
 
