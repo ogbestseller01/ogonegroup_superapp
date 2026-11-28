@@ -144,6 +144,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comingSoon => 'Coming Soon';
 
   @override
+  String get loginRequiredTitle => 'Login required';
+
+  @override
+  String get loginChooseContinue => 'Choose how you want to continue';
+
+  @override
+  String get loginAsCustomer => 'Login as Customer';
+
+  @override
+  String get loginCustomerSub => 'Book a Fundi near you';
+
+  @override
+  String get loginAsFundi => 'Login as Fundi';
+
+  @override
+  String get loginFundiSub => 'Manage jobs, requests & portfolio';
+
+  @override
+  String get goHome => 'Go Home';
+
+  @override
   String get appearance => 'Appearance';
 
   @override

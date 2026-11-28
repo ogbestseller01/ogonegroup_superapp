@@ -350,6 +350,48 @@ abstract class AppLocalizations {
   /// **'Coming Soon'**
   String get comingSoon;
 
+  /// No description provided for @loginRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Login required'**
+  String get loginRequiredTitle;
+
+  /// No description provided for @loginChooseContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you want to continue'**
+  String get loginChooseContinue;
+
+  /// No description provided for @loginAsCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Login as Customer'**
+  String get loginAsCustomer;
+
+  /// No description provided for @loginCustomerSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a Fundi near you'**
+  String get loginCustomerSub;
+
+  /// No description provided for @loginAsFundi.
+  ///
+  /// In en, this message translates to:
+  /// **'Login as Fundi'**
+  String get loginAsFundi;
+
+  /// No description provided for @loginFundiSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage jobs, requests & portfolio'**
+  String get loginFundiSub;
+
+  /// No description provided for @goHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Home'**
+  String get goHome;
+
   /// No description provided for @appearance.
   ///
   /// In en, this message translates to:

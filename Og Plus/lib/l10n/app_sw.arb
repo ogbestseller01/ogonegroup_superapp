@@ -35,7 +35,13 @@
     "updateViewDetails": "Tazama Maelezo",
 
 
-
+    "loginRequiredTitle": "Uhitaji kuingia",
+    "loginChooseContinue": "Chagua jinsi unavyotaka kuendelea",
+    "loginAsCustomer": "Ingia kama Mteja",
+    "loginCustomerSub": "Weka booking ya Fundi aliye karibu nawe",
+    "loginAsFundi": "Ingia kama Fundi",
+    "loginFundiSub": "Dhibiti kazi, maombi na wasifu",
+    "goHome": "Nenda Nyumbani",
 
 
   "appUpdatesTitle": "Taarifa za Programu",

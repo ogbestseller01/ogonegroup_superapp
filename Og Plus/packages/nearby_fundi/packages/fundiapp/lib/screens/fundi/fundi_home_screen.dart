@@ -1003,15 +1003,7 @@ class _FundiDrawer extends StatelessWidget {
                       _showComingSoon(context);
                     },
                   ),
-                  _DrawerItem(
-                    icon: Icons.file_download_rounded,
-                    label: l10n.downloads,
-                    trailing: _comingSoonBadge(context),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showComingSoon(context);
-                    },
-                  ),
+                  // Downloads item removed as requested.
                   // Settings item removed from drawer – available only in bottom nav
                 ],
               ),

@@ -98,6 +98,14 @@
   "comingSoon": "Coming Soon",
 
 
+     "loginRequiredTitle": "Login required",
+     "loginChooseContinue": "Choose how you want to continue",
+     "loginAsCustomer": "Login as Customer",
+     "loginCustomerSub": "Book a Fundi near you",
+     "loginAsFundi": "Login as Fundi",
+     "loginFundiSub": "Manage jobs, requests & portfolio",
+     "goHome": "Go Home",
+
   "appearance": "Appearance",
   "system": "System",
   "followDevice": "Follow device setting",
